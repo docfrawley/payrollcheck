@@ -73,3 +73,7 @@ Statuses: **Received** → **In progress** → **Awaiting review** → **Accepte
 **Exposure** — From each case's latest submission only (superseded never counted; dismissed excluded): **flagged** = money exceptions not dismissed; **outstanding** = those still open on cases Awaiting review or Returned to sub. In cents, with contributing case IDs.
 
 **Withheld text** — On a case with a screening flag, app tools replace every text cell of its submissions with `[withheld: screening flag — see case page]`, in backend code, before any model sees it. Numbers, dates, IDs and the screening reason still pass.
+
+## Access
+
+**Role** — `reviewer` or `compliance_manager` (replaces Ed's `can_approve_over_limit`). **Scope** — The projects a person may see and act on: a reviewer's assigned projects (`project_reviewers`), or every project for the compliance manager. One backend function applies it to every query and write; an out-of-scope ID is a 404. The Copilot inherits it through the reviewer's own sign-in. Dispatches work the whole Received queue but show the starter only their scope; the agent's API key is unscoped but never takes a person's actions.
