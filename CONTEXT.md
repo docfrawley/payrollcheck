@@ -20,7 +20,11 @@ The ubiquitous language for PayrollCheck. Code, tables, routes and UI use these 
 
 **Sign off / Send back** — The reviewer's two actions on a case awaiting review: Sign off makes it Accepted; Send back makes it Returned to sub, with a notice to the subcontractor.
 
-**PayrollCheck Copilot** — The sidebar chat for reviewers. Reads; never signs off or sends back.
+**Send-back notice** — The plain-language message to the subcontractor that goes with Send back. Drafted by the payroll agent (or the Copilot on request), edited by the reviewer, and sent only when the reviewer presses Send back on the case page.
+
+**Override** — A reviewer's correction to the payroll agent's exception report: dismissing an exception (a false positive) or adding one (a miss). Every override is logged with who, when and why, and is a signal for the improver. Overrides never rewrite ground-truth labels. The agent is never sent a case back to re-check; the reviewer overrides instead.
+
+**PayrollCheck Copilot** — The sidebar chat for reviewers. Reads, drafts send-back notices, and starts dispatches and evaluations; never signs off or sends back.
 
 ## Renaming rule
 
