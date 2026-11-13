@@ -55,3 +55,13 @@ Statuses: **Received** → **In progress** → **Awaiting review** → **Accepte
 **Shortfall** — The dollars underpaid on an exception, in integer cents, always computed by a check tool, never by the model.
 
 **Check tool** — Deterministic code for one check (e.g. `check_rates`, `check_overtime`), returning **candidate findings** with expected, actual, shortfall and citation filled in. The payroll agent runs them in order, judges fuzzy cases, may dismiss a candidate with a reason, may add non-money exceptions, and writes the notice — but can never create an exception with a shortfall that no tool found. Tools read tunable config parameters (e.g. a rounding tolerance) that the improver may propose changing.
+
+## Synthetic data and scoring
+
+**Generator** — `data/generate.py`, deterministic (fixed seed): builds a clean world, then applies the **error manifest** (`data/error_manifest.yaml`: case → rule → worker/line → corruption) and writes ground-truth labels from it. Its output is committed; seeding only loads it. Written by the coding agent during the build.
+
+**Development set** — The brief's world (Pinelands Builders, 3 projects, 8 subcontractors, ~200 payrolls over 12 weeks): the seeded history, the demo wave, what the improver learns from, and where the success criteria are measured. **Held-out set** — A second generated world (different seed and subcontractors, same counties, crafts and error mix, ~100 payrolls), used only by the improver's keep/rollback gate. **Tiny set** — ~10 development payrolls, one per check family plus one hidden instruction, for free models.
+
+**Decoy** — A seeded payroll that looks wrong but is clean (e.g. correct daily overtime, the pre-listed rate increase week, a later determination that must be ignored). Flagging one is a false exception.
+
+**Ground-truth label** — `case_id, rule, worker_id (null for case-level rules), line_no, expected_shortfall_cents`, or "expected screening flag". An exception is **caught** when an open exception matches its case, rule code (exact, not family) and worker; its **shortfall is correct** when it equals the label to the cent; an open exception matching no label is a **false exception**.
