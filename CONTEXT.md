@@ -31,3 +31,27 @@ The ubiquitous language for PayrollCheck. Code, tables, routes and UI use these 
 ## Renaming rule
 
 A term with a PayrollCheck counterpart is renamed (above; also `UNDERCOVER_*` → `PAYROLLCHECK_*`, packages → `payrollcheck`). A term with no counterpart — *policy*, *plan*, *payout*, *payment* — is not renamed but replaced by what the domain model defines (project, wage rate, filing rule, exception, shortfall) or dropped.
+
+## Records and context
+
+**Context layer** — Reference data the GC doesn't own, as read-only files served by the compliance context server and cited by every answer: rate determinations, the contractor registry, apprentice registrations, filing rules, glossary. **App records** — what the GC owns, in the database, reached by the agent only through the app: projects, subcontractors, workers, cases, submissions, exceptions, overrides, notices.
+
+**Rate determination** — NJDOL's published rates for a county and craft, with dated rows (wage, fringe, total), the craft's overtime rules (as data) and apprentice schedule. The rate for a line is the determination in force on the project's **award date**, taking its latest row dated on or before the work date.
+
+**Engagement window** — The first and last week a subcontractor is on a project. Every week in it needs a filing, a "No Work Week" filing (a submission with no lines) included.
+
+**Expected filing** — A (subcontractor, project, week) inside an engagement window. Computed, never stored. **Missing** = expected with no case; **late** = filed more than 10 days after the wage payment date, or missing past that deadline.
+
+**Established craft** — A worker's craft in the GC's records, from their first payroll on the job or the apprentice registry. Paying them under a lower-paid classification is a misclassification.
+
+## Case lifecycle
+
+Statuses: **Received** → **In progress** → **Awaiting review** → **Accepted** or **Returned to sub**. A case flagged by the hidden-instruction screening (*screening flag*) or failed twice by the agent (*agent failed*) reaches Awaiting review with that flag and is worked by hand. Any new submission — even after Accepted — reopens the case to Received, and the previous submission's open exceptions become **superseded**. Sign off requires no open exceptions: each must first be dismissed with a reason (an override).
+
+## Exceptions
+
+**Exception** — One rule breach found in a submission: rule code, severity (high / medium / low), worker, line, expected vs actual, shortfall, citation, raised by (agent or reviewer), status (open, dismissed, superseded). Rule codes: `form.missing_field`, `form.unsigned`, `form.project_mismatch`, `registration.inactive`, `rate.base_short`, `rate.fringe_short`, `overtime.underpaid`, `arithmetic.hours_total`, `arithmetic.gross`, `apprentice.unregistered`, `apprentice.ratio`, `timeliness.late`, `sequence.gap`, `classification.changed`, `classification.mismatch`. A hidden instruction is a screening flag, not an exception.
+
+**Shortfall** — The dollars underpaid on an exception, in integer cents, always computed by a check tool, never by the model.
+
+**Check tool** — Deterministic code for one check (e.g. `check_rates`, `check_overtime`), returning **candidate findings** with expected, actual, shortfall and citation filled in. The payroll agent runs them in order, judges fuzzy cases, may dismiss a candidate with a reason, may add non-money exceptions, and writes the notice — but can never create an exception with a shortfall that no tool found. Tools read tunable config parameters (e.g. a rounding tolerance) that the improver may propose changing.
