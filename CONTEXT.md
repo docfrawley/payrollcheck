@@ -65,3 +65,11 @@ Statuses: **Received** → **In progress** → **Awaiting review** → **Accepte
 **Decoy** — A seeded payroll that looks wrong but is clean (e.g. correct daily overtime, the pre-listed rate increase week, a later determination that must be ignored). Flagging one is a false exception.
 
 **Ground-truth label** — `case_id, rule, worker_id (null for case-level rules), line_no, expected_shortfall_cents`, or "expected screening flag". An exception is **caught** when an open exception matches its case, rule code (exact, not family) and worker; its **shortfall is correct** when it equals the label to the cent; an open exception matching no label is a **false exception**.
+
+## Copilot
+
+**Business date** — The app's "today": a setting that defaults to the real date; seeding pins it to the Monday the week-12 wave arrives. Every relative period ("last week", "this month", the last N weeks, missing, late) is resolved from it in code, always matched on a payroll's `week_ending`.
+
+**Exposure** — From each case's latest submission only (superseded never counted; dismissed excluded): **flagged** = money exceptions not dismissed; **outstanding** = those still open on cases Awaiting review or Returned to sub. In cents, with contributing case IDs.
+
+**Withheld text** — On a case with a screening flag, app tools replace every text cell of its submissions with `[withheld: screening flag — see case page]`, in backend code, before any model sees it. Numbers, dates, IDs and the screening reason still pass.
