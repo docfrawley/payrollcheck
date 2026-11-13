@@ -77,3 +77,5 @@ Statuses: **Received** → **In progress** → **Awaiting review** → **Accepte
 ## Access
 
 **Role** — `reviewer` or `compliance_manager` (replaces Ed's `can_approve_over_limit`). **Scope** — The projects a person may see and act on: a reviewer's assigned projects (`project_reviewers`), or every project for the compliance manager. One backend function applies it to every query and write; an out-of-scope ID is a 404. The Copilot inherits it through the reviewer's own sign-in. Dispatches work the whole Received queue but show the starter only their scope; the agent's API key is unscoped but never takes a person's actions.
+
+**Outbox** — Where a sent notice is recorded: to (the subcontractor's payroll contact), subject, body, sent by, sent at, shown on the case page as an email preview. No real email is sent; seeded contacts use `.example` domains. A real provider would replace one `deliver(outbox_row)` function.
