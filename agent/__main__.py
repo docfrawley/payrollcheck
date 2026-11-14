@@ -1,4 +1,4 @@
-"""Work one claim with the UnderCover Agent: uv run -m agent CLM-1001"""
+"""Work one claim with the PayrollCheck Agent: uv run -m agent CLM-1001"""
 
 import argparse
 import sys

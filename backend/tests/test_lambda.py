@@ -16,7 +16,7 @@ from backend.main import app, handler
 from backend.tests.dashboard_build import INDEX
 
 TRANSACTION_POOLER = "postgresql://postgres.ref:secret@pooler.example.com:6543/db"
-FUNCTION = "undercover-app"
+FUNCTION = "payrollcheck-app"
 
 
 @dataclass
@@ -82,7 +82,7 @@ def test_the_handler_answers_without_the_startup_hook(agent_key):
 
 
 def test_the_handler_never_seeds_the_database(tmp_path, monkeypatch):
-    monkeypatch.setenv("UNDERCOVER_DB", str(tmp_path / "empty.db"))
+    monkeypatch.setenv("PAYROLLCHECK_DB", str(tmp_path / "empty.db"))
     assert through_the_handler("/api/health")["statusCode"] == 200
     assert not is_seeded(engine())
 

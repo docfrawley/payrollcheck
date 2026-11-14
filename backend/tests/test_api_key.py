@@ -111,7 +111,7 @@ def test_a_shared_read_takes_the_key_or_a_sign_in(client, dashboard, path):
 def test_with_no_key_set_handlers_still_work_and_the_agents_routes_refuse(
     dashboard, monkeypatch
 ):
-    monkeypatch.delenv("UNDERCOVER_API_KEY")
+    monkeypatch.delenv("PAYROLLCHECK_API_KEY")
     assert dashboard.get("/api/health").status_code == 200
     assert len(read(dashboard, "/api/claims").json()) == 26
     for route in AGENT_ROUTES:
@@ -121,7 +121,7 @@ def test_with_no_key_set_handlers_still_work_and_the_agents_routes_refuse(
 
 
 def test_an_empty_key_set_doesnt_match_an_empty_header(dashboard, monkeypatch):
-    monkeypatch.setenv("UNDERCOVER_API_KEY", "")
+    monkeypatch.setenv("PAYROLLCHECK_API_KEY", "")
     refused = dashboard.get("/api/runs/run-1", headers={API_KEY_HEADER: ""})
     assert refused.status_code == 401
 

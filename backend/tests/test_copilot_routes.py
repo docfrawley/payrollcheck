@@ -36,7 +36,7 @@ from backend.tests.copilot_requests import (
 from backend.tests.runtime_stand_in import ENDPOINT, runtime_at
 from backend.tests.sign_in import DANA, token
 
-ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/undercover_copilot-x"
+ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/payrollcheck_copilot-x"
 REFUSAL = "Turn 1 isn't the conversation's latest working turn"
 
 
@@ -86,7 +86,7 @@ def test_the_sign_in_passed_on_is_the_handlers_own(dashboard, copilot_calls):
     assert copilot_calls[0]["sign_in"] == own
 
 
-def test_the_laptop_route_is_at_undercover_copilot(
+def test_the_laptop_route_is_at_payrollcheck_copilot(
     dashboard, copilot_answers, monkeypatch
 ):
     sent = []

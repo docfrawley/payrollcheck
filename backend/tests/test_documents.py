@@ -53,7 +53,7 @@ def test_the_payout_rules_are_the_context_layers_plans():
 
 def test_the_claim_agent_reads_the_contents_of_both_documents(client):
     claim = client.get("/api/versions/current").json()["instructions"]
-    assert claim.startswith("# UnderCover Agent: working a claim")
+    assert claim.startswith("# PayrollCheck Agent: working a claim")
     contents = claim[claim.index("## Contents of the policy wording") :]
     assert "\n3. Trip Delay\n" in contents
     assert "## Contents of the claims manual" in contents

@@ -234,9 +234,9 @@ def on_runtime(monkeypatch, agent_key):
     # The database's value is empty, which keeps the tests' backend, in the same
     # process, on SQLite.
     values = {
-        "undercover-openrouter": "openrouter-key",
-        "undercover-api-key": agent_key,
-        "undercover-database": "",
+        "payrollcheck-openrouter": "openrouter-key",
+        "payrollcheck-api-key": agent_key,
+        "payrollcheck-database": "",
     }
 
     def requires_api_key(provider_name):

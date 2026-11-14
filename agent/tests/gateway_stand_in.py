@@ -1,8 +1,8 @@
 """A stand-in for the AgentCore Gateway: an MCP server whose tools are named as the
-Gateway names them. undercover-app___<operation> is each operation in the agent's
+Gateway names them. payrollcheck-app___<operation> is each operation in the agent's
 API document, sent to the test backend with the agent's key, which the Gateway's
 credential provider holds, and the app's refusals come back as tool errors with the
-app's answer. undercover-context___<tool> is each of the context layer's tools,
+app's answer. payrollcheck-context___<tool> is each of the context layer's tools,
 answered by the context layer's own server, its refusals as tool errors. Its
 Policy refuses a payment over $1,000, and any tool a test names, with an MCP
 error, as the Gateway's Policy does. It keeps each call's name, its inputs and
@@ -113,7 +113,7 @@ class GatewayStandIn:
         default_factory=lambda: app_operations(agent_api.document(app))
     )
     backend: TestClient = field(default_factory=lambda: TestClient(app))
-    server: Server = field(default_factory=lambda: Server("undercover-gateway"))
+    server: Server = field(default_factory=lambda: Server("payrollcheck-gateway"))
     context: FastMCP = field(default_factory=build_server)
 
     def __post_init__(self) -> None:
@@ -186,7 +186,7 @@ class GatewayStandIn:
             path,
             params=params,
             json=body or None,
-            headers={API_KEY_HEADER: os.environ["UNDERCOVER_API_KEY"]},
+            headers={API_KEY_HEADER: os.environ["PAYROLLCHECK_API_KEY"]},
         )
         return response.text, response.is_error
 

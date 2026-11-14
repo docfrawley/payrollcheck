@@ -121,7 +121,7 @@ it("shows each decision sent back with its note, beside the new decision", async
   ).toBeDefined();
   expect(
     decisions.getByText(
-      `Decided by UnderCover Agent, version 1 at ${time(decidedAt)}`,
+      `Decided by PayrollCheck Agent, version 1 at ${time(decidedAt)}`,
     ),
   ).toBeDefined();
   const steps = await panel("Agent at work");

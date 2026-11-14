@@ -57,7 +57,7 @@ export const approval: Decision = {
   },
   section: "Section 5, Baggage and Personal Effects",
   reason: "The suitcase was lost by the carrier.",
-  decided_by: "UnderCover Agent, version 1",
+  decided_by: "PayrollCheck Agent, version 1",
   decided_at: decidedAt,
   manual_version: "2026.2",
   signed_off_by: null,

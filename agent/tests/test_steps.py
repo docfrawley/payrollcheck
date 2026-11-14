@@ -85,9 +85,9 @@ def test_each_call_is_named_as_its_route_names_it(client, gateway):
     ]
     directly = [s["content"] for s in steps_of_kind(client, "CLM-1004", "tool_call")]
     assert on_the_gateway == [
-        'undercover-context___lookup_term(term="unattended")',
-        "undercover-app___get_claim()",
-        'undercover-app___record_decision(decision="refer", payout=0, '
+        'payrollcheck-context___lookup_term(term="unattended")',
+        "payrollcheck-app___get_claim()",
+        'payrollcheck-app___record_decision(decision="refer", payout=0, '
         'section="Section 3, Trip Delay", reason="The delay was covered.")',
     ]
     assert directly == [
@@ -97,4 +97,4 @@ def test_each_call_is_named_as_its_route_names_it(client, gateway):
         'reason="The delay was covered.")',
     ]
     results = steps_of_kind(client, "CLM-1003", "tool_result")
-    assert results[0]["content"].startswith("undercover-context___lookup_term: {")
+    assert results[0]["content"].startswith("payrollcheck-context___lookup_term: {")

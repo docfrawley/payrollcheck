@@ -31,12 +31,12 @@ NO_CALCULATION = (
 def test_the_claim_agent_decides_as_its_version(client):
     harness.work_claim("CLM-1003", None, agent_on(stub(*decide("refer", 0))))
     decision = claim_of(client, "CLM-1003")["decision"]
-    assert decision["decided_by"] == "UnderCover Agent, version 1"
+    assert decision["decided_by"] == "PayrollCheck Agent, version 1"
     version_3 = {"number": 3, "instructions": INSTRUCTIONS}
     agent = agent_on(stub(*decide("decline", 0)), version=version_3)
     harness.work_claim("CLM-1004", None, agent)
     decision = claim_of(client, "CLM-1004")["decision"]
-    assert decision["decided_by"] == "UnderCover Agent, version 3"
+    assert decision["decided_by"] == "PayrollCheck Agent, version 3"
 
 
 def test_a_runs_claim_agents_decide_as_its_version(monkeypatch):
@@ -44,7 +44,7 @@ def test_a_runs_claim_agents_decide_as_its_version(monkeypatch):
     monkeypatch.setattr(harness, "PostgresSaver", lambda pool: InMemorySaver())
     version = api.get_current_version() | {"number": 2}
     agent = harness.claim_graphs(version, None, cast(checkpoints.Pool, None))()
-    assert agent.decided_by == "UnderCover Agent, version 2"
+    assert agent.decided_by == "PayrollCheck Agent, version 2"
 
 
 def test_the_checks_referral_is_made_by_the_security_check(client):
@@ -90,4 +90,4 @@ def test_the_gateway_receives_the_maker(client, gateway):
     agent = agent_on(model, route=Gateway(gateway.url))
     harness.work_claim("CLM-1003", None, agent)
     [recorded] = [c for c in gateway.calls if c.name.endswith("record_decision")]
-    assert recorded.inputs["decided_by"] == "UnderCover Agent, version 1"
+    assert recorded.inputs["decided_by"] == "PayrollCheck Agent, version 1"

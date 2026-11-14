@@ -54,7 +54,7 @@ def answer_confirmation(
 
 def key_headers() -> dict[str, str]:
     """The agent's key as the app sends it, read as the tests set it."""
-    return {"Authorization": f"Bearer {os.environ['UNDERCOVER_API_KEY']}"}
+    return {"Authorization": f"Bearer {os.environ['PAYROLLCHECK_API_KEY']}"}
 
 
 @dataclass

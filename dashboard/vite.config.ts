@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     rolldownOptions: { output: { codeSplitting: { groups: LIBRARIES } } },
   },
   server: {
-    proxy: { "/api": process.env.UNDERCOVER_API ?? "http://127.0.0.1:8000" },
+    proxy: { "/api": process.env.PAYROLLCHECK_API ?? "http://127.0.0.1:8000" },
   },
   test: {
     environment: "jsdom",

@@ -190,7 +190,9 @@ def test_the_memory_is_read_when_the_claim_agents_are_built(monkeypatch):
     no_pool = cast(checkpoints.Pool, None)
     without = harness.claim_graphs(version, None, no_pool)()
     assert harness.REMEMBER not in without.graph.nodes
-    monkeypatch.setenv(MEMORY_ID, "undercover_memory-abc")
+    monkeypatch.setenv(MEMORY_ID, "payrollcheck_memory-abc")
     agent = harness.claim_graphs(version, None, no_pool)()
     assert harness.REMEMBER in agent.graph.nodes
-    assert made == [{"memory_id": "undercover_memory-abc", "region_name": "eu-west-2"}]
+    assert made == [
+        {"memory_id": "payrollcheck_memory-abc", "region_name": "eu-west-2"}
+    ]

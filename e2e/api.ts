@@ -58,7 +58,7 @@ export const recordStep = (
   });
 
 // Who makes the decisions the tests record, as the claim agent says it.
-const MAKER = "UnderCover Agent, version 1";
+const MAKER = "PayrollCheck Agent, version 1";
 
 interface DecisionRequest {
   decision: DecisionKind;

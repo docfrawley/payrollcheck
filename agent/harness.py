@@ -89,7 +89,7 @@ NONE_FOUND = "No instructions found. {reason}"
 SECURITY_CHECK = "Security check: no section of the wording or the manual applies"
 CHECK_DECIDES = "Security check"
 # Who makes the claim agent's decisions: the version of its configuration.
-AGENT_DECIDES = "UnderCover Agent, version {number}"
+AGENT_DECIDES = "PayrollCheck Agent, version {number}"
 
 
 class TooManyModelCalls(Exception):

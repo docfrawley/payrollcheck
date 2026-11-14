@@ -23,7 +23,7 @@ interface Turn {
   confirmation: { claim_id: string; payout: number } | null;
 }
 
-const app = process.env.UNDERCOVER_API ?? "";
+const app = process.env.PAYROLLCHECK_API ?? "";
 // A pause between steps, so the sidebar shows each card working.
 const STEP_MS = 250;
 const SOURCE = {

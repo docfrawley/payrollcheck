@@ -33,8 +33,8 @@ from backend.tests.claim_requests import sign_off, start
 from backend.tests.dashboard_reads import steps_of
 from backend.tests.settings_requests import change_settings
 
-APP = "undercover-app___"
-CONTEXT = "undercover-context___"
+APP = "payrollcheck-app___"
+CONTEXT = "payrollcheck-context___"
 DELAY = [
     {"description": "Hotel", "amount": 245, "quantity": 1, "kind": "hotel",
      "nights": 1, "hours": 0},

@@ -1,9 +1,9 @@
 {
-  "name": "undercover",
+  "name": "payrollcheck",
   "version": 2,
   "managedBy": "CDK",
   "tags": {
-    "project": "undercover"
+    "project": "payrollcheck"
   },
   "runtimes": [
     {
@@ -46,7 +46,7 @@
     },
     {
       "authorizerType": "ApiKeyCredentialProvider",
-      "name": "UNDERCOVER_API_KEY"
+      "name": "PAYROLLCHECK_API_KEY"
     },
     {
       "authorizerType": "ApiKeyCredentialProvider",

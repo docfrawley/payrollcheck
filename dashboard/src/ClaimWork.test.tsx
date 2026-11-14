@@ -178,7 +178,7 @@ it("shows an approval's whole record and its payment", async () => {
   ]);
   expect(
     panel.getByText(
-      `Decided by UnderCover Agent, version 1 at ${time(decidedAt)}`,
+      `Decided by PayrollCheck Agent, version 1 at ${time(decidedAt)}`,
     ),
   ).toBeDefined();
   expect(panel.getByText("Claims manual version 2026.2")).toBeDefined();

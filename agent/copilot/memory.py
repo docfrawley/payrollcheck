@@ -1,5 +1,5 @@
 """AgentCore Memory, the Copilot's notes on each handler: the store a turn keeps
-them in when UNDERCOVER_COPILOT_MEMORY_ID is set, a search of one handler's
+them in when PAYROLLCHECK_COPILOT_MEMORY_ID is set, a search of one handler's
 memories, and the save of a handler's message and the Copilot's answer, and
 nothing else."""
 
@@ -10,7 +10,7 @@ from langgraph.store.base import BaseStore
 
 from agent.agentcore_memory import store_at
 
-MEMORY_ID = "UNDERCOVER_COPILOT_MEMORY_ID"
+MEMORY_ID = "PAYROLLCHECK_COPILOT_MEMORY_ID"
 # Every memory of a handler is under /handlers/<handler>, its preferences under
 # /handlers/<handler>/preferences/ and the facts they told the Copilot under
 # /handlers/<handler>/facts/.
@@ -19,7 +19,7 @@ MOST_FOUND = 5
 
 
 def memory_store() -> BaseStore | None:
-    """AgentCore Memory at UNDERCOVER_COPILOT_MEMORY_ID, read now, or None when it
+    """AgentCore Memory at PAYROLLCHECK_COPILOT_MEMORY_ID, read now, or None when it
     isn't set."""
     memory_id = os.getenv(MEMORY_ID)
     return store_at(memory_id) if memory_id else None

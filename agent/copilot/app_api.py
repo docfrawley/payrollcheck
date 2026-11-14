@@ -1,4 +1,4 @@
-"""The UnderCover backend's API for the Copilot: one function for each operation it
+"""The PayrollCheck backend's API for the Copilot: one function for each operation it
 uses, each taking the handler's sign-in first and sending it, never the agent's
 key, and the app's refusal, which each raises. It has no way to the handlers'
 decisions on the labeled sets, the rounds or anything only the agent may do."""

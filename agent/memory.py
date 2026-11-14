@@ -1,5 +1,5 @@
 """AgentCore Memory, the agent's notes on each customer: the store a claim graph
-keeps them in when UNDERCOVER_MEMORY_ID is set, what it saves of a decided claim,
+keeps them in when PAYROLLCHECK_MEMORY_ID is set, what it saves of a decided claim,
 and a search of one customer's memories."""
 
 import os
@@ -10,7 +10,7 @@ from langgraph.store.base import BaseStore
 
 from agent.agentcore_memory import store_at
 
-MEMORY_ID = "UNDERCOVER_MEMORY_ID"
+MEMORY_ID = "PAYROLLCHECK_MEMORY_ID"
 # Every memory of a customer is under /customers/<customer>, and the summary of
 # each of their claims under /customers/<customer>/claims/<claim>/.
 CUSTOMERS = "customers"
@@ -19,7 +19,7 @@ MOST_FOUND = 5
 
 
 def memory_store() -> BaseStore | None:
-    """AgentCore Memory at UNDERCOVER_MEMORY_ID, read now, in the AWS CLI's region,
+    """AgentCore Memory at PAYROLLCHECK_MEMORY_ID, read now, in the AWS CLI's region,
     or None when it isn't set."""
     memory_id = os.getenv(MEMORY_ID)
     return store_at(memory_id) if memory_id else None

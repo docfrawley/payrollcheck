@@ -4,7 +4,7 @@ from backend.tests.rows import calculated
 from backend.tests.sign_in import DANA, signed_in
 
 # Who makes the decisions the tests record, as the claim agent says it.
-MAKER = "UnderCover Agent, version 1"
+MAKER = "PayrollCheck Agent, version 1"
 
 
 def start(client, claim_id):

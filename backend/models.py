@@ -388,7 +388,7 @@ class DecisionRequest(BaseModel):
     )
     reason: str = Field(description="Two or three sentences explaining the decision")
     decided_by: str = Field(
-        description="Who or what made the decision, such as the UnderCover Agent "
+        description="Who or what made the decision, such as the PayrollCheck Agent "
         "with the version of its configuration"
     )
 

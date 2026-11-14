@@ -13,7 +13,7 @@ from psycopg_pool import ConnectionPool
 
 Pool = ConnectionPool[Connection[DictRow]]
 
-SCHEMA = "undercover"
+SCHEMA = "payrollcheck"
 CONNECTIONS = 4
 CONNECTION_WAIT = 120
 # How long the pool waits for its first connection as it opens, so an agent that

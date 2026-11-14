@@ -93,7 +93,7 @@ def test_on_runtime_the_first_request_fetches_each_credential_once(
     agent = fresh_agent()
     assert agent.invoke(HEALTH, headers={}).json() == {"healthy": True}
     assert sorted(on_runtime) == sorted(CREDENTIALS.values())
-    assert os.environ["UNDERCOVER_API_KEY"] == agent_key
+    assert os.environ["PAYROLLCHECK_API_KEY"] == agent_key
     assert os.environ["OPENROUTER_API_KEY"] == "openrouter-key"
     assert os.environ["DATABASE_URL"] == ""
     assert (reseeded, opened) == ([[]], [1])
@@ -132,10 +132,10 @@ def test_a_failure_to_get_ready_answers_503_and_the_next_request_tries_again(
 
 def test_getting_ready_needs_the_agents_key(workers_from, fresh_agent, monkeypatch):
     workers_from(stub(), InMemorySaver(), stub())
-    monkeypatch.delenv("UNDERCOVER_API_KEY")
+    monkeypatch.delenv("PAYROLLCHECK_API_KEY")
     failed = fresh_agent().invoke(HEALTH, headers={})
     assert failed.status_code == 503
-    assert "UNDERCOVER_API_KEY is missing" in failed.json()["error"]
+    assert "PAYROLLCHECK_API_KEY is missing" in failed.json()["error"]
 
 
 def test_the_health_check_needs_no_key(serve):

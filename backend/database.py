@@ -1,4 +1,4 @@
-"""The UnderCover database, seeded from the business data in data/, and the plans
+"""The PayrollCheck database, seeded from the business data in data/, and the plans
 and the documents from the context layer's files in context/.
 
 The same tables and queries serve Postgres on Supabase, when DATABASE_URL is set, and
@@ -32,7 +32,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.pool import NullPool
-from sqlalchemy.schema import CreateSchema
+from sqlalchemy.schema import CreateSchema, DropSchema
 
 from backend import context_files
 from backend.free_models import model_or_free, models_or_free
@@ -68,12 +68,15 @@ FIRST_RECIPE = {
     "proposed_by": "The claims team",
 }
 HELD_OUT_CLAIMS = "evals/held_out_claims.json"
-SCHEMA = "undercover"
+SCHEMA = "payrollcheck"
 CONNECTIONS = 4
 CONNECTION_WAIT = 120
 # Tables of earlier versions, dropped before the others, since on Postgres a foreign
 # key of theirs would stop the tables they refer to being dropped.
 RETIRED = ["todos"]
+# The schema of an earlier version, under the product's old name, dropped with all it
+# holds, the checkpointer's tables included.
+RETIRED_SCHEMA = "undercover"
 
 metadata = MetaData()
 
@@ -533,11 +536,11 @@ def now_precisely() -> str:
 
 def database_url() -> URL:
     """Return Postgres at DATABASE_URL, through psycopg and in our own schema, or
-    SQLite at UNDERCOVER_DB or undercover.db."""
+    SQLite at PAYROLLCHECK_DB or payrollcheck.db."""
     if url := os.getenv("DATABASE_URL"):
         postgres = make_url(url).set(drivername="postgresql+psycopg")
         return postgres.update_query_dict({"options": f"-c search_path={SCHEMA}"})
-    path = os.getenv("UNDERCOVER_DB", str(ROOT / "undercover.db"))
+    path = os.getenv("PAYROLLCHECK_DB", str(ROOT / "payrollcheck.db"))
     return URL.create("sqlite", database=path)
 
 
@@ -624,6 +627,7 @@ def seed(db: Engine) -> dict[str, int]:
     claim_rows = queue_records("claims.json")
     with db.begin() as connection:
         if on_postgres(db.url):
+            connection.execute(DropSchema(RETIRED_SCHEMA, cascade=True, if_exists=True))
             connection.execute(CreateSchema(SCHEMA, if_not_exists=True))
         for name in RETIRED:
             Table(name, MetaData()).drop(connection, checkfirst=True)

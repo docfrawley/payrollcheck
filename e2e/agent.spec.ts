@@ -147,7 +147,7 @@ test("the claim page shows every kind of step, the context used and the whole re
   });
   await expect(decision.getByRole("row").last()).toHaveText("Payout$243.00");
   await expect(
-    decision.getByText(/^Decided by UnderCover Agent, version 1 at /),
+    decision.getByText(/^Decided by PayrollCheck Agent, version 1 at /),
   ).toBeVisible();
   await expect(
     decision.getByText("Claims manual version 2026.2"),

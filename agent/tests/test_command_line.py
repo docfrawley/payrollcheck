@@ -79,8 +79,8 @@ def test_the_checkpoint_pool_settings(fakes):
         assert (kwargs["autocommit"], kwargs["prepare_threshold"]) == (True, None)
         assert pool.settings["open"] is True
         assert kwargs["row_factory"] is checkpoints.dict_row
-        assert kwargs["options"] == "-c search_path=undercover"
-        assert "undercover" in repr(pool.statements[0])
+        assert kwargs["options"] == "-c search_path=payrollcheck"
+        assert "payrollcheck" in repr(pool.statements[0])
         [saver] = FakeSaver.made
         assert (saver.pool, saver.set_up) == (pool, True)
 

@@ -169,7 +169,7 @@ it("keeps the appearance chosen in this browser", async () => {
   await screen.findByRole("group", { name: "Appearance" });
   fireEvent.click(group("Appearance").getByLabelText("Dark"));
   expect(document.documentElement.dataset.theme).toBe("dark");
-  expect(localStorage.getItem("undercover-appearance")).toBe("dark");
+  expect(localStorage.getItem("payrollcheck-appearance")).toBe("dark");
   fireEvent.click(group("Appearance").getByLabelText("Same as this computer"));
   expect(document.documentElement.dataset.theme).toBeUndefined();
 });

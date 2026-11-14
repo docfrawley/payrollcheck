@@ -28,7 +28,7 @@ from backend.tests.rows import newest_run
 from backend.tests.run_requests import start_dispatch
 from backend.tests.runtime_stand_in import ENDPOINT, runtime_at
 
-ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/undercover_agent-x"
+ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/payrollcheck_agent-x"
 REFUSAL = "A dispatch is running"
 
 
@@ -59,7 +59,7 @@ def test_the_laptop_route_posts_the_payload_to_invocations_with_the_key(
     assert set(request.extensions["timeout"].values()) == {10}
 
 
-def test_the_laptop_route_is_at_undercover_agent(client, agent_answers, monkeypatch):
+def test_the_laptop_route_is_at_payrollcheck_agent(client, agent_answers, monkeypatch):
     sent = []
 
     def accept(request):
@@ -67,7 +67,7 @@ def test_the_laptop_route_is_at_undercover_agent(client, agent_answers, monkeypa
         return httpx.Response(200, json={"accepted": True})
 
     agent_answers(accept)
-    monkeypatch.setenv("UNDERCOVER_AGENT", "http://agent.example.com:9000")
+    monkeypatch.setenv("PAYROLLCHECK_AGENT", "http://agent.example.com:9000")
     assert start_dispatch(client).status_code == 202
     assert sent == ["http://agent.example.com:9000/invocations"]
 

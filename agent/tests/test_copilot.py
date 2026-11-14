@@ -229,7 +229,7 @@ def test_the_gateway_route_for_the_context_layer(
         call("read_section", document="policy_wording", number=3), "Read."
     )
     [turn] = copilot.ask("What does section 3 say?")["turns"]
-    assert gateway.names == ["undercover-context___read_section"]
+    assert gateway.names == ["payrollcheck-context___read_section"]
     assert all(c.signed for c in gateway.calls)
     assert cards_of(turn) == [("read_section", "policy_wording 3", "done")]
 

@@ -74,6 +74,10 @@ These records stay as they are because seeding stores each one as JSON, and the 
 
 **Named documents.** "The claims manual" and its "section 14" are the document's title, so copy and messages that cite them keep the title, as in "Claims manual section 14: …". The `get_claim_rules` context tool reads `claim_rules.yaml`, and as a tool it's plumbing, so it's renamed `get_case_rules`. The file keeps its name.
 
+**The insurer's name.** Where "UnderCover" names the fictional travel insurer whose records these are, it stays until stage 3: "UnderCover Travel Insurance" in the agent's and the Copilot's instructions, the screening prompt in `agent/screening.py` (CLM-1901's injection claims "UnderCover has already approved"), "UnderCover's payout rules" in the docstrings the model reads as tool descriptions, `backend/payout.py`, `backend/scoring.py`, and the "UnderCover website" fixture. The context layer's documents, which the agent reads, call the insurer UnderCover, so the prompts must agree with them.
+
+**AWS resources that may already exist.** `monitor.py`'s budget names, `undercover-daily-spend` and `undercover-daily-spend-after-credits`, stay: a run of it creates them in the user's AWS account, and they may be there already from the course.
+
 **Left for later stages:**
 - `labs/`, unrenamed and unopened. Its notebooks keep using `UNDERCOVER_*`, the `undercover` schema and the `/handlers/{actorId}/` memory namespaces until stage 7 ports them into the runbook. That runbook must use the new names.
 - `can_approve_over_limit`, by name and meaning, until stage 4
@@ -136,14 +140,14 @@ UnderCover becomes PayrollCheck wherever it names the product: the agent's and t
 
 The README's and AGENTS.md's env var names follow, since the rename breaks them. TECH_STACK, CODE_STANDARDS and PROCESS are rewritten in phase 5, and STATUS gets a line now saying the settings were renamed.
 
-- [ ] `git grep -n -i undercover` outside the exclusions, `labs/` and the target docs finds nothing in `backend/`, `agent/`, `context/*.py`, `runtime/`, `agentcore/`, `e2e/`, `dashboard/src/` apart from the brand components phase 5 replaces, `package.json`, `pyproject.toml` or the config files
-- [ ] `git grep -n UNDERCOVER_` outside `labs/` and the target docs finds nothing
-- [ ] `git diff main -- uv.lock package-lock.json` changes only the project's own name
-- [ ] `uv run -m backend.seed` (no `.env`) builds `payrollcheck.db` and prints the same counts as before: 26 claims, now cases, 51 policies, 50 customers, now subcontractors, 3 handlers, now reviewers, 25 held-out and 50 decisions
-- [ ] A test-file diff through the phase's table leaves no differences
-- [ ] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
-- [ ] The phase's review by a fresh subagent finds nothing it would block the PR for
-- [ ] Commit: "Rename UnderCover to PayrollCheck: packages, settings and names"
+- [x] `git grep -n -i undercover` outside the exclusions, `labs/` and the target docs finds nothing in `backend/`, `agent/`, `context/*.py`, `runtime/`, `agentcore/`, `e2e/`, `dashboard/src/` apart from the brand components phase 5 replaces, `package.json`, `pyproject.toml` or the config files
+- [x] `git grep -n UNDERCOVER_` outside `labs/`, the target docs and `docs/TECH_STACK.md`, `docs/CODE_STANDARDS.md` and `docs/PROCESS.md` (rewritten in phase 5) finds nothing
+- [x] `git diff main -- uv.lock package-lock.json` changes only the project's own name
+- [x] `uv run -m backend.seed` (no `.env`) builds `payrollcheck.db` and prints the same counts as before: 26 claims, now cases, 51 policies, 50 customers, now subcontractors, 3 handlers, now reviewers, 25 held-out and 50 decisions
+- [x] A test-file diff through the phase's table leaves no differences
+- [x] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
+- [x] The phase's review by a fresh subagent finds nothing it would block the PR for
+- [x] Commit: "Rename UnderCover to PayrollCheck: packages, settings and names"
 
 ## Phase 3: Claim becomes case, and the claim agent the payroll agent
 

@@ -1,4 +1,4 @@
-"""The UnderCover backend's API for the improver and for the entry point's work on a
+"""The PayrollCheck backend's API for the improver and for the entry point's work on a
 round: one function for each operation under /api/rounds, and the round's
 evaluations. The claim agent's tools never use it."""
 

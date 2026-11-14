@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-FUNCTION = "undercover-context"
+FUNCTION = "payrollcheck-context"
 HOST = "context.lambda-url.us-east-1.on.aws"
 
 

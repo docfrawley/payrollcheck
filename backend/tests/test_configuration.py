@@ -102,10 +102,10 @@ def test_a_rolled_back_version_leaves_the_current_one(client):
 
 
 def test_a_versions_details_hold_its_diff(client):
-    add_version(CLAIM_MD.replace("UnderCover Agent", "UnderCover claim agent", 1))
+    add_version(CLAIM_MD.replace("PayrollCheck Agent", "PayrollCheck claim agent", 1))
     details = version_details(client, 2)
     assert details["based_on"] == 1
-    assert details["instructions"].startswith("# UnderCover claim agent")
+    assert details["instructions"].startswith("# PayrollCheck claim agent")
     assert (details["diff"]["added"], details["diff"]["removed"]) == (1, 1)
     [hunk] = details["diff"]["hunks"]
     assert [line["kind"] for line in hunk[:2]] == ["removed", "added"]

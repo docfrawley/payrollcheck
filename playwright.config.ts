@@ -33,21 +33,21 @@ export default defineConfig({
     {
       command: `uv run -m backend.seed && uv run -m uvicorn backend.main:app --port ${new URL(BACKEND).port}`,
       url: `${BACKEND}/api/health`,
-      // Empty DATABASE_URL, MODEL_NAME, UNDERCOVER_AGENT_RUNTIME and
-      // UNDERCOVER_COPILOT_RUNTIME keep the tests on SQLite, the default model and
+      // Empty DATABASE_URL, MODEL_NAME, PAYROLLCHECK_AGENT_RUNTIME and
+      // PAYROLLCHECK_COPILOT_RUNTIME keep the tests on SQLite, the default model and
       // the stand-ins for the agent and the Copilot, whatever the shell has.
       env: {
-        UNDERCOVER_DB: "e2e/undercover.db",
+        PAYROLLCHECK_DB: "e2e/payrollcheck.db",
         DATABASE_URL: "",
         MODEL_NAME: "",
-        UNDERCOVER_AGENT: AGENT_STAND_IN,
-        UNDERCOVER_AGENT_RUNTIME: "",
-        UNDERCOVER_COPILOT: COPILOT_STAND_IN,
-        UNDERCOVER_COPILOT_RUNTIME: "",
+        PAYROLLCHECK_AGENT: AGENT_STAND_IN,
+        PAYROLLCHECK_AGENT_RUNTIME: "",
+        PAYROLLCHECK_COPILOT: COPILOT_STAND_IN,
+        PAYROLLCHECK_COPILOT_RUNTIME: "",
         VITE_SUPABASE_URL: AUTH_STAND_IN,
         JUDGE_URL: JUDGE_STAND_IN,
         OPENROUTER_API_KEY: "e2e-key",
-        UNDERCOVER_API_KEY: AGENT_KEY,
+        PAYROLLCHECK_API_KEY: AGENT_KEY,
       },
     },
     {
@@ -60,14 +60,14 @@ export default defineConfig({
       url: `${AGENT_STAND_IN}/ping`,
       env: {
         PORT: new URL(AGENT_STAND_IN).port,
-        UNDERCOVER_API: BACKEND,
-        UNDERCOVER_API_KEY: AGENT_KEY,
+        PAYROLLCHECK_API: BACKEND,
+        PAYROLLCHECK_API_KEY: AGENT_KEY,
       },
     },
     {
       command: "node e2e/copilot_stand_in.ts",
       url: `${COPILOT_STAND_IN}/ping`,
-      env: { PORT: new URL(COPILOT_STAND_IN).port, UNDERCOVER_API: BACKEND },
+      env: { PORT: new URL(COPILOT_STAND_IN).port, PAYROLLCHECK_API: BACKEND },
     },
     {
       command: "node e2e/auth_stand_in.ts",
@@ -82,7 +82,7 @@ export default defineConfig({
       command: `npx vite dashboard --port ${new URL(DASHBOARD).port} --strictPort --mode e2e`,
       url: DASHBOARD,
       env: {
-        UNDERCOVER_API: BACKEND,
+        PAYROLLCHECK_API: BACKEND,
         VITE_SUPABASE_URL: AUTH_STAND_IN,
         VITE_SUPABASE_PUBLISHABLE_KEY: "e2e-publishable-key",
       },

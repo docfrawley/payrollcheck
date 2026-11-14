@@ -20,7 +20,7 @@ from backend.tests.run_requests import create_dispatch, create_evaluation
 def the_app() -> Iterator[TestClient]:
     """The app, called with the agent's key, as the agent and the backend's tests
     call it, and closed once the block's calls are done."""
-    headers = {API_KEY_HEADER: os.environ["UNDERCOVER_API_KEY"]}
+    headers = {API_KEY_HEADER: os.environ["PAYROLLCHECK_API_KEY"]}
     with TestClient(app, headers=headers) as caller:
         yield caller
 

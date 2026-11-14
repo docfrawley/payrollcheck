@@ -8,8 +8,8 @@ from typing import Any, Protocol, runtime_checkable
 class Target(StrEnum):
     """Where a tool is: the app, or the context layer."""
 
-    APP = "undercover-app"
-    CONTEXT = "undercover-context"
+    APP = "payrollcheck-app"
+    CONTEXT = "payrollcheck-context"
 
 
 # Checkable at run time, since the claim agent's context, which holds a route, is

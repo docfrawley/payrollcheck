@@ -1,4 +1,4 @@
-"""The UnderCover backend's API for the claim agent and the agent's entry point: one
+"""The PayrollCheck backend's API for the claim agent and the agent's entry point: one
 function for each operation they use. It has no way to the scores, the settings,
 the rounds or the handlers' decisions."""
 

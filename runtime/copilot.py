@@ -1,4 +1,4 @@
-"""The UnderCover Copilot on AgentCore Runtime: the file Runtime starts for the
+"""The PayrollCheck Copilot on AgentCore Runtime: the file Runtime starts for the
 copilot runtime.
 
 The Copilot is the AgentCore app in agent/copilot/entrypoint.py, which npm run dev

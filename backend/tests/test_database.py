@@ -16,11 +16,11 @@ def test_postgres_is_used_when_database_url_is_set(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", SUPABASE)
     db = engine()
     assert db.url.drivername == "postgresql+psycopg"
-    assert db.url.query["options"] == "-c search_path=undercover"
+    assert db.url.query["options"] == "-c search_path=payrollcheck"
     assert isinstance(db.pool, QueuePool)
     assert (db.pool.size(), db.pool._max_overflow, db.pool._pre_ping) == (4, 0, True)
     assert db.pool._timeout == 120
-    assert location(db) == "the undercover schema on Postgres"
+    assert location(db) == "the payrollcheck schema on Postgres"
 
 
 def test_the_settings_in_database_url_are_kept(monkeypatch):
@@ -28,7 +28,7 @@ def test_the_settings_in_database_url_are_kept(monkeypatch):
     query = engine().url.query
     assert (query["sslmode"], query["options"]) == (
         "require",
-        "-c search_path=undercover",
+        "-c search_path=payrollcheck",
     )
 
 
@@ -36,7 +36,7 @@ def test_sqlite_is_used_otherwise(database):
     db = engine()
     assert db.url.drivername == "sqlite"
     assert db.url.database == str(database)
-    assert location(db) == "undercover.db"
+    assert location(db) == "payrollcheck.db"
 
 
 @pytest.mark.parametrize("empty", [False, True])

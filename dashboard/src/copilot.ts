@@ -33,8 +33,8 @@ export const SIGN_OFF = "sign_off_claim";
 
 // What this browser remembers of the sidebar for each handler: whether it is
 // open, and the conversation open in it.
-const OPEN = "undercover-copilot-open";
-const CONVERSATION = "undercover-copilot-conversation";
+const OPEN = "payrollcheck-copilot-open";
+const CONVERSATION = "payrollcheck-copilot-conversation";
 
 const keyFor = (name: string, handlerId: string) => `${name}:${handlerId}`;
 

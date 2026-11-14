@@ -128,8 +128,8 @@ def test_the_memory_is_read_from_its_setting(monkeypatch):
     monkeypatch.setattr(agentcore_memory, "AgentCoreMemoryStore", recorder)
     monkeypatch.setenv("AWS_DEFAULT_REGION", "eu-west-2")
     assert memory_store() is None
-    monkeypatch.setenv(MEMORY_ID, "undercover_copilot_memory-abc")
+    monkeypatch.setenv(MEMORY_ID, "payrollcheck_copilot_memory-abc")
     assert isinstance(memory_store(), MemoryStandIn)
     assert made == [
-        {"memory_id": "undercover_copilot_memory-abc", "region_name": "eu-west-2"}
+        {"memory_id": "payrollcheck_copilot_memory-abc", "region_name": "eu-west-2"}
     ]

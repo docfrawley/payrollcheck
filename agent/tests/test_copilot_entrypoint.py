@@ -97,7 +97,7 @@ def test_on_runtime_the_first_request_fetches_its_two_credentials_once(
         CREDENTIALS["OPENROUTER_API_KEY"],
     ]
     assert os.environ["OPENROUTER_API_KEY"] == "openrouter-key"
-    assert "UNDERCOVER_API_KEY" not in os.environ
+    assert "PAYROLLCHECK_API_KEY" not in os.environ
     assert (reseeded, opened) == ([[]], [1])
     assert app.invoke(HEALTH).json() == {"healthy": True}
     assert len(on_runtime) == 2

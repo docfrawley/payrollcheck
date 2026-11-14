@@ -33,13 +33,13 @@ def use_sqlite(monkeypatch, path):
     """Point the backend at a SQLite file, never Postgres, on the default model."""
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("MODEL_NAME", raising=False)
-    monkeypatch.setenv("UNDERCOVER_DB", str(path))
+    monkeypatch.setenv("PAYROLLCHECK_DB", str(path))
 
 
 @pytest.fixture(scope="session")
 def seeded(tmp_path_factory):
     """A SQLite database seeded once for the whole session."""
-    path = tmp_path_factory.mktemp("seeded") / "undercover.db"
+    path = tmp_path_factory.mktemp("seeded") / "payrollcheck.db"
     with pytest.MonkeyPatch.context() as monkeypatch:
         use_sqlite(monkeypatch, path)
         seed(engine())
@@ -50,7 +50,7 @@ def seeded(tmp_path_factory):
 def database(seeded, tmp_path, monkeypatch):
     """Give every test its own copy of the session's seeded SQLite database, which
     is quicker than seeding each time."""
-    path = tmp_path / "undercover.db"
+    path = tmp_path / "payrollcheck.db"
     use_sqlite(monkeypatch, path)
     shutil.copyfile(seeded, path)
     return path
@@ -85,7 +85,7 @@ def no_aws(tmp_path, monkeypatch):
 @pytest.fixture(autouse=True)
 def agent_key(monkeypatch):
     """Give the backend and the agent the same API key in every test."""
-    monkeypatch.setenv("UNDERCOVER_API_KEY", TEST_KEY)
+    monkeypatch.setenv("PAYROLLCHECK_API_KEY", TEST_KEY)
     return TEST_KEY
 
 

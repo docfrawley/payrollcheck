@@ -1,4 +1,4 @@
-"""The UnderCover backend."""
+"""The PayrollCheck backend."""
 
 import logging
 from collections.abc import AsyncIterator
@@ -109,7 +109,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="UnderCover", lifespan=lifespan)
+app = FastAPI(title="PayrollCheck", lifespan=lifespan)
 app.include_router(runs)
 app.include_router(configuration)
 app.include_router(improvement)

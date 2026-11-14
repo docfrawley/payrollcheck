@@ -48,7 +48,7 @@ NOT_PAUSED = "Claim {claim_id} isn't paused for a handler"
 NO_ANSWER = "Claim {claim_id} has no answer from a handler yet"
 NOT_READY = "The agent couldn't get ready: {error}"
 # The agent's credentials in AgentCore Identity on Runtime.
-CREDENTIALS = ("OPENROUTER_API_KEY", "UNDERCOVER_API_KEY", "DATABASE_URL")
+CREDENTIALS = ("OPENROUTER_API_KEY", "PAYROLLCHECK_API_KEY", "DATABASE_URL")
 NEEDS_THE_KEY = "This needs the agent's API key"
 
 

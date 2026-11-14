@@ -12,7 +12,7 @@ from pydantic import StringConstraints
 
 from context import files
 
-NAME = "undercover-context"
+NAME = "payrollcheck-context"
 # The port the context layer serves on the laptop, at /mcp.
 PORT = 8006
 # A search needs a word or phrase to look for.
