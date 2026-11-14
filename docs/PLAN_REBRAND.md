@@ -63,6 +63,8 @@ These share a word with the vocabulary but aren't it, or are record contents tha
 - A JWT's `claims` in `backend/auth.py`
 - `/assets/` in `backend/tests/test_dashboard.py`, the Vite build's folder, which has nothing to do with the deleted `assets/`
 - `amount_claimed`, where "claimed" is the travel claimant's verb, as a key in the records (below)
+- "claimed" as the claimant's verb anywhere, such as `what_was_claimed` in `agent/memory.py` and "Items claimed" in copy
+- "The claims team", the insurer's team the seeded version 1 and recipe 1 name as their author (`proposed_by`), and "claims operations", the context files' owner
 
 **Record contents, read as they are until stage 3 deletes them.** The brief leaves this to the plan. These files keep their names and their keys:
 - `data/claims.json`, `data/customers.json`, `data/policies.json`, `data/security/` and `data/evals/`, with every key inside them (`claim_id`, `customer_id`, `claim_type`, `amount_claimed`, `previous_claims`, `customer_since`, `handler_id` in `security/decisions.json`)
@@ -205,16 +207,18 @@ The brand, as in the design above: `styles.css`, `theme.ts`, `Brand.tsx`, `Heade
 - `data/README.md` follows the renamed files.
 - `README.md` and `AGENTS.md`: only the names and links the rename broke, such as "Until stage 1 is built…".
 
+One assertion changed in this phase, and only because the brand changes what it checks: `e2e/settings.spec.ts` checks that the chosen appearance applies by reading the page's background, so its two colours follow the new page colours, `#0B1724` (dark) and `#F2F4F7` (light), in place of `#04232E` and `#F0F4F5`. The test checks the same thing as before. This departs from "no assertion changes" in the brief and in "What doesn't change" above, which the brand's new colours can't meet for this test.
+
 The brand and the docs are two commits.
 
-- [ ] `git grep -n -i -E 'sea-green|marigold|coral|cerulean|raspberry|midnight|sea-mist|#06d6a0|#073b4c|#ffc145|#ef476f|#118ab2|#f78c6b'` in `dashboard/` and `docs/` finds nothing, and neither does a search for `ShieldCheck` in the brand
-- [ ] Through the Playwright MCP server, on `npm run e2e`'s backend and dashboard, which need no `.env`, signed in as Dana Whitfield: the sign-in page, the queue, a case, the Scoreboard and the Settings, Improvement and Configuration pages show the navy band, the amber clipboard-check, the PayrollCheck wordmark and the chip, in light and dark mode, at 1,280 and 800 pixels wide, with no console errors or warnings. The chip is visible on the sign-in page too
-- [ ] A script in the page reads every element's computed text colour against its background, and every pairing of small text is at least 4.5:1 and every icon and large text at least 3:1, in both modes. It also finds no border on one edge only and no gradient fill
-- [ ] Money and IDs render in JetBrains Mono, checked on the queue and a case page
-- [ ] The final search across the repo, outside `labs/`, `docs/research/`, `docs/SPEC.md`, `docs/ROADMAP.md`, `docs/stages/`, `CONTEXT.md` and the record contents, finds no `UnderCover`, `undercover`, `UNDERCOVER_`, `claim` as our word, `handler` as a person, or `customer`, apart from the listed exclusions. The search and what it still finds are recorded in `STATUS.md`
-- [ ] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
-- [ ] The phase's review by a fresh subagent finds nothing it would block the PR for
-- [ ] Commits: "Apply the PayrollCheck brand" and "Describe the product under its new names"
+- [x] `git grep -n -i -E 'sea-green|marigold|coral|cerulean|raspberry|midnight|sea-mist|#06d6a0|#073b4c|#ffc145|#ef476f|#118ab2|#f78c6b'` in `dashboard/` and `docs/` finds nothing, and neither does a search for `ShieldCheck` in the brand
+- [x] Through the Playwright MCP server, on `npm run e2e`'s backend and dashboard, which need no `.env`, signed in as Dana Whitfield: the sign-in page, the queue, a case, the Scoreboard and the Settings, Improvement and Configuration pages show the navy band, the amber clipboard-check, the PayrollCheck wordmark and the chip, in light and dark mode, at 1,280 and 800 pixels wide, with no console errors or warnings. The chip is visible on the sign-in page too
+- [x] A script in the page reads every element's computed text colour against its background, and every pairing of small text is at least 4.5:1 and every icon and large text at least 3:1, in both modes. It also finds no border on one edge only and no gradient fill
+- [x] Money and IDs render in JetBrains Mono, checked on the queue and a case page
+- [x] The final search across the repo, outside `labs/`, `docs/research/`, `docs/SPEC.md`, `docs/ROADMAP.md`, `docs/stages/`, `CONTEXT.md` and the record contents, finds no `UnderCover`, `undercover`, `UNDERCOVER_`, `claim` as our word, `handler` as a person, or `customer`, apart from the listed exclusions. The search and what it still finds are recorded in `STATUS.md`
+- [x] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
+- [x] The phase's review by a fresh subagent finds nothing it would block the PR for
+- [x] Commits: "Apply the PayrollCheck brand" and "Describe the product under its new names"
 
 ## Phase 6: The live checks, then the review of the branch
 

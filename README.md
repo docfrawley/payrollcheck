@@ -6,11 +6,11 @@ PayrollCheck reviews the certified payrolls that subcontractors file on New Jers
 
 ## Status
 
-PayrollCheck is being built in seven stages, listed in [docs/ROADMAP.md](docs/ROADMAP.md). [docs/STATUS.md](docs/STATUS.md) says which are built. Until the stages are built, the code is Ed Donner's UnderCover, a claims platform for a fictional travel insurer, as it was imported.
+PayrollCheck is being built in seven stages, listed in [docs/ROADMAP.md](docs/ROADMAP.md). [docs/STATUS.md](docs/STATUS.md) says which are built. Stage 1 has renamed Ed Donner's UnderCover, a claims platform for a fictional travel insurer, to PayrollCheck's words; until stage 3 replaces them with payrolls, it still works the insurer's claims, as cases.
 
 ## Running it
 
-You need uv, Python 3.12, Node 26 and a Supabase project. Today these run the imported UnderCover code, with its settings already renamed `PAYROLLCHECK_*`.
+You need uv, Python 3.12, Node 26 and a Supabase project. Today these run the renamed UnderCover code, which still works travel insurance cases.
 
 1. `uv sync` and `npm install` at the root of the repo install everything, including a git pre-commit hook.
 2. Create `.env` at the root of the repo. `docs/TECH_STACK.md` lists what it holds: the OpenRouter key (`OPENROUTER_API_KEY`), Supabase's session pooler connection string (`DATABASE_URL`), the Supabase project's address and publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`), the password for signing in (`REVIEWER_PASSWORD`), the agent's API key (`PAYROLLCHECK_API_KEY`, a random value of at least 32 characters, such as one from `uv run python -c "import secrets; print(secrets.token_urlsafe(32))"`) and the Langfuse keys.
