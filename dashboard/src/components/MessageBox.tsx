@@ -7,9 +7,9 @@ import { FormError } from "./FormError";
 // size it to its text.
 const MOST_LINES = 6;
 
-// The box a handler asks the Copilot in: Enter sends and Shift+Enter starts a
+// The box a reviewer asks the Copilot in: Enter sends and Shift+Enter starts a
 // new line. While the Copilot works or a confirmation waits it says why it
-// can't take a message yet, and once it can, the handler is back in it, unless
+// can't take a message yet, and once it can, the reviewer is back in it, unless
 // they've gone elsewhere. A message the app refuses stays in the box, with the
 // reason.
 export function MessageBox({

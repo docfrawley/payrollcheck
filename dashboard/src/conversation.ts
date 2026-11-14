@@ -9,14 +9,14 @@ export type TurnStatus =
   // A turn still working long after it started, which the app reads as stopped.
   | "stopped";
 export type CardKind =
-  "cases" | "customers" | "context" | "work" | "memory" | "action";
+  "cases" | "subcontractors" | "context" | "work" | "memory" | "action";
 export type CardStatus = "working" | "done" | "refused" | "failed";
 export type ConfirmationAnswer = "sign_off" | "cancel";
 
-// A sign-off waiting for the handler's confirmation, from the app's records.
+// A sign-off waiting for the reviewer's confirmation, from the app's records.
 export interface Confirmation {
   case_id: string;
-  customer_name: string;
+  subcontractor_name: string;
   payout: number;
   reason: string;
 }
@@ -48,7 +48,7 @@ export interface CopilotTurn {
   paused_at: string | null;
   answered_at: string | null;
   finished_at: string | null;
-  // Once it has finished, leaving out the wait for the handler.
+  // Once it has finished, leaving out the wait for the reviewer.
   seconds: number | null;
   answer: string | null;
   model_calls: number | null;

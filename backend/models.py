@@ -19,7 +19,7 @@ class Status(StrEnum):
     WAITING_FOR_SIGN_OFF = "waiting_for_sign_off"
     SENT_BACK = "sent_back"
     DECIDED = "decided"
-    LEFT_FOR_HANDLER = "left_for_handler"
+    LEFT_FOR_REVIEWER = "left_for_reviewer"
 
 
 class DecisionKind(StrEnum):
@@ -127,7 +127,7 @@ RecordedStepKind = Literal[
     "refusal",
     "error",
 ]
-# A handler's note on a decision sent back, which only the app records.
+# A reviewer's note on a decision sent back, which only the app records.
 StepKind = RecordedStepKind | Literal["sent_back"]
 MOST_AGENTS = 25
 NOTE_LENGTH = 1000
@@ -197,7 +197,7 @@ class Payment(BaseModel):
 
 
 class SentBackDecision(DecisionRecord):
-    """A decision a senior handler sent back to the agent, with their note."""
+    """A decision a compliance manager sent back to the agent, with their note."""
 
     note: str
     sent_back_by: str
@@ -206,7 +206,7 @@ class SentBackDecision(DecisionRecord):
 
 class CaseSummary(BaseModel):
     case_id: str
-    customer_name: str
+    subcontractor_name: str
     case_type: str
     summary: str
     amount_claimed: float
@@ -220,8 +220,8 @@ class CaseSummary(BaseModel):
 class Case(BaseModel):
     case_id: str
     policy_id: str
-    customer_id: str
-    customer_name: str
+    subcontractor_id: str
+    subcontractor_name: str
     case_type: str
     submitted_on: str
     incident_date: str
@@ -239,7 +239,7 @@ class Case(BaseModel):
     decision: Decision | None
     payment: Payment | None
     sent_back_decisions: list[SentBackDecision] = Field(
-        description="The decisions handlers sent back, oldest first"
+        description="The decisions reviewers sent back, oldest first"
     )
 
 
@@ -252,7 +252,7 @@ class Trip(BaseModel):
 
 class Policy(BaseModel):
     policy_id: str
-    customer_id: str
+    subcontractor_id: str
     plan: str
     add_ons: list[str]
     purchased_on: str
@@ -272,8 +272,8 @@ class PreviousCase(BaseModel):
     amount_paid: float
 
 
-class Handler(BaseModel):
-    handler_id: str
+class Reviewer(BaseModel):
+    reviewer_id: str
     name: str
     role: str
     email: str
@@ -506,7 +506,7 @@ class DispatchSummary(BaseModel):
     declined: int
     referred: int
     waiting_for_sign_off: list[HeldPayout]
-    left_for_handler: list[str]
+    left_for_reviewer: list[str]
     unfinished: list[str]
 
 
@@ -560,7 +560,7 @@ class Measures(BaseModel):
 class CaseGrade(BaseModel):
     """The judge's grade of an explanation: its score from 0 to 3, the likeliest
     level, and the chances of the same grounds and the same section as the
-    handler's."""
+    reviewer's."""
 
     score: float
     letter: Letter
@@ -574,8 +574,8 @@ class ScoredCase(RunCase):
     reason: str | None
     section: str | None
     grade: CaseGrade | None
-    handler_decision: DecisionKind
-    handler_payout: float
+    reviewer_decision: DecisionKind
+    reviewer_payout: float
     right: bool
     mistake_cost: float
 
@@ -751,7 +751,7 @@ class AgentAnswer(BaseModel):
     section: str | None
 
 
-class HandlerAnswer(BaseModel):
+class ReviewerAnswer(BaseModel):
     decision: DecisionKind
     payout: float
     reason: str
@@ -765,20 +765,20 @@ class JudgeAnswer(BaseModel):
     same_section: Literal["yes", "no"]
 
 
-class CaseBesideHandler(BaseModel):
+class CaseBesideReviewer(BaseModel):
     """A case of the evaluation set, with the agent's answer beside the
-    handler's and the judge's grade."""
+    reviewer's and the judge's grade."""
 
     case_id: str
     summary: str
     agent: AgentAnswer
-    handler: HandlerAnswer
+    reviewer: ReviewerAnswer
     judge: JudgeAnswer | None
 
 
 class EvaluationSetResults(BaseModel):
-    wrong: list[CaseBesideHandler]
-    explained_least_well: list[CaseBesideHandler]
+    wrong: list[CaseBesideReviewer]
+    explained_least_well: list[CaseBesideReviewer]
 
 
 class EarlierRound(BaseModel):
@@ -927,11 +927,11 @@ class TurnStatus(StrEnum):
 
 
 class CardKind(StrEnum):
-    """What a card's tool does: looks up cases, customers and policies or the
+    """What a card's tool does: looks up cases, subcontractors and policies or the
     context layer, works with the agent's work or the memory, or acts."""
 
     CASES = "cases"
-    CUSTOMERS = "customers"
+    SUBCONTRACTORS = "subcontractors"
     CONTEXT = "context"
     WORK = "work"
     MEMORY = "memory"
@@ -951,7 +951,7 @@ class ConfirmationAnswer(StrEnum):
 
 
 class MessageRequest(BaseModel):
-    message: Message = Field(description="The handler's message to the Copilot")
+    message: Message = Field(description="The reviewer's message to the Copilot")
 
 
 class ConfirmationRequest(BaseModel):
@@ -960,10 +960,10 @@ class ConfirmationRequest(BaseModel):
 
 
 class Confirmation(BaseModel):
-    """A sign-off waiting for the handler's confirmation, from the app's records."""
+    """A sign-off waiting for the reviewer's confirmation, from the app's records."""
 
     case_id: str
-    customer_name: str
+    subcontractor_name: str
     payout: float
     reason: str
 
@@ -995,7 +995,7 @@ class CopilotTurn(BaseModel):
     answered_at: str | None
     finished_at: str | None
     seconds: float | None = Field(
-        description="Once it has finished, leaving out the wait for the handler"
+        description="Once it has finished, leaving out the wait for the reviewer"
     )
     answer: str | None
     model_calls: int | None
@@ -1054,19 +1054,19 @@ class TurnFailureRequest(BaseModel):
     reason: str = Field(min_length=1, description="What went wrong")
 
 
-# Customers, as the Copilot finds them.
+# Subcontractors, as the Copilot finds them.
 
 
-class CustomerMatch(BaseModel):
-    customer_id: str
+class SubcontractorMatch(BaseModel):
+    subcontractor_id: str
     name: str
 
 
-class Customer(CustomerMatch):
-    """Who a customer is, without their contact details or date of birth, their
+class Subcontractor(SubcontractorMatch):
+    """Who a subcontractor is, without their contact details or date of birth, their
     policies, their earlier cases and their cases in our queue."""
 
-    customer_since: str
+    subcontractor_since: str
     policies: list[Policy]
     earlier_cases: list[PreviousCase]
     cases_in_the_queue: list[CaseSummary]
@@ -1074,14 +1074,14 @@ class Customer(CustomerMatch):
 
 class PayoutsOverTheLimit(BaseModel):
     """The queue's cases paid more than the approval limit on their decision, and
-    how many of those a handler signed off."""
+    how many of those a reviewer signed off."""
 
     paid_over_the_limit: int
     signed_off: int
 
 
 class RunStarted(Accepted):
-    """A dispatch or an evaluation a handler started, which the agent works."""
+    """A dispatch or an evaluation a reviewer started, which the agent works."""
 
     run_id: str
     number: int

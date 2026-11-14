@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { PageFrame } from "./components/PageFrame";
-import { RequireHandler } from "./components/RequireHandler";
+import { RequireReviewer } from "./components/RequireReviewer";
 import { StateMessage } from "./components/StateMessage";
 import { CasePage } from "./pages/CasePage";
 import { ConfigurationPage } from "./pages/ConfigurationPage";
@@ -32,11 +32,11 @@ export function App() {
       <Route path={SIGN_IN} element={<SignInPage />} />
       <Route
         element={
-          <RequireHandler>
+          <RequireReviewer>
             <PageFrame>
               <Outlet />
             </PageFrame>
-          </RequireHandler>
+          </RequireReviewer>
         }
       >
         <Route path={QUEUE} element={<QueuePage />} />

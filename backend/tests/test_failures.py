@@ -16,16 +16,16 @@ def test_a_failed_attempt_goes_back_in_the_queue(client):
     assert last["thread_id"] == "t-1"
 
 
-def test_a_second_failure_leaves_the_case_for_a_handler(client):
+def test_a_second_failure_leaves_the_case_for_a_reviewer(client):
     start(client, "CLM-1004")
     fail(client, "CLM-1004")
     start(client, "CLM-1004")
     case = fail(client, "CLM-1004", "The agent went round in circles").json()
-    assert (case["status"], case["attempts"]) == ("left_for_handler", 2)
+    assert (case["status"], case["attempts"]) == ("left_for_reviewer", 2)
     assert start(client, "CLM-1004").status_code == 409
     assert decide(client, "CLM-1004", "decline", 0).status_code == 409
     queue = {c["case_id"]: c for c in client.get("/api/cases").json()}
-    assert queue["CLM-1004"]["status"] == "left_for_handler"
+    assert queue["CLM-1004"]["status"] == "left_for_reviewer"
     errors = [
         s["content"] for s in steps_of(client, "CLM-1004") if s["kind"] == "error"
     ]

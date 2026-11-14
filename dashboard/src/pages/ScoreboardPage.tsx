@@ -28,7 +28,7 @@ export function ScoreboardPage() {
     <>
       <PageHeader
         title="Scoreboard"
-        lead="How the payroll agent scores against our handlers' decisions."
+        lead="How the payroll agent scores against our reviewers' decisions."
       />
       <div className="column">
         <StartEvaluation />

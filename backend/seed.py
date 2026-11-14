@@ -9,9 +9,10 @@ def main() -> None:
     counts = seed(db)
     print(
         f"Seeded {counts['cases']} cases, {counts['policies']} policies, "
-        f"{counts['customers']} customers and {counts['handlers']} handlers "
+        f"{counts['subcontractors']} subcontractors and "
+        f"{counts['reviewers']} reviewers "
         f"into {location(db)}, with {counts['held_out_cases']} held-out cases "
-        f"and {counts['handler_decisions']} handlers' decisions for evaluations, "
+        f"and {counts['reviewer_decisions']} reviewers' decisions for evaluations, "
         "and version 1 of the configuration and of the recipe"
     )
 

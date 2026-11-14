@@ -1,5 +1,5 @@
 """The improver: a LangChain agent that follows a recipe to improve the payroll agent's
-configuration, as in labs/week2day5.ipynb. A handler approves each change and each
+configuration, as in labs/week2day5.ipynb. A reviewer approves each change and each
 new recipe before it takes effect, and the backend keeps or rolls back each version
 by the business's rule."""
 
@@ -133,8 +133,8 @@ def propose_recipe(recipe: str, reason: str, runtime: ToolRuntime[RoundContext])
 IMPROVER_TOOLS = [read_results, propose_change, run_evaluation, propose_recipe]
 
 
-def needs_a_handler(request: ToolCallRequest) -> bool:
-    """Pause for a handler only for a change the payroll agent may use; any other
+def needs_a_reviewer(request: ToolCallRequest) -> bool:
+    """Pause for a reviewer only for a change the payroll agent may use; any other
     goes straight to the tool, which tells the improver it isn't allowed."""
     args = request.tool_call["args"]
     context = cast(RoundContext, request.runtime.context)
@@ -162,7 +162,7 @@ def one_tool_call_at_a_time(
 def stop_with_the_round(
     state: AgentState, runtime: Runtime[RoundContext]
 ) -> dict[str, Any] | None:
-    """End the stretch once the round is no longer open, such as when a handler
+    """End the stretch once the round is no longer open, such as when a reviewer
     stops it."""
     if improver_api.get_round(round_of(runtime))["status"] != improver_api.OPEN:
         return {"jump_to": "end"}
@@ -198,12 +198,12 @@ def improver(
     round: dict[str, Any], model: BaseChatModel, saver: BaseCheckpointSaver[Any]
 ) -> Improver:
     """Build the improver for a round: its instructions around the round's recipe,
-    its four tools, and the handler's approval it waits for."""
+    its four tools, and the reviewer's approval it waits for."""
     middleware: list[AgentMiddleware[Any, Any, Any]] = [
         HumanInTheLoopMiddleware(
             interrupt_on={
                 propose_change.name: InterruptOnConfig(
-                    allowed_decisions=APPROVE_OR_REJECT, when=needs_a_handler
+                    allowed_decisions=APPROVE_OR_REJECT, when=needs_a_reviewer
                 ),
                 propose_recipe.name: InterruptOnConfig(
                     allowed_decisions=APPROVE_OR_REJECT
@@ -246,7 +246,7 @@ def begin() -> dict[str, Any]:
 
 
 def resume(review: improver_api.Review, reason: str) -> Command:
-    """Carry the improver on with a handler's review of its proposal."""
+    """Carry the improver on with a reviewer's review of its proposal."""
     if review == improver_api.APPROVED:
         return Command(resume={"decisions": [{"type": "approve"}]})
     return Command(resume={"decisions": [{"type": "reject", "message": reason}]})
@@ -259,7 +259,7 @@ def work_stretch(
     saver: BaseCheckpointSaver[Any],
     model: BaseChatModel,
 ) -> dict[str, Any] | None:
-    """Run the improver on the round's thread until it waits for a handler or ends,
+    """Run the improver on the round's thread until it waits for a reviewer or ends,
     and return what it proposes, if it is waiting."""
     agent = improver(round, model, saver)
     result: dict[str, Any] = as_root_run(
@@ -276,7 +276,7 @@ def work_stretch(
 
 
 def record_proposal(round_id: str, request: dict[str, Any]) -> None:
-    """Record what the improver waits for a handler to approve, from the tool call
+    """Record what the improver waits for a reviewer to approve, from the tool call
     it paused on."""
     args = request["args"]
     if request["name"] == propose_change.name:

@@ -62,6 +62,6 @@ def carry_round_on(round_id: str, proposal_id: str) -> None:
 
 
 def resume_case(case_id: str) -> None:
-    """Ask the agent to resume a paused case with its handler's answer, which it
+    """Ask the agent to resume a paused case with its reviewer's answer, which it
     reads from the case."""
     ask({"operation": "resume_case", "case_id": case_id})

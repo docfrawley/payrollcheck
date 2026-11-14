@@ -21,13 +21,13 @@ from agent.routes import Route, Target
 
 @dataclass
 class PayrollContext:
-    """The case a payroll agent is working on, its policy and customer, the run it
+    """The case a payroll agent is working on, its policy and subcontractor, the run it
     works in, if any, the route its tools take, and who its decisions are made by."""
 
     case_id: str
     run_id: str | None
     policy_id: str
-    customer_id: str
+    subcontractor_id: str
     route: Route
     decided_by: str
 
@@ -51,8 +51,8 @@ class PayrollState(TypedDict):
     status: Annotated[str, keep_last]
 
 
-# What the payroll agent never reads of a case: the decisions handlers sent back,
-# whose notes reach its model only as a handler's message.
+# What the payroll agent never reads of a case: the decisions reviewers sent back,
+# whose notes reach its model only as a reviewer's message.
 UNREAD = "sent_back_decisions"
 
 
@@ -87,21 +87,23 @@ def get_policy(runtime: ToolRuntime[PayrollContext]) -> str:
 
 @tool
 def get_case_history(runtime: ToolRuntime[PayrollContext]) -> str:
-    """Get your customer's earlier cases, with the outcome and the amount paid."""
-    customer_id = runtime.context.customer_id
-    return as_json(on_app(runtime, "get_case_history", customer_id=customer_id))
+    """Get your subcontractor's earlier cases, with the outcome and the amount paid."""
+    subcontractor_id = runtime.context.subcontractor_id
+    return as_json(
+        on_app(runtime, "get_case_history", subcontractor_id=subcontractor_id)
+    )
 
 
 @tool(response_format="content_and_artifact")
 def search_memory(
     query: Query, runtime: ToolRuntime[PayrollContext]
 ) -> tuple[str, Step]:
-    """Search what we remember about this case's customer from their earlier cases."""
+    """Search what we remember about this case's subcontractor from earlier cases."""
     context = runtime.context
     try:
         found = memory.recall(
             cast(BaseStore, runtime.store),
-            context.customer_id,
+            context.subcontractor_id,
             context.case_id,
             query,
         )

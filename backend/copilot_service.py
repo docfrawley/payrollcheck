@@ -1,6 +1,6 @@
 """The Copilot, as the app calls it: a turn, or the answer to a confirmation, posted to
 its AgentCore app on the laptop, with no key, since the payload carries the
-handler's sign-in, or sent to its runtime on AgentCore Runtime when
+reviewer's sign-in, or sent to its runtime on AgentCore Runtime when
 PAYROLLCHECK_COPILOT_RUNTIME names one, with the conversation's id as the session's,
 so a turn soon after the last reaches the same session."""
 
@@ -38,12 +38,12 @@ def ask(conversation_id: str, payload: Payload) -> None:
 
 
 def take_turn(conversation_id: str, turn_id: str, sign_in: str) -> None:
-    """Ask the Copilot to answer a turn's message, as the handler signed in."""
+    """Ask the Copilot to answer a turn's message, as the reviewer signed in."""
     ask(conversation_id, on_a_turn("take_turn", conversation_id, turn_id, sign_in))
 
 
 def answer_confirmation(conversation_id: str, turn_id: str, sign_in: str) -> None:
-    """Ask the Copilot to carry a turn on with the handler's answer to its
+    """Ask the Copilot to carry a turn on with the reviewer's answer to its
     confirmation, which it reads from the turn."""
     payload = on_a_turn("answer_confirmation", conversation_id, turn_id, sign_in)
     ask(conversation_id, payload)
@@ -52,7 +52,7 @@ def answer_confirmation(conversation_id: str, turn_id: str, sign_in: str) -> Non
 def on_a_turn(
     operation: str, conversation_id: str, turn_id: str, sign_in: str
 ) -> Payload:
-    """The payload of an operation on a conversation's turn, with the handler's
+    """The payload of an operation on a conversation's turn, with the reviewer's
     sign-in."""
     return {
         "operation": operation,

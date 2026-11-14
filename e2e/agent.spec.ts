@@ -7,7 +7,7 @@ import {
   startCase,
   started,
 } from "./api";
-import { HANDLERS } from "./handlers";
+import { REVIEWERS } from "./reviewers";
 
 // These tests stand in for the agent by calling the API through the
 // dashboard's proxy, and watch the case page update without a reload.
@@ -186,7 +186,7 @@ test("a sign-off on the dashboard pays the held payout and asks the agent to res
 });
 
 test.describe("signed in as Marcus Oyelaran", () => {
-  test.use({ storageState: HANDLERS.marcus.storage });
+  test.use({ storageState: REVIEWERS.marcus.storage });
 
   test("a held payout says why he can't sign it off", async ({
     page,
@@ -206,7 +206,7 @@ test.describe("signed in as Marcus Oyelaran", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Only a handler who can sign off payouts over $1,000.00 can sign this off or send it back. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can sign this off or send it back. Marcus Oyelaran can't.",
       ),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign off" })).toHaveCount(0);

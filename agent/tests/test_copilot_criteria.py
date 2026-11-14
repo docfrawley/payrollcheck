@@ -11,7 +11,7 @@ from agent.copilot import criteria, waiting
 from agent.tests.copilot_driver import Copilot, started_run
 from agent.tests.memory_stand_in import MemoryStandIn
 from agent.tests.stubs import call, stub
-from backend.database import engine, handler_decisions, now, payments
+from backend.database import engine, now, payments, reviewer_decisions
 from backend.tests.case_requests import decide, held, sign_off, start
 from backend.tests.run_requests import (
     another_running_dispatch,
@@ -28,7 +28,7 @@ ACCURACY = (
     "{figure} | {met} |"
 )
 OVER_THE_LIMIT = (
-    "| Over the limit | Every payout over the approval limit signed off by a handler "
+    "| Over the limit | Every payout over the approval limit signed off by a reviewer "
     "| {figure} | {met} |"
 )
 CHECK = "Are we meeting the success criteria we agreed?"
@@ -41,22 +41,22 @@ def quick_waits(monkeypatch):
     monkeypatch.setattr(waiting, "WAIT", 10)
 
 
-def handlers_decided() -> list[str]:
-    """Set our handlers' decisions on the held-out set, in the test's own database,
+def reviewers_decided() -> list[str]:
+    """Set our reviewers' decisions on the held-out set, in the test's own database,
     so the test knows the measures: the first three cases referred, the rest
     approved at $100.00. Return the cases in that order."""
     with engine().begin() as db:
-        held_out = handler_decisions.c.evaluation_set == "held_out"
-        query = select(handler_decisions.c.case_id).where(held_out)
+        held_out = reviewer_decisions.c.evaluation_set == "held_out"
+        query = select(reviewer_decisions.c.case_id).where(held_out)
         cases = sorted(db.execute(query).scalars())
         db.execute(
-            update(handler_decisions)
+            update(reviewer_decisions)
             .where(held_out)
             .values(decision="approve", payout=100.0)
         )
         db.execute(
-            update(handler_decisions)
-            .where(held_out, handler_decisions.c.case_id.in_(cases[:3]))
+            update(reviewer_decisions)
+            .where(held_out, reviewer_decisions.c.case_id.in_(cases[:3]))
             .values(decision="refer", payout=0.0)
         )
     assert len(cases) == 25
@@ -66,7 +66,7 @@ def handlers_decided() -> list[str]:
 def work_the_copies(client, run_id: str, cases: list[str]) -> None:
     """Decide the evaluation's copies as the agent would, so that 5 of 25 are
     referred, 80% straight through, and 22 are right, 88% accuracy: the three the
-    handlers referred, two more referred, one approved at $200.00 and the rest
+    reviewers referred, two more referred, one approved at $200.00 and the rest
     approved at $100.00, then finish the evaluation."""
     for copy in client.get(run_path(run_id)).json()["cases"]:
         copy_id = copy["case_id"]
@@ -109,7 +109,7 @@ def table(straight, accuracy, over, verdict, objective="60%"):
 
 
 def test_the_success_criteria(client, copilot: Copilot, agent_calls):
-    cases = handlers_decided()
+    cases = reviewers_decided()
     held(client, "CLM-1002", 1350.0)
     sign_off(client, "CLM-1002")
     turn = check(
@@ -132,7 +132,7 @@ def test_the_success_criteria(client, copilot: Copilot, agent_calls):
 
 
 def test_the_answer_is_written_in_code(client, copilot: Copilot, agent_calls):
-    cases = handlers_decided()
+    cases = reviewers_decided()
     copilot.store = MemoryStandIn()
     turn = check(
         copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
@@ -168,7 +168,7 @@ def paid_without_a_sign_off(case_id, amount):
 def test_the_third_with_none_paid_and_with_one_unsigned(
     client, copilot: Copilot, agent_calls
 ):
-    cases = handlers_decided()
+    cases = reviewers_decided()
     turn = check(
         copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
     )
@@ -236,7 +236,7 @@ def test_a_start_the_app_refuses_gives_its_reason(client, copilot: Copilot):
 def test_the_accuracy_objective_comes_from_the_settings(
     client, dashboard, copilot: Copilot, agent_calls
 ):
-    cases = handlers_decided()
+    cases = reviewers_decided()
     objectives = {"accuracy": 0.9, "grade": 1.0}
     assert change_settings(dashboard, objectives=objectives).status_code == 200
     turn = check(

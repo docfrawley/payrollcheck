@@ -46,7 +46,7 @@ def take_the_lock(db: Connection) -> None:
 
 def working_rounds(db: Connection) -> list[RowMapping]:
     """The open rounds the agent is working: those with no proposal waiting for a
-    handler."""
+    reviewer."""
     query = select(rounds).where(rounds.c.status == RoundStatus.OPEN)
     return [
         row

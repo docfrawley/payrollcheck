@@ -1,6 +1,6 @@
-"""Requests the backend's tests send about the Copilot's conversations: a handler's,
+"""Requests the backend's tests send about the Copilot's conversations: a reviewer's,
 from the sidebar, and the Copilot's own records of a turn, which it sends with the
-handler's sign-in."""
+reviewer's sign-in."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -15,7 +15,7 @@ QUESTION = "What needs me today?"
 
 
 def start_conversation(client, message=QUESTION, email=DANA, access_token=None):
-    """Start a conversation as a handler, with a new sign-in for the email or the
+    """Start a conversation as a reviewer, with a new sign-in for the email or the
     access token given."""
     headers = bearer(access_token) if access_token else signed_in(email)
     return client.post(CONVERSATIONS, json={"message": message}, headers=headers)
@@ -50,7 +50,7 @@ def list_conversations(client, email=DANA):
 
 
 def started(client, message=QUESTION, email=DANA):
-    """Start a conversation as a handler does, and return it."""
+    """Start a conversation as a reviewer does, and return it."""
     return start_conversation(client, message, email).json()
 
 

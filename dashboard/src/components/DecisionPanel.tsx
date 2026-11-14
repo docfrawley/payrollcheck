@@ -1,6 +1,6 @@
 import type { Case, Decision, Payment } from "../api";
 import { money, time } from "../format";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import { DecisionDetails } from "./DecisionDetails";
 import { NotAllowed } from "./NotAllowed";
 import { SendBackForm } from "./SendBackForm";
@@ -19,8 +19,8 @@ function progress(caseRecord: Case): string {
     return "The agent is working on this case.";
   if (caseRecord.status === "sent_back")
     return "Sent back to the agent, which hasn't taken it up yet. The next dispatch works on it.";
-  if (caseRecord.status === "left_for_handler")
-    return `The agent couldn't finish this case in ${String(caseRecord.attempts)} attempts, so it's left for a handler.`;
+  if (caseRecord.status === "left_for_reviewer")
+    return `The agent couldn't finish this case in ${String(caseRecord.attempts)} attempts, so it's left for a reviewer.`;
   if (caseRecord.attempts > 0)
     return "Back in the queue after a failed attempt.";
   return "The agent hasn't started on this case.";
@@ -60,7 +60,7 @@ export function DecisionPanel({
   );
 }
 
-// Why a payment waits for a handler's sign-off: it's over the approval limit,
+// Why a payment waits for a reviewer's sign-off: it's over the approval limit,
 // or the Gateway refused it.
 function WhyHeld({ decision }: Readonly<{ decision: Decision }>) {
   const amount = <span className="mono">{money(decision.payout)}</span>;
@@ -69,7 +69,7 @@ function WhyHeld({ decision }: Readonly<{ decision: Decision }>) {
       <>
         <p>
           The Gateway refused the payment of {amount}, so it waits for a
-          handler's sign-off.
+          reviewer's sign-off.
         </p>
         <p className="small muted">{decision.gateway_refusal}</p>
       </>
@@ -77,20 +77,20 @@ function WhyHeld({ decision }: Readonly<{ decision: Decision }>) {
   return (
     <p>
       The payment of {amount} is over the approval limit and waits for a
-      handler's sign-off.
+      reviewer's sign-off.
     </p>
   );
 }
 
 // A payment over the limit or refused by the Gateway, which waits for a
-// handler to sign it off or send it back, unless the case is an evaluation's
+// reviewer to sign it off or send it back, unless the case is an evaluation's
 // copy, which nobody can answer.
 function HeldPayment({
   caseRecord,
   decision,
   onAnswered,
 }: Readonly<{ caseRecord: Case; decision: Decision; onAnswered: () => void }>) {
-  const handler = useHandler();
+  const reviewer = useReviewer();
   if (caseRecord.evaluation_id)
     return (
       <p className="payment">
@@ -101,7 +101,7 @@ function HeldPayment({
   return (
     <div className="sign-off">
       <WhyHeld decision={decision} />
-      {handler.can_approve_over_limit ? (
+      {reviewer.can_approve_over_limit ? (
         <div className="held-answers">
           <SignOffForm caseId={caseRecord.case_id} onSignedOff={onAnswered} />
           <SendBackForm caseId={caseRecord.case_id} onSentBack={onAnswered} />

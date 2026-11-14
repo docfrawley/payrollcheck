@@ -83,7 +83,7 @@ function RunCases({ cases }: Readonly<{ cases: RunCase[] }>) {
         <thead>
           <tr>
             <th>Case</th>
-            <th>Customer</th>
+            <th>Subcontractor</th>
             <th>State</th>
             <th>Decision</th>
             <th className="num">Payout</th>
@@ -98,7 +98,7 @@ function RunCases({ cases }: Readonly<{ cases: RunCase[] }>) {
               <td className="nowrap">
                 <CaseLink caseId={caseRecord.case_id} />
               </td>
-              <td>{caseRecord.customer_name}</td>
+              <td>{caseRecord.subcontractor_name}</td>
               <td>
                 <StatusChip status={caseRecord.status} />
               </td>
@@ -139,8 +139,8 @@ function Summary({ summary }: Readonly<{ summary: DispatchSummary }>) {
         </li>
         <CaseLine label="Waiting for sign-off" cases={held} />
         <CaseLine
-          label="Left for a handler"
-          cases={only(summary.left_for_handler)}
+          label="Left for a reviewer"
+          cases={only(summary.left_for_reviewer)}
         />
         <CaseLine
           label="Left for the next dispatch"

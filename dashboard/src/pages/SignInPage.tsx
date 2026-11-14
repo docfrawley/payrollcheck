@@ -4,7 +4,7 @@ import { signIn } from "../auth";
 import { ActionForm } from "../components/ActionForm";
 import { Brand } from "../components/Brand";
 import { PageHeader } from "../components/PageHeader";
-import { type SignInState, useSignedIn } from "../handler";
+import { type SignInState, useSignedIn } from "../reviewer";
 import { QUEUE } from "../paths";
 
 export function SignInPage() {
@@ -26,7 +26,7 @@ export function SignInPage() {
       <section className="panel sign-in-panel">
         <PageHeader
           title="Sign in"
-          lead="For PayrollCheck claims handlers. Ask your manager for an account."
+          lead="For PayrollCheck reviewers. Ask your manager for an account."
         />
         <ActionForm
           label="Sign in"

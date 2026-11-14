@@ -1,4 +1,4 @@
-"""Requests the backend's tests send to start runs, as a handler does, to record
+"""Requests the backend's tests send to start runs, as a reviewer does, to record
 their work, as the agent does, and to read them, as the dashboard does."""
 
 from backend.database import engine
@@ -22,14 +22,14 @@ def started_run(client, started):
 
 
 def start_dispatch(client, agents=3, email=MARCUS):
-    """Start a dispatch as a handler does, and return the start's answer."""
+    """Start a dispatch as a reviewer does, and return the start's answer."""
     return client.post(
         "/api/dispatches", json={"agents": agents}, headers=signed_in(email)
     )
 
 
 def create_dispatch(client, agents=3):
-    """Start a dispatch as a handler does, which the app creates, and return it."""
+    """Start a dispatch as a reviewer does, which the app creates, and return it."""
     return started_run(client, start_dispatch(client, agents, DANA))
 
 
@@ -68,7 +68,7 @@ def latest_dispatch(client):
 def start_evaluation(
     client, evaluation_set="held_out", tiny=True, agents=5, email=MARCUS
 ):
-    """Start an evaluation as a handler does, and return the start's answer."""
+    """Start an evaluation as a reviewer does, and return the start's answer."""
     return client.post(
         "/api/evaluations",
         json={"evaluation_set": evaluation_set, "tiny": tiny, "agents": agents},
@@ -77,7 +77,7 @@ def start_evaluation(
 
 
 def create_evaluation(client, evaluation_set="held_out", tiny=True, agents=5):
-    """Start an evaluation as a handler does, which the app creates with its
+    """Start an evaluation as a reviewer does, which the app creates with its
     copies, and return it."""
     started = start_evaluation(client, evaluation_set, tiny, agents, DANA)
     return started_run(client, started)

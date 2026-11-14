@@ -95,7 +95,7 @@ def test_each_case_shows_where_it_stands_with_its_cost_and_time(client):
 
     dispatch = latest_dispatch(client)
     first, second = dispatch["cases"]
-    assert (first["case_id"], first["customer_name"], first["status"]) == (
+    assert (first["case_id"], first["subcontractor_name"], first["status"]) == (
         "CLM-1001",
         "Maya Patel",
         "decided",
@@ -140,7 +140,7 @@ def test_finishing_a_dispatch_sums_up_its_cases(client):
         "declined": 1,
         "referred": 1,
         "waiting_for_sign_off": [{"case_id": "CLM-1008", "payout": 2240.0}],
-        "left_for_handler": ["CLM-1016"],
+        "left_for_reviewer": ["CLM-1016"],
         "unfinished": ["CLM-1012", "CLM-1006", "CLM-1005"],
     }
     assert latest_dispatch(client) == dispatch

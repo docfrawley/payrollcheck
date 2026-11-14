@@ -74,7 +74,7 @@ The files stay as they are because the labs read them (`labs/` stays unrenamed u
 
 `data/improvement.json` is the improver's settings, which outlive stage 3, and no lab reads it, so its keys are renamed in the file itself (`cost_per_claim` → `cost_per_case`, `seconds_per_claim` → `seconds_per_case`).
 
-The data dictionary in `context/` still describes the records' fields under their old names (`claim_id`, `claim_type`, `previous_claims`), while the agent now reads them as `case_id`, `case_type` and `previous_cases`. This is a small change in what the model sees, which stage 3 removes with both, and the live evaluation is read with it in mind.
+The data dictionary in `context/` still describes the records' fields under their old names (`claim_id`, `claim_type`, `previous_claims`, `customer_id`, `customer_name`, `left_for_handler` and the like), while the agent now reads them as `case_id`, `case_type`, `previous_cases`, `subcontractor_id`, `subcontractor_name` and `left_for_reviewer`. This is a small change in what the model sees, which stage 3 removes with both, and the live evaluation is read with it in mind.
 
 **Context content the code quotes.** These come from data governance's files or the labs, so they keep their words:
 - The data dictionary's record names, `"claim"` and `"previous_claim"`, which `describe_fields` takes (`RecordName` in `context/files.py` and `agent/context_tools.py`), so its lookup still reads "Fields of a previous claim"
@@ -88,7 +88,7 @@ The data dictionary in `context/` still describes the records' fields under thei
 **AWS resources that may already exist.** `monitor.py`'s budget names, `undercover-daily-spend` and `undercover-daily-spend-after-credits`, stay: a run of it creates them in the user's AWS account, and they may be there already from the course.
 
 **Left for later stages:**
-- `labs/`, unrenamed and unopened. Its notebooks keep using `UNDERCOVER_*`, the `undercover` schema and the `/handlers/{actorId}/` memory namespaces until stage 7 ports them into the runbook. That runbook must use the new names.
+- `labs/`, unrenamed and unopened. Its notebooks keep using `UNDERCOVER_*`, the `undercover` schema, the `/handlers/{actorId}/` memory namespaces, the old tool names such as `pay_claim`, and `data/handlers.json` with `handler_id` (now `data/reviewers.json` with `reviewer_id`) until stage 7 ports them into the runbook. That runbook must use the new names.
 - `can_approve_over_limit`, by name and meaning, until stage 4
 - `docs/SPEC.md`, `docs/ROADMAP.md`, `CONTEXT.md`, `docs/research/` and `docs/stages/`, which already describe the target. `README.md` and `AGENTS.md` change only where the rename breaks a name or a link
 
@@ -187,14 +187,14 @@ The record IDs, the record contents and their keys, the claims manual's title an
 
 The Lambda handlers, Langfuse's and LangChain's callback handlers, LangGraph's `error_handler` and the record contents stay.
 
-- [ ] `git grep -n -i -E 'handler'` outside the exclusions, `labs/` and the target docs finds only the listed entry points and library classes; `git grep -n -i -E 'customer|senior'` finds only record contents and the context files
-- [ ] `uv run -m backend.seed` prints the same counts under the new names, and `data/reviewers.json` holds the three people with the new emails and roles
-- [ ] `uv run pytest backend/tests/test_sign_in.py --no-cov` signs in by the new emails, and Marcus Oyelaran is still refused a sign-off over the limit
-- [ ] No identifier in Python or TypeScript is named `sub`, `subs` or `sub_id` (`git grep -n -w -E 'sub|subs|sub_id'` in code)
-- [ ] A test-file diff through the phase's table leaves no differences
-- [ ] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
-- [ ] The phase's review by a fresh subagent finds nothing it would block the PR for, and checks every exclusion
-- [ ] Commit: "Rename handler to reviewer, senior handler to compliance manager and customer to subcontractor"
+- [x] `git grep -n -i -E 'handler'` in the code finds only the listed entry points and library classes (the Lambda handlers, Langfuse's and LangChain's callback handlers, LangGraph's `error_handler`, MCP's `request_handlers`, LangChain's next-handler in `wrap_model_call`, httpx's mock handlers) and the lab's screening prompt; `git grep -n -i -E 'customer|senior'` in the code finds only the record-key map, the data file name `customers.json` and the screening prompt. Outside the code they remain in the record files, the context files and the docs phase 5 rewrites
+- [x] `uv run -m backend.seed` prints the same counts under the new names, and `data/reviewers.json` holds the three people with the new emails and roles
+- [x] `uv run pytest backend/tests/test_sign_in.py --no-cov` signs in by the new emails, and Marcus Oyelaran is still refused a sign-off over the limit
+- [x] No identifier in Python or TypeScript is named `sub`, `subs` or `sub_id` (`git grep -n -w -E 'sub|subs|sub_id'` in code)
+- [x] A test-file diff through the phase's table leaves no differences
+- [x] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
+- [x] The phase's review by a fresh subagent finds nothing it would block the PR for, and checks every exclusion
+- [x] Commit: "Rename handler to reviewer, senior handler to compliance manager and customer to subcontractor"
 
 ## Phase 5: The brand and the docs
 

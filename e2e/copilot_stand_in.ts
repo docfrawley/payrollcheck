@@ -1,7 +1,7 @@
 // Stands in for the Copilot's AgentCore app in the end-to-end tests: it answers
 // /ping and the health check, and takes each turn and each answer to a
 // confirmation the backend posts to /invocations, with no key. It then plays a
-// scripted turn through the backend with the handler's sign-in it was given:
+// scripted turn through the backend with the reviewer's sign-in it was given:
 // it checks the sign-in with /api/me, stopping if it's refused, reads the
 // turn's message, records its cards and answers, as the Copilot does.
 import { createServer } from "node:http";
@@ -46,8 +46,8 @@ const ANSWER = [
 
 const pause = () => new Promise((resolve) => setTimeout(resolve, STEP_MS));
 
-// Sends one request to the backend as the handler, with their sign-in.
-async function asTheHandler(
+// Sends one request to the backend as the reviewer, with their sign-in.
+async function asTheReviewer(
   signIn: string,
   method: string,
   path: string,
@@ -74,7 +74,7 @@ async function card(
 ) {
   const turn = `/copilot/turns/${payload.turn_id}`;
   const asked = JSON.stringify({ input: started.input });
-  const { answer: made } = await asTheHandler(
+  const { answer: made } = await asTheReviewer(
     payload.sign_in,
     "POST",
     `${turn}/steps`,
@@ -90,7 +90,7 @@ async function card(
         reason: String(answer.detail),
         sources: [],
       };
-  await asTheHandler(
+  await asTheReviewer(
     payload.sign_in,
     "POST",
     `${turn}/steps/${String(made.step_id)}/finish`,
@@ -100,7 +100,7 @@ async function card(
 }
 
 async function finish(payload: Payload, answer: string) {
-  await asTheHandler(
+  await asTheReviewer(
     payload.sign_in,
     "POST",
     `/copilot/turns/${payload.turn_id}/finish`,
@@ -108,13 +108,13 @@ async function finish(payload: Payload, answer: string) {
   );
 }
 
-// The turn the app asked about, read with the handler's sign-in once the app
-// says the sign-in is a handler's, as the Copilot checks it.
+// The turn the app asked about, read with the reviewer's sign-in once the app
+// says the sign-in is a reviewer's, as the Copilot checks it.
 async function theTurn(payload: Payload): Promise<Turn> {
-  const me = await asTheHandler(payload.sign_in, "GET", "/me");
+  const me = await asTheReviewer(payload.sign_in, "GET", "/me");
   if (!me.ok)
     throw new Error(`The sign-in was refused: ${String(me.answer.detail)}`);
-  const { answer } = await asTheHandler(
+  const { answer } = await asTheReviewer(
     payload.sign_in,
     "GET",
     `/copilot/conversations/${payload.conversation_id}`,
@@ -126,7 +126,7 @@ async function theTurn(payload: Payload): Promise<Turn> {
   return turn;
 }
 
-// A message: a sign-off asked for pauses for the handler's confirmation; any
+// A message: a sign-off asked for pauses for the reviewer's confirmation; any
 // other gets a lookup, an action, a refusal and a formatted answer.
 async function takeTurn(payload: Payload) {
   const { message } = await theTurn(payload);
@@ -136,9 +136,9 @@ async function takeTurn(payload: Payload) {
     await card(
       payload,
       { tool: "get_case", kind: "cases", input: caseId },
-      () => asTheHandler(payload.sign_in, "GET", `/cases/${caseId}`),
+      () => asTheReviewer(payload.sign_in, "GET", `/cases/${caseId}`),
     );
-    await asTheHandler(
+    await asTheReviewer(
       payload.sign_in,
       "POST",
       `/copilot/turns/${payload.turn_id}/pause`,
@@ -155,13 +155,13 @@ async function takeTurn(payload: Payload) {
   await card(
     payload,
     { tool: "start_dispatch", kind: "action", input: "3" },
-    () => asTheHandler(payload.sign_in, "POST", "/dispatches", { agents: 3 }),
+    () => asTheReviewer(payload.sign_in, "POST", "/dispatches", { agents: 3 }),
   );
   await card(
     payload,
     { tool: "send_back_case", kind: "action", input: LINKED },
     () =>
-      asTheHandler(payload.sign_in, "POST", `/cases/${LINKED}/send-back`, {
+      asTheReviewer(payload.sign_in, "POST", `/cases/${LINKED}/send-back`, {
         note: "Check the receipts again.",
       }),
   );
@@ -169,8 +169,8 @@ async function takeTurn(payload: Payload) {
   await finish(payload, ANSWER);
 }
 
-// The handler's answer to a confirmation, read from the app's record of the
-// turn: a Sign off signs the case off as the handler, which pays it.
+// The reviewer's answer to a confirmation, read from the app's record of the
+// turn: a Sign off signs the case off as the reviewer, which pays it.
 async function answerConfirmation(payload: Payload) {
   const turn = await theTurn(payload);
   const caseId = turn.confirmation?.case_id ?? "";
@@ -186,7 +186,7 @@ async function answerConfirmation(payload: Payload) {
   const paid = await card(
     payload,
     { tool: "sign_off_case", kind: "action", input: caseId },
-    () => asTheHandler(payload.sign_in, "POST", `/cases/${caseId}/sign-off`),
+    () => asTheReviewer(payload.sign_in, "POST", `/cases/${caseId}/sign-off`),
   );
   await finish(
     payload,

@@ -127,7 +127,7 @@ it.each([
   expect((await form.findByRole("alert")).textContent).toBe(detail);
 });
 
-it("shows an evaluation's cases beside the handlers' decisions", async () => {
+it("shows an evaluation's cases beside the reviewers' decisions", async () => {
   stubApi({ "GET /api/evaluations/run-9": scored });
   renderAt("/scoreboard/run-9");
   expect(
@@ -207,7 +207,7 @@ it("shows a copy's evaluation, and no sign-off for a held copy", async () => {
     "GET /api/cases/CLM-1112-E9": heldCopy,
     "GET /api/cases/CLM-1112-E9/steps": [],
     "GET /api/policies/POL-2002": policy,
-    "GET /api/customers/CUS-3002/cases": history,
+    "GET /api/subcontractors/CUS-3002/cases": history,
   });
   renderAt("/cases/CLM-1112-E9");
   const note = await screen.findByText(/A copy of/);

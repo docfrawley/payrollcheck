@@ -33,8 +33,8 @@ def test_the_context_tools_are_the_context_layers_with_its_inputs(context_at):
                 assert schema.get(rule) == inputs[name].get(rule), (tool.name, name)
 
 
-def test_a_payroll_agent_can_only_act_on_its_own_case_and_customer():
-    ids = {"case_id", "policy_id", "customer_id"}
+def test_a_payroll_agent_can_only_act_on_its_own_case_and_subcontractor():
+    ids = {"case_id", "policy_id", "subcontractor_id"}
     assert all(ids & set(t.args) == set() for t in PAYROLL_TOOLS)
 
 

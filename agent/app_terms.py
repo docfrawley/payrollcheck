@@ -26,4 +26,4 @@ class Status(StrEnum):
     WAITING_FOR_SIGN_OFF = "waiting_for_sign_off"
     SENT_BACK = "sent_back"
     DECIDED = "decided"
-    LEFT_FOR_HANDLER = "left_for_handler"
+    LEFT_FOR_REVIEWER = "left_for_reviewer"

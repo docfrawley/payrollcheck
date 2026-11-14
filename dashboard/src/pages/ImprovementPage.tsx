@@ -17,7 +17,7 @@ import { RoundPanel } from "../components/RoundPanel";
 import { Rounds } from "../components/Rounds";
 import { StateMessage } from "../components/StateMessage";
 import { VersionChart } from "../components/VersionChart";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import { useAction } from "../useAction";
 import { REFRESH_MS, useLoad } from "../useLoad";
 
@@ -84,14 +84,14 @@ export function ImprovementPage() {
   );
 }
 
-// Start a round, or Stop the round while one is open, for a handler who can
+// Start a round, or Stop the round while one is open, for a reviewer who can
 // sign off over the limit; for anyone else, what they can't do and why.
 function RoundAction({
   open,
   onDone,
 }: Readonly<{ open?: RoundView; onDone: () => void }>) {
-  const handler = useHandler();
-  if (!handler.can_approve_over_limit)
+  const reviewer = useReviewer();
+  if (!reviewer.can_approve_over_limit)
     return <NotAllowed action={open ? "stop a round" : "start a round"} />;
   if (open)
     return <StopRound key={open.round_id} round={open} onStopped={onDone} />;

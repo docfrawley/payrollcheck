@@ -1,4 +1,4 @@
-"""The Copilot as the tests drive it: a handler sends a message, or answers a
+"""The Copilot as the tests drive it: a reviewer sends a message, or answers a
 confirmation, through the app as the sidebar does; the app asks the stand-in for the
 Copilot, which keeps the payload; and the test has the Copilot work that turn as
 its entry point would, with the sign-in the app passed on, on a stub model, saving
@@ -55,7 +55,7 @@ class Copilot:
         )
 
     def ask(self, message: str, conversation_id: str | None = None, email=DANA):
-        """Send a message as a handler, in a new conversation or the one given,
+        """Send a message as a reviewer, in a new conversation or the one given,
         have the Copilot work the turn, and return the conversation."""
         if conversation_id is None:
             sent = start_conversation(self.dashboard, message, email)
@@ -66,7 +66,7 @@ class Copilot:
         return self.read(self.last_payload()["conversation_id"], email)
 
     def answer(self, conversation_id: str, given: str, email=DANA):
-        """Answer the conversation's confirmation as a handler, have the Copilot
+        """Answer the conversation's confirmation as a reviewer, have the Copilot
         carry the turn on, and return the conversation."""
         turn_id = self.read(conversation_id, email)["turns"][-1]["turn_id"]
         self.answer_in_the_app(conversation_id, turn_id, given, email)
@@ -74,7 +74,7 @@ class Copilot:
         return self.read(conversation_id, email)
 
     def answer_in_the_app(self, conversation_id, turn_id, given, email=DANA) -> None:
-        """Answer a turn's confirmation as a handler, which the app records."""
+        """Answer a turn's confirmation as a reviewer, which the app records."""
         answered = answer(
             self.dashboard, conversation_id, turn_id, given, signed_in(email)
         )

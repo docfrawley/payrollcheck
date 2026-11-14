@@ -47,7 +47,7 @@ def open_round(db: Connection, round_id: str) -> RowMapping:
 
 
 def waiting_proposal(db: Connection, round_id: str) -> RowMapping | None:
-    """Return the round's proposal that waits for a handler, if any."""
+    """Return the round's proposal that waits for a reviewer, if any."""
     query = select(proposals).where(
         proposals.c.round_id == round_id, proposals.c.review.is_(None)
     )

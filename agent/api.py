@@ -1,6 +1,6 @@
 """The PayrollCheck backend's API for the payroll agent and the agent's entry point: one
 function for each operation they use. It has no way to the scores, the settings,
-the rounds or the handlers' decisions."""
+the rounds or the reviewers' decisions."""
 
 from typing import Any, Literal, TypedDict, Unpack
 
@@ -81,8 +81,8 @@ def get_policy(policy_id: str) -> dict[str, Any]:
     return call("GET", f"/policies/{policy_id}")
 
 
-def get_case_history(customer_id: str) -> list[dict[str, Any]]:
-    return call("GET", f"/customers/{customer_id}/cases")
+def get_case_history(subcontractor_id: str) -> list[dict[str, Any]]:
+    return call("GET", f"/subcontractors/{subcontractor_id}/cases")
 
 
 def get_version(number: int) -> dict[str, Any]:

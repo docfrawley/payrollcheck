@@ -23,7 +23,7 @@ const STATUS_ICONS: Record<Status, LucideIcon> = {
   waiting_for_sign_off: Signature,
   sent_back: Undo2,
   decided: CircleCheck,
-  left_for_handler: Flag,
+  left_for_reviewer: Flag,
 };
 
 export function QueuePage() {
@@ -68,7 +68,7 @@ export function QueuePage() {
             <thead>
               <tr>
                 <th>Case</th>
-                <th>Customer</th>
+                <th>Subcontractor</th>
                 <th>Type</th>
                 <th>Summary</th>
                 <th className="num">Claimed</th>
@@ -84,7 +84,7 @@ export function QueuePage() {
                   <td className="nowrap">
                     <CaseLink caseId={caseRecord.case_id} />
                   </td>
-                  <td className="nowrap">{caseRecord.customer_name}</td>
+                  <td className="nowrap">{caseRecord.subcontractor_name}</td>
                   <td className="nowrap">{label(caseRecord.case_type)}</td>
                   <td>{caseRecord.summary}</td>
                   <td className="num mono">

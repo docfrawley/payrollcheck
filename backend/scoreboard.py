@@ -1,5 +1,5 @@
 """Reading runs: a run's cases with their cost and time, an evaluation scored
-against the handlers' decisions, and a version's scores from the evaluations its
+against the reviewers' decisions, and a version's scores from the evaluations its
 rounds ran on it."""
 
 from datetime import datetime
@@ -12,8 +12,8 @@ from backend.database import (
     case_view,
     cases,
     grades,
-    handler_decisions,
     model_calls,
+    reviewer_decisions,
     run_cases,
     runs,
     work_times,
@@ -151,7 +151,7 @@ def grade_of(row: RowMapping) -> CaseGrade | None:
 
 
 def scored_case(row: RowMapping, expected: scoring.Answer) -> ScoredCase:
-    """Put an evaluation's copy beside the handler's decision on its original."""
+    """Put an evaluation's copy beside the reviewer's decision on its original."""
     answer = scoring.answer_of(row["decision"], row["payout"])
     return ScoredCase(
         **to_run_case(row).model_dump(),
@@ -159,16 +159,16 @@ def scored_case(row: RowMapping, expected: scoring.Answer) -> ScoredCase:
         reason=row["reason"],
         section=row["section"],
         grade=grade_of(row),
-        handler_decision=expected.decision,
-        handler_payout=expected.payout,
+        reviewer_decision=expected.decision,
+        reviewer_payout=expected.payout,
         right=scoring.is_right(answer, expected),
         mistake_cost=scoring.mistake_cost(answer, expected),
     )
 
 
 def expected_answers(db: Connection) -> Expected:
-    """Return the handlers' decisions on every labeled case, by set and case."""
-    rows = db.execute(select(handler_decisions)).mappings()
+    """Return the reviewers' decisions on every labeled case, by set and case."""
+    rows = db.execute(select(reviewer_decisions)).mappings()
     return {
         (d["evaluation_set"], d["case_id"]): scoring.Answer(d["decision"], d["payout"])
         for d in rows
@@ -182,7 +182,7 @@ def scored_evaluation(
     round_number: int | None,
     expected: Expected,
 ) -> ScoredEvaluation:
-    """Score an evaluation from its copies as they stand and the handlers'
+    """Score an evaluation from its copies as they stand and the reviewers'
     decisions on their originals."""
     scored = [
         scored_case(case, expected[row["evaluation_set"], case["copy_of"]])

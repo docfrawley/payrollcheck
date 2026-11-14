@@ -5,7 +5,7 @@ import { App } from "./App";
 import type {
   Case,
   CaseSummary,
-  Handler,
+  Reviewer,
   Policy,
   PreviousCase,
   Settings,
@@ -23,19 +23,19 @@ export class Refusal {
   ) {}
 }
 
-const dana: Handler = {
-  handler_id: "HND-01",
+const dana: Reviewer = {
+  reviewer_id: "HND-01",
   name: "Dana Whitfield",
-  role: "Senior Claims Handler",
-  email: "dana.whitfield@undercover.example",
+  role: "Compliance Manager",
+  email: "dana.whitfield@payrollcheck.example",
   can_approve_over_limit: true,
 };
 
-export const marcus: Handler = {
-  handler_id: "HND-02",
+export const marcus: Reviewer = {
+  reviewer_id: "HND-02",
   name: "Marcus Oyelaran",
-  role: "Claims Handler",
-  email: "marcus.oyelaran@undercover.example",
+  role: "Reviewer",
+  email: "marcus.oyelaran@payrollcheck.example",
   can_approve_over_limit: false,
 };
 
@@ -133,8 +133,8 @@ export async function panel(heading: string) {
 export const caseRecord: Case = {
   case_id: "CLM-1002",
   policy_id: "POL-2002",
-  customer_id: "CUS-3002",
-  customer_name: "Tom Becker",
+  subcontractor_id: "CUS-3002",
+  subcontractor_name: "Tom Becker",
   case_type: "baggage",
   submitted_on: "2026-07-20",
   incident_date: "2026-06-21",
@@ -165,7 +165,7 @@ export const caseRecord: Case = {
 
 export const summary: CaseSummary = {
   case_id: "CLM-1002",
-  customer_name: "Tom Becker",
+  subcontractor_name: "Tom Becker",
   case_type: "baggage",
   summary: "Suitcase lost on a connecting flight",
   amount_claimed: 1150,
@@ -178,7 +178,7 @@ export const summary: CaseSummary = {
 
 export const policy: Policy = {
   policy_id: "POL-2002",
-  customer_id: "CUS-3002",
+  subcontractor_id: "CUS-3002",
   plan: "premium",
   add_ons: ["electronics_plus"],
   purchased_on: "2026-05-02",

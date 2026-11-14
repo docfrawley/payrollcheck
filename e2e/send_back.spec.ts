@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { decide, payCase, resumes, startCase, takeCase } from "./api";
 
-// A senior handler sends a held decision back with a note on the case page,
+// A compliance manager sends a held decision back with a note on the case page,
 // and the test, standing in for the agent, takes the case and decides again.
 
 const NOTE =
@@ -35,7 +35,7 @@ test("a held case sent back with a note is decided again", async ({
     sentBack.getByText(/^Sent back by Dana Whitfield at /),
   ).toBeVisible();
   await expect(page.locator(".steps > li").last()).toContainText(
-    `Handler's note Sent back by Dana Whitfield: ${NOTE}`,
+    `Reviewer's note Sent back by Dana Whitfield: ${NOTE}`,
   );
   expect(await resumes(request)).toEqual([...resumed, "CLM-1022"]);
 

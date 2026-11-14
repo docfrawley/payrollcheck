@@ -57,7 +57,7 @@ export function CasePage() {
               </Link>
             </>
           ) : (
-            `${caseRecord.customer_name}'s ${label(caseRecord.case_type).toLowerCase()} case`
+            `${caseRecord.subcontractor_name}'s ${label(caseRecord.case_type).toLowerCase()} case`
           )
         }
       />
@@ -70,7 +70,7 @@ export function CasePage() {
           <ItemsPanel caseRecord={caseRecord} />
           <DocumentsPanel caseRecord={caseRecord} />
           <PolicyPanel policyId={caseRecord.policy_id} />
-          <HistoryPanel customerId={caseRecord.customer_id} />
+          <HistoryPanel subcontractorId={caseRecord.subcontractor_id} />
           <ContextUsed steps={steps.data} />
         </div>
         <div className="column">
@@ -89,8 +89,8 @@ function CaseDetails({ caseRecord }: Readonly<{ caseRecord: Case }>) {
       <h2 id="case-title">Case</h2>
       <dl className="facts">
         <div>
-          <dt>Customer</dt>
-          <dd>{caseRecord.customer_name}</dd>
+          <dt>Subcontractor</dt>
+          <dd>{caseRecord.subcontractor_name}</dd>
         </div>
         <div>
           <dt>Type</dt>
@@ -111,7 +111,7 @@ function CaseDetails({ caseRecord }: Readonly<{ caseRecord: Case }>) {
           <dd className="mono">{money(caseRecord.amount_claimed)}</dd>
         </div>
       </dl>
-      <h3>The customer's story</h3>
+      <h3>The subcontractor's story</h3>
       <p className="story">{caseRecord.story}</p>
     </section>
   );

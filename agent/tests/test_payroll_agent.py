@@ -38,7 +38,7 @@ def test_the_graph():
         "agent",
         "tools",
         "pay",
-        "wait_for_handler",
+        "wait_for_reviewer",
         "__end__",
     }
     edges = {(e.source, e.target, e.conditional) for e in graph.edges}
@@ -51,18 +51,18 @@ def test_the_graph():
         ("agent", "__end__", True),
         ("tools", "agent", True),
         ("tools", "pay", True),
-        ("tools", "wait_for_handler", True),
+        ("tools", "wait_for_reviewer", True),
         ("tools", "__end__", True),
-        ("pay", "wait_for_handler", True),
+        ("pay", "wait_for_reviewer", True),
         ("pay", "__end__", True),
-        ("wait_for_handler", "agent", True),
-        ("wait_for_handler", "__end__", True),
+        ("wait_for_reviewer", "agent", True),
+        ("wait_for_reviewer", "__end__", True),
     }
 
 
 def test_an_evaluations_graph_has_no_pause():
     graph = agent_on(stub(), pauses=False).graph.get_graph()
-    assert "wait_for_handler" not in graph.nodes
+    assert "wait_for_reviewer" not in graph.nodes
     edges = {(e.source, e.target) for e in graph.edges}
     assert {("tools", "__end__"), ("pay", "__end__")} <= edges
 
@@ -72,7 +72,7 @@ def test_approves_and_the_graph_pays_within_the_limit(client, caplog):
     model = stub(
         call("get_case"),
         call("get_policy", policy_id="POL-2001"),
-        call("get_case_history", customer_id="CUS-3001"),
+        call("get_case_history", subcontractor_id="CUS-3001"),
         calculate("CLM-1001", 420.0),
         record("approve", 420.0),
     )
@@ -275,9 +275,9 @@ def test_a_provider_error_puts_the_case_back_in_the_queue(client):
 
     model = stub(outage)
     again = work("CLM-1004", model, saver)
-    assert again.endswith(", left for a handler")
+    assert again.endswith(", left for a reviewer")
     retried = case_of(client, "CLM-1004")
-    assert (retried["status"], retried["attempts"]) == ("left_for_handler", 2)
+    assert (retried["status"], retried["attempts"]) == ("left_for_reviewer", 2)
     assert retried["thread_id"] != case["thread_id"]
     assert [m.content for m in model.prompts[0][1:]] == ["Case CLM-1004"]
 

@@ -1,4 +1,4 @@
-"""The decisions handlers sent back to the agent: keeping one with its note, and
+"""The decisions reviewers sent back to the agent: keeping one with its note, and
 reading a case's, oldest first."""
 
 from sqlalchemy import Connection, RowMapping, insert, select
@@ -8,7 +8,7 @@ from backend.models import DecisionRecord, SentBackDecision
 
 
 def keep(db: Connection, case: RowMapping, note: str, sent_back_by: str) -> None:
-    """Keep a case's decision as sent back, with the handler's note, who sent it
+    """Keep a case's decision as sent back, with the reviewer's note, who sent it
     back and when."""
     db.execute(
         insert(sent_back_decisions).values(

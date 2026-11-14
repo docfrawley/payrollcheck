@@ -28,7 +28,7 @@ it("shows the queue with counts by state", async () => {
         decision: "approve",
         payout: 420,
       },
-      { ...summary, case_id: "CLM-1004", status: "left_for_handler" },
+      { ...summary, case_id: "CLM-1004", status: "left_for_reviewer" },
       { ...summary, case_id: "CLM-1005", status: "sent_back" },
     ],
     "GET /api/dispatches/latest": null,
@@ -39,13 +39,13 @@ it("shows the queue with counts by state", async () => {
   expect(screen.getByLabelText("Waiting: 1")).toBeDefined();
   expect(screen.getByLabelText("Decided: 1")).toBeDefined();
   expect(screen.getByLabelText("In progress: 0")).toBeDefined();
-  expect(screen.getByLabelText("Left for a handler: 1")).toBeDefined();
+  expect(screen.getByLabelText("Left for a reviewer: 1")).toBeDefined();
   const sentBack = screen.getByLabelText("Sent back: 1");
   expect(sentBack.className).toBe("tile status-sent_back");
   expect(sentBack.querySelector("svg.lucide-undo-2")).not.toBeNull();
   const left = screen.getByRole("row", { name: /CLM-1004/ });
-  const chip = within(left).getByText("Left for a handler");
-  expect(chip.className).toBe("chip status-left_for_handler");
+  const chip = within(left).getByText("Left for a reviewer");
+  expect(chip.className).toBe("chip status-left_for_reviewer");
   const row = screen.getByRole("row", { name: /CLM-1003/ });
   expect(within(row).getByText("Approved")).toBeDefined();
   expect(within(row).getByText("$420.00")).toBeDefined();
@@ -65,7 +65,7 @@ it("shows a case in full", async () => {
   stubApi({
     "GET /api/cases/CLM-1002": caseRecord,
     "GET /api/policies/POL-2002": policy,
-    "GET /api/customers/CUS-3002/cases": history,
+    "GET /api/subcontractors/CUS-3002/cases": history,
   });
   renderAt("/cases/CLM-1002");
   expect(await screen.findByText(caseRecord.story)).toBeDefined();
@@ -88,17 +88,17 @@ it("shows a case in full", async () => {
   expect(screen.getByText("Waiting")).toBeDefined();
 });
 
-it("shows a policy without add-ons and a customer with no earlier cases", async () => {
+it("shows a policy without add-ons and a subcontractor with no earlier cases", async () => {
   stubApi({
     "GET /api/cases/CLM-1002": caseRecord,
     "GET /api/policies/POL-2002": { ...policy, add_ons: [] },
-    "GET /api/customers/CUS-3002/cases": [],
+    "GET /api/subcontractors/CUS-3002/cases": [],
   });
   renderAt("/cases/CLM-1002");
   expect(await screen.findByText("None")).toBeDefined();
   expect(
     await screen.findByText(
-      /^No earlier cases: this is the customer's first case/,
+      /^No earlier cases: this is the subcontractor's first case/,
     ),
   ).toBeDefined();
 });

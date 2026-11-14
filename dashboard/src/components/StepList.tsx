@@ -119,7 +119,7 @@ function StepBody({ step }: Readonly<{ step: Step }>) {
     );
   if (step.kind === "sent_back")
     return (
-      <Marked icon={Undo2} label="Handler's note">
+      <Marked icon={Undo2} label="Reviewer's note">
         <span className="step-text">{step.content}</span>
       </Marked>
     );

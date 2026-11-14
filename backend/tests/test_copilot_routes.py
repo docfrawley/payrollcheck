@@ -1,8 +1,8 @@
 """The app's two routes to the Copilot: its AgentCore app's /invocations on the
 laptop, with no key, or its runtime on AgentCore Runtime through boto3, in the
-conversation's session; what the handler gets when the Copilot takes a turn,
+conversation's session; what the reviewer gets when the Copilot takes a turn,
 refuses it, can't be reached, gives an error answer or doesn't answer in time; and
-the handler's sign-in kept out of botocore's report lines."""
+the reviewer's sign-in kept out of botocore's report lines."""
 
 import io
 import json
@@ -80,7 +80,7 @@ def test_a_turn_is_committed_then_posted_to_the_copilot_with_no_key(
     assert found == [QUESTION]
 
 
-def test_the_sign_in_passed_on_is_the_handlers_own(dashboard, copilot_calls):
+def test_the_sign_in_passed_on_is_the_reviewers_own(dashboard, copilot_calls):
     own = token(DANA)
     assert start_conversation(dashboard, access_token=own).status_code == 202
     assert copilot_calls[0]["sign_in"] == own
@@ -123,7 +123,7 @@ def test_the_laptop_route_is_at_payrollcheck_copilot(
     ],
 )
 def test_on_the_laptop_route(dashboard, copilot_answers, answer, outcome):
-    """The handler's answer, and the turn: failed with the reason when the Copilot
+    """The reviewer's answer, and the turn: failed with the reason when the Copilot
     didn't take it, and left working when it may have."""
     status, detail, turn = outcome
     copilot_answers(answer)
@@ -219,7 +219,7 @@ def test_conflicts_stop_once_another_try_would_pass_the_budget(
     ],
 )
 def test_on_the_runtime_route(dashboard, runtime, given, outcome):
-    """The handler's answer, and the turn: failed with the reason when the Copilot
+    """The reviewer's answer, and the turn: failed with the reason when the Copilot
     didn't take it, and left working when it may have."""
     status, detail, turn = outcome
     for name, value in given.items():

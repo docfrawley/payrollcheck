@@ -90,7 +90,7 @@ def test_a_dispatch_works_the_cases_in_progress_and_waiting_oldest_first(client)
     assert case_of(client, "CLM-1010")["thread_id"] == "t-1010"
     assert case_of(client, "CLM-1003")["attempts"] == 1
     assert case_of(client, "CLM-1008")["status"] == "waiting_for_sign_off"
-    assert case_of(client, "CLM-1002")["status"] == "left_for_handler"
+    assert case_of(client, "CLM-1002")["status"] == "left_for_reviewer"
 
 
 def test_a_rate_limit_waits_and_carries_the_case_on(client):
@@ -140,7 +140,7 @@ def test_a_case_that_fails_is_tried_once_more_in_the_same_dispatch(client):
     assert sorted(reports) == [
         "CLM-1001  refer  $0.00",
         "CLM-1004  failed: RuntimeError: 503: The model is unavailable,"
-        " left for a handler",
+        " left for a reviewer",
     ]
     again = case_of(client, "CLM-1001")
     assert (again["status"], again["attempts"]) == ("decided", 2)
@@ -149,7 +149,7 @@ def test_a_case_that_fails_is_tried_once_more_in_the_same_dispatch(client):
     assert [s["kind"] for s in steps[:3]] == ["screening", "error", "screening"]
     assert steps[-1]["thread_id"] == again["thread_id"] != steps[0]["thread_id"]
     left = case_of(client, "CLM-1004")
-    assert (left["status"], left["attempts"]) == ("left_for_handler", 2)
+    assert (left["status"], left["attempts"]) == ("left_for_reviewer", 2)
     assert tries_on(model, "CLM-1004") == 2
 
 

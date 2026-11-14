@@ -33,7 +33,7 @@ from langgraph.runtime import Runtime
 from langgraph.store.base import BaseStore
 from langgraph.types import Command, Overwrite, RetryPolicy, interrupt
 
-from agent import api, app_terms, handler_answer, memory, tool_route
+from agent import api, app_terms, memory, reviewer_answer, tool_route
 from agent.checkpoints import Pool
 from agent.connection import Refused
 from agent.console import describe
@@ -74,8 +74,8 @@ AGENT = "agent"
 TOOLS = "tools"
 PAY = "pay"
 REMEMBER = "remember"
-WAIT_FOR_HANDLER = "wait_for_handler"
-# Where a decision goes when its payout is held for a handler's sign-off.
+WAIT_FOR_REVIEWER = "wait_for_reviewer"
+# Where a decision goes when its payout is held for a reviewer's sign-off.
 HELD = "held"
 PAY_CASE = "pay_case"
 REFUSAL = "refusal"
@@ -186,7 +186,7 @@ def screen_case(
 
 
 def refer(state: PayrollState, runtime: Runtime[PayrollContext]) -> dict[str, Any]:
-    """Refer a case the check flagged to a handler, with the check's reason."""
+    """Refer a case the check flagged to a reviewer, with the check's reason."""
     reason = state["screening"]["reason"]
     case = api.record_decision(
         runtime.context.case_id,
@@ -231,7 +231,7 @@ def pay(state: PayrollState, runtime: Runtime[PayrollContext]) -> dict[str, Any]
 
 def hold(context: PayrollContext, refused: GatewayRefused) -> dict[str, Any]:
     """Record the Gateway's refusal of a payment on the case, and hold the payment
-    for a handler's sign-off with the Gateway's reason."""
+    for a reviewer's sign-off with the Gateway's reason."""
     name = context.route.name(Target.APP, PAY_CASE)
     api.record_step(context.case_id, REFUSAL, f"{name}: {refused.answer}", [])
     return api.hold_payment(context.case_id, str(refused))
@@ -250,7 +250,7 @@ def after_agent(state: PayrollState) -> str:
 
 def after_tools(state: PayrollState) -> str:
     """Go back to the model until a decision is recorded, then pay an approval the
-    backend can pay at once, hold one it holds for a handler's sign-off, or end the
+    backend can pay at once, hold one it holds for a reviewer's sign-off, or end the
     payroll agent's work. The graph maps a held payout to the pause, or to the end
     for a graph that doesn't pause, and the end to `remember` when it has a
     memory."""
@@ -268,37 +268,37 @@ def after_tools(state: PayrollState) -> str:
 
 
 def after_pay(state: PayrollState) -> str:
-    """Hold a payment the Gateway refused for a handler's sign-off, or end the case
+    """Hold a payment the Gateway refused for a reviewer's sign-off, or end the case
     agent's work on a case that is paid."""
     return HELD if state["status"] == app_terms.Status.WAITING_FOR_SIGN_OFF else END
 
 
-def wait_for_handler(
+def wait_for_reviewer(
     state: PayrollState, runtime: Runtime[PayrollContext]
 ) -> dict[str, Any]:
-    """Pause the case's work until a handler answers its held approval. A resume
+    """Pause the case's work until a reviewer answers its held approval. A resume
     runs this node again from the top, so nothing goes before the interrupt. A
     sign-off has already paid the case, so the work then ends. A send back forgets
     the decision, so nothing can pay it, gives the payroll agent its full allowance
     of model calls again and hands the model the note."""
     answer = interrupt({"case_id": runtime.context.case_id})
-    if answer["answer"] != handler_answer.SENT_BACK:
+    if answer["answer"] != reviewer_answer.SENT_BACK:
         return {}
     return {
         "decision": {},
         "status": "",
         "model_calls": Overwrite(0),
-        "messages": [handler_answer.note_message(answer)],
+        "messages": [reviewer_answer.note_message(answer)],
     }
 
 
-def after_handler(state: PayrollState) -> str:
+def after_reviewer(state: PayrollState) -> str:
     """Hand a decision sent back to the model, or end the work after a sign-off."""
     return END if state["decision"] else AGENT
 
 
 def remember(state: PayrollState, runtime: Runtime[PayrollContext]) -> None:
-    """Save the case the payroll agent decided to its customer's memory, and record
+    """Save the case the payroll agent decided to its subcontractor's memory, and record
     what was saved on the case. When the memory can't be reached, the case keeps
     its decision and the error is logged as a warning, as any error after the
     decision is."""
@@ -310,8 +310,8 @@ def remember(state: PayrollState, runtime: Runtime[PayrollContext]) -> None:
 @dataclass(frozen=True)
 class RunTraits:
     """What the kind of run a payroll graph works in gives it: a memory of each
-    customer, or none, and whether a payout held for sign-off pauses for a
-    handler's answer."""
+    subcontractor, or none, and whether a payout held for sign-off pauses for a
+    reviewer's answer."""
 
     store: BaseStore | None
     pauses: bool
@@ -335,14 +335,14 @@ def payroll_graph(
 ) -> PayrollGraph:
     """Build the payroll agent's graph, which saves its progress after every step: the
     check for hidden instructions on its own model, then the payroll agent on its
-    model, with its instructions. With a memory, it can search the customer's, and
+    model, with its instructions. With a memory, it can search the subcontractor's, and
     a case it decides is remembered once its work ends. A graph that pauses waits
-    for a handler's answer to a payout held for sign-off; any other ends its work
+    for a reviewer's answer to a payout held for sign-off; any other ends its work
     there."""
     remembers = traits.store is not None
     tools = payroll_tools(remembers)
     decided = REMEMBER if remembers else END
-    held = WAIT_FOR_HANDLER if traits.pauses else decided
+    held = WAIT_FOR_REVIEWER if traits.pauses else decided
     builder = StateGraph(PayrollState, context_schema=PayrollContext)
     builder.add_node(
         SCREEN, partial(screen_case, screener=screener), retry_policy=SCREEN_RETRY
@@ -370,9 +370,9 @@ def payroll_graph(
     )
     builder.add_conditional_edges(PAY, after_pay, {HELD: held, END: decided})
     if traits.pauses:
-        builder.add_node(WAIT_FOR_HANDLER, wait_for_handler)
+        builder.add_node(WAIT_FOR_REVIEWER, wait_for_reviewer)
         builder.add_conditional_edges(
-            WAIT_FOR_HANDLER, after_handler, {AGENT: AGENT, END: decided}
+            WAIT_FOR_REVIEWER, after_reviewer, {AGENT: AGENT, END: decided}
         )
     if remembers:
         builder.add_node(REMEMBER, remember)
@@ -452,7 +452,7 @@ def context_of(
         case["case_id"],
         run_id,
         case["policy_id"],
-        case["customer_id"],
+        case["subcontractor_id"],
         agent.route,
         agent.decided_by,
     )
@@ -468,8 +468,8 @@ def report(case: dict[str, Any], reason: str) -> str:
     case_id, status, decision = case["case_id"], case["status"], case["decision"]
     if status == app_terms.Status.WAITING:
         return f"{case_id}  failed: {reason}, back in the queue"
-    if status == app_terms.Status.LEFT_FOR_HANDLER:
-        return f"{case_id}  failed: {reason}, left for a handler"
+    if status == app_terms.Status.LEFT_FOR_REVIEWER:
+        return f"{case_id}  failed: {reason}, left for a reviewer"
     line = f"{case_id}  {decision['decision']}  ${decision['payout']:,.2f}"
     if status == app_terms.Status.WAITING_FOR_SIGN_OFF:
         return f"{line}, waiting for sign-off"
@@ -549,16 +549,16 @@ def carry_on(
 ) -> str:
     """Carry a case in progress on from its saved progress, as the same attempt, and
     report how it ended. One whose next step is the pause resumes with its
-    handler's answer, whether the pause has run or not: LangGraph keeps an answer
+    reviewer's answer, whether the pause has run or not: LangGraph keeps an answer
     given before the pause for the pause to return at once. One with nothing
     saved, stopped before its first step, starts on its own thread; any other
     carries on, finishing a step whose writes were saved. A case whose work has
     ended has nothing left to run."""
     case = api.get_case(case_id)
     saved = agent.graph.get_state(thread_of(case))
-    answer = handler_answer.answer_of(case)
+    answer = reviewer_answer.answer_of(case)
     start: Start = None
-    if saved.next == (WAIT_FOR_HANDLER,) and answer:
+    if saved.next == (WAIT_FOR_REVIEWER,) and answer:
         start = Command(resume=answer)
     elif saved.created_at is None and case["decision"] is None:
         start = begin(case_id)
@@ -567,7 +567,7 @@ def carry_on(
 
 
 def paused(case: dict[str, Any], agent: PayrollAgent) -> bool:
-    """Say whether the case's work is paused for a handler's answer: an interrupt
+    """Say whether the case's work is paused for a reviewer's answer: an interrupt
     waits on its thread. The next step names the pause as soon as the step before
     it is saved, before the pause has run, so it isn't enough."""
     if case["thread_id"] is None:
@@ -576,10 +576,10 @@ def paused(case: dict[str, Any], agent: PayrollAgent) -> bool:
 
 
 def resume(case_id: str, agent: PayrollAgent) -> str:
-    """Resume a paused case with the handler's answer from the app's record, with
+    """Resume a paused case with the reviewer's answer from the app's record, with
     no run, and report how it ended."""
     case = api.get_case(case_id)
-    start = Command(resume=handler_answer.answer_of(case))
+    start = Command(resume=reviewer_answer.answer_of(case))
     return work_on(case, start, case_config(case, RESUME, None, ()), None, agent)
 
 

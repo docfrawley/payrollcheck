@@ -177,7 +177,7 @@ def test_over_the_limit_waits_for_sign_off(client):
     response = pay(client, "CLM-1002", 1350.0)
     assert response.status_code == 403
     assert response.json()["detail"] == (
-        "A payout over $1,000.00 needs a handler's sign-off"
+        "A payout over $1,000.00 needs a reviewer's sign-off"
     )
     assert client.get("/api/cases/CLM-1002").json()["payment"] is None
 
@@ -196,7 +196,7 @@ def test_a_sign_off_pays_the_held_payout_once(client, agent_calls):
     refused = pay(client, "CLM-1002", 1350.0)
     assert (refused.status_code, refused.json()["detail"]) == (
         403,
-        "A payout over $1,000.00 needs a handler's sign-off",
+        "A payout over $1,000.00 needs a reviewer's sign-off",
     )
     assert sign_off(client, "CLM-1002").status_code == 409
     assert count(payments) == 1
@@ -210,13 +210,13 @@ def test_sign_off_needs_a_case_waiting_for_it(client):
     assert sign_off(client, "CLM-1001").status_code == 409
 
 
-def test_sign_off_needs_a_handler_who_can_approve(client, agent_calls):
+def test_sign_off_needs_a_reviewer_who_can_approve(client, agent_calls):
     start(client, "CLM-1002")
     held = decide(client, "CLM-1002", "approve", 1350.0).json()
     response = sign_off(client, "CLM-1002", MARCUS)
     assert response.status_code == 403
     assert response.json()["detail"] == (
-        "Only a handler who can sign off payouts over $1,000.00 can sign this off. "
+        "Only a reviewer who can sign off payouts over $1,000.00 can sign this off. "
         "Marcus Oyelaran can't."
     )
     assert client.get("/api/cases/CLM-1002").json() == held
@@ -242,7 +242,7 @@ def test_a_payment_over_the_limit_is_refused_before_the_case_is_read(client, cas
     refused = pay(client, case_id, 4800.0)
     assert (refused.status_code, refused.json()["detail"]) == (
         403,
-        "A payout over $1,000.00 needs a handler's sign-off",
+        "A payout over $1,000.00 needs a reviewer's sign-off",
     )
     assert count(payments) == 0
 
@@ -260,5 +260,5 @@ def test_the_payments_limit_is_the_one_in_force(client):
     assert pay(client, "CLM-1901", 1500.0).status_code == 409
     refused = pay(client, "CLM-1901", 2500.0)
     assert refused.json()["detail"] == (
-        "A payout over $2,000.00 needs a handler's sign-off"
+        "A payout over $2,000.00 needs a reviewer's sign-off"
     )

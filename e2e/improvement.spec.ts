@@ -10,7 +10,7 @@ import {
   started,
   stopTheWork,
 } from "./api";
-import { HANDLERS } from "./handlers";
+import { REVIEWERS } from "./reviewers";
 
 // Rounds of the improver started as Dana Whitfield and played out through the
 // API as the agent would record them, with each review on the page recorded by
@@ -105,7 +105,7 @@ test("a recipe rejected on the page records its reason and reaches the agent", a
 });
 
 test.describe("signed in as Marcus Oyelaran", () => {
-  test.use({ storageState: HANDLERS.marcus.storage });
+  test.use({ storageState: REVIEWERS.marcus.storage });
 
   test("a proposal waiting shows no buttons", async ({ page, request }) => {
     const round = await startRound(request);
@@ -117,7 +117,7 @@ test.describe("signed in as Marcus Oyelaran", () => {
     await expect(waiting.getByText(RULE)).toBeVisible();
     await expect(
       waiting.getByText(
-        "Only a handler who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
       ),
     ).toBeVisible();
     await expect(waiting.getByRole("button")).toHaveCount(0);

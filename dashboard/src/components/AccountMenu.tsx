@@ -2,15 +2,15 @@ import { ChevronDown, Settings } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { NavLink } from "react-router";
 import { initials } from "../format";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import { SETTINGS } from "../paths";
 import { SignOutButton } from "./SignOutButton";
 
-// The signed-in handler's avatar, which opens a menu with who they are, the
+// The signed-in reviewer's avatar, which opens a menu with who they are, the
 // Settings page and Sign out. A click outside, focus moving away or Escape
 // closes it.
 export function AccountMenu() {
-  const handler = useHandler();
+  const reviewer = useReviewer();
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const account = useRef<HTMLDivElement>(null);
@@ -58,16 +58,16 @@ export function AccountMenu() {
           setOpen(!open);
         }}
       >
-        <span className="avatar">{initials(handler.name)}</span>
+        <span className="avatar">{initials(reviewer.name)}</span>
         <ChevronDown />
       </button>
       {open && (
         // Focusable, so a click on its text keeps focus, and the menu, open.
         <div id={menuId} className="account-menu" tabIndex={-1}>
           <p className="account-who">
-            <span className="who-name">{handler.name}</span>
-            <span className="small">{handler.role}</span>
-            <span className="muted small">{handler.email}</span>
+            <span className="who-name">{reviewer.name}</span>
+            <span className="small">{reviewer.role}</span>
+            <span className="muted small">{reviewer.email}</span>
           </p>
           <NavLink
             to={SETTINGS}

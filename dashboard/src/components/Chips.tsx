@@ -52,7 +52,7 @@ export function VerdictChip({ verdict }: Readonly<{ verdict: Verdict }>) {
   );
 }
 
-// Whether the agent's decision and payout match the handler's.
+// Whether the agent's decision and payout match the reviewer's.
 export function RightChip({ right }: Readonly<{ right: boolean }>) {
   return right ? (
     <span className="chip score-right">Right</span>

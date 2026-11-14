@@ -48,7 +48,7 @@ const finished: Run = {
       { case_id: "CLM-1008", payout: 2240 },
       { case_id: "CLM-1011", payout: 1150 },
     ],
-    left_for_handler: ["CLM-1016"],
+    left_for_reviewer: ["CLM-1016"],
     unfinished: ["CLM-1012"],
   },
 };
@@ -111,7 +111,7 @@ it("shows a finished dispatch with its summary", async () => {
   expect(lines).toEqual([
     "3 approved, 1 declined and 1 referred.",
     "Waiting for sign-off: CLM-1008 $2,240.00, CLM-1011 $1,150.00",
-    "Left for a handler: CLM-1016",
+    "Left for a reviewer: CLM-1016",
     "Left for the next dispatch: CLM-1012",
   ]);
   const held = panel.getByRole("link", { name: "CLM-1011" });

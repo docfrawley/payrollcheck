@@ -35,7 +35,7 @@ export function showCase(shown: Case, stepsShown: Step[] = []) {
     "GET /api/cases/CLM-1002": shown,
     "GET /api/cases/CLM-1002/steps": stepsShown,
     "GET /api/policies/POL-2002": policy,
-    "GET /api/customers/CUS-3002/cases": history,
+    "GET /api/subcontractors/CUS-3002/cases": history,
   };
   const fetchMock = stubApi(routes);
   renderAt("/cases/CLM-1002");

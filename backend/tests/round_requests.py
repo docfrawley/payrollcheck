@@ -3,17 +3,17 @@ agent and the dashboard do."""
 
 from sqlalchemy import select, update
 
-from backend.database import engine, handler_decisions, runs
+from backend.database import engine, reviewer_decisions, runs
 from backend.tests.case_requests import decide
 from backend.tests.dashboard_reads import read
 from backend.tests.rows import newest_round
 from backend.tests.run_requests import get_evaluation
 from backend.tests.sign_in import DANA, signed_in
 
-# Who each handler signs in as, by their id.
+# Who each reviewer signs in as, by their id.
 EMAILS = {
     "HND-01": DANA,
-    "HND-02": "marcus.oyelaran@undercover.example",
+    "HND-02": "marcus.oyelaran@payrollcheck.example",
 }
 
 CHANGE = {
@@ -32,15 +32,15 @@ RECIPE = {
 ROUNDS = "/api/improvement/rounds"
 
 
-def start_round(client, handler_id="HND-01"):
-    """Start a round as a handler does, and return the start's answer."""
-    return client.post(ROUNDS, headers=signed_in(EMAILS[handler_id]))
+def start_round(client, reviewer_id="HND-01"):
+    """Start a round as a reviewer does, and return the start's answer."""
+    return client.post(ROUNDS, headers=signed_in(EMAILS[reviewer_id]))
 
 
-def create_round(client, handler_id="HND-01"):
-    """Start a round as a handler does, which the app creates, and return it as
+def create_round(client, reviewer_id="HND-01"):
+    """Start a round as a reviewer does, which the app creates, and return it as
     the agent reads it, or the start's refusal."""
-    started = start_round(client, handler_id)
+    started = start_round(client, reviewer_id)
     if started.status_code != 202:
         return started
     return client.get(round_path(newest_round()))
@@ -67,28 +67,28 @@ def review_path(round_id, proposal_id):
     return f"{ROUNDS}/{round_id}/proposals/{proposal_id}"
 
 
-def approve(client, round_id, proposal_id, handler_id="HND-01"):
-    """Approve a proposal as a handler does, and return the answer."""
+def approve(client, round_id, proposal_id, reviewer_id="HND-01"):
+    """Approve a proposal as a reviewer does, and return the answer."""
     return client.post(
         f"{review_path(round_id, proposal_id)}/approval",
-        headers=signed_in(EMAILS[handler_id]),
+        headers=signed_in(EMAILS[reviewer_id]),
     )
 
 
-def reject(client, round_id, proposal_id, handler_id="HND-01"):
-    """Reject a proposal as a handler does, with a reason, and return the answer."""
+def reject(client, round_id, proposal_id, reviewer_id="HND-01"):
+    """Reject a proposal as a reviewer does, with a reason, and return the answer."""
     return client.post(
         f"{review_path(round_id, proposal_id)}/rejection",
         json={"reason": "Keep each rule general"},
-        headers=signed_in(EMAILS[handler_id]),
+        headers=signed_in(EMAILS[reviewer_id]),
     )
 
 
-def review(client, round_id, proposal_id, verdict="approved", handler_id="HND-01"):
-    """Approve or reject a proposal as a handler does on the Improvement page, and
+def review(client, round_id, proposal_id, verdict="approved", reviewer_id="HND-01"):
+    """Approve or reject a proposal as a reviewer does on the Improvement page, and
     return it with its review as the agent reads it, or the refusal."""
     answer = approve if verdict == "approved" else reject
-    reviewed = answer(client, round_id, proposal_id, handler_id)
+    reviewed = answer(client, round_id, proposal_id, reviewer_id)
     if reviewed.status_code != 202:
         return reviewed
     return client.get(f"{round_path(round_id)}/proposals/{proposal_id}")
@@ -131,20 +131,20 @@ def into_round(round_id, *evaluations):
         )
 
 
-def handler_reasons(evaluation_set):
-    """The handlers' reasons on a labeled set, by case."""
+def reviewer_reasons(evaluation_set):
+    """The reviewers' reasons on a labeled set, by case."""
     with engine().connect() as db:
-        query = select(handler_decisions).where(
-            handler_decisions.c.evaluation_set == evaluation_set
+        query = select(reviewer_decisions).where(
+            reviewer_decisions.c.evaluation_set == evaluation_set
         )
         return {row["case_id"]: row["reason"] for row in db.execute(query).mappings()}
 
 
-def handler_answers(evaluation_set):
-    """The handlers' decisions and payouts on a labeled set, by case."""
+def reviewer_answers(evaluation_set):
+    """The reviewers' decisions and payouts on a labeled set, by case."""
     with engine().connect() as db:
-        query = select(handler_decisions).where(
-            handler_decisions.c.evaluation_set == evaluation_set
+        query = select(reviewer_decisions).where(
+            reviewer_decisions.c.evaluation_set == evaluation_set
         )
         return {
             row["case_id"]: (row["decision"], row["payout"])
@@ -153,10 +153,10 @@ def handler_answers(evaluation_set):
 
 
 def decide_copies(client, run, right):
-    """Decide an evaluation's first copies as the handlers did, as many as `right`
+    """Decide an evaluation's first copies as the reviewers did, as many as `right`
     says, and the rest otherwise: declining what they didn't decline, and
     referring what they declined."""
-    answers = handler_answers(run["evaluation_set"])
+    answers = reviewer_answers(run["evaluation_set"])
     for n, copy in enumerate(run["cases"]):
         copy_id = copy["case_id"]
         decision, payout = answers[copy_id.rsplit("-E", 1)[0]]

@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { HANDLERS } from "./handlers";
+import { REVIEWERS } from "./reviewers";
 
 // Only this file changes the settings.
 
-test("a senior handler changes the spending limit", async ({ page }) => {
+test("a compliance manager changes the spending limit", async ({ page }) => {
   await page.goto("/settings");
   const limit = page
     .getByRole("group", { name: "Spending" })
@@ -52,13 +52,13 @@ test("the appearance is kept in the browser", async ({ page }) => {
 });
 
 test.describe("signed in as Marcus Oyelaran", () => {
-  test.use({ storageState: HANDLERS.marcus.storage });
+  test.use({ storageState: REVIEWERS.marcus.storage });
 
   test("the settings are read only, and say why", async ({ page }) => {
     await page.goto("/settings");
     await expect(
       page.getByText(
-        "Only a handler who can sign off payouts over $1,000.00 can change the settings. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can change the settings. Marcus Oyelaran can't.",
       ),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);

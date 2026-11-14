@@ -180,8 +180,8 @@ def flags():
 
 class Surroundings(TypedDict, total=False):
     """What a test may give a payroll agent in place of what it has by default: a
-    check of its own, a route, a memory of each customer, and whether it pauses for
-    a handler, as an evaluation's doesn't."""
+    check of its own, a route, a memory of each subcontractor, and whether it pauses for
+    a reviewer, as an evaluation's doesn't."""
 
     screener: BaseChatModel
     route: Route
@@ -192,7 +192,7 @@ class Surroundings(TypedDict, total=False):
 def agent_on(model, saver=None, version=VERSION, **given: Unpack[Surroundings]):
     """A payroll agent of a version of the configuration, on a stub model, saving its
     progress in memory, after a check that passes every case, on the direct route,
-    with no memory and pausing for a handler like a dispatch's, unless the test
+    with no memory and pausing for a reviewer like a dispatch's, unless the test
     gives it a check, a route, a memory or no pause."""
     graph = harness.payroll_graph(
         model,

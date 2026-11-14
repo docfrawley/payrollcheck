@@ -1,4 +1,4 @@
-"""A handler's sign-off of a held payout: it pays the case once, commits, then asks
+"""A reviewer's sign-off of a held payout: it pays the case once, commits, then asks
 the agent to resume the case, and stands whatever happens to that call."""
 
 import json

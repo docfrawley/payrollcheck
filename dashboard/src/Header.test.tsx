@@ -12,7 +12,7 @@ const QUEUE_ROUTES = {
   "GET /api/dispatches/latest": null,
 };
 
-it("shows the handler's initials, and keeps Settings and Sign out in their menu", async () => {
+it("shows the reviewer's initials, and keeps Settings and Sign out in their menu", async () => {
   stubApi(QUEUE_ROUTES);
   renderAt("/");
   const who = within(await screen.findByLabelText("Signed in"));
@@ -30,8 +30,8 @@ it("shows the handler's initials, and keeps Settings and Sign out in their menu"
 
   fireEvent.click(avatar);
   expect(avatar.getAttribute("aria-expanded")).toBe("true");
-  expect(who.getAllByText("Senior Claims Handler")).toHaveLength(2);
-  expect(who.getByText("dana.whitfield@undercover.example")).toBeDefined();
+  expect(who.getAllByText("Compliance Manager")).toHaveLength(2);
+  expect(who.getByText("dana.whitfield@payrollcheck.example")).toBeDefined();
   expect(who.getByRole("button", { name: "Sign out" })).toBeDefined();
   fireEvent.click(who.getByRole("link", { name: "Settings" }));
   expect(
@@ -53,7 +53,7 @@ it("closes the menu on Escape, back on the avatar, on a click outside it, or as 
   expect(document.activeElement).toBe(avatar);
 
   fireEvent.click(avatar);
-  fireEvent.pointerDown(who.getByText("dana.whitfield@undercover.example"));
+  fireEvent.pointerDown(who.getByText("dana.whitfield@payrollcheck.example"));
   expect(menuOpen()).not.toBeNull();
   fireEvent.pointerDown(screen.getByRole("heading", { name: "Cases queue" }));
   expect(menuOpen()).toBeNull();
@@ -69,7 +69,7 @@ it("closes the menu on Escape, back on the avatar, on a click outside it, or as 
   expect(menuOpen()).toBeNull();
 });
 
-it("shows the header and nav while the handler loads", async () => {
+it("shows the header and nav while the reviewer loads", async () => {
   const fetchMock = stubApi(QUEUE_ROUTES);
   fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
   renderAt("/");

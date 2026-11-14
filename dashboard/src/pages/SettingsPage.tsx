@@ -12,7 +12,7 @@ import { NotAllowed } from "../components/NotAllowed";
 import { PageHeader } from "../components/PageHeader";
 import { StateMessage } from "../components/StateMessage";
 import { dateTime, label, money } from "../format";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import {
   GROUPS,
   SETTING_FIELDS,
@@ -45,7 +45,7 @@ function lastChange(settings: Settings): string {
 }
 
 export function SettingsPage() {
-  // Loaded once, so a refresh never overwrites what a handler is typing. A
+  // Loaded once, so a refresh never overwrites what a reviewer is typing. A
   // save returns the settings as they now stand.
   const { data, error } = useLoad(api.getSettings);
   const [saved, setSaved] = useState<SettingsData>();
@@ -69,10 +69,10 @@ function SettingsPanels({
   page,
   onSaved,
 }: Readonly<{ page: SettingsData; onSaved: (page: SettingsData) => void }>) {
-  const handler = useHandler();
+  const reviewer = useReviewer();
   return (
     <div className="column">
-      {handler.can_approve_over_limit ? (
+      {reviewer.can_approve_over_limit ? (
         <SettingsForm current={page.current} onSaved={onSaved} />
       ) : (
         <ReadOnlySettings current={page.current} />

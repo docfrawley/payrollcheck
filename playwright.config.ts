@@ -8,11 +8,11 @@ import {
   DASHBOARD,
   JUDGE_STAND_IN,
 } from "./e2e/servers";
-import { HANDLERS, TEST_PASSWORD } from "./e2e/handlers";
+import { REVIEWERS, TEST_PASSWORD } from "./e2e/reviewers";
 
 // The tests run their own backend and dashboard, on their own ports and
 // database, so they never touch the servers started by `npm run dev`. Every
-// test runs signed in as Dana Whitfield unless it chooses another handler.
+// test runs signed in as Dana Whitfield unless it chooses another reviewer.
 export default defineConfig({
   testDir: "e2e",
   outputDir: "e2e/test-results",
@@ -26,7 +26,7 @@ export default defineConfig({
     {
       name: "dashboard",
       dependencies: ["sign in"],
-      use: { storageState: HANDLERS.dana.storage },
+      use: { storageState: REVIEWERS.dana.storage },
     },
   ],
   webServer: [
@@ -74,7 +74,7 @@ export default defineConfig({
       url: `${AUTH_STAND_IN}/auth/v1/.well-known/jwks.json`,
       env: {
         PORT: new URL(AUTH_STAND_IN).port,
-        HANDLER_PASSWORD: TEST_PASSWORD,
+        REVIEWER_PASSWORD: TEST_PASSWORD,
         DASHBOARD,
       },
     },

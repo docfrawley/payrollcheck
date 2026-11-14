@@ -62,7 +62,7 @@ def committed_case(case_id: str):
 
 
 def newest(table: Table, key: str) -> str:
-    """The id of the newest run or round, which the app created as a handler asked."""
+    """The id of the newest run or round, which the app created as a reviewer asked."""
     with engine().connect() as db:
         query = select(table.c[key]).order_by(table.c.number.desc()).limit(1)
         return db.execute(query).scalar_one()

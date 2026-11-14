@@ -1,5 +1,5 @@
 """Who may call each of the backend's operations: anyone, the agent with its key, a
-signed-in handler or the agent, or a signed-in handler alone."""
+signed-in reviewer or the agent, or a signed-in reviewer alone."""
 
 from backend.tests.settings_requests import STARTING
 
@@ -49,7 +49,7 @@ SHARED_READS = {
     "list_cases": "/api/cases",
     "get_case": "/api/cases/CLM-1001",
     "get_policy": "/api/policies/POL-2001",
-    "get_case_history": "/api/customers/CUS-3001/cases",
+    "get_case_history": "/api/subcontractors/CUS-3001/cases",
     "get_agent_api": "/api/agent/openapi.json",
     "get_run": "/api/runs/{run_id}",
 }
@@ -57,9 +57,9 @@ SHARED_READS = {
 CONVERSATION = "/api/copilot/conversations/conversation-1"
 TURN = "/api/copilot/turns/turn-1"
 
-# Every operation only a signed-in handler may use, with a body it would accept.
-HANDLER_OPERATIONS = {
-    "get_signed_in_handler": ("GET", "/api/me", None),
+# Every operation only a signed-in reviewer may use, with a body it would accept.
+REVIEWER_OPERATIONS = {
+    "get_signed_in_reviewer": ("GET", "/api/me", None),
     "list_steps": ("GET", "/api/cases/CLM-1002/steps", None),
     "get_configuration": ("GET", "/api/configuration", None),
     "get_version_details": ("GET", "/api/configuration/versions/1", None),
@@ -86,8 +86,8 @@ HANDLER_OPERATIONS = {
     "stop_round": ("POST", f"{ROUND}/stop", None),
     "approve_proposal": ("POST", f"{PROPOSAL}/approval", None),
     "reject_proposal": ("POST", f"{PROPOSAL}/rejection", {"reason": "Too broad"}),
-    "find_customers": ("GET", "/api/customers?name=maya", None),
-    "get_customer": ("GET", "/api/customers/CUS-3001", None),
+    "find_subcontractors": ("GET", "/api/subcontractors?name=maya", None),
+    "get_subcontractor": ("GET", "/api/subcontractors/CUS-3001", None),
     "count_payouts_over_limit": ("GET", "/api/payouts/over-limit", None),
     "list_conversations": ("GET", "/api/copilot/conversations", None),
     "start_conversation": (

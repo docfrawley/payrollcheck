@@ -1,5 +1,5 @@
 """Versions of the payroll agent's configuration that the tests add straight to the
-backend's table, as a round does once a handler approves a change."""
+backend's table, as a round does once a reviewer approves a change."""
 
 from sqlalchemy import func, insert, select
 

@@ -35,7 +35,7 @@ function Cards({ steps }: Readonly<{ steps: CopilotStep[] }>) {
   );
 }
 
-// One turn of a conversation: the handler's message, the Copilot's cards as it
+// One turn of a conversation: the reviewer's message, the Copilot's cards as it
 // takes each step, a confirmation card when a sign-off waits, and its answer,
 // or what went wrong.
 export function CopilotTurn({
@@ -59,7 +59,7 @@ export function CopilotTurn({
   const after = turn.steps.filter((step) => !before.includes(step));
   return (
     <li className={working ? "turn turn-working" : "turn"}>
-      <p className="from-handler">{turn.message}</p>
+      <p className="from-reviewer">{turn.message}</p>
       <Cards steps={before} />
       {turn.confirmation && (
         <ConfirmationCard

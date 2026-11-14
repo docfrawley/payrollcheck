@@ -14,13 +14,13 @@ export interface SettingField {
   label: string;
   name: string;
   unit: Unit;
-  // The most a handler may type, in the unit shown, when there's a most.
+  // The most a reviewer may type, in the unit shown, when there's a most.
   max?: number;
   get: (values: SettingsValues) => number;
   set: (values: SettingsValues, value: number) => SettingsValues;
 }
 
-// Each unit as a handler types it: what goes before or after the number, the
+// Each unit as a reviewer types it: what goes before or after the number, the
 // smallest number allowed and the step, and how it's rounded once typed.
 export const UNITS: Record<
   Unit,
@@ -45,7 +45,7 @@ export type SettingGroup = (typeof settingGroups)[number];
 export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
   approval: {
     title: "Approval",
-    lead: "Payouts over the limit wait for a senior handler's sign-off. A new limit applies to later decisions only.",
+    lead: "Payouts over the limit wait for a compliance manager's sign-off. A new limit applies to later decisions only.",
   },
   objectives: {
     title: "Objectives on the held-out set",
@@ -152,7 +152,7 @@ export const SETTING_FIELDS: SettingField[] = [
   },
 ];
 
-// A setting as a handler types it: dollars to the cent, grades as they are,
+// A setting as a reviewer types it: dollars to the cent, grades as they are,
 // and shares as percentages to a tenth.
 export function toInput(unit: Unit, value: number): string {
   if (unit === "dollars") return value.toFixed(2);
@@ -201,7 +201,7 @@ function valuesOnly(settings: Settings): SettingsValues {
 }
 
 // The settings as typed: a setting whose input wasn't touched keeps its value
-// exactly, so saving never changes what a handler didn't.
+// exactly, so saving never changes what a reviewer didn't.
 export function valuesOf(current: Settings, inputs: Inputs): SettingsValues {
   return SETTING_FIELDS.reduce((values, field) => {
     const input = inputs[field.id] ?? "";

@@ -1,5 +1,5 @@
-"""A senior handler sends a held decision back to the agent with a note: the decision
-is kept with the note and cleared from the case, the case waits for the agent,
+"""A compliance manager sends a held decision back to the agent with a note: the
+decision is kept with the note and cleared from the case, the case waits for the agent,
 and a dispatch or a resume takes it back into work once."""
 
 import json
@@ -110,7 +110,7 @@ def test_the_send_backs_refusals(client, dashboard, agent_calls):
     marcus = send_back(client, "CLM-1008", email=MARCUS)
     assert (marcus.status_code, marcus.json()["detail"]) == (
         403,
-        "Only a handler who can sign off payouts over $1,000.00 can send this back. "
+        "Only a reviewer who can sign off payouts over $1,000.00 can send this back. "
         "Marcus Oyelaran can't.",
     )
     assert (

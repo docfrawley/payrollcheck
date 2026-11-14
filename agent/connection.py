@@ -1,7 +1,7 @@
 """The connection to the PayrollCheck backend: its address, the one HTTP client, the
 agent's API key, and how a request is sent and refused. The payroll agent's API and the
 improver's API send their requests through it with the agent's key, and the
-Copilot's with a handler's sign-in."""
+Copilot's with a reviewer's sign-in."""
 
 import os
 from typing import Any
@@ -58,6 +58,6 @@ def call(method: str, path: str, **request: Any) -> Any:
 
 
 def call_as(sign_in: str, method: str, path: str, **request: Any) -> Any:
-    """Send one request to the backend as the handler whose sign-in it is, with
+    """Send one request to the backend as the reviewer whose sign-in it is, with
     their access token and never the agent's key, as the Copilot does."""
     return send(method, path, {"Authorization": f"Bearer {sign_in}"}, **request)

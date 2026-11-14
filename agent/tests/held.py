@@ -1,4 +1,4 @@
-"""Cases the tests hold for a handler's sign-off, paused or stopped short of the
+"""Cases the tests hold for a reviewer's sign-off, paused or stopped short of the
 pause, and resume through the agent's AgentCore app."""
 
 from langgraph.checkpoint.memory import InMemorySaver

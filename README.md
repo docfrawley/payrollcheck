@@ -13,7 +13,7 @@ PayrollCheck is being built in seven stages, listed in [docs/ROADMAP.md](docs/RO
 You need uv, Python 3.12, Node 26 and a Supabase project. Today these run the imported UnderCover code, with its settings already renamed `PAYROLLCHECK_*`.
 
 1. `uv sync` and `npm install` at the root of the repo install everything, including a git pre-commit hook.
-2. Create `.env` at the root of the repo. `docs/TECH_STACK.md` lists what it holds: the OpenRouter key (`OPENROUTER_API_KEY`), Supabase's session pooler connection string (`DATABASE_URL`), the Supabase project's address and publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`), the password for signing in (`HANDLER_PASSWORD`), the agent's API key (`PAYROLLCHECK_API_KEY`, a random value of at least 32 characters, such as one from `uv run python -c "import secrets; print(secrets.token_urlsafe(32))"`) and the Langfuse keys.
+2. Create `.env` at the root of the repo. `docs/TECH_STACK.md` lists what it holds: the OpenRouter key (`OPENROUTER_API_KEY`), Supabase's session pooler connection string (`DATABASE_URL`), the Supabase project's address and publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`), the password for signing in (`REVIEWER_PASSWORD`), the agent's API key (`PAYROLLCHECK_API_KEY`, a random value of at least 32 characters, such as one from `uv run python -c "import secrets; print(secrets.token_urlsafe(32))"`) and the Langfuse keys.
 3. `npm run seed` rebuilds the database from `data/`.
 4. `npm run dev` starts the backend on port 8000, the agent on port 8080, the Copilot on 127.0.0.1:8081, the context layer on port 8006 and the dashboard on http://localhost:5173.
 

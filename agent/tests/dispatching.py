@@ -1,4 +1,4 @@
-"""Runs the tests work, which a handler starts and the app creates, with payroll graphs
+"""Runs the tests work, which a reviewer starts and the app creates, with payroll graphs
 on a stub model."""
 
 import os
@@ -26,14 +26,14 @@ def the_app() -> Iterator[TestClient]:
 
 
 def new_dispatch(agents=3):
-    """Start a dispatch as a handler does, which the app creates, and return it as
+    """Start a dispatch as a reviewer does, which the app creates, and return it as
     the agent reads it."""
     with the_app() as caller:
         return create_dispatch(caller, agents).json()
 
 
 def new_evaluation(evaluation_set="held_out", tiny=True, agents=5):
-    """Start an evaluation as a handler does, which the app creates with its copies,
+    """Start an evaluation as a reviewer does, which the app creates with its copies,
     and return it as the agent reads it."""
     with the_app() as caller:
         return create_evaluation(caller, evaluation_set, tiny, agents).json()

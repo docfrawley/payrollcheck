@@ -32,7 +32,7 @@ export function Rounds({ rounds }: Readonly<{ rounds: RoundSummary[] }>) {
     <section className="panel" aria-labelledby="rounds-title">
       <h2 id="rounds-title">Rounds</h2>
       {rounds.length === 0 ? (
-        <StateMessage empty="No rounds yet. Starting a round has the improver read the latest results and propose a change to the payroll agent for a handler to approve." />
+        <StateMessage empty="No rounds yet. Starting a round has the improver read the latest results and propose a change to the payroll agent for a reviewer to approve." />
       ) : (
         <div className="table-scroll">
           <table className="table rounds">

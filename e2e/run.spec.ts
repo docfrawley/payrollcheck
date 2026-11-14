@@ -88,7 +88,7 @@ test("the dispatch panel follows a dispatch as it works", async ({
   await expect(page).toHaveURL("/cases/CLM-1013");
 });
 
-test("a case that fails twice is left for a handler", async ({
+test("a case that fails twice is left for a reviewer", async ({
   page,
   request,
 }) => {
@@ -122,10 +122,10 @@ test("a case that fails twice is left for a handler", async ({
     "CLM-1016",
     "RuntimeError: The model timed out again",
   );
-  await expect(heading.getByText("Left for a handler")).toBeVisible();
+  await expect(heading.getByText("Left for a reviewer")).toBeVisible();
   await expect(
     page.getByText(
-      "The agent couldn't finish this case in 2 attempts, so it's left for a handler.",
+      "The agent couldn't finish this case in 2 attempts, so it's left for a reviewer.",
     ),
   ).toBeVisible();
 

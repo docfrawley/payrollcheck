@@ -7,7 +7,7 @@ import type {
   StepKind,
 } from "../dashboard/src/api";
 import type { Source } from "../dashboard/src/sources";
-import { HANDLERS, signedInAs } from "./handlers";
+import { REVIEWERS, signedInAs } from "./reviewers";
 import { roundPath, runPath } from "./paths";
 import { AGENT_KEY_HEADERS, AGENT_STAND_IN } from "./servers";
 
@@ -173,7 +173,7 @@ export async function getRun(request: Request, runId: string): Promise<Run> {
   return (await response.json()) as Run;
 }
 
-// Starts a run as a handler does, and returns it as the agent reads it.
+// Starts a run as a reviewer does, and returns it as the agent reads it.
 async function startRun(
   request: Request,
   path: string,
@@ -182,7 +182,7 @@ async function startRun(
   const before = (await started(request)).length;
   const response = await request.post(path, {
     data,
-    headers: await signedInAs(request, HANDLERS.dana),
+    headers: await signedInAs(request, REVIEWERS.dana),
   });
   await expect(response).toBeOK();
   const { run_id } = await nextStarted(request, before);
@@ -218,7 +218,7 @@ export const finishRun = (request: Request, runId: string) =>
 export async function startRound(request: Request): Promise<string> {
   const before = (await started(request)).length;
   const response = await request.post("/api/improvement/rounds", {
-    headers: await signedInAs(request, HANDLERS.dana),
+    headers: await signedInAs(request, REVIEWERS.dana),
   });
   await expect(response).toBeOK();
   return String((await nextStarted(request, before)).round_id);

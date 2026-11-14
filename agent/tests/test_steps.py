@@ -45,7 +45,7 @@ def test_each_context_tool_records_what_it_looked_up_and_where_from(client):
 
 def test_a_memory_search_and_a_save_are_recorded(client):
     store = MemoryStandIn(
-        memories=[("/customers/CUS-3005/facts/", "Oliver Grant travels a lot.")]
+        memories=[("/subcontractors/CUS-3005/facts/", "Oliver Grant travels a lot.")]
     )
     model = stub(
         call("search_memory", query="earlier cases"),

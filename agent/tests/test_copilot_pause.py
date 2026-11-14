@@ -1,7 +1,7 @@
 """The pause before a sign-off: checked in code first, the confirmation card filled in
-by the app from its records, and the handler's answer, taken by a freshly built
+by the app from its records, and the reviewer's answer, taken by a freshly built
 Copilot on the same saved state, which signs off and pays once, or cancels with a
-reply written in code. The handler's sign-in goes with every request and is saved
+reply written in code. The reviewer's sign-in goes with every request and is saved
 nowhere."""
 
 import json
@@ -53,7 +53,7 @@ def test_the_pause(client, copilot: Copilot):
     assert turn["status"] == "waiting_for_confirmation"
     assert turn["confirmation"] == {
         "case_id": "CLM-1003",
-        "customer_name": case["customer_name"],
+        "subcontractor_name": case["subcontractor_name"],
         "payout": 3750.0,
         "reason": case["decision"]["reason"],
     }
@@ -63,7 +63,7 @@ def test_the_pause(client, copilot: Copilot):
     assert [i.value for i in interrupts] == [{"case_id": "CLM-1003"}]
 
 
-def test_a_fresh_copilot_signs_off_once_on_the_handlers_answer(
+def test_a_fresh_copilot_signs_off_once_on_the_reviewers_answer(
     client, copilot: Copilot, monkeypatch
 ):
     """One script runs across the pause and the answer: whatever ran before the
@@ -140,7 +140,7 @@ def test_one_sign_off_a_turn(client, copilot: Copilot):
     assert len(payments_of("CLM-1003")) == 1
 
 
-def test_a_handler_who_cant_sign_off_is_told_so_without_a_pause(
+def test_a_reviewer_who_cant_sign_off_is_told_so_without_a_pause(
     client, copilot: Copilot, monkeypatch
 ):
     held(client, "CLM-1003", 3750.0)

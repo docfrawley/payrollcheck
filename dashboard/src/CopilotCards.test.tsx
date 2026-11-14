@@ -176,7 +176,7 @@ it("shows the confirmation card from the app's records and answers its own turn"
     await screen.findByRole("region", { name: "Confirm the sign-off" }),
   );
   expect(card.getByRole("link", { name: "CLM-1003" })).toBeDefined();
-  expect(card.getByText(confirmation.customer_name)).toBeDefined();
+  expect(card.getByText(confirmation.subcontractor_name)).toBeDefined();
   expect(card.getByText("$3,750.00")).toBeDefined();
   expect(card.getByText(confirmation.reason)).toBeDefined();
   fireEvent.click(card.getByRole("button", { name: "Sign off and pay" }));

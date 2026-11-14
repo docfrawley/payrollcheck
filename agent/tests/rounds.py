@@ -4,18 +4,18 @@ better once their instructions hold the improver's rule."""
 
 from agent.tests.stubs import StubModel, calculate, call, stub
 from backend.database import INSTRUCTIONS
-from backend.tests.round_requests import handler_answers
+from backend.tests.round_requests import reviewer_answers
 
 # What the improver adds to the payroll agent's instructions in the tests, and what
-# makes the stub payroll agents decide as the handlers did.
-RULE = "\nA general rule: decide each case as a careful handler would.\n"
+# makes the stub payroll agents decide as the reviewers did.
+RULE = "\nA general rule: decide each case as a careful reviewer would.\n"
 VERSION_1 = (INSTRUCTIONS / "payroll.md").read_text(encoding="utf-8")
 LUNA = {"model": "openai/gpt-6-luna", "reasoning_effort": "low"}
 
 
 class RuleFollowingModel(StubModel):
     """A stub payroll agent that reads its case, then refers it, or once its
-    instructions hold the rule, decides it as the handler did, working out an
+    instructions hold the rule, decides it as the reviewer did, working out an
     approval's payout first."""
 
     answers: dict[str, tuple[str, float]] = {}
@@ -39,7 +39,7 @@ class RuleFollowingModel(StubModel):
 
 
 def payroll_agents_model():
-    answers = handler_answers("evaluation") | handler_answers("held_out")
+    answers = reviewer_answers("evaluation") | reviewer_answers("held_out")
     return RuleFollowingModel(messages=iter(()), answers=answers)
 
 
@@ -47,7 +47,7 @@ def propose(instructions=VERSION_1 + RULE, **model):
     return call(
         "propose_change",
         instructions=instructions,
-        reason="It approved cases the handlers declined.",
+        reason="It approved cases the reviewers declined.",
         **(LUNA | model),
     )
 

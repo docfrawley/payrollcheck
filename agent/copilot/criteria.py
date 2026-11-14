@@ -107,7 +107,7 @@ def rows(figures: Figures | str, objective: float, over: dict[str, Any]) -> list
         ),
         Row(
             "Over the limit",
-            "Every payout over the approval limit signed off by a handler",
+            "Every payout over the approval limit signed off by a reviewer",
             over_the_limit,
             signed_off == paid,
         ),
@@ -142,7 +142,7 @@ def evaluated(sign_in: str, agents: int) -> Figures | str:
 
 
 def check(sign_in: str) -> str:
-    """Check the three criteria as the handler signed in and give the answer."""
+    """Check the three criteria as the reviewer signed in and give the answer."""
     settings = app_api.get_settings(sign_in)["current"]
     figures = evaluated(sign_in, settings["agents"])
     over = app_api.count_payouts_over_limit(sign_in)

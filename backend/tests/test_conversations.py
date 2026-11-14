@@ -1,6 +1,6 @@
-"""The Copilot's conversations in the app: each handler's own, one message at a
+"""The Copilot's conversations in the app: each reviewer's own, one message at a
 time, the Copilot's records of each turn, a turn that stops, the confirmation card
-filled in from the case, and the handler's answer to it."""
+filled in from the case, and the reviewer's answer to it."""
 
 import json
 import logging
@@ -31,7 +31,7 @@ from backend.database import (
     seed,
 )
 from backend.dependencies import API_KEY_HEADER
-from backend.models import Handler
+from backend.models import Reviewer
 from backend.tests.case_requests import (
     held,
     record_decision,
@@ -188,7 +188,7 @@ def test_a_message_read_before_another_moved_the_conversation_on_is_refused(
     conversation = started(dashboard)
     conversation_id = conversation["conversation_id"]
     done(dashboard, conversation)
-    dana = Handler(**read(dashboard, "/api/me").json())
+    dana = Reviewer(**read(dashboard, "/api/me").json())
     with engine().connect() as db:
         as_read = owned(db, conversation_id, dana)
     second = latest(send_message(dashboard, conversation_id).json())
@@ -336,7 +336,7 @@ def test_a_pause_fills_the_card_in_from_the_case(client, dashboard):
     assert paused["status"] == "waiting_for_confirmation"
     assert paused["confirmation"] == {
         "case_id": "CLM-1003",
-        "customer_name": case["customer_name"],
+        "subcontractor_name": case["subcontractor_name"],
         "payout": 3750.0,
         "reason": case["decision"]["reason"],
     }
@@ -368,7 +368,7 @@ def test_a_pause_on_a_case_not_waiting_for_sign_off_or_a_copy_is_refused(
     assert turn_of(dashboard, conversation["conversation_id"])["status"] == "working"
 
 
-def test_the_handlers_answer_carries_the_turn_on(client, dashboard, copilot_calls):
+def test_the_reviewers_answer_carries_the_turn_on(client, dashboard, copilot_calls):
     conversation_id, turn_id = waiting_on(client)
     own = token(DANA)
     response = answer(dashboard, conversation_id, turn_id, "sign_off", bearer(own))
@@ -512,7 +512,7 @@ def test_a_turn_stops_20_minutes_after_its_start_or_its_answer(client, dashboard
     assert turn_of(dashboard, conversation_id)["status"] == "stopped"
 
 
-def test_a_turns_seconds_leave_out_the_wait_for_the_handler(client, dashboard):
+def test_a_turns_seconds_leave_out_the_wait_for_the_reviewer(client, dashboard):
     conversation_id, turn_id = waiting_on(client)
     answer(dashboard, conversation_id, turn_id, "cancel")
     times_ago(
@@ -525,7 +525,7 @@ def test_a_turns_seconds_leave_out_the_wait_for_the_handler(client, dashboard):
     assert 11.5 < seconds < 13
 
 
-def test_another_handler_cant_see_or_carry_on_a_conversation(client, dashboard):
+def test_another_reviewer_cant_see_or_carry_on_a_conversation(client, dashboard):
     conversation_id, turn_id = waiting_on(client)
     marcus = [
         conversation_of(dashboard, conversation_id, MARCUS),
@@ -540,7 +540,7 @@ def test_another_handler_cant_see_or_carry_on_a_conversation(client, dashboard):
     assert [response.status_code for response in marcus] == [404] * len(marcus)
 
 
-def test_each_handler_lists_their_own_conversations_newest_first(dashboard):
+def test_each_reviewer_lists_their_own_conversations_newest_first(dashboard):
     first = started(dashboard, "What needs me today?")
     second = started(dashboard, "How did the latest dispatch go?")
     started(dashboard, "What needs Marcus?", MARCUS)
@@ -570,7 +570,7 @@ def test_the_sign_in_is_never_kept(client, dashboard, caplog):
     assert [r for r in caplog.records if own in r.getMessage()] == []
 
 
-def test_the_agents_key_never_stands_in_for_a_handler(dashboard, agent_key):
+def test_the_agents_key_never_stands_in_for_a_reviewer(dashboard, agent_key):
     both = signed_in() | {API_KEY_HEADER: agent_key}
     refused = dashboard.get("/api/settings", headers=both)
     assert refused.status_code == 403

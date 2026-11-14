@@ -1,6 +1,6 @@
 """The Copilot's loop: its lookups and actions, each a card, refusals passed on to
 the model, one tool at a time, a turn's model calls limited, a failed turn and a
-message after it, and the handler's sign-in on every request it sends."""
+message after it, and the reviewer's sign-in on every request it sends."""
 
 import itertools
 import json
@@ -55,12 +55,12 @@ def test_the_model_knows_who_it_works_for(copilot: Copilot):
     copilot.ask("Hello")
     [system, *_] = copilot.model.prompts[0]
     assert isinstance(system, SystemMessage)
-    assert "Dana Whitfield, Senior Claims Handler" in system.text
+    assert "Dana Whitfield, Compliance Manager" in system.text
     assert "They can sign off payouts over the approval limit." in system.text
     copilot.model = stub("Hello, Marcus.")
     copilot.ask("Hello", email=MARCUS)
     [system, *_] = copilot.model.prompts[0]
-    assert "Marcus Oyelaran, Claims Handler" in system.text
+    assert "Marcus Oyelaran, Reviewer" in system.text
     assert "They can't sign off payouts over the approval limit" in system.text
 
 
@@ -114,7 +114,7 @@ def test_starts_with_the_agents_asked_for_or_the_settings(client, copilot: Copil
 NOTE = "Check the hotel receipts again."
 
 
-def test_a_send_back_as_the_handler_who_asks(client, copilot: Copilot, agent_calls):
+def test_a_send_back_as_the_reviewer_who_asks(client, copilot: Copilot, agent_calls):
     held(client, "CLM-1008", 2240.0)
     copilot.model = stub(
         call("send_back_case", case_id="CLM-1008", note=NOTE), "Sent back."
@@ -132,7 +132,7 @@ def test_a_send_back_as_the_handler_who_asks(client, copilot: Copilot, agent_cal
     [card] = turn["steps"]
     assert (card["status"], card["reason"]) == (
         "refused",
-        "Only a handler who can sign off payouts over $1,000.00 can send this back. "
+        "Only a reviewer who can sign off payouts over $1,000.00 can send this back. "
         "Marcus Oyelaran can't.",
     )
 
@@ -243,9 +243,9 @@ def test_the_copilots_tools(copilot: Copilot):
         "list_cases",
         "get_case",
         "list_steps",
-        "what_needs_a_handler",
-        "find_customers",
-        "get_customer",
+        "what_needs_a_reviewer",
+        "find_subcontractors",
+        "get_subcontractor",
         "get_policy",
         "lookup_term",
         "describe_fields",
@@ -271,10 +271,10 @@ def test_the_copilots_tools(copilot: Copilot):
         "list_cases": "cases",
         "get_case": "cases",
         "list_steps": "cases",
-        "what_needs_a_handler": "cases",
-        "find_customers": "customers",
-        "get_customer": "customers",
-        "get_policy": "customers",
+        "what_needs_a_reviewer": "cases",
+        "find_subcontractors": "subcontractors",
+        "get_subcontractor": "subcontractors",
+        "get_policy": "subcontractors",
         "lookup_term": "context",
         "describe_fields": "context",
         "get_plan": "context",
@@ -300,10 +300,10 @@ def test_the_lookups_each_with_a_card(client, copilot: Copilot):
         AIMessage(
             content="",
             tool_calls=[
-                {"name": "find_customers", "args": {"name": "maya"}, "id": "f"}
+                {"name": "find_subcontractors", "args": {"name": "maya"}, "id": "f"}
             ],
         ),
-        call("get_customer", customer_id="CUS-3001"),
+        call("get_subcontractor", subcontractor_id="CUS-3001"),
         call("get_policy", policy_id="POL-2001"),
         call("get_latest_dispatch"),
         call("list_evaluations"),
@@ -312,15 +312,17 @@ def test_the_lookups_each_with_a_card(client, copilot: Copilot):
     )
     [turn] = copilot.ask("Tell me about Maya Patel")["turns"]
     assert [(c["tool"], c["kind"], c["status"]) for c in turn["steps"]] == [
-        ("find_customers", "customers", "done"),
-        ("get_customer", "customers", "done"),
-        ("get_policy", "customers", "done"),
+        ("find_subcontractors", "subcontractors", "done"),
+        ("get_subcontractor", "subcontractors", "done"),
+        ("get_policy", "subcontractors", "done"),
         ("get_latest_dispatch", "work", "done"),
         ("list_evaluations", "work", "done"),
         ("get_settings", "work", "done"),
     ]
     found = copilot.model.prompts[1][-1]
-    assert json.loads(found.text) == [{"customer_id": "CUS-3001", "name": "Maya Patel"}]
+    assert json.loads(found.text) == [
+        {"subcontractor_id": "CUS-3001", "name": "Maya Patel"}
+    ]
 
 
 def test_a_call_with_bad_inputs_or_to_no_such_tool_goes_back_to_the_model(

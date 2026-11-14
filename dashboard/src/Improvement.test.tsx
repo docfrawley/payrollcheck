@@ -193,7 +193,7 @@ it("rejects a proposal with a reason", async () => {
 
 it.each([
   "A dispatch is running",
-  `Proposal ${PROPOSAL_ID} isn't waiting for a handler: it was rejected`,
+  `Proposal ${PROPOSAL_ID} isn't waiting for a reviewer: it was rejected`,
 ])("shows why an approval was refused: %s", async (detail) => {
   showPage(improvement(open), { [APPROVAL]: new Refusal(409, detail) });
   const proposal = await panel("A change is waiting for approval");
@@ -207,7 +207,7 @@ it.each([
 });
 
 it("keeps a refusal on screen once the proposal is no longer waiting", async () => {
-  const detail = `Proposal ${PROPOSAL_ID} isn't waiting for a handler: it was approved`;
+  const detail = `Proposal ${PROPOSAL_ID} isn't waiting for a reviewer: it was approved`;
   const routes: Routes = { [APPROVAL]: new Refusal(409, detail) };
   showPage(improvement(open), routes);
   const proposal = await panel("A change is waiting for approval");
@@ -278,7 +278,7 @@ it("shows Marcus what he can't do in place of the buttons", async () => {
   expect(
     await proposal.findByText(
       wholeText(
-        "Only a handler who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();
@@ -287,7 +287,7 @@ it("shows Marcus what he can't do in place of the buttons", async () => {
   expect(
     await screen.findByText(
       wholeText(
-        "Only a handler who can sign off payouts over $1,000.00 can start a round. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can start a round. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();
@@ -430,7 +430,7 @@ it("shows a recipe with its diff", async () => {
 });
 
 it("clears a refusal once another proposal waits", async () => {
-  const detail = `Proposal ${PROPOSAL_ID} isn't waiting for a handler: it was approved`;
+  const detail = `Proposal ${PROPOSAL_ID} isn't waiting for a reviewer: it was approved`;
   const routes: Routes = { [APPROVAL]: new Refusal(409, detail) };
   showPage(improvement(open), routes);
   const proposal = await panel("A change is waiting for approval");

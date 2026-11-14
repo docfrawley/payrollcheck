@@ -25,7 +25,7 @@ from agent.tests.stubs import StubModel, call
 from backend.database import engine, grades, improver_calls, model_calls, runs
 from backend.tests.dashboard_reads import configuration, version_details
 from backend.tests.round_requests import create_round, improvement, stop_round
-from backend.tests.round_requests import review as review_as_a_handler
+from backend.tests.round_requests import review as review_as_a_reviewer
 from backend.tests.run_requests import get_evaluation
 from backend.tests.settings_requests import STARTING, change_settings
 
@@ -49,7 +49,7 @@ def room_to_run(client):
 
 
 def start_round(agent, wait=True):
-    """Start a round as a handler does, which the app creates, and have the agent
+    """Start a round as a reviewer does, which the app creates, and have the agent
     work it."""
     with the_app() as caller:
         round_id = create_round(caller).json()["round_id"]
@@ -57,11 +57,11 @@ def start_round(agent, wait=True):
 
 
 def review(agent, round_, proposal_id, verdict="approved"):
-    """Review a proposal as a handler does, which the app records, and have the
+    """Review a proposal as a reviewer does, which the app records, and have the
     agent carry the round on."""
     round_id = round_["round_id"]
     with the_app() as caller:
-        reviewed = review_as_a_handler(caller, round_id, proposal_id, verdict)
+        reviewed = review_as_a_reviewer(caller, round_id, proposal_id, verdict)
     assert reviewed.status_code == 200, reviewed.text
     return agent.invoke(carry_round_on(round_id, proposal_id))
 
@@ -102,7 +102,7 @@ def test_a_round_runs_its_first_evaluations_then_waits_for_a_change(
     read = model.prompts[1][-1]
     assert read.name == "read_results"
     assert '"wrong"' in read.content
-    # The round waits for a handler, so a dispatch can start.
+    # The round waits for a reviewer, so a dispatch can start.
     assert new_dispatch()["status"] == "running"
 
 
@@ -221,7 +221,7 @@ def restart(monkeypatch, fresh_agent):
     fresh_agent().invoke(HEALTH)
 
 
-def test_a_round_waiting_for_a_handler_survives_a_restart(
+def test_a_round_waiting_for_a_reviewer_survives_a_restart(
     client, serve_rounds, monkeypatch, fresh_agent
 ):
     model = whole_round()
@@ -364,7 +364,7 @@ def test_a_version_is_evaluated_only_until_its_verdict(client, serve_rounds):
 
 
 class StoppedMidCall(StubModel):
-    """A stub improver whose second reply comes after a handler stops the round."""
+    """A stub improver whose second reply comes after a reviewer stops the round."""
 
     stop: Callable[[], None] = lambda: None
 

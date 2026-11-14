@@ -2,7 +2,7 @@
 JSON payload posted to the app's /invocations on the laptop, or sent to its runtime
 on AgentCore Runtime in the session given, retrying a conflict while the call has
 time, and the answer read: whether the app took the work. Each service words its
-failures for the handler."""
+failures for the reviewer."""
 
 import json
 import logging
@@ -58,13 +58,13 @@ SENT_THEN_LOST = (HTTPClientError, ResponseStreamingError, IncompleteReadError)
 
 log = logging.getLogger(__name__)
 # botocore's DEBUG lines hold each request's payload, and the Copilot's payload
-# holds a handler's sign-in.
+# holds a reviewer's sign-in.
 BOTOCORE = "botocore"
 
 
 @dataclass(frozen=True)
 class Wording:
-    """How a service's failures read to the handler: it isn't running, it couldn't
+    """How a service's failures read to the reviewer: it isn't running, it couldn't
     take the work, with {reason}, or it didn't answer in time."""
 
     not_running: str
@@ -73,7 +73,7 @@ class Wording:
 
 
 class NotTaken(HTTPException):
-    """The app didn't take the work, with the status and the reason the handler
+    """The app didn't take the work, with the status and the reason the reviewer
     gets: it was never reached, it refused, or it gave an error answer."""
 
 

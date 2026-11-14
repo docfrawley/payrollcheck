@@ -20,7 +20,7 @@ import { modelCost } from "./format";
 export const CARD_KINDS: Record<CardKind, { icon: LucideIcon; label: string }> =
   {
     cases: { icon: FileText, label: "Cases" },
-    customers: { icon: Users, label: "Customers and policies" },
+    subcontractors: { icon: Users, label: "Subcontractors and policies" },
     context: { icon: BookOpen, label: "The context layer" },
     work: { icon: Bot, label: "The agent's work" },
     memory: { icon: Brain, label: "Memory" },
@@ -28,40 +28,40 @@ export const CARD_KINDS: Record<CardKind, { icon: LucideIcon; label: string }> =
   };
 
 // The Copilot's step that signs off a case, whose card shows how a sign-off
-// the handler confirmed went.
+// the reviewer confirmed went.
 export const SIGN_OFF = "sign_off_case";
 
-// What this browser remembers of the sidebar for each handler: whether it is
+// What this browser remembers of the sidebar for each reviewer: whether it is
 // open, and the conversation open in it.
 const OPEN = "payrollcheck-copilot-open";
 const CONVERSATION = "payrollcheck-copilot-conversation";
 
-const keyFor = (name: string, handlerId: string) => `${name}:${handlerId}`;
+const keyFor = (name: string, reviewerId: string) => `${name}:${reviewerId}`;
 
-function read(name: string, handlerId: string): string | null {
-  return localStorage.getItem(keyFor(name, handlerId));
+function read(name: string, reviewerId: string): string | null {
+  return localStorage.getItem(keyFor(name, reviewerId));
 }
 
-function write(name: string, handlerId: string, value: string | undefined) {
-  const key = keyFor(name, handlerId);
+function write(name: string, reviewerId: string, value: string | undefined) {
+  const key = keyFor(name, reviewerId);
   if (value === undefined) localStorage.removeItem(key);
   else localStorage.setItem(key, value);
 }
 
-export function savedOpen(handlerId: string): boolean {
-  return read(OPEN, handlerId) !== "false";
+export function savedOpen(reviewerId: string): boolean {
+  return read(OPEN, reviewerId) !== "false";
 }
 
-export function saveOpen(handlerId: string, open: boolean) {
-  write(OPEN, handlerId, String(open));
+export function saveOpen(reviewerId: string, open: boolean) {
+  write(OPEN, reviewerId, String(open));
 }
 
-export function savedConversation(handlerId: string): string | undefined {
-  return read(CONVERSATION, handlerId) ?? undefined;
+export function savedConversation(reviewerId: string): string | undefined {
+  return read(CONVERSATION, reviewerId) ?? undefined;
 }
 
-export function saveConversation(handlerId: string, id: string | undefined) {
-  write(CONVERSATION, handlerId, id);
+export function saveConversation(reviewerId: string, id: string | undefined) {
+  write(CONVERSATION, reviewerId, id);
 }
 
 // How often the sidebar reads a conversation while the Copilot works on it.
@@ -128,7 +128,7 @@ export interface Outcome {
   reason?: string | null;
 }
 
-// How a confirmation the handler answered went, read from the turn's own card
+// How a confirmation the reviewer answered went, read from the turn's own card
 // for the sign-off, the first after the answer, as a turn signs off once: paid
 // only once that card is done, never on an answer of Sign off alone; not signed
 // off when the app refused it or it never began; and not known when it began

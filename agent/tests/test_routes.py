@@ -72,7 +72,7 @@ def test_the_models_tools_are_the_same_on_both_routes(gateway):
     assert on_each[0] == on_each[1]
     inputs = {name: set(args) for name, args in on_each[0]}
     for name in ("get_case", "get_policy", "get_case_history", "calculate_payout"):
-        assert {"case_id", "policy_id", "customer_id"} & inputs[name] == set()
+        assert {"case_id", "policy_id", "subcontractor_id"} & inputs[name] == set()
 
 
 def test_the_gateway_route_reads_decides_and_pays_through_the_gateway(client, gateway):
@@ -97,7 +97,7 @@ def test_the_gateway_route_reads_decides_and_pays_through_the_gateway(client, ga
     assert inputs[:3] == [
         {"case_id": "CLM-1001"},
         {"policy_id": "POL-2001"},
-        {"customer_id": "CUS-3001"},
+        {"subcontractor_id": "CUS-3001"},
     ]
     assert inputs[3]["case_id"] == inputs[4]["case_id"] == "CLM-1001"
     assert inputs[5] == {"case_id": "CLM-1001", "amount": 420.0}
@@ -172,7 +172,7 @@ def test_a_tool_the_gateway_refuses_is_a_refusal_and_the_work_goes_on(client, ga
     assert step["content"] == f"{APP}get_policy: Refused by the Gateway: {DENIED}"
 
 
-def test_a_payment_the_gateway_refuses_waits_for_a_handlers_sign_off(client, gateway):
+def test_a_payment_the_gateway_refuses_waits_for_a_reviewers_sign_off(client, gateway):
     change_settings(client, approval_limit=2000.0)
     model = stub(*approve("CLM-1002", 1500.0))
     agent = on_the_gateway(gateway, model)

@@ -23,7 +23,7 @@ def to_summary(row: RowMapping) -> CaseSummary:
         **row["record"]
         | {
             "status": row["status"],
-            "customer_name": row["customer_name"],
+            "subcontractor_name": row["subcontractor_name"],
             "decision": row["decision"],
             "payout": row["payout"],
             "resuming": resuming,
@@ -33,7 +33,7 @@ def to_summary(row: RowMapping) -> CaseSummary:
 
 def to_case(row: RowMapping, sent_back: list[SentBackDecision]) -> Case:
     """Build a case in full, with its decision and payment, from its row, and the
-    decisions handlers sent back on it."""
+    decisions reviewers sent back on it."""
     decision = None
     if row["decision"] is not None:
         decision = Decision(**{field: row[field] for field in Decision.model_fields})
@@ -44,7 +44,7 @@ def to_case(row: RowMapping, sent_back: list[SentBackDecision]) -> Case:
         **row["record"]
         | {
             "status": row["status"],
-            "customer_name": row["customer_name"],
+            "subcontractor_name": row["subcontractor_name"],
             "thread_id": row["thread_id"],
             "attempts": row["attempts"],
             "evaluation_id": row["evaluation_id"],

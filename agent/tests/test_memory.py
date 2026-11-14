@@ -1,5 +1,5 @@
-"""The payroll agent's memory of each customer: what it saves of a decided case, and
-what a search of the customer's memories finds."""
+"""The payroll agent's memory of each subcontractor: what it saves of a decided case,
+and what a search of the subcontractor's memories finds."""
 
 import logging
 from functools import partial
@@ -17,10 +17,10 @@ from agent.tests.memory_stand_in import MemoryStandIn
 from agent.tests.records import case_of
 from agent.tests.stubs import agent_on, approve, call, decide, flags, stub
 
-FACTS = "/customers/CUS-3005/facts/"
-FIRST_CASE = "/customers/CUS-3005/cases/CLM-1005/"
-SECOND_CASE = "/customers/CUS-3005/cases/CLM-1006/"
-SOMEONE_ELSES = "/customers/CUS-3001/cases/CLM-1001/"
+FACTS = "/subcontractors/CUS-3005/facts/"
+FIRST_CASE = "/subcontractors/CUS-3005/cases/CLM-1005/"
+SECOND_CASE = "/subcontractors/CUS-3005/cases/CLM-1006/"
+SOMEONE_ELSES = "/subcontractors/CUS-3001/cases/CLM-1001/"
 
 
 def tools_of(agent):
@@ -68,8 +68,10 @@ def test_each_decision_the_payroll_agent_makes_is_saved(
     store = MemoryStandIn()
     agent = agent_on(stub(*replies()), store=store)
     assert harness.work_case(case_id, None, agent) == report
-    customer_id = case_of(client, case_id)["customer_id"]
-    assert [(e.actor, e.session) for e in store.events] == [(customer_id, case_id)] * 2
+    subcontractor_id = case_of(client, case_id)["subcontractor_id"]
+    assert [(e.actor, e.session) for e in store.events] == [
+        (subcontractor_id, case_id)
+    ] * 2
 
 
 def test_a_case_the_check_referred_is_never_saved(client):
@@ -119,7 +121,7 @@ def search(store, query="earlier cases"):
     return answer
 
 
-def test_a_search_finds_only_the_customers_memories_and_not_this_cases_summary(
+def test_a_search_finds_only_the_subcontractors_memories_and_not_this_cases_summary(
     client,
 ):
     store = MemoryStandIn(
@@ -131,7 +133,7 @@ def test_a_search_finds_only_the_customers_memories_and_not_this_cases_summary(
         ]
     )
     answer = search(store)
-    assert store.searched == ["/customers/CUS-3005"]
+    assert store.searched == ["/subcontractors/CUS-3005"]
     assert answer.status != "error"
     assert answer.text == (
         '["Oliver Grant travels with his partner.", '

@@ -10,11 +10,11 @@ from sqlalchemy import Connection, RowMapping, func, select
 from backend.database import (
     case_view,
     cases,
-    customers,
     models_allowed,
     rounds,
     runs,
     settings,
+    subcontractors,
     versions,
 )
 from backend.models import ModelAllowed, Settings, Verdict
@@ -22,7 +22,7 @@ from backend.models import ModelAllowed, Settings, Verdict
 RUN_NOT_FOUND = "Run {run_id} not found"
 CASE_NOT_FOUND = "Case {case_id} not found"
 VERSION_NOT_FOUND = "Version {number} not found"
-CUSTOMER_NOT_FOUND = "Customer {customer_id} not found"
+SUBCONTRACTOR_NOT_FOUND = "Subcontractor {subcontractor_id} not found"
 NOT_WAITING_FOR_SIGN_OFF = "Case {case_id} is not waiting for sign-off"
 A_COPY = "Case {case_id} is a copy in an evaluation and can't be {answered}"
 
@@ -36,12 +36,16 @@ def find_case(db: Connection, case_id: str) -> RowMapping:
     return row
 
 
-def customer_record(db: Connection, customer_id: str) -> dict[str, Any]:
-    """Return one customer's record, or raise a 404."""
-    query = select(customers.c.record).where(customers.c.customer_id == customer_id)
+def subcontractor_record(db: Connection, subcontractor_id: str) -> dict[str, Any]:
+    """Return one subcontractor's record, or raise a 404."""
+    query = select(subcontractors.c.record).where(
+        subcontractors.c.subcontractor_id == subcontractor_id
+    )
     record = db.execute(query).scalar_one_or_none()
     if record is None:
-        raise HTTPException(404, CUSTOMER_NOT_FOUND.format(customer_id=customer_id))
+        raise HTTPException(
+            404, SUBCONTRACTOR_NOT_FOUND.format(subcontractor_id=subcontractor_id)
+        )
     return record
 
 

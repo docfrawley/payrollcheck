@@ -2,7 +2,7 @@ import { type Locator, type Page, expect, test } from "@playwright/test";
 import { decide, nextStarted, startCase, started, stopTheWork } from "./api";
 
 // The Copilot's sidebar on every signed-in page, driving a stand-in for the
-// Copilot, which plays scripted turns through the backend with the handler's
+// Copilot, which plays scripted turns through the backend with the reviewer's
 // sign-in.
 
 test.afterEach(async ({ request }) => {

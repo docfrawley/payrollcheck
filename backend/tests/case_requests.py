@@ -99,7 +99,7 @@ def hold(client, case_id, reason=GATEWAY_REFUSAL):
     return client.post(f"/api/cases/{case_id}/hold", json={"reason": reason})
 
 
-# A senior handler's note on a decision they send back, in the tests.
+# A compliance manager's note on a decision they send back, in the tests.
 NOTE = "Meridian Air has already paid $350 for the lost bag; take it off the payout."
 
 

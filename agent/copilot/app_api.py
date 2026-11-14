@@ -1,6 +1,6 @@
 """The PayrollCheck backend's API for the Copilot: one function for each operation it
-uses, each taking the handler's sign-in first and sending it, never the agent's
-key, and the app's refusal, which each raises. It has no way to the handlers'
+uses, each taking the reviewer's sign-in first and sending it, never the agent's
+key, and the app's refusal, which each raises. It has no way to the reviewers'
 decisions on the labeled sets, the rounds or anything only the agent may do."""
 
 from typing import Any, Literal, TypedDict
@@ -10,7 +10,7 @@ from agent.app_terms import EvaluationSet
 from agent.connection import call_as
 from agent.context_tools import Sources
 
-CardKind = Literal["cases", "customers", "context", "work", "memory", "action"]
+CardKind = Literal["cases", "subcontractors", "context", "work", "memory", "action"]
 CardStatus = Literal["done", "refused", "failed"]
 # The app's refusal of a request, which each function raises.
 Refused = connection.Refused
@@ -18,7 +18,7 @@ Refused = connection.Refused
 WORKING = "working"
 
 
-def get_signed_in_handler(sign_in: str) -> dict[str, Any]:
+def get_signed_in_reviewer(sign_in: str) -> dict[str, Any]:
     return call_as(sign_in, "GET", "/me")
 
 
@@ -95,12 +95,12 @@ def get_policy(sign_in: str, policy_id: str) -> dict[str, Any]:
     return call_as(sign_in, "GET", f"/policies/{policy_id}")
 
 
-def find_customers(sign_in: str, name: str) -> list[dict[str, Any]]:
-    return call_as(sign_in, "GET", "/customers", params={"name": name})
+def find_subcontractors(sign_in: str, name: str) -> list[dict[str, Any]]:
+    return call_as(sign_in, "GET", "/subcontractors", params={"name": name})
 
 
-def get_customer(sign_in: str, customer_id: str) -> dict[str, Any]:
-    return call_as(sign_in, "GET", f"/customers/{customer_id}")
+def get_subcontractor(sign_in: str, subcontractor_id: str) -> dict[str, Any]:
+    return call_as(sign_in, "GET", f"/subcontractors/{subcontractor_id}")
 
 
 def get_latest_dispatch(sign_in: str) -> dict[str, Any] | None:

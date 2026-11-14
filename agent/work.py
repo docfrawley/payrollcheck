@@ -67,7 +67,7 @@ def work_the_run(run: dict[str, Any], payroll_agents: PayrollAgents) -> None:
 def first_evaluations(round: dict[str, Any], workers: Workers) -> bool:
     """Work the evaluations the round's starting version still needs, one at a time,
     and say whether the round is still open after them: the spending limit or a
-    handler may have stopped it."""
+    reviewer may have stopped it."""
     for _ in round["first_evaluations"]:
         run = improver_api.create_round_evaluation(round["round_id"])
         evaluate(run, workers.payroll_agents)
@@ -77,13 +77,13 @@ def first_evaluations(round: dict[str, Any], workers: Workers) -> bool:
 
 
 def still_open(round: dict[str, Any]) -> bool:
-    """Say whether the round is still open: a handler or the spending limit may
+    """Say whether the round is still open: a reviewer or the spending limit may
     have stopped it."""
     return improver_api.get_round(round["round_id"])["status"] == improver_api.OPEN
 
 
 def stretch(round: dict[str, Any], start: improver.Start, workers: Workers) -> None:
-    """Run the improver until it waits for a handler, then record its proposal, or
+    """Run the improver until it waits for a reviewer, then record its proposal, or
     until it ends, then finish the round if it is still open. A proposal the
     backend refuses, such as a second change, goes back to the improver as a
     rejection with the backend's reason."""
@@ -126,7 +126,7 @@ def work_the_round(round: dict[str, Any], workers: Workers) -> None:
 def carry_the_round_on(
     round: dict[str, Any], start: improver.Start, workers: Workers
 ) -> None:
-    """Carry the improver on after a handler's review."""
+    """Carry the improver on after a reviewer's review."""
     with working_on(round):
         stretch(round, start, workers)
 

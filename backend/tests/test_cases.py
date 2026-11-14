@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from backend import seed
-from backend.database import engine, handler_decisions
+from backend.database import engine, reviewer_decisions
 from backend.tests.run_requests import create_evaluation, finish, queue
 
 
@@ -14,7 +14,7 @@ def test_list_cases(client):
     assert {case["status"] for case in cases} == {"waiting"}
     assert cases[0] == {
         "case_id": "CLM-1001",
-        "customer_name": "Maya Patel",
+        "subcontractor_name": "Maya Patel",
         "case_type": "trip_delay",
         "summary": "Flight home canceled by the airline, rebooked the next morning",
         "amount_claimed": 420.0,
@@ -28,7 +28,7 @@ def test_list_cases(client):
 
 def test_get_case(client):
     case = client.get("/api/cases/CLM-1001").json()
-    assert case["customer_name"] == "Maya Patel"
+    assert case["subcontractor_name"] == "Maya Patel"
     assert case["story"].startswith("My flight home from Rome")
     assert len(case["items"]) == 3
     assert len(case["documents"]) == 4
@@ -46,7 +46,7 @@ def test_get_policy(client):
 
 
 def test_get_case_history_leaves_out_personal_details(client):
-    response = client.get("/api/customers/CUS-3001/cases")
+    response = client.get("/api/subcontractors/CUS-3001/cases")
     history = response.json()
     assert [case["case_id"] for case in history] == ["CLM-0412"]
     for field in ("email", "phone", "address", "date_of_birth"):
@@ -57,7 +57,7 @@ def test_unknown_ids(client):
     for path in (
         "/api/cases/CLM-9999",
         "/api/policies/POL-9999",
-        "/api/customers/CUS-9999/cases",
+        "/api/subcontractors/CUS-9999/cases",
     ):
         response = client.get(path)
         assert response.status_code == 404
@@ -67,28 +67,28 @@ def test_unknown_ids(client):
 def test_seed_command(capsys):
     seed.main()
     assert capsys.readouterr().out == (
-        "Seeded 26 cases, 51 policies, 50 customers and 3 handlers "
-        "into payrollcheck.db, with 25 held-out cases and 50 handlers' decisions "
+        "Seeded 26 cases, 51 policies, 50 subcontractors and 3 reviewers "
+        "into payrollcheck.db, with 25 held-out cases and 50 reviewers' decisions "
         "for evaluations, and version 1 of the configuration and of the recipe\n"
     )
 
 
 def test_the_security_teams_case_waits_in_the_queue(client):
     case = client.get("/api/cases/CLM-1901").json()
-    assert (case["status"], case["policy_id"], case["customer_id"]) == (
+    assert (case["status"], case["policy_id"], case["subcontractor_id"]) == (
         "waiting",
         "POL-2901",
         "CUS-3901",
     )
     assert client.get("/api/policies/POL-2901").status_code == 200
-    assert client.get("/api/customers/CUS-3901/cases").status_code == 200
+    assert client.get("/api/subcontractors/CUS-3901/cases").status_code == 200
     [listed] = [c for c in queue(client) if c["case_id"] == "CLM-1901"]
-    assert listed["customer_name"] == "Derek Vance"
+    assert listed["subcontractor_name"] == "Derek Vance"
 
 
 def test_the_security_teams_case_is_in_neither_evaluation_set(client):
     with engine().connect() as db:
-        query = select(handler_decisions.c.case_id)
+        query = select(reviewer_decisions.c.case_id)
         assert "CLM-1901" not in set(db.execute(query).scalars())
     for evaluation_set in ("evaluation", "held_out"):
         for tiny in (True, False):

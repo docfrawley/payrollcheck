@@ -8,7 +8,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import Connection, RowMapping, insert, select
 
 from backend.database import now, settings, versions
-from backend.dependencies import AgentKey, Database, SignedInHandler, senior
+from backend.dependencies import (
+    AgentKey,
+    Database,
+    SignedInReviewer,
+    compliance_manager,
+)
 from backend.diffs import diff
 from backend.documents import contents
 from backend.free_models import model_or_free
@@ -20,8 +25,8 @@ from backend.lookups import (
 )
 from backend.models import (
     Configuration,
-    Handler,
     PayrollAgentVersion,
+    Reviewer,
     ScreeningModel,
     Settings,
     SettingsPage,
@@ -39,7 +44,9 @@ router = APIRouter()
 # reasoning. No version, proposal or setting changes it.
 SCREENING_MODEL = ("openai/gpt-6-luna", "none")
 
-ChangesTheSettings = Annotated[Handler, Depends(senior("change the settings"))]
+ChangesTheSettings = Annotated[
+    Reviewer, Depends(compliance_manager("change the settings"))
+]
 
 
 def with_contents(db: Connection, instructions: str) -> str:
@@ -113,7 +120,7 @@ def get_screening() -> ScreeningModel:
 @router.get(
     "/api/configuration",
     operation_id="get_configuration",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_configuration(db: Database) -> Configuration:
     """Get the payroll agent's versions, newest first, with what each changed."""
@@ -133,7 +140,7 @@ def get_configuration(db: Database) -> Configuration:
 @router.get(
     "/api/configuration/versions/{number}",
     operation_id="get_version_details",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_version_details(number: int, db: Database) -> VersionDetails:
     """Get one version in full, with its diff from the version it was based on."""
@@ -149,7 +156,7 @@ def get_version_details(number: int, db: Database) -> VersionDetails:
 
 
 @router.get(
-    "/api/settings", operation_id="get_settings", dependencies=[SignedInHandler]
+    "/api/settings", operation_id="get_settings", dependencies=[SignedInReviewer]
 )
 def get_settings(db: Database) -> SettingsPage:
     """Get the settings in force, every change with who made it, and the models."""
@@ -163,15 +170,15 @@ def get_settings(db: Database) -> SettingsPage:
 @router.put("/api/settings", operation_id="change_settings")
 def change_settings(
     request: SettingsValues,
-    handler: ChangesTheSettings,
+    reviewer: ChangesTheSettings,
     db: Database,
 ) -> SettingsPage:
-    """Change the settings, recording every value with the handler and the time."""
+    """Change the settings, recording every value with the reviewer and the time."""
     db.execute(
         insert(settings).values(
             number=current_settings(db).number + 1,
             **request.model_dump(),
-            changed_by=handler.name,
+            changed_by=reviewer.name,
             changed_at=now(),
         )
     )

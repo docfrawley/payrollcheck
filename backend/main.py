@@ -18,7 +18,6 @@ from backend.calculation import (
 )
 from backend.configuration import router as configuration
 from backend.copilot import router as copilot
-from backend.customers import router as customers_router
 from backend.database import (
     case_view,
     cases,
@@ -38,10 +37,10 @@ from backend.database import (
 from backend.dependencies import (
     AgentKey,
     Database,
-    HandlerOrAgent,
+    ReviewerOrAgent,
     SignedIn,
-    SignedInHandler,
-    senior,
+    SignedInReviewer,
+    compliance_manager,
 )
 from backend.documents import manual_version
 from backend.improvement import router as improvement
@@ -50,9 +49,9 @@ from backend.lookups import (
     CASE_NOT_FOUND,
     NOT_WAITING_FOR_SIGN_OFF,
     current_settings,
-    customer_record,
     find_case,
     run_row,
+    subcontractor_record,
 )
 from backend.models import (
     Case,
@@ -60,7 +59,6 @@ from backend.models import (
     DecisionKind,
     DecisionRequest,
     FailureRequest,
-    Handler,
     HoldRequest,
     ModelCall,
     ModelCallRequest,
@@ -72,6 +70,7 @@ from backend.models import (
     Plans,
     Policy,
     PreviousCase,
+    Reviewer,
     SendBackRequest,
     StartRequest,
     Status,
@@ -87,6 +86,7 @@ from backend.records import check_calculation, check_request
 from backend.round_state import round_row, why_no_case_starts
 from backend.runs import router as runs
 from backend.sent_back import keep, sent_back_of
+from backend.subcontractors import router as subcontractors_router
 from backend.views import to_case, to_summary
 
 ATTEMPTS = 2
@@ -114,14 +114,14 @@ app.include_router(runs)
 app.include_router(configuration)
 app.include_router(improvement)
 app.include_router(copilot)
-app.include_router(customers_router)
+app.include_router(subcontractors_router)
 
-SignsOffOverTheLimit = Annotated[Handler, Depends(senior("sign this off"))]
-SendsBack = Annotated[Handler, Depends(senior("send this back"))]
+SignsOffOverTheLimit = Annotated[Reviewer, Depends(compliance_manager("sign this off"))]
+SendsBack = Annotated[Reviewer, Depends(compliance_manager("send this back"))]
 
 
 def approval_limit(db: Connection) -> float:
-    """Return the largest payout that can be paid without a handler's sign-off, as
+    """Return the largest payout that can be paid without a reviewer's sign-off, as
     the settings in force have it."""
     return current_settings(db).approval_limit
 
@@ -146,8 +146,8 @@ def find_policy(db: Connection, policy_id: str) -> Policy:
 
 
 def over_the_limit(limit: float) -> str:
-    """Say that a payout over a limit needs a handler's sign-off."""
-    return f"A payout over {dollars(limit)} needs a handler's sign-off"
+    """Say that a payout over a limit needs a reviewer's sign-off."""
+    return f"A payout over {dollars(limit)} needs a reviewer's sign-off"
 
 
 def record_payment(db: Connection, case: RowMapping) -> None:
@@ -181,7 +181,7 @@ def move_case(
 def answer_held(
     db: Connection, case_id: str, answer: Status, answered: str
 ) -> RowMapping:
-    """Move a case held for sign-off on with a handler's answer, and return its row
+    """Move a case held for sign-off on with a reviewer's answer, and return its row
     as the move found it, with the decision that was held, or raise a 404, or a 409
     for an evaluation's copy, which nobody answers, or for a case no longer
     waiting, as when another answer came first."""
@@ -203,11 +203,11 @@ def record_send_back(db: Connection, case: RowMapping, note: str, by: str) -> No
 
 
 def ask_to_resume(case_id: str) -> None:
-    """Ask the agent to resume a case after a handler's answer, which stands
+    """Ask the agent to resume a case after a reviewer's answer, which stands
     whatever happens to the call: a failure is logged as a warning."""
     try:
         agent_service.resume_case(case_id)
-    except Exception as error:  # the handler's answer stands whatever happens
+    except Exception as error:  # the reviewer's answer stands whatever happens
         log.warning("%s wasn't resumed: %s", case_id, error)
 
 
@@ -257,7 +257,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/cases", operation_id="list_cases", dependencies=[HandlerOrAgent])
+@app.get("/api/cases", operation_id="list_cases", dependencies=[ReviewerOrAgent])
 def list_cases(db: Database) -> list[CaseSummary]:
     """List every case in the queue, in id order, leaving out evaluations' copies."""
     query = case_view.where(cases.c.evaluation_id.is_(None))
@@ -265,7 +265,9 @@ def list_cases(db: Database) -> list[CaseSummary]:
     return [to_summary(row) for row in rows]
 
 
-@app.get("/api/cases/{case_id}", operation_id="get_case", dependencies=[HandlerOrAgent])
+@app.get(
+    "/api/cases/{case_id}", operation_id="get_case", dependencies=[ReviewerOrAgent]
+)
 def get_case(case_id: str, db: Database) -> Case:
     """Get one case in full: the story, the items claimed and the documents."""
     return case_in_full(db, case_id)
@@ -274,7 +276,7 @@ def get_case(case_id: str, db: Database) -> Case:
 @app.get(
     "/api/policies/{policy_id}",
     operation_id="get_policy",
-    dependencies=[HandlerOrAgent],
+    dependencies=[ReviewerOrAgent],
 )
 def get_policy(policy_id: str, db: Database) -> Policy:
     """Get a policy: the plan, add-ons, purchase date, trip and travelers."""
@@ -282,20 +284,20 @@ def get_policy(policy_id: str, db: Database) -> Policy:
 
 
 @app.get(
-    "/api/customers/{customer_id}/cases",
+    "/api/subcontractors/{subcontractor_id}/cases",
     operation_id="get_case_history",
-    dependencies=[HandlerOrAgent],
+    dependencies=[ReviewerOrAgent],
 )
-def get_case_history(customer_id: str, db: Database) -> list[PreviousCase]:
-    """Get a customer's earlier cases, with the outcome and the amount paid."""
-    record = customer_record(db, customer_id)
+def get_case_history(subcontractor_id: str, db: Database) -> list[PreviousCase]:
+    """Get a subcontractor's earlier cases, with the outcome and the amount paid."""
+    record = subcontractor_record(db, subcontractor_id)
     return [PreviousCase(**case) for case in record["previous_cases"]]
 
 
 @app.get(
     "/api/agent/openapi.json",
     operation_id="get_agent_api",
-    dependencies=[HandlerOrAgent],
+    dependencies=[ReviewerOrAgent],
 )
 def get_agent_api() -> dict[str, Any]:
     """Get the OpenAPI document of the payroll agent's operations, for the Gateway."""
@@ -305,7 +307,7 @@ def get_agent_api() -> dict[str, Any]:
 @app.get(
     "/api/payouts/over-limit",
     operation_id="count_payouts_over_limit",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def count_payouts_over_limit(db: Database) -> PayoutsOverTheLimit:
     """Count the queue's payouts over their decision's limit, and those signed off."""
@@ -326,10 +328,10 @@ def count_payouts_over_limit(db: Database) -> PayoutsOverTheLimit:
     )
 
 
-@app.get("/api/me", operation_id="get_signed_in_handler")
-def get_signed_in_handler(handler: SignedIn) -> Handler:
-    """Get the handler signed in, with what they may sign off."""
-    return handler
+@app.get("/api/me", operation_id="get_signed_in_reviewer")
+def get_signed_in_reviewer(reviewer: SignedIn) -> Reviewer:
+    """Get the reviewer signed in, with what they may sign off."""
+    return reviewer
 
 
 @app.post(
@@ -416,7 +418,7 @@ def record_work_time(case_id: str, request: WorkTimeRequest, db: Database) -> Wo
 @app.get(
     "/api/cases/{case_id}/steps",
     operation_id="list_steps",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def list_steps(case_id: str, db: Database) -> list[Step]:
     """List the steps of the agent's work on a case, in order."""
@@ -515,7 +517,7 @@ def pay_case(case_id: str, request: PaymentRequest, db: Database) -> Case:
     "/api/cases/{case_id}/hold", operation_id="hold_payment", dependencies=[AgentKey]
 )
 def hold_payment(case_id: str, request: HoldRequest, db: Database) -> Case:
-    """Hold an approval the Gateway refused to pay for a handler's sign-off."""
+    """Hold an approval the Gateway refused to pay for a reviewer's sign-off."""
     case = find_case(db, case_id)
     if case["decision"] != DecisionKind.APPROVE:
         raise HTTPException(409, NOT_APPROVED.format(case_id=case_id))
@@ -533,13 +535,13 @@ def hold_payment(case_id: str, request: HoldRequest, db: Database) -> Case:
 
 
 @app.post("/api/cases/{case_id}/sign-off", operation_id="sign_off_case")
-def sign_off_case(case_id: str, handler: SignsOffOverTheLimit, db: Database) -> Case:
-    """Sign off a held payout as the handler signed in, which pays it."""
+def sign_off_case(case_id: str, reviewer: SignsOffOverTheLimit, db: Database) -> Case:
+    """Sign off a held payout as the reviewer signed in, which pays it."""
     case = answer_held(db, case_id, Status.DECIDED, "signed off")
     db.execute(
         update(decisions)
         .where(decisions.c.case_id == case_id)
-        .values(signed_off_by=handler.name, signed_off_at=now())
+        .values(signed_off_by=reviewer.name, signed_off_at=now())
     )
     record_payment(db, case)
     db.commit()
@@ -549,11 +551,11 @@ def sign_off_case(case_id: str, handler: SignsOffOverTheLimit, db: Database) -> 
 
 @app.post("/api/cases/{case_id}/send-back", operation_id="send_back_case")
 def send_back_case(
-    case_id: str, request: SendBackRequest, handler: SendsBack, db: Database
+    case_id: str, request: SendBackRequest, reviewer: SendsBack, db: Database
 ) -> Case:
-    """Send a held decision back to the agent with a note, as the handler signed in."""
+    """Send a held decision back to the agent with a note, as the reviewer signed in."""
     case = answer_held(db, case_id, Status.SENT_BACK, "sent back")
-    record_send_back(db, case, request.note, handler.name)
+    record_send_back(db, case, request.note, reviewer.name)
     db.commit()
     ask_to_resume(case_id)
     return case_in_full(db, case_id)
@@ -592,7 +594,7 @@ def record_case_heartbeat(case_id: str, db: Database) -> Case:
     "/api/cases/{case_id}/failure", operation_id="fail_case", dependencies=[AgentKey]
 )
 def fail_case(case_id: str, request: FailureRequest, db: Database) -> Case:
-    """Put a failed case back in the queue, or leave it for a handler after two."""
+    """Put a failed case back in the queue, or leave it for a reviewer after two."""
     case = find_case(db, case_id)
     if case["status"] != Status.IN_PROGRESS:
         raise HTTPException(409, NOT_IN_PROGRESS.format(case_id=case_id))
@@ -600,7 +602,9 @@ def fail_case(case_id: str, request: FailureRequest, db: Database) -> Case:
         raise HTTPException(409, ALREADY_DECIDED.format(case_id=case_id))
     error = NewStep(kind="error", content=request.reason, sources=[])
     add_step(db, case_id, case["thread_id"], error)
-    status = Status.LEFT_FOR_HANDLER if case["attempts"] >= ATTEMPTS else Status.WAITING
+    status = (
+        Status.LEFT_FOR_REVIEWER if case["attempts"] >= ATTEMPTS else Status.WAITING
+    )
     set_status(db, case_id, status)
     return case_in_full(db, case_id)
 

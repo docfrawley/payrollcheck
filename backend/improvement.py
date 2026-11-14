@@ -1,10 +1,9 @@
-"""The backend's operations on the improver's rounds. A senior handler starts a round
-and reviews its proposals under /api/improvement, which the app records before it
-asks the agent to work the round; the agent records the round's work under
-/api/rounds, and the dashboard reads it. The backend keeps a proposal from taking
-effect until a handler approves it, keeps or rolls back each version by the
-business's rule, and refuses anything a round records once it has finished or been
-stopped."""
+"""The backend's operations on the improver's rounds. A compliance manager starts a
+round and reviews its proposals under /api/improvement, which the app records before it
+asks the agent to work the round; the agent records the round's work under /api/rounds,
+and the dashboard reads it. The backend keeps a proposal from taking effect until a
+reviewer approves it, keeps or rolls back each version by the business's rule, and
+refuses anything a round records once it has finished or been stopped."""
 
 import uuid
 from functools import partial
@@ -19,11 +18,11 @@ from backend.asking import commit_and_ask
 from backend.database import (
     FIRST_VERSION,
     INSTRUCTIONS,
-    handler_decisions,
     improver_calls,
     now,
     proposals,
     recipes,
+    reviewer_decisions,
     rounds,
     runs,
     versions,
@@ -31,8 +30,8 @@ from backend.database import (
 from backend.dependencies import (
     AgentKey,
     Database,
-    SignedInHandler,
-    senior,
+    SignedInReviewer,
+    compliance_manager,
 )
 from backend.diffs import diff
 from backend.free_models import model_or_free
@@ -46,7 +45,7 @@ from backend.lookups import (
 from backend.models import (
     Accepted,
     AgentAnswer,
-    CaseBesideHandler,
+    CaseBesideReviewer,
     ChangeProposalRequest,
     Diff,
     EarlierRound,
@@ -54,8 +53,6 @@ from backend.models import (
     EvaluationSet,
     EvaluationSetResults,
     FailureRequest,
-    Handler,
-    HandlerAnswer,
     Improvement,
     ImproverCallRequest,
     ImproverView,
@@ -70,6 +67,8 @@ from backend.models import (
     RecipeSummary,
     RejectionRequest,
     Review,
+    Reviewer,
+    ReviewerAnswer,
     RoundForTheAgent,
     RoundReviewView,
     RoundStatus,
@@ -113,17 +112,17 @@ from backend.scoreboard import (
 # The improver's model, unless students on free models have one of their own.
 IMPROVER_MODEL = ("openai/gpt-6.1-sol", "medium")
 ROUND_OPEN = "Round {number} is open. Finish or stop it first."
-NOT_WAITING = "Proposal {proposal_id} isn't waiting for a handler: it was {review}"
+NOT_WAITING = "Proposal {proposal_id} isn't waiting for a reviewer: it was {review}"
 # How many of the right cases the improver reads, those the judge graded lowest.
 EXPLAINED_LEAST_WELL = 5
 YES_FROM = 0.5
 
 router = APIRouter()
 
-StartsRounds = Annotated[Handler, Depends(senior("start a round"))]
-StopsRounds = Annotated[Handler, Depends(senior("stop a round"))]
+StartsRounds = Annotated[Reviewer, Depends(compliance_manager("start a round"))]
+StopsRounds = Annotated[Reviewer, Depends(compliance_manager("stop a round"))]
 REVIEWING = "approve or reject the improver's proposals"
-ReviewsProposals = Annotated[Handler, Depends(senior(REVIEWING))]
+ReviewsProposals = Annotated[Reviewer, Depends(compliance_manager(REVIEWING))]
 
 
 # Finding things.
@@ -144,8 +143,8 @@ def proposal_in(db: Connection, row: RowMapping, proposal_id: str) -> RowMapping
 
 
 def the_one_waiting(db: Connection, row: RowMapping, proposal_id: str) -> RowMapping:
-    """Return a round's proposal if it is the one waiting for a handler, or raise a
-    404 or a 409, so a review never lands on a proposal the handler didn't see."""
+    """Return a round's proposal if it is the one waiting for a reviewer, or raise a
+    404 or a 409, so a review never lands on a proposal the reviewer didn't see."""
     proposal = proposal_in(db, row, proposal_id)
     if proposal["review"] is not None:
         raise HTTPException(
@@ -199,10 +198,10 @@ def refuse_while_a_round_is_open(db: Connection) -> None:
 
 
 def refuse_while_waiting(db: Connection, row: RowMapping) -> None:
-    """Raise a 409 while one of the round's proposals waits for a handler."""
+    """Raise a 409 while one of the round's proposals waits for a reviewer."""
     if waiting_proposal(db, row["round_id"]):
         raise HTTPException(
-            409, f"Round {row['number']} has a proposal waiting for a handler"
+            409, f"Round {row['number']} has a proposal waiting for a reviewer"
         )
 
 
@@ -263,11 +262,11 @@ def yes_or_no(chance: float) -> Literal["yes", "no"]:
     return "yes" if chance >= YES_FROM else "no"
 
 
-def beside_handler(case: ScoredCase, handler: RowMapping) -> CaseBesideHandler:
+def beside_reviewer(case: ScoredCase, reviewer: RowMapping) -> CaseBesideReviewer:
     """An evaluation's copy as the improver reads it: under its original's id, the
-    agent's answer beside the handler's, and the judge's grade."""
+    agent's answer beside the reviewer's, and the judge's grade."""
     grade = case.grade
-    return CaseBesideHandler(
+    return CaseBesideReviewer(
         case_id=case.copy_of,
         summary=case.summary,
         agent=AgentAnswer(
@@ -276,11 +275,11 @@ def beside_handler(case: ScoredCase, handler: RowMapping) -> CaseBesideHandler:
             reason=case.reason,
             section=case.section,
         ),
-        handler=HandlerAnswer(
-            decision=handler["decision"],
-            payout=handler["payout"],
-            reason=handler["reason"],
-            reference=handler["reference"],
+        reviewer=ReviewerAnswer(
+            decision=reviewer["decision"],
+            payout=reviewer["payout"],
+            reason=reviewer["reason"],
+            reference=reviewer["reference"],
         ),
         judge=grade
         and JudgeAnswer(
@@ -296,28 +295,28 @@ def evaluation_set_results(
     db: Connection, version: int, expected: Expected
 ) -> EvaluationSetResults:
     """From a version's latest round evaluation on the evaluation set, the cases it
-    got wrong and the right ones the judge graded lowest, with the handlers'
+    got wrong and the right ones the judge graded lowest, with the reviewers'
     reasons. Nothing from the held-out set."""
     latest = round_evaluations(db, version)[EvaluationSet.EVALUATION][-1:]
     if not latest:
         return EvaluationSetResults(wrong=[], explained_least_well=[])
     cases = score(db, latest[0], expected).cases
-    handlers_ = handler_reasons(db)
+    reviewers_ = reviewer_reasons(db)
     right = [c for c in cases if c.right]
     weakest = sorted(right, key=lambda c: c.grade.score if c.grade else 3)
     return EvaluationSetResults(
-        wrong=[beside_handler(c, handlers_[c.copy_of]) for c in cases if not c.right],
+        wrong=[beside_reviewer(c, reviewers_[c.copy_of]) for c in cases if not c.right],
         explained_least_well=[
-            beside_handler(c, handlers_[c.copy_of])
+            beside_reviewer(c, reviewers_[c.copy_of])
             for c in weakest[:EXPLAINED_LEAST_WELL]
         ],
     )
 
 
-def handler_reasons(db: Connection) -> dict[str, RowMapping]:
-    """The handlers' decisions on the evaluation set, with their reasons."""
-    query = select(handler_decisions).where(
-        handler_decisions.c.evaluation_set == EvaluationSet.EVALUATION
+def reviewer_reasons(db: Connection) -> dict[str, RowMapping]:
+    """The reviewers' decisions on the evaluation set, with their reasons."""
+    query = select(reviewer_decisions).where(
+        reviewer_decisions.c.evaluation_set == EvaluationSet.EVALUATION
     )
     return {row["case_id"]: row for row in db.execute(query).mappings()}
 
@@ -424,7 +423,7 @@ def summary_of(db: Connection, row: RowMapping) -> RoundSummary:
 
 
 def waiting_view(db: Connection, row: RowMapping) -> WaitingProposal | None:
-    """The proposal waiting for a handler while the round is open, with what it
+    """The proposal waiting for a reviewer while the round is open, with what it
     changes from the current version or recipe."""
     waiting = waiting_proposal(db, row["round_id"])
     if waiting is None or row["status"] != RoundStatus.OPEN:
@@ -549,8 +548,8 @@ def improvement_page(db: Connection) -> Improvement:
 # The agent's operations on a round.
 
 
-def new_round(db: Connection, handler: Handler) -> RowMapping:
-    """Record a new round for a handler, to the settings, recipe and version in
+def new_round(db: Connection, reviewer: Reviewer) -> RowMapping:
+    """Record a new round for a reviewer, to the settings, recipe and version in
     force, and return its row."""
     version = current_version_number(db)
     model, reasoning_effort = model_or_free(*IMPROVER_MODEL)
@@ -566,7 +565,7 @@ def new_round(db: Connection, handler: Handler) -> RowMapping:
             first_evaluations=first_evaluations(db, version),
             improver_model=model,
             improver_reasoning_effort=reasoning_effort,
-            started_by=handler.name,
+            started_by=reviewer.name,
             started_at=now(),
             heard_at=now(),
         )
@@ -575,9 +574,9 @@ def new_round(db: Connection, handler: Handler) -> RowMapping:
 
 
 def record_the_review(
-    db: Connection, row: RowMapping, proposal: str, by: Handler, rejection: str | None
+    db: Connection, row: RowMapping, proposal: str, by: Reviewer, rejection: str | None
 ) -> None:
-    """Record a handler's review of the proposal waiting: an approval, or a
+    """Record a reviewer's review of the proposal waiting: an approval, or a
     rejection with its reason. It counts as hearing of the round's work."""
     review = Review.APPROVED if rejection is None else Review.REJECTED
     db.execute(
@@ -598,7 +597,7 @@ def record_the_review(
 
 
 def clear_the_review(db: Connection, proposal_id: str) -> None:
-    """Clear a review the agent didn't take, so the proposal waits for a handler
+    """Clear a review the agent didn't take, so the proposal waits for a reviewer
     again."""
     db.execute(
         update(proposals)
@@ -671,7 +670,7 @@ def fail_round(
 def propose(
     db: Connection, row: RowMapping, kind: ProposalKind, proposed: dict[str, Any]
 ) -> Proposal:
-    """Record a proposal from the improver, waiting for a handler."""
+    """Record a proposal from the improver, waiting for a reviewer."""
     refuse_while_waiting(db, row)
     proposal_id = str(uuid.uuid4())
     db.execute(
@@ -890,7 +889,7 @@ def record_improver_call(
     dependencies=[AgentKey],
 )
 def finish_round(round_id: str, db: Database) -> RoundForTheAgent:
-    """Finish an open round with nothing waiting for a handler."""
+    """Finish an open round with nothing waiting for a reviewer."""
     row = open_round(db, round_id)
     refuse_while_waiting(db, row)
     version = tried_version(db, round_id)
@@ -908,7 +907,7 @@ def finish_round(round_id: str, db: Database) -> RoundForTheAgent:
 
 
 @router.get(
-    "/api/improvement", operation_id="get_improvement", dependencies=[SignedInHandler]
+    "/api/improvement", operation_id="get_improvement", dependencies=[SignedInReviewer]
 )
 def get_improvement(db: Database) -> Improvement:
     """Get the open or newest round in full, every round, and the recipe's versions."""
@@ -918,7 +917,7 @@ def get_improvement(db: Database) -> Improvement:
 @router.get(
     "/api/improvement/recipes/{number}",
     operation_id="get_recipe",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_recipe(number: int, db: Database) -> RecipeDetails:
     """Get one version of the improver's recipe, with its diff from the one before."""
@@ -935,11 +934,11 @@ def get_recipe(number: int, db: Database) -> RecipeDetails:
 
 
 @router.post("/api/improvement/rounds", operation_id="start_round", status_code=202)
-def start_round(handler: StartsRounds, db: Database) -> Accepted:
+def start_round(reviewer: StartsRounds, db: Database) -> Accepted:
     """Start a round of the improver, which the agent works."""
     clear_the_way(db)
     refuse_while_a_round_is_open(db)
-    row = new_round(db, handler)
+    row = new_round(db, reviewer)
     commit_and_ask(
         db,
         partial(agent_service.work_round, row["round_id"]),
@@ -949,10 +948,10 @@ def start_round(handler: StartsRounds, db: Database) -> Accepted:
 
 
 @router.post("/api/improvement/rounds/{round_id}/stop", operation_id="stop_round")
-def stop_round(round_id: str, handler: StopsRounds, db: Database) -> RoundSummary:
+def stop_round(round_id: str, reviewer: StopsRounds, db: Database) -> RoundSummary:
     """Stop an open round; a version it hadn't given a verdict is rolled back."""
     row = open_round(db, round_id)
-    if not stop(db, row, handler.name, f"Stopped by {handler.name}"):
+    if not stop(db, row, reviewer.name, f"Stopped by {reviewer.name}"):
         # It finished or stopped since it was read, so it says how it ended.
         open_round(db, round_id)
     return summary_of(db, round_row(db, round_id))
@@ -964,13 +963,13 @@ def stop_round(round_id: str, handler: StopsRounds, db: Database) -> RoundSummar
     status_code=202,
 )
 def approve_proposal(
-    round_id: str, proposal_id: str, handler: ReviewsProposals, db: Database
+    round_id: str, proposal_id: str, reviewer: ReviewsProposals, db: Database
 ) -> Accepted:
     """Approve the proposal waiting, and have the agent carry the round on."""
     clear_the_way(db)
     row = open_round(db, round_id)
     the_one_waiting(db, row, proposal_id)
-    record_the_review(db, row, proposal_id, handler, None)
+    record_the_review(db, row, proposal_id, reviewer, None)
     carry_on_after(db, row, proposal_id)
     return Accepted()
 
@@ -984,13 +983,13 @@ def reject_proposal(
     round_id: str,
     proposal_id: str,
     request: RejectionRequest,
-    handler: ReviewsProposals,
+    reviewer: ReviewsProposals,
     db: Database,
 ) -> Accepted:
     """Reject the proposal waiting, with the reason the improver reads."""
     clear_the_way(db)
     row = open_round(db, round_id)
     the_one_waiting(db, row, proposal_id)
-    record_the_review(db, row, proposal_id, handler, request.reason)
+    record_the_review(db, row, proposal_id, reviewer, request.reason)
     carry_on_after(db, row, proposal_id)
     return Accepted()

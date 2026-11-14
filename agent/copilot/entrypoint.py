@@ -5,7 +5,7 @@ in its process, and hands the turn to turns.py on a thread of its own, which its
 /ping reports as busy until it ends. npm run dev serves it on 127.0.0.1:8081, and
 runtime/copilot.py runs it on AgentCore Runtime. Nothing happens as it's imported:
 it gets ready on its first request. It asks for no key: everything it does carries
-the handler's sign-in, which the app checks on every call."""
+the reviewer's sign-in, which the app checks on every call."""
 
 import logging
 import random
@@ -46,7 +46,7 @@ CREDENTIALS = ("OPENROUTER_API_KEY", "DATABASE_URL")
 app = BedrockAgentCoreApp()
 
 
-# A handler's sign-in, an access token in the characters a JWT uses, which a
+# A reviewer's sign-in, an access token in the characters a JWT uses, which a
 # payload error names without its value and a repr leaves out.
 SignIn = Annotated[str, Field(pattern=r"^[A-Za-z0-9_.-]+$", repr=False)]
 

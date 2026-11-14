@@ -8,7 +8,7 @@ The data behind UnderCover Travel Insurance, a fictional insurer. Everything her
 - `plans.json`: the three plans (Economy, Premium, First) with their limits, waiting periods and deductibles, and the three add-ons. The labs read it; seeding reads the same plans from `context/plans.yaml`.
 - `policies.json`: one policy per trip, with the plan, the add-ons, the purchase date, the trip and the travelers.
 - `customers.json`: contact details and claim history, with the date and a one line summary of each earlier claim. This is personal data.
-- `handlers.json`: the claims handlers, with the email each signs in with. Only Dana Whitfield (`dana.whitfield@undercover.example`) can sign off payouts over the limit, start and stop rounds, review the improver's proposals and change the settings; Marcus Oyelaran and Priya Raman can't.
+- `reviewers.json`: the reviewers, with the email each signs in with and their role: Dana Whitfield is the compliance manager, and Marcus Oyelaran and Priya Raman are reviewers. Only Dana Whitfield (`dana.whitfield@payrollcheck.example`) can sign off payouts over the limit, start and stop rounds, review the improver's proposals and change the settings; Marcus Oyelaran and Priya Raman can't.
 - `improvement.json`: the improver's settings to start with, from the lab: the objectives on the held-out set, the noise and the tolerance for accuracy, the grade, cost per claim and time per claim, the spending limit for each round and the claim agents at once in its evaluations.
 - `models.json`: the models the claim agent may use, with their reasoning efforts and prices in US dollars per million tokens.
 - `claims.json`: the claims queue, twenty-five claims. Each has the customer's story, the items claimed and the supporting documents as text.

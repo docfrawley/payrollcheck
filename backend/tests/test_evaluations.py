@@ -77,7 +77,7 @@ def test_an_evaluation_needs_a_known_set_and_1_to_25_agents(
     ("evaluation_set", "decisions"),
     [("evaluation", "decisions.json"), ("held_out", "held_out_decisions.json")],
 )
-def test_nothing_the_agent_reads_holds_the_handlers_decisions(
+def test_nothing_the_agent_reads_holds_the_reviewers_decisions(
     client, evaluation_set, decisions
 ):
     evaluation = create_evaluation(client, evaluation_set, tiny=False).json()
@@ -89,7 +89,7 @@ def test_nothing_the_agent_reads_holds_the_handlers_decisions(
     secrets += [label["reference"] for label in labels]
     for text in responses:
         assert not [secret for secret in secrets if secret in text]
-        assert "handler" not in text
+        assert "reviewer" not in text
         assert "calculation" not in text
 
 
@@ -170,7 +170,7 @@ def test_scoring_an_evaluation(client):
         "approve",
         1200.0,
     )
-    assert (held["handler_decision"], held["handler_payout"]) == ("approve", 680.0)
+    assert (held["reviewer_decision"], held["reviewer_payout"]) == ("approve", 680.0)
     assert held["mistake_cost"] == 520.0
     undecided = cases["CLM-1114"]
     assert (undecided["decision"], undecided["mistake_cost"]) == (None, 50.0)

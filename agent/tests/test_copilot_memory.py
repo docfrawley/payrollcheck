@@ -1,5 +1,5 @@
-"""The Copilot's memory of each handler: searched as a turn starts, with a card of
-what it found, which goes into the instructions, and the handler's message and the
+"""The Copilot's memory of each reviewer: searched as a turn starts, with a card of
+what it found, which goes into the instructions, and the reviewer's message and the
 answer saved as the turn ends, and nothing else."""
 
 import logging
@@ -21,7 +21,7 @@ ANSWER = "- $3,750.00 on CLM-1003, held for your sign-off"
 
 def remembering() -> MemoryStandIn:
     """A memory with one of Dana's preferences in it."""
-    return MemoryStandIn(memories=[("/handlers/HND-01/preferences/", PREFERENCE)])
+    return MemoryStandIn(memories=[("/reviewers/HND-01/preferences/", PREFERENCE)])
 
 
 def test_a_turn_starts_with_what_the_copilot_remembers(copilot: Copilot):
@@ -39,7 +39,7 @@ def test_a_turn_starts_with_what_the_copilot_remembers(copilot: Copilot):
     assert card["answer"] == f"- {PREFERENCE}"
     [system, *_] = copilot.model.prompts[0]
     assert f"- {PREFERENCE}" in system.text
-    assert copilot.store.searched == ["/handlers/HND-01"]
+    assert copilot.store.searched == ["/reviewers/HND-01"]
 
 
 def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
@@ -59,11 +59,11 @@ def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
     assert sign_in not in repr(copilot.store.events)
 
 
-def test_each_handler_is_searched_alone(copilot: Copilot):
+def test_each_reviewer_is_searched_alone(copilot: Copilot):
     copilot.store = remembering()
     copilot.model = stub("Hello, Marcus.")
     [turn] = copilot.ask("Hello", email=MARCUS)["turns"]
-    assert copilot.store.searched == ["/handlers/HND-02"]
+    assert copilot.store.searched == ["/reviewers/HND-02"]
     assert turn["steps"][0]["answer"] == "Nothing remembered that bears on this"
     assert PREFERENCE not in copilot.model.prompts[0][0].text
     assert [event.actor for event in copilot.store.events] == ["HND-02", "HND-02"]

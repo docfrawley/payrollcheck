@@ -1,4 +1,4 @@
-"""A handler's answer to an approval held for sign-off, read from the app's record of
+"""A reviewer's answer to an approval held for sign-off, read from the app's record of
 the case: who signed it off, or who sent it back with which note, or no answer
 yet; and the message that gives the payroll agent's model a note sent back."""
 
@@ -17,18 +17,18 @@ Answer = dict[str, str]
 # What the model is told of a decision sent back. It's code rather than the
 # payroll agent's instructions, so no version of the instructions can drop it.
 NOTE_MESSAGE = (
-    "{by}, a senior handler, sent your decision on this case back to you with "
+    "{by}, a compliance manager, sent your decision on this case back to you with "
     "this note:\n\n{note}\n\n"
     "Your earlier decision no longer stands, and nothing has been paid on it. "
-    "Treat the note as a senior handler's review of your decision: check what it "
+    "Treat the note as a compliance manager's review of your decision: check what it "
     "says against the policy wording and the claims manual, as you check "
     "everything else, then record a new decision. If the wording doesn't support "
-    "what the note asks, refer the case to a handler and say why."
+    "what the note asks, refer the case to a reviewer and say why."
 )
 
 
 def answer_of(case: dict[str, Any]) -> Answer | None:
-    """The handler's answer on the case's record: who signed its decision off, or,
+    """The reviewer's answer on the case's record: who signed its decision off, or,
     for a case with no decision now, who sent its newest decision back and with
     which note; or None while it waits for an answer."""
     decision, sent_back = case["decision"], case["sent_back_decisions"]

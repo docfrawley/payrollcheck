@@ -25,7 +25,7 @@ const ICONS: Record<Outcome["tone"], ReactNode> = {
   unknown: <CircleHelp aria-hidden />,
 };
 
-// The card a sign-off waits on: the case, the customer, the amount it will pay
+// The card a sign-off waits on: the case, the subcontractor, the amount it will pay
 // and the agent's reason, all from our records, with Sign off and pay and
 // Cancel, which answer this turn's card and no other. Once answered, it shows
 // how the sign-off went.
@@ -61,8 +61,8 @@ export function ConfirmationCard({
           </dd>
         </div>
         <div>
-          <dt>Customer</dt>
-          <dd>{confirmation.customer_name}</dd>
+          <dt>Subcontractor</dt>
+          <dd>{confirmation.subcontractor_name}</dd>
         </div>
         <div className="confirmation-amount">
           <dt>Amount</dt>

@@ -1,5 +1,5 @@
 """The backend's operations on runs: the dispatches and evaluations the agent works.
-A handler starts one under /api/dispatches or /api/evaluations, which the app
+A reviewer starts one under /api/dispatches or /api/evaluations, which the app
 creates and asks the agent to work; the agent records its work under /api/runs,
 and the dashboard reads the runs."""
 
@@ -18,13 +18,13 @@ from backend.database import (
     LABELED_SETS,
     cases,
     grades,
-    handler_decisions,
     now,
+    reviewer_decisions,
     run_cases,
     runs,
     waiting_case,
 )
-from backend.dependencies import AgentKey, Database, HandlerOrAgent, SignedInHandler
+from backend.dependencies import AgentKey, Database, ReviewerOrAgent, SignedInReviewer
 from backend.free_models import free_model
 from backend.lookups import (
     CASE_NOT_FOUND,
@@ -121,7 +121,7 @@ def running_run(db: Connection, run_id: str) -> RowMapping:
 def summarize(rows: list[RowMapping]) -> DispatchSummary:
     """Say what a dispatch left, from its cases as they stand, counting each case
     once: the decisions, with the payouts waiting for a sign-off counted as
-    approved, the cases left for a handler, and those the next dispatch picks up."""
+    approved, the cases left for a reviewer, and those the next dispatch picks up."""
     unfinished = [row["case_id"] for row in rows if row["status"] in UNFINISHED]
     decided = [row for row in rows if row["status"] not in UNFINISHED]
     decisions = [row["decision"] for row in decided]
@@ -134,8 +134,8 @@ def summarize(rows: list[RowMapping]) -> DispatchSummary:
             for row in rows
             if row["status"] == Status.WAITING_FOR_SIGN_OFF
         ],
-        left_for_handler=[
-            row["case_id"] for row in rows if row["status"] == Status.LEFT_FOR_HANDLER
+        left_for_reviewer=[
+            row["case_id"] for row in rows if row["status"] == Status.LEFT_FOR_REVIEWER
         ],
         unfinished=unfinished,
     )
@@ -181,11 +181,11 @@ def originals(
 ) -> list[dict[str, Any]]:
     """Return the records of a labeled set's cases, all or its tiny ones, oldest
     submitted first."""
-    chosen = select(handler_decisions.c.case_id).where(
-        handler_decisions.c.evaluation_set == evaluation_set
+    chosen = select(reviewer_decisions.c.case_id).where(
+        reviewer_decisions.c.evaluation_set == evaluation_set
     )
     if tiny:
-        chosen = chosen.where(handler_decisions.c.tiny)
+        chosen = chosen.where(reviewer_decisions.c.tiny)
     table = LABELED_SETS[evaluation_set].cases
     records = db.execute(select(table.c.record).where(table.c.case_id.in_(chosen)))
     return sorted(records.scalars(), key=lambda r: (r["submitted_on"], r["case_id"]))
@@ -222,7 +222,7 @@ def evaluation_of(db: Connection, fields: dict[str, Any], version: RowMapping) -
 def set_size(db: Connection, evaluation_set: EvaluationSet) -> int:
     """How many cases a labeled set holds."""
     query = select(func.count()).where(
-        handler_decisions.c.evaluation_set == evaluation_set
+        reviewer_decisions.c.evaluation_set == evaluation_set
     )
     return db.execute(query).scalar_one()
 
@@ -318,13 +318,13 @@ def evaluation_row(db: Connection, run_id: str) -> RowMapping:
     return row
 
 
-def handler_explanations(
+def reviewer_explanations(
     db: Connection, evaluation_set: EvaluationSet
 ) -> dict[str, judge.Explanation]:
-    """Return the handlers' decisions on a labeled set's cases, with their reasons
+    """Return the reviewers' decisions on a labeled set's cases, with their reasons
     and references, by case."""
-    query = select(handler_decisions).where(
-        handler_decisions.c.evaluation_set == evaluation_set
+    query = select(reviewer_decisions).where(
+        reviewer_decisions.c.evaluation_set == evaluation_set
     )
     return {
         d["case_id"]: judge.Explanation(d["decision"], d["reason"], d["reference"])
@@ -332,13 +332,13 @@ def handler_explanations(
     }
 
 
-def grade_copy(copy: RowMapping, handler: judge.Explanation) -> CaseGrade | None:
-    """Grade a copy's explanation against the handler's: an F without asking the
+def grade_copy(copy: RowMapping, reviewer: judge.Explanation) -> CaseGrade | None:
+    """Grade a copy's explanation against the reviewer's: an F without asking the
     judge for a copy the agent didn't decide."""
     if copy["decision"] is None:
         return UNDECIDED
     agent = judge.Explanation(copy["decision"], copy["reason"], copy["section"])
-    return judge.grade(handler, agent)
+    return judge.grade(reviewer, agent)
 
 
 def grade_copies(db: Connection, row: RowMapping) -> None:
@@ -346,11 +346,11 @@ def grade_copies(db: Connection, row: RowMapping) -> None:
     the grades. With a free model there's no judge, so nothing is graded."""
     if free_model():
         return
-    handlers = handler_explanations(db, row["evaluation_set"])
+    reviewers = reviewer_explanations(db, row["evaluation_set"])
     copies = cases_of(db, row["run_id"])
     with ThreadPoolExecutor(max_workers=len(copies)) as pool:
         graded = list(
-            pool.map(lambda copy: grade_copy(copy, handlers[copy["copy_of"]]), copies)
+            pool.map(lambda copy: grade_copy(copy, reviewers[copy["copy_of"]]), copies)
         )
     db.execute(
         insert(grades),
@@ -423,9 +423,11 @@ def finish_run(run_id: str, db: Database) -> Run:
     return find_run(db, run_id)
 
 
-@router.get("/api/runs/{run_id}", operation_id="get_run", dependencies=[HandlerOrAgent])
+@router.get(
+    "/api/runs/{run_id}", operation_id="get_run", dependencies=[ReviewerOrAgent]
+)
 def get_run(run_id: str, db: Database) -> Run:
-    """Get a run with its cases, for the agent to work it or a handler to follow it."""
+    """Get a run with its cases, for the agent to work it or a reviewer to follow it."""
     return find_run(db, run_id)
 
 
@@ -464,7 +466,7 @@ def ask_to_work(db: Connection, run_id: str) -> None:
 @router.get(
     "/api/dispatches/latest",
     operation_id="get_latest_dispatch",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_latest_dispatch(db: Database) -> Run | None:
     """Get the newest dispatch with its cases, cost, time and summary, or nothing."""
@@ -482,7 +484,7 @@ def get_latest_dispatch(db: Database) -> Run | None:
     "/api/dispatches",
     operation_id="start_dispatch",
     status_code=202,
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def start_dispatch(request: StartDispatchRequest, db: Database) -> RunStarted:
     """Start a dispatch with up to N payroll agents at once, which the agent works."""
@@ -494,7 +496,7 @@ def start_dispatch(request: StartDispatchRequest, db: Database) -> RunStarted:
 
 
 @router.get(
-    "/api/evaluations", operation_id="list_evaluations", dependencies=[SignedInHandler]
+    "/api/evaluations", operation_id="list_evaluations", dependencies=[SignedInReviewer]
 )
 def list_evaluations(db: Database) -> list[Evaluation]:
     """List every evaluation, newest first, with its measures."""
@@ -513,10 +515,10 @@ def list_evaluations(db: Database) -> list[Evaluation]:
 @router.get(
     "/api/evaluations/{run_id}",
     operation_id="get_evaluation",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_evaluation(run_id: str, db: Database) -> ScoredEvaluation:
-    """Get one evaluation with its measures and its cases beside the handlers'."""
+    """Get one evaluation with its measures and its cases beside the reviewers'."""
     return score(db, evaluation_row(db, run_id), expected_answers(db))
 
 
@@ -524,7 +526,7 @@ def get_evaluation(run_id: str, db: Database) -> ScoredEvaluation:
     "/api/evaluations",
     operation_id="start_evaluation",
     status_code=202,
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def start_evaluation(request: StartEvaluationRequest, db: Database) -> RunStarted:
     """Start an evaluation with up to N payroll agents at once for the agent to work."""

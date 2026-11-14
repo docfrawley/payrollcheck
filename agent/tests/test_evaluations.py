@@ -45,7 +45,7 @@ def test_an_evaluation_the_app_created_worked_by_the_agent(client, serve):
     held_state = agent_on(stub(), saver).graph.get_state(harness.thread_of(held))
     assert held_state.created_at is not None
     assert (held_state.next, held_state.interrupts) == ((), ())
-    assert case_of(client, "CLM-1021-E1")["status"] == "left_for_handler"
+    assert case_of(client, "CLM-1021-E1")["status"] == "left_for_reviewer"
 
     evaluation = get_evaluation(client, listed["run_id"])
     measures = evaluation["measures"]

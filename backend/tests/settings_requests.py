@@ -11,6 +11,6 @@ STARTING = {
 
 
 def change_settings(client, email=DANA, **values):
-    """Change some settings from where they started, as the handler with this
+    """Change some settings from where they started, as the reviewer with this
     email."""
     return client.put("/api/settings", json=STARTING | values, headers=signed_in(email))

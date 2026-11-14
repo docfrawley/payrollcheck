@@ -1,5 +1,5 @@
-"""A decision sent back: the paused payroll graph resumes with the handler's note, taken
-by a resume or by a dispatch, forgets the decision and decides again."""
+"""A decision sent back: the paused payroll graph resumes with the reviewer's note,
+taken by a resume or by a dispatch, forgets the decision and decides again."""
 
 import threading
 from datetime import timedelta
@@ -49,7 +49,7 @@ def test_a_case_sent_back_is_taken_by_a_resume_and_decided_again(client, serve):
     assert resume_case(serve(model, saver), "CLM-1003").json() == ACCEPTED
 
     note = note_in(model)
-    assert note.startswith("Dana Whitfield, a senior handler, sent your decision")
+    assert note.startswith("Dana Whitfield, a compliance manager, sent your decision")
     assert NOTE in note
     case = case_of(client, "CLM-1003")
     assert case["status"] == "decided"
@@ -133,9 +133,9 @@ def test_the_note_message_is_the_agents_own_whatever_its_instructions(client):
     assert model.prompts[0][0].text == "Decide the case."
     note = note_in(model)
     for words in (
-        "a senior handler's review",
+        "a compliance manager's review",
         "the policy wording and the claims manual",
-        "refer the case to a handler and say why",
+        "refer the case to a reviewer and say why",
     ):
         assert words in note
 

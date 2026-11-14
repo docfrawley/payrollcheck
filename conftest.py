@@ -198,7 +198,7 @@ def client(database):
 
 @pytest.fixture
 def dashboard(database):
-    """The backend, called as a handler's browser calls it, with no key, open for
+    """The backend, called as a reviewer's browser calls it, with no key, open for
     the test like the agent's side."""
     with TestClient(app) as caller:
         yield caller

@@ -67,12 +67,12 @@ it("says when a case is back in the queue after a failed attempt", async () => {
   ).toBeDefined();
 });
 
-it("says when a case is left for a handler", async () => {
-  showCase({ ...caseRecord, status: "left_for_handler", attempts: 2 });
+it("says when a case is left for a reviewer", async () => {
+  showCase({ ...caseRecord, status: "left_for_reviewer", attempts: 2 });
   const panel = await decisionPanel();
   expect(
     panel.getByText(
-      "The agent couldn't finish this case in 2 attempts, so it's left for a handler.",
+      "The agent couldn't finish this case in 2 attempts, so it's left for a reviewer.",
     ),
   ).toBeDefined();
 });
@@ -255,13 +255,13 @@ it("shows new steps and the decision as the agent works", async () => {
   expect(screen.getAllByText("Decided").length).toBeGreaterThan(0);
 });
 
-it("lets a handler sign off a held payment as themselves, which pays it", async () => {
+it("lets a reviewer sign off a held payment as themselves, which pays it", async () => {
   const { routes, fetchMock } = showCase(held);
   const panel = await decisionPanel();
   expect(
     panel.getByText(
       wholeText(
-        "The payment of $1,350.00 is over the approval limit and waits for a handler's sign-off.",
+        "The payment of $1,350.00 is over the approval limit and waits for a reviewer's sign-off.",
       ),
     ),
   ).toBeDefined();
@@ -297,7 +297,7 @@ it("says when the Gateway refused a payment, with its reason", async () => {
   expect(
     panel.getByText(
       wholeText(
-        "The Gateway refused the payment of $1,500.00, so it waits for a handler's sign-off.",
+        "The Gateway refused the payment of $1,500.00, so it waits for a reviewer's sign-off.",
       ),
     ),
   ).toBeDefined();
@@ -306,14 +306,14 @@ it("says when the Gateway refused a payment, with its reason", async () => {
   expect(panel.getByRole("button", { name: "Sign off" })).toBeDefined();
 });
 
-it("tells a handler who can't sign off over the limit why", async () => {
+it("tells a reviewer who can't sign off over the limit why", async () => {
   const { routes } = showCase(held);
   routes["GET /api/me"] = marcus;
   const panel = await decisionPanel();
   expect(
     await panel.findByText(
       wholeText(
-        "Only a handler who can sign off payouts over $1,000.00 can sign this off or send it back. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can sign this off or send it back. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();

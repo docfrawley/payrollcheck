@@ -1,4 +1,4 @@
-"""The Copilot's tools, which reach the app through its API with the handler's
+"""The Copilot's tools, which reach the app through its API with the reviewer's
 sign-in and the context layer on the route in their context, the context they
 read, and the kind of card each one makes. The sign-off is a schema the model can ask
 for, which the graph answers itself: no tool pays."""
@@ -15,7 +15,7 @@ from agent.app_terms import EvaluationSet
 from agent.context_tools import CONTEXT_TOOLS
 from agent.copilot import app_api, criteria, waiting
 from agent.copilot.app_api import CardKind
-from agent.copilot.needs_a_handler import needs_a_handler
+from agent.copilot.needs_a_reviewer import needs_a_reviewer
 from agent.json_text import as_json
 from agent.routes import Route
 
@@ -35,20 +35,20 @@ Agents = Annotated[
 
 @dataclass
 class CopilotContext:
-    """Who the Copilot works for on a turn and how it reaches them: the handler's
-    sign-in, the handler as the app gave them, the conversation and the turn, and
+    """Who the Copilot works for on a turn and how it reaches them: the reviewer's
+    sign-in, the reviewer as the app gave them, the conversation and the turn, and
     the route its context layer tools take. LangGraph hands it to the nodes and
     the tools and never saves it."""
 
     sign_in: str = field(repr=False)
-    handler: dict[str, Any]
+    reviewer: dict[str, Any]
     conversation_id: str
     turn_id: str
     route: Route
 
 
 class SignOffCase(BaseModel):
-    """Sign off a payout held for sign-off, which pays it. The handler confirms on
+    """Sign off a payout held for sign-off, which pays it. The reviewer confirms on
     a card first, and nothing is paid if they cancel."""
 
     model_config = ConfigDict(title=SIGN_OFF)
@@ -79,15 +79,17 @@ def list_steps(case_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
 
 
 @tool
-def find_customers(name: Words, runtime: ToolRuntime[CopilotContext]) -> str:
-    """Find customers whose name holds every word given, with their ids."""
-    return as_json(app_api.find_customers(sign_in_of(runtime), name))
+def find_subcontractors(name: Words, runtime: ToolRuntime[CopilotContext]) -> str:
+    """Find subcontractors whose name holds every word given, with their ids."""
+    return as_json(app_api.find_subcontractors(sign_in_of(runtime), name))
 
 
 @tool
-def get_customer(customer_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
-    """Get a customer with their policies, earlier cases and cases in our queue."""
-    return as_json(app_api.get_customer(sign_in_of(runtime), customer_id))
+def get_subcontractor(
+    subcontractor_id: str, runtime: ToolRuntime[CopilotContext]
+) -> str:
+    """Get a subcontractor with their policies, earlier cases and cases in our queue."""
+    return as_json(app_api.get_subcontractor(sign_in_of(runtime), subcontractor_id))
 
 
 @tool
@@ -115,7 +117,7 @@ def get_settings(runtime: ToolRuntime[CopilotContext]) -> str:
 
 
 def agents_or_settings(sign_in: str, agents: int | None) -> int:
-    """The payroll agents the handler asked for, or the number in our settings."""
+    """The payroll agents the reviewer asked for, or the number in our settings."""
     if agents is not None:
         return agents
     return app_api.get_settings(sign_in)["current"]["agents"]
@@ -127,9 +129,9 @@ def started(run: dict[str, Any]) -> str:
 
 
 @tool
-def what_needs_a_handler(runtime: ToolRuntime[CopilotContext]) -> str:
-    """List what in the queue needs a handler: held payouts, referrals and the rest."""
-    return as_json(needs_a_handler(app_api.list_cases(sign_in_of(runtime))))
+def what_needs_a_reviewer(runtime: ToolRuntime[CopilotContext]) -> str:
+    """List what in the queue needs a reviewer: held payouts, referrals and the rest."""
+    return as_json(needs_a_reviewer(app_api.list_cases(sign_in_of(runtime))))
 
 
 @tool
@@ -183,8 +185,17 @@ def send_back_case(
     return as_json(app_api.send_back_case(sign_in_of(runtime), case_id, note))
 
 
-PAYROLL_TOOLS: list[BaseTool] = [list_cases, get_case, list_steps, what_needs_a_handler]
-CUSTOMER_TOOLS: list[BaseTool] = [find_customers, get_customer, get_policy]
+PAYROLL_TOOLS: list[BaseTool] = [
+    list_cases,
+    get_case,
+    list_steps,
+    what_needs_a_reviewer,
+]
+SUBCONTRACTOR_TOOLS: list[BaseTool] = [
+    find_subcontractors,
+    get_subcontractor,
+    get_policy,
+]
 WORK_TOOLS: list[BaseTool] = [
     get_latest_dispatch,
     list_evaluations,
@@ -198,7 +209,7 @@ ACTION_TOOLS: list[BaseTool] = [
     check_success_criteria,
 ]
 COPILOT_TOOLS = (
-    PAYROLL_TOOLS + CUSTOMER_TOOLS + CONTEXT_TOOLS + WORK_TOOLS + ACTION_TOOLS
+    PAYROLL_TOOLS + SUBCONTRACTOR_TOOLS + CONTEXT_TOOLS + WORK_TOOLS + ACTION_TOOLS
 )
 
 
@@ -213,7 +224,7 @@ def names(tools: list[BaseTool]) -> list[str]:
 # The kind of card each tool makes, and the sign-off.
 KINDS = (
     kind_of_each(names(PAYROLL_TOOLS), "cases")
-    | kind_of_each(names(CUSTOMER_TOOLS), "customers")
+    | kind_of_each(names(SUBCONTRACTOR_TOOLS), "subcontractors")
     | kind_of_each(names(CONTEXT_TOOLS), "context")
     | kind_of_each(names(WORK_TOOLS), "work")
     | kind_of_each([*names(ACTION_TOOLS), SIGN_OFF], "action")

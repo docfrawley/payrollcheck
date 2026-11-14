@@ -2,7 +2,7 @@
 
 PayrollCheck is planned, and stage 1, the rebrand, is being built (`docs/PLAN_REBRAND.md`). `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
 
-Stage 1 so far: the course-only folders (`community_contributions/`, `guides/`, `setup/` and `assets/`) are deleted, and the product's name, the packages (`payrollcheck`) and the settings (`PAYROLLCHECK_*`) are renamed. Claims are now cases and the claim agent the payroll agent; handlers and customers keep their names until the next phase.
+Stage 1 so far: the course-only folders (`community_contributions/`, `guides/`, `setup/` and `assets/`) are deleted, and the product's name, the packages (`payrollcheck`) and the settings (`PAYROLLCHECK_*`) are renamed. Claims are now cases and the claim agent the payroll agent; handlers are reviewers, the senior handler the compliance manager, and customers subcontractors, with the people in `data/reviewers.json` at `@payrollcheck.example`. The brand and these documents follow next.
 
 The code is Ed Donner's UnderCover `week3day5-end` as it was imported (commit `ecca35dd`), so everything below describes UnderCover: its claims, handlers, customers and payouts, and its `PAYROLLCHECK_*` settings. The plans it names, such as `docs/PLAN_COPILOT.md`, are no longer in `docs/`; the import commit has them.
 

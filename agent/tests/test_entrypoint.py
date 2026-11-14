@@ -520,10 +520,10 @@ def test_resume_case_refuses_a_case_that_isnt_paused_with_an_answer(client, serv
 
     agent = serve(stub(), saver)
     for case_id, reason in [
-        ("CLM-1003", "Case CLM-1003 has no answer from a handler yet"),
-        ("CLM-1001", "Case CLM-1001 isn't paused for a handler"),
-        ("CLM-1020-E1", "Case CLM-1020-E1 isn't paused for a handler"),
-        ("CLM-1002", "Case CLM-1002 isn't paused for a handler"),
+        ("CLM-1003", "Case CLM-1003 has no answer from a reviewer yet"),
+        ("CLM-1001", "Case CLM-1001 isn't paused for a reviewer"),
+        ("CLM-1020-E1", "Case CLM-1020-E1 isn't paused for a reviewer"),
+        ("CLM-1002", "Case CLM-1002 isn't paused for a reviewer"),
         ("CLM-9999", "Case CLM-9999 not found"),
     ]:
         refused = resume_case(agent, case_id)

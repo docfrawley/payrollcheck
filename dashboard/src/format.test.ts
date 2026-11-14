@@ -11,7 +11,7 @@ import {
   stoppedBecause,
 } from "./format";
 
-it("takes a handler's initials from their first and last names", () => {
+it("takes a reviewer's initials from their first and last names", () => {
   expect(initials("Dana Whitfield")).toBe("DW");
   expect(initials("Mary Ann Okafor")).toBe("MO");
 });

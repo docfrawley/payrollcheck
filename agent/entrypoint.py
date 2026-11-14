@@ -31,8 +31,8 @@ from agent.agentcore_app import (
 from agent.checkpoints import Pool, open_checkpoint_pool
 from agent.connection import Refused, api_key
 from agent.console import show_reports
-from agent.handler_answer import SENT_BACK, answer_of
 from agent.harness import paused, payroll_graphs
+from agent.reviewer_answer import SENT_BACK, answer_of
 from agent.work import (
     Workers,
     carry_the_round_on,
@@ -44,8 +44,8 @@ from agent.work import (
 RUN_NOT_RUNNING = "Run {run_id} isn't running"
 ROUND_NOT_OPEN = "Round {number} isn't open"
 NO_REVIEW = "Proposal {proposal_id} has no review"
-NOT_PAUSED = "Case {case_id} isn't paused for a handler"
-NO_ANSWER = "Case {case_id} has no answer from a handler yet"
+NOT_PAUSED = "Case {case_id} isn't paused for a reviewer"
+NO_ANSWER = "Case {case_id} has no answer from a reviewer yet"
 NOT_READY = "The agent couldn't get ready: {error}"
 # The agent's credentials in AgentCore Identity on Runtime.
 CREDENTIALS = ("OPENROUTER_API_KEY", "PAYROLLCHECK_API_KEY", "DATABASE_URL")
@@ -142,7 +142,7 @@ def take_run(request: WorkRun, workers: Workers) -> None:
 
 def take_round(request: WorkRound, workers: Workers) -> None:
     """Work a round the app created: its first evaluations, then the improver
-    until it waits for a handler or ends."""
+    until it waits for a reviewer or ends."""
     round = open_round(request.round_id)
     in_background(app, "round", partial(work_the_round, round, workers))
 
@@ -158,7 +158,7 @@ def carry_round_on(request: CarryRoundOn, workers: Workers) -> None:
 
 
 def resume_case(request: ResumeCase, workers: Workers) -> None:
-    """Resume a paused case with its handler's answer, beside any other work,
+    """Resume a paused case with its reviewer's answer, beside any other work,
     taking a sent-back case first."""
     case_id = request.case_id
     case = api.get_case(case_id)

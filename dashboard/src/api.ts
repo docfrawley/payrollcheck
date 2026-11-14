@@ -13,7 +13,7 @@ export const statuses = [
   "waiting_for_sign_off",
   "sent_back",
   "decided",
-  "left_for_handler",
+  "left_for_reviewer",
 ] as const;
 export type Status = (typeof statuses)[number];
 export type DecisionKind = "approve" | "decline" | "refer";
@@ -27,12 +27,12 @@ export type StepKind =
   | "memory_save"
   | "refusal"
   | "error"
-  // A handler's note on a decision sent back, which only the app records.
+  // A reviewer's note on a decision sent back, which only the app records.
   | "sent_back";
 
 export interface CaseSummary {
   case_id: string;
-  customer_name: string;
+  subcontractor_name: string;
   case_type: string;
   summary: string;
   amount_claimed: number;
@@ -95,10 +95,10 @@ export interface Payment {
   signed_off_at: string | null;
 }
 
-// The longest note a handler can send a decision back with.
+// The longest note a reviewer can send a decision back with.
 export const NOTE_LENGTH = 1000;
 
-// A decision a senior handler sent back to the agent, with their note.
+// A decision a compliance manager sent back to the agent, with their note.
 export interface SentBackDecision extends DecisionRecord {
   note: string;
   sent_back_by: string;
@@ -108,8 +108,8 @@ export interface SentBackDecision extends DecisionRecord {
 export interface Case {
   case_id: string;
   policy_id: string;
-  customer_id: string;
-  customer_name: string;
+  subcontractor_id: string;
+  subcontractor_name: string;
   case_type: string;
   submitted_on: string;
   incident_date: string;
@@ -133,7 +133,7 @@ export interface Case {
 
 export interface Policy {
   policy_id: string;
-  customer_id: string;
+  subcontractor_id: string;
   plan: string;
   add_ons: string[];
   purchased_on: string;
@@ -158,8 +158,8 @@ export interface PreviousCase {
   amount_paid: number;
 }
 
-export interface Handler {
-  handler_id: string;
+export interface Reviewer {
+  reviewer_id: string;
   name: string;
   role: string;
   email: string;
@@ -191,7 +191,7 @@ export interface DispatchSummary {
   declined: number;
   referred: number;
   waiting_for_sign_off: HeldPayout[];
-  left_for_handler: string[];
+  left_for_reviewer: string[];
   // In progress or back in the queue, for the next dispatch.
   unfinished: string[];
 }
@@ -245,7 +245,7 @@ export interface Measures {
 export type Letter = "F" | "C" | "B" | "A";
 
 // The judge's grade of an explanation: its score from 0 to 3, the likeliest
-// level, and the chances it gave the same grounds and section as the handler.
+// level, and the chances it gave the same grounds and section as the reviewer.
 export interface CaseGrade {
   score: number;
   letter: Letter;
@@ -254,13 +254,13 @@ export interface CaseGrade {
   cost: number;
 }
 
-// An evaluation's copy of a case beside the handler's decision on it.
+// An evaluation's copy of a case beside the reviewer's decision on it.
 export interface ScoredCase extends RunCase {
   copy_of: string;
   reason: string | null;
   grade: CaseGrade | null;
-  handler_decision: DecisionKind;
-  handler_payout: number;
+  reviewer_decision: DecisionKind;
+  reviewer_payout: number;
   right: boolean;
   mistake_cost: number;
 }
@@ -393,7 +393,7 @@ export interface RoundReview {
   rejection_reason: string | null;
 }
 
-// The proposal waiting for a handler, with what it would change. A recipe has
+// The proposal waiting for a reviewer, with what it would change. A recipe has
 // no model.
 export interface WaitingProposal {
   proposal_id: string;
@@ -501,16 +501,16 @@ export const api = {
   listSteps: (caseId: string) => request<Step[]>(`${casePath(caseId)}/steps`),
   getPolicy: (policyId: string) =>
     request<Policy>(`/api/policies/${encodeURIComponent(policyId)}`),
-  getCaseHistory: (customerId: string) =>
+  getCaseHistory: (subcontractorId: string) =>
     request<PreviousCase[]>(
-      `/api/customers/${encodeURIComponent(customerId)}/cases`,
+      `/api/subcontractors/${encodeURIComponent(subcontractorId)}/cases`,
     ),
   getConfiguration: () => request<Configuration>(CONFIGURATION),
   getVersionDetails: (number: string) =>
     request<VersionDetails>(
       `${CONFIGURATION}/versions/${encodeURIComponent(number)}`,
     ),
-  getSignedInHandler: () => request<Handler>("/api/me"),
+  getSignedInReviewer: () => request<Reviewer>("/api/me"),
   getSettings: () => request<SettingsPage>(SETTINGS),
   changeSettings: (values: SettingsValues) =>
     send<SettingsPage>("PUT", SETTINGS, values),

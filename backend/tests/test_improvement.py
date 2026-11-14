@@ -6,7 +6,7 @@ import httpx
 import pytest
 from sqlalchemy import event, select
 
-from backend.database import engine, handler_decisions, held_out_cases
+from backend.database import engine, held_out_cases, reviewer_decisions
 from backend.tests.agent_answers import unreachable
 from backend.tests.dashboard_reads import read, recipe
 from backend.tests.judging import answer
@@ -14,13 +14,13 @@ from backend.tests.round_requests import (
     ALL,
     approved_change,
     create_round,
-    handler_reasons,
     improvement,
     improver_call,
     play_out,
     propose_change,
     propose_recipe,
     review,
+    reviewer_reasons,
     round_path,
     stop_round,
 )
@@ -88,13 +88,13 @@ def test_a_round_starts_only_when_none_is_open(client, agent_calls):
         (rejection("round-1", "p-1"), "approve or reject the improver's proposals"),
     ],
 )
-def test_a_handler_who_cant_sign_off_over_the_limit_cant_run_the_improver(
+def test_a_reviewer_who_cant_sign_off_over_the_limit_cant_run_the_improver(
     client, agent_calls, path, action
 ):
     refused = act(client, path, MARCUS, reason="Too broad")
     assert (refused.status_code, refused.json()["detail"]) == (
         403,
-        f"Only a handler who can sign off payouts over $1,000.00 can {action}. "
+        f"Only a reviewer who can sign off payouts over $1,000.00 can {action}. "
         "Marcus Oyelaran can't.",
     )
     assert agent_calls == []
@@ -111,7 +111,7 @@ def test_an_approval_names_the_proposal_waiting(client, agent_calls):
         refused = act(client, path, reason="Too broad")
         assert (refused.status_code, refused.json()["detail"]) == (
             409,
-            f"Proposal {first} isn't waiting for a handler: it was rejected",
+            f"Proposal {first} isn't waiting for a reviewer: it was rejected",
         )
     assert agent_calls == []
     assert review(client, round_id, first).status_code == 409
@@ -318,14 +318,14 @@ def test_the_page_follows_a_round_through_its_stages(client):
 
 
 def held_out_texts():
-    """Every held-out case's id and summary, and the handlers' reasons on them.
+    """Every held-out case's id and summary, and the reviewers' reasons on them.
     Their references, such as "Policy wording, section 5", are shared with the
     evaluation set."""
     with engine().connect() as db:
         cases = db.execute(select(held_out_cases)).mappings().all()
         reasons = db.execute(
-            select(handler_decisions.c.reason).where(
-                handler_decisions.c.evaluation_set == "held_out"
+            select(reviewer_decisions.c.reason).where(
+                reviewer_decisions.c.evaluation_set == "held_out"
             )
         ).scalars()
         return (
@@ -351,8 +351,8 @@ def test_the_improver_reads_nothing_from_the_held_out_set_but_scores(client):
     assert view["scores"]["held_out"]["accuracy"] is not None
     wrong = view["evaluation_set"]["wrong"]
     assert wrong
-    assert set(wrong[0]) == {"case_id", "summary", "agent", "handler", "judge"}
-    assert wrong[0]["handler"]["reason"]
+    assert set(wrong[0]) == {"case_id", "summary", "agent", "reviewer", "judge"}
+    assert wrong[0]["reviewer"]["reason"]
     assert wrong[0]["judge"]["same_grounds"] in {"yes", "no"}
     assert len(view["evaluation_set"]["explained_least_well"]) <= 5
     assert view["rule"].startswith("A new version is kept when it meets")
@@ -384,11 +384,11 @@ def test_the_improver_reads_the_earlier_rounds(client):
 def test_the_improver_reads_the_five_right_cases_the_judge_graded_lowest(
     client, judge_answers
 ):
-    reasons = handler_reasons("evaluation")
+    reasons = reviewer_reasons("evaluation")
     rank = {reason: n for n, reason in enumerate(sorted(set(reasons.values())))}
 
     def by_reason(request: httpx.Request) -> httpx.Response:
-        reason = json.loads(request.content)["state"]["handler"]["reason"]
+        reason = json.loads(request.content)["state"]["reviewer"]["reason"]
         return httpx.Response(200, json=answer(score=rank[reason] / 10))
 
     judge_answers(by_reason)
@@ -404,5 +404,5 @@ def test_the_improver_reads_the_five_right_cases_the_judge_graded_lowest(
     view = client.get(f"{round_path(round_id)}/results").json()
     weakest = view["evaluation_set"]["explained_least_well"]
     assert [c["case_id"] for c in weakest] == lowest
-    assert [c["handler"]["reason"] for c in weakest] == [reasons[c] for c in lowest]
+    assert [c["reviewer"]["reason"] for c in weakest] == [reasons[c] for c in lowest]
     assert len(view["evaluation_set"]["wrong"]) == 15

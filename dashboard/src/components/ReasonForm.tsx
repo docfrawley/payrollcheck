@@ -1,6 +1,6 @@
 import { type ReactNode, useId } from "react";
 
-// A short form asking the handler for a few words, such as why a proposal is
+// A short form asking the reviewer for a few words, such as why a proposal is
 // rejected or what the agent should look at again, which sends nothing until
 // they're written. The words are the caller's, so they outlast the form.
 export function ReasonForm({

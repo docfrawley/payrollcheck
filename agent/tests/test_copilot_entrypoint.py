@@ -352,7 +352,7 @@ def test_the_app_and_the_copilot_on_the_laptop_end_to_end(
     client, copilot: Copilot, copilot_app, monkeypatch, caplog
 ):
     """The backend posts to the Copilot's AgentCore app on a local port, with no
-    key, and the Copilot works each turn through the backend as the handler."""
+    key, and the Copilot works each turn through the backend as the reviewer."""
     caplog.set_level(logging.DEBUG)
     dashboard = copilot.dashboard
     sent_headers = []

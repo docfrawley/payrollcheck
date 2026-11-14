@@ -60,8 +60,13 @@ export function PolicyPanel({ policyId }: Readonly<{ policyId: string }>) {
   );
 }
 
-export function HistoryPanel({ customerId }: Readonly<{ customerId: string }>) {
-  const load = useCallback(() => api.getCaseHistory(customerId), [customerId]);
+export function HistoryPanel({
+  subcontractorId,
+}: Readonly<{ subcontractorId: string }>) {
+  const load = useCallback(
+    () => api.getCaseHistory(subcontractorId),
+    [subcontractorId],
+  );
   const { data: history, error } = useLoad(load);
 
   return (
@@ -69,7 +74,7 @@ export function HistoryPanel({ customerId }: Readonly<{ customerId: string }>) {
       <h2 id="history-title">Earlier cases</h2>
       {!history && <StateMessage error={error} />}
       {history?.length === 0 && (
-        <StateMessage empty="No earlier cases: this is the customer's first case with us." />
+        <StateMessage empty="No earlier cases: this is the subcontractor's first case with us." />
       )}
       {history && history.length > 0 && (
         <ul className="history">

@@ -1,5 +1,5 @@
 // Stands in for Supabase Auth in the end-to-end tests. It signs in our three
-// handlers with the test password, signing each access token with a key pair it
+// reviewers with the test password, signing each access token with a key pair it
 // makes as it starts, and serves the public key for the backend to check them.
 // It answers the browser's cross-origin checks, since the dashboard calls it
 // from another port.
@@ -13,15 +13,15 @@ import {
 import { json } from "node:stream/consumers";
 import { reply } from "./stand_in.ts";
 
-interface Handler {
-  handler_id: string;
+interface Reviewer {
+  reviewer_id: string;
   email: string;
 }
 
-const handlers = JSON.parse(
-  readFileSync("data/handlers.json", "utf8"),
-) as Handler[];
-const password = process.env.HANDLER_PASSWORD;
+const reviewers = JSON.parse(
+  readFileSync("data/reviewers.json", "utf8"),
+) as Reviewer[];
+const password = process.env.REVIEWER_PASSWORD;
 // The dashboard, the one origin the browser may call this from.
 const dashboard = process.env.DASHBOARD ?? "";
 const KEY_ID = "e2e-key";
@@ -32,32 +32,32 @@ const { privateKey, publicKey } = generateKeyPairSync("ec", {
 const publicKeys = {
   keys: [{ ...publicKey.export({ format: "jwk" }), kid: KEY_ID, alg: "ES256" }],
 };
-// The handler each refresh token was given to.
-const refreshTokens = new Map<string, Handler>();
+// The reviewer each refresh token was given to.
+const refreshTokens = new Map<string, Reviewer>();
 
 const base64url = (data: string | Buffer) =>
   Buffer.from(data).toString("base64url");
 
-function user(handler: Handler) {
+function user(reviewer: Reviewer) {
   return {
-    id: handler.handler_id,
+    id: reviewer.reviewer_id,
     aud: "authenticated",
     role: "authenticated",
-    email: handler.email,
+    email: reviewer.email,
     app_metadata: { provider: "email" },
     user_metadata: {},
     created_at: "2026-10-01T00:00:00Z",
   };
 }
 
-function accessToken(handler: Handler, expiresAt: number): string {
+function accessToken(reviewer: Reviewer, expiresAt: number): string {
   const header = base64url(
     JSON.stringify({ alg: "ES256", typ: "JWT", kid: KEY_ID }),
   );
   const claims = base64url(
     JSON.stringify({
-      sub: handler.handler_id,
-      email: handler.email,
+      sub: reviewer.reviewer_id,
+      email: reviewer.email,
       aud: "authenticated",
       role: "authenticated",
       exp: expiresAt,
@@ -70,17 +70,17 @@ function accessToken(handler: Handler, expiresAt: number): string {
   return `${header}.${claims}.${base64url(signature)}`;
 }
 
-function session(handler: Handler) {
+function session(reviewer: Reviewer) {
   const expiresAt = Math.floor(Date.now() / 1000) + LIFETIME;
   const refreshToken = randomUUID();
-  refreshTokens.set(refreshToken, handler);
+  refreshTokens.set(refreshToken, reviewer);
   return {
-    access_token: accessToken(handler, expiresAt),
+    access_token: accessToken(reviewer, expiresAt),
     token_type: "bearer",
     expires_in: LIFETIME,
     expires_at: expiresAt,
     refresh_token: refreshToken,
-    user: user(handler),
+    user: user(reviewer),
   };
 }
 
@@ -100,13 +100,13 @@ async function token(request: IncomingMessage, response: ServerResponse) {
   const query = new URLSearchParams((request.url ?? "").split("?")[1]);
   const grant = query.get("grant_type");
   const body = (await json(request)) as Record<string, string | undefined>;
-  const handler =
+  const reviewer =
     grant === "password"
-      ? handlers.find((h) => h.email === body.email)
+      ? reviewers.find((h) => h.email === body.email)
       : refreshTokens.get(body.refresh_token ?? "");
-  if (!handler || (grant === "password" && body.password !== password))
+  if (!reviewer || (grant === "password" && body.password !== password))
     refuse(response);
-  else answer(response, 200, session(handler));
+  else answer(response, 200, session(reviewer));
 }
 
 function signedInUser(request: IncomingMessage, response: ServerResponse) {
@@ -114,8 +114,8 @@ function signedInUser(request: IncomingMessage, response: ServerResponse) {
   const { email } = JSON.parse(
     Buffer.from(bearer, "base64url").toString() || "{}",
   ) as { email?: string };
-  const handler = handlers.find((h) => h.email === email);
-  if (handler) answer(response, 200, user(handler));
+  const reviewer = reviewers.find((h) => h.email === email);
+  if (reviewer) answer(response, 200, user(reviewer));
   else answer(response, 401, { msg: "Invalid token" });
 }
 

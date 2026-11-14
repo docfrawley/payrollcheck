@@ -46,7 +46,7 @@ class Limits:
 
 
 def needs_sign_off(payout: float, approval_limit: float) -> bool:
-    """Say whether a payout is over the limit, and so needs a handler's sign-off."""
+    """Say whether a payout is over the limit, and so needs a reviewer's sign-off."""
     return payout > approval_limit
 
 
@@ -102,7 +102,7 @@ def work_out_payout(
     policy: Policy, plans: Plans, request: PayoutRequest, approval_limit: float
 ) -> Payout:
     """Work out the payout on an approved case, step by step, and whether it needs
-    a handler's sign-off."""
+    a reviewer's sign-off."""
     plan = next(plan for plan in plans.plans if plan.plan == policy.plan)
     limits = limits_for(policy, plan, plans)
     lines = request.lines

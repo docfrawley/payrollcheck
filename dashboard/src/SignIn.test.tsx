@@ -27,12 +27,12 @@ it("sends a visitor to sign in, then back to the page they asked for", async () 
   ).toBeDefined();
   expect(screen.queryByRole("navigation")).toBeNull();
 
-  fillIn("dana.whitfield@undercover.example", "the password");
+  fillIn("dana.whitfield@payrollcheck.example", "the password");
   expect(
     await screen.findByRole("heading", { name: "Scoreboard", level: 1 }),
   ).toBeDefined();
   expect(signIn).toHaveBeenLastCalledWith(
-    "dana.whitfield@undercover.example",
+    "dana.whitfield@payrollcheck.example",
     "the password",
   );
 });
@@ -43,7 +43,7 @@ it("shows why a sign-in was refused", async () => {
   stubApi({});
   renderAt("/sign-in");
   await screen.findByRole("heading", { name: "Sign in", level: 1 });
-  fillIn("dana.whitfield@undercover.example", "wrong");
+  fillIn("dana.whitfield@payrollcheck.example", "wrong");
   expect((await screen.findByRole("alert")).textContent).toBe(
     "Too many sign-ins. Try again in a minute.",
   );
@@ -62,7 +62,7 @@ it("shows who is signed in, and signs them out", async () => {
   renderAt("/");
   const who = within(await screen.findByLabelText("Signed in"));
   expect(who.getByText("Dana Whitfield")).toBeDefined();
-  expect(who.getByText("Senior Claims Handler")).toBeDefined();
+  expect(who.getByText("Compliance Manager")).toBeDefined();
 
   fireEvent.click(who.getByRole("button", { name: "Account" }));
   fireEvent.click(who.getByRole("button", { name: "Sign out" }));
@@ -72,7 +72,7 @@ it("shows who is signed in, and signs them out", async () => {
   expect(signOut).toHaveBeenCalled();
 });
 
-it("sends a signed-in handler on from the sign-in page", async () => {
+it("sends a signed-in reviewer on from the sign-in page", async () => {
   stubApi({ "GET /api/cases": [], "GET /api/dispatches/latest": null });
   renderAt("/sign-in");
   expect(
@@ -80,19 +80,19 @@ it("sends a signed-in handler on from the sign-in page", async () => {
   ).toBeDefined();
 });
 
-it("offers to sign out when the sign-in isn't one of our handlers", async () => {
+it("offers to sign out when the sign-in isn't one of our reviewers", async () => {
   const fetchMock = stubApi({});
   fetchMock.mockImplementation(() =>
     Promise.resolve(
       Response.json(
-        { detail: "visitor@example.com isn't one of our claims handlers" },
+        { detail: "visitor@example.com isn't one of our reviewers" },
         { status: 403 },
       ),
     ),
   );
   renderAt("/");
   expect((await screen.findByRole("alert")).textContent).toBe(
-    "visitor@example.com isn't one of our claims handlers",
+    "visitor@example.com isn't one of our reviewers",
   );
   fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
   expect(

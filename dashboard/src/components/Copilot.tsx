@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { type Handler, api } from "../api";
+import { type Reviewer, api } from "../api";
 import {
   ASK_EVERY_MS,
   OPENING,
@@ -32,7 +32,7 @@ import {
   latestTurn,
   stillWorking,
 } from "../conversation";
-import { HandlerContext } from "../handler";
+import { ReviewerContext } from "../reviewer";
 import { ApiError } from "../refusals";
 import { useAction } from "../useAction";
 import { useLoad } from "../useLoad";
@@ -103,25 +103,25 @@ function useCollapseOnEscape(
 }
 
 // The Copilot, in a sidebar on the right of every signed-in page, open the first
-// time and collapsed to a slim tab when the handler chooses, which the browser
-// remembers for each handler, with the conversation open.
+// time and collapsed to a slim tab when the reviewer chooses, which the browser
+// remembers for each reviewer, with the conversation open.
 export function Copilot() {
-  const handler = use(HandlerContext);
-  return handler ? <Sidebar handler={handler} /> : null;
+  const reviewer = use(ReviewerContext);
+  return reviewer ? <Sidebar reviewer={reviewer} /> : null;
 }
 
-function Sidebar({ handler }: Readonly<{ handler: Handler }>) {
-  const id = handler.handler_id;
+function Sidebar({ reviewer }: Readonly<{ reviewer: Reviewer }>) {
+  const id = reviewer.reviewer_id;
   const [open, setOpen] = useState(() => savedOpen(id));
   const [chosen, setChosen] = useState(() => savedConversation(id));
-  // Counts the conversations the handler has opened, so each starts afresh.
+  // Counts the conversations the reviewer has opened, so each starts afresh.
   const [opened, setOpened] = useState(0);
   const [earlier, setEarlier] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const tab = useRef<HTMLButtonElement>(null);
   const toggled = useRef(false);
 
-  // Once the handler opens or collapses the sidebar, the keyboard carries on
+  // Once the reviewer opens or collapses the sidebar, the keyboard carries on
   // from the sidebar, or from its tab.
   useEffect(() => {
     if (!toggled.current) return;
@@ -213,7 +213,7 @@ function Sidebar({ handler }: Readonly<{ handler: Handler }>) {
       </div>
       <ConversationPane
         key={opened}
-        handler={handler}
+        reviewer={reviewer}
         conversationId={chosen}
         onStarted={started}
         instead={
@@ -237,12 +237,12 @@ function Sidebar({ handler }: Readonly<{ handler: Handler }>) {
 // message starts a new one. A screen reader is told where the latest turn
 // stands, once, rather than every card as it changes.
 function ConversationPane({
-  handler,
+  reviewer,
   conversationId: chosen,
   onStarted,
   instead,
 }: Readonly<{
-  handler: Handler;
+  reviewer: Reviewer;
   conversationId?: string;
   onStarted: (conversationId: string) => void;
   // What the sidebar shows in place of the conversation, if anything.
@@ -262,8 +262,8 @@ function ConversationPane({
   const end = useScrolledToTheEnd(conversation);
 
   useEffect(() => {
-    if (gone) saveConversation(handler.handler_id, undefined);
-  }, [gone, handler.handler_id]);
+    if (gone) saveConversation(reviewer.reviewer_id, undefined);
+  }, [gone, reviewer.reviewer_id]);
 
   // What the app gives back for a message or an answer shows at once. When it
   // refuses, the conversation is read again, as the turn may have failed, with why.
@@ -295,7 +295,7 @@ function ConversationPane({
     if (conversationId === undefined)
       return (
         <CopilotGreeting
-          name={handler.name}
+          name={reviewer.name}
           onAsk={(question) => {
             void message.run(question);
           }}
@@ -338,7 +338,7 @@ function ConversationPane({
           sending={message.sending}
           error={message.error}
         />
-        <p className="signed-in-as">Signed in as {handler.name}</p>
+        <p className="signed-in-as">Signed in as {reviewer.name}</p>
       </div>
     </>
   );

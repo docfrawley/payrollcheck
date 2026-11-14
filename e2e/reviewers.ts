@@ -1,35 +1,35 @@
 import { type APIRequestContext, expect } from "@playwright/test";
 import { AUTH_STAND_IN } from "./servers";
 
-// The handlers the end-to-end tests sign in as, with the password the Auth
-// stand-in signs every handler in with, and where each one's signed-in browser
+// The reviewers the end-to-end tests sign in as, with the password the Auth
+// stand-in signs every reviewer in with, and where each one's signed-in browser
 // storage is kept for the tests.
-export const TEST_PASSWORD = "e2e-handler-password";
+export const TEST_PASSWORD = "e2e-reviewer-password";
 
-export const HANDLERS = {
+export const REVIEWERS = {
   dana: {
-    handler_id: "HND-01",
+    reviewer_id: "HND-01",
     name: "Dana Whitfield",
-    email: "dana.whitfield@undercover.example",
+    email: "dana.whitfield@payrollcheck.example",
     storage: "e2e/.auth/dana.json",
   },
   marcus: {
-    handler_id: "HND-02",
+    reviewer_id: "HND-02",
     name: "Marcus Oyelaran",
-    email: "marcus.oyelaran@undercover.example",
+    email: "marcus.oyelaran@payrollcheck.example",
     storage: "e2e/.auth/marcus.json",
   },
 };
 
-// Signs a handler in through the Auth stand-in, as the dashboard does, and
+// Signs a reviewer in through the Auth stand-in, as the dashboard does, and
 // returns the headers of a request from them.
 export async function signedInAs(
   request: APIRequestContext,
-  handler: { email: string },
+  reviewer: { email: string },
 ) {
   const response = await request.post(
     `${AUTH_STAND_IN}/auth/v1/token?grant_type=password`,
-    { data: { email: handler.email, password: TEST_PASSWORD } },
+    { data: { email: reviewer.email, password: TEST_PASSWORD } },
   );
   await expect(response).toBeOK();
   const { access_token } = (await response.json()) as { access_token: string };

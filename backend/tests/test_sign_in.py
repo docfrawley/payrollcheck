@@ -1,14 +1,14 @@
-"""Handlers sign in through Supabase Auth, and the backend checks the handler on
-every action a handler takes."""
+"""Reviewers sign in through Supabase Auth, and the backend checks the reviewer on
+every action a reviewer takes."""
 
 import jwt
 import pytest
 from sqlalchemy import select
 
 from backend import auth
-from backend.database import engine, handlers, load
+from backend.database import engine, load, reviewers
 from backend.tests.case_requests import decide, start
-from backend.tests.gates import HANDLER_OPERATIONS
+from backend.tests.gates import REVIEWER_OPERATIONS
 from backend.tests.rows import everything_recorded
 from backend.tests.sign_in import DANA, OTHER_KEY, SUPABASE_URL, signed_in, token
 
@@ -21,19 +21,19 @@ NOT_SIGNED_IN = {
 }
 
 
-def test_the_signed_in_handler(client):
+def test_the_signed_in_reviewer(client):
     response = client.get("/api/me", headers=signed_in(DANA))
     assert response.status_code == 200
     assert response.json() == {
-        "handler_id": "HND-01",
+        "reviewer_id": "HND-01",
         "name": "Dana Whitfield",
-        "role": "Senior Claims Handler",
+        "role": "Compliance Manager",
         "email": DANA,
         "can_approve_over_limit": True,
     }
 
 
-def test_a_browsers_request_with_no_key_header_at_all_is_the_handlers(dashboard):
+def test_a_browsers_request_with_no_key_header_at_all_is_the_reviewers(dashboard):
     headers = {"Authorization": f"Bearer {token(DANA)}"}
     assert dashboard.get("/api/me", headers=headers).status_code == 200
 
@@ -55,24 +55,24 @@ def test_supabase_out_of_reach_isnt_a_bad_sign_in(client, monkeypatch):
     )
 
 
-def test_a_sign_in_that_isnt_a_handlers_is_refused(client):
+def test_a_sign_in_that_isnt_a_reviewers_is_refused(client):
     response = client.get("/api/me", headers=signed_in("visitor@example.com"))
     assert response.status_code == 403
     assert response.json()["detail"] == (
-        "visitor@example.com isn't one of our claims handlers"
+        "visitor@example.com isn't one of our reviewers"
     )
 
 
 @pytest.mark.parametrize(
     ("method", "path", "body"),
-    HANDLER_OPERATIONS.values(),
-    ids=HANDLER_OPERATIONS.keys(),
+    REVIEWER_OPERATIONS.values(),
+    ids=REVIEWER_OPERATIONS.keys(),
 )
-def test_every_handler_operation_needs_a_sign_in_and_the_key_wont_do(
+def test_every_reviewer_operation_needs_a_sign_in_and_the_key_wont_do(
     client, agent_calls, method, path, body
 ):
     """The client sends the agent's key with every request, which never stands in
-    for a handler."""
+    for a reviewer."""
     start(client, "CLM-1002")
     decide(client, "CLM-1002", "approve", 1350.0)
     before = everything_recorded()
@@ -83,16 +83,16 @@ def test_every_handler_operation_needs_a_sign_in_and_the_key_wont_do(
     assert agent_calls == []
 
 
-def test_seeding_stores_each_handlers_email_and_who_can_sign_off_over_the_limit():
+def test_seeding_stores_each_reviewers_email_and_who_can_sign_off_over_the_limit():
     with engine().connect() as db:
-        rows = db.execute(select(handlers).order_by(handlers.c.handler_id))
+        rows = db.execute(select(reviewers).order_by(reviewers.c.reviewer_id))
         seeded = [
             (row["name"], row["email"], row["can_approve_over_limit"])
             for row in rows.mappings()
         ]
     assert seeded == [
         (h["name"], h["email"], h["can_approve_over_limit"])
-        for h in load("handlers.json")
+        for h in load("reviewers.json")
     ]
     assert [can for _, _, can in seeded] == [True, False, False]
 

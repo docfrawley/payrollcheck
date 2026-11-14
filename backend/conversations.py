@@ -1,5 +1,5 @@
-"""The Copilot's records in the app: each handler's conversations, their turns and
-each turn's cards. A conversation is found only for its own handler and takes one
+"""The Copilot's records in the app: each reviewer's conversations, their turns and
+each turn's cards. A conversation is found only for its own reviewer and takes one
 message at a time. A turn that has worked too long reads as stopped and stays
 stopped, refusing a late record. A sign-off's confirmation card is filled in from
 the case, and an answer of Sign off is taken as a Cancel when the case has
@@ -28,14 +28,14 @@ from backend.models import (
     CopilotStepRequest,
     CopilotStepResult,
     CopilotTurn,
-    Handler,
+    Reviewer,
     Status,
     TurnFinishRequest,
     TurnStatus,
 )
 
 TITLE_LENGTH = 120
-# A turn still working this long after it started, or after the handler answered
+# A turn still working this long after it started, or after the reviewer answered
 # its confirmation, reads as stopped.
 STOPPED_AFTER = timedelta(minutes=20)
 CONVERSATION_NOT_FOUND = "Conversation {conversation_id} not found"
@@ -73,7 +73,7 @@ def status_of(turn: RowMapping) -> TurnStatus:
 
 def seconds_of(turn: RowMapping) -> float | None:
     """How long a turn that has finished took, leaving out the wait for the
-    handler's confirmation."""
+    reviewer's confirmation."""
     if turn["finished_at"] is None:
         return None
     worked = seconds_from(turn["started_at"], turn["finished_at"])
@@ -110,12 +110,12 @@ def steps_by_turn(db: Connection, turn_ids: list[str]) -> dict[str, list[Copilot
     return cards
 
 
-def owned(db: Connection, conversation_id: str, handler: Handler) -> RowMapping:
-    """Return one of the handler's own conversations, or raise a 404, as for a
+def owned(db: Connection, conversation_id: str, reviewer: Reviewer) -> RowMapping:
+    """Return one of the reviewer's own conversations, or raise a 404, as for a
     conversation that isn't there."""
     query = select(conversations).where(
         conversations.c.conversation_id == conversation_id,
-        conversations.c.handler_id == handler.handler_id,
+        conversations.c.reviewer_id == reviewer.reviewer_id,
     )
     row = db.execute(query).mappings().first()
     if row is None:
@@ -125,10 +125,10 @@ def owned(db: Connection, conversation_id: str, handler: Handler) -> RowMapping:
 
 
 def conversation(
-    db: Connection, conversation_id: str, handler: Handler
+    db: Connection, conversation_id: str, reviewer: Reviewer
 ) -> Conversation:
-    """One of the handler's conversations, with every turn and its cards."""
-    row = owned(db, conversation_id, handler)
+    """One of the reviewer's conversations, with every turn and its cards."""
+    row = owned(db, conversation_id, reviewer)
     query = (
         select(copilot_turns)
         .where(copilot_turns.c.conversation_id == conversation_id)
@@ -144,11 +144,11 @@ def conversation(
     )
 
 
-def conversations_of(db: Connection, handler: Handler) -> list[ConversationSummary]:
-    """The handler's conversations, newest first."""
+def conversations_of(db: Connection, reviewer: Reviewer) -> list[ConversationSummary]:
+    """The reviewer's conversations, newest first."""
     query = (
         select(conversations)
-        .where(conversations.c.handler_id == handler.handler_id)
+        .where(conversations.c.reviewer_id == reviewer.reviewer_id)
         .order_by(conversations.c.created_at.desc(), conversations.c.conversation_id)
     )
     return [ConversationSummary(**row) for row in db.execute(query).mappings()]
@@ -171,14 +171,14 @@ def add_turn(db: Connection, conversation_id: str, number: int, message: str) ->
     return turn_id
 
 
-def start(db: Connection, handler: Handler, message: str) -> tuple[str, str]:
-    """Start a conversation for the handler, titled with its first message, with
+def start(db: Connection, reviewer: Reviewer, message: str) -> tuple[str, str]:
+    """Start a conversation for the reviewer, titled with its first message, with
     that message as its first turn, and return their ids."""
     conversation_id = new_conversation_id()
     db.execute(
         insert(conversations).values(
             conversation_id=conversation_id,
-            handler_id=handler.handler_id,
+            reviewer_id=reviewer.reviewer_id,
             title=message[:TITLE_LENGTH],
             turns=1,
             created_at=now_precisely(),
@@ -207,10 +207,10 @@ def refuse_while_busy(turn: RowMapping) -> None:
 
 
 def next_turn(
-    db: Connection, conversation_id: str, handler: Handler, message: str
+    db: Connection, conversation_id: str, reviewer: Reviewer, message: str
 ) -> str:
-    """Add a turn to one of the handler's conversations, and return its id."""
-    return add_after(db, owned(db, conversation_id, handler), message)
+    """Add a turn to one of the reviewer's conversations, and return its id."""
+    return add_after(db, owned(db, conversation_id, reviewer), message)
 
 
 def add_after(db: Connection, row: RowMapping, message: str) -> str:
@@ -248,15 +248,15 @@ def fail_untaken(db: Connection, turn_id: str, reason: str) -> None:
 # The Copilot's own records of a turn.
 
 
-def turn_of(db: Connection, turn_id: str, handler: Handler) -> RowMapping:
-    """Return a turn of one of the handler's own conversations, with how many turns
+def turn_of(db: Connection, turn_id: str, reviewer: Reviewer) -> RowMapping:
+    """Return a turn of one of the reviewer's own conversations, with how many turns
     its conversation has, or raise a 404."""
     query = (
         select(copilot_turns, conversations.c.turns)
         .join(conversations)
         .where(
             copilot_turns.c.turn_id == turn_id,
-            conversations.c.handler_id == handler.handler_id,
+            conversations.c.reviewer_id == reviewer.reviewer_id,
         )
     )
     row = db.execute(query).mappings().first()
@@ -265,11 +265,11 @@ def turn_of(db: Connection, turn_id: str, handler: Handler) -> RowMapping:
     return row
 
 
-def working_turn(db: Connection, turn_id: str, handler: Handler) -> RowMapping:
-    """Return the handler's turn when it is its conversation's latest and still
+def working_turn(db: Connection, turn_id: str, reviewer: Reviewer) -> RowMapping:
+    """Return the reviewer's turn when it is its conversation's latest and still
     working, by the rule status_of reads it by, or raise a 404 or a 409. A stopped
     turn stays stopped."""
-    turn = turn_of(db, turn_id, handler)
+    turn = turn_of(db, turn_id, reviewer)
     if turn["number"] != turn["turns"] or status_of(turn) != TurnStatus.WORKING:
         raise HTTPException(409, NOT_WORKING.format(number=turn["number"]))
     return turn
@@ -371,7 +371,7 @@ def card_of(db: Connection, case_id: str) -> dict[str, Any]:
         raise HTTPException(409, NOT_WAITING_FOR_SIGN_OFF.format(case_id=case_id))
     return {
         "case_id": case_id,
-        "customer_name": case["customer_name"],
+        "subcontractor_name": case["subcontractor_name"],
         "payout": case["payout"],
         "reason": case["reason"],
         "decided_at": case["decided_at"],
@@ -379,7 +379,7 @@ def card_of(db: Connection, case_id: str) -> dict[str, Any]:
 
 
 def pause(db: Connection, turn: RowMapping, case_id: str) -> None:
-    """Record that a working turn waits for the handler to confirm a sign-off, with
+    """Record that a working turn waits for the reviewer to confirm a sign-off, with
     its card filled in from the case."""
     move(
         db,
@@ -390,16 +390,16 @@ def pause(db: Connection, turn: RowMapping, case_id: str) -> None:
     )
 
 
-# The handler's answer to a confirmation.
+# The reviewer's answer to a confirmation.
 
 
 def waiting_turn(
-    db: Connection, conversation_id: str, turn_id: str, handler: Handler
+    db: Connection, conversation_id: str, turn_id: str, reviewer: Reviewer
 ) -> RowMapping:
-    """Return the turn of one of the handler's conversations whose card was shown,
+    """Return the turn of one of the reviewer's conversations whose card was shown,
     if it is the one waiting for a confirmation, or raise a 404 or a 409, as for an
     older card or one answered already."""
-    turn = latest_turn(db, owned(db, conversation_id, handler))
+    turn = latest_turn(db, owned(db, conversation_id, reviewer))
     if turn["turn_id"] != turn_id:
         raise HTTPException(409, NO_SUCH_CONFIRMATION)
     if turn["status"] != TurnStatus.WAITING_FOR_CONFIRMATION:
@@ -421,7 +421,7 @@ def why_not_sign_off(db: Connection, turn: RowMapping) -> str | None:
 
 
 def record_answer(db: Connection, turn: RowMapping, answer: ConfirmationAnswer) -> None:
-    """Record the handler's answer to a turn's confirmation and when it came, and
+    """Record the reviewer's answer to a turn's confirmation and when it came, and
     move the turn back to working. A Sign off for a case that changed since the
     card was shown is recorded as a Cancel, with why."""
     canceled_because = None

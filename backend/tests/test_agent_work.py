@@ -165,7 +165,7 @@ def test_a_review_is_refused_while_a_dispatch_runs_and_its_proposal_waits(client
     assert improvement(client)["round"]["waiting"]["proposal_id"] == proposal_id
 
 
-def test_a_round_waiting_for_a_handler_doesnt_stop_a_dispatch(client):
+def test_a_round_waiting_for_a_reviewer_doesnt_stop_a_dispatch(client):
     round_id = create_round(client).json()["round_id"]
     propose_change(client, round_id)
     assert start_dispatch(client).status_code == 202

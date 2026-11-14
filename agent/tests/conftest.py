@@ -96,7 +96,7 @@ def no_waits(monkeypatch):
 
 
 def pauses_in(kind):
-    """Whether a kind of run's payroll agents pause for a handler, as the harness
+    """Whether a kind of run's payroll agents pause for a reviewer, as the harness
     builds them."""
     return harness.traits_of(kind).pauses
 

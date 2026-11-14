@@ -9,7 +9,7 @@ import {
 } from "../api";
 import { stageLabels } from "../format";
 import { REQUEST_FAILED } from "../refusals";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import { useAction } from "../useAction";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DiffView } from "./DiffView";
@@ -23,7 +23,7 @@ const WAITING: Record<ProposalKind, RoundStage> = {
   recipe: "recipe_waiting",
 };
 
-// The proposal waiting for a handler: what it changes and why, with Approve,
+// The proposal waiting for a reviewer: what it changes and why, with Approve,
 // which asks for confirmation, and Reject, which asks for a reason. Both name
 // the proposal shown, so a review never lands on another; a new proposal
 // starts afresh, closing the dialog and clearing the reason.
@@ -38,14 +38,14 @@ export function ProposalPanel({
   onReviewed: () => void;
   onRefused: (refusal: string) => void;
 }>) {
-  const handler = useHandler();
+  const reviewer = useReviewer();
   return (
     <section className="panel" aria-labelledby="proposal-title">
       <h2 id="proposal-title">{stageLabels[WAITING[proposal.kind]]}</h2>
       <p className="reason">{proposal.reason}</p>
       {proposal.kind === "change" && <ModelChange proposal={proposal} />}
       <DiffView diff={proposal.diff} />
-      {handler.can_approve_over_limit ? (
+      {reviewer.can_approve_over_limit ? (
         <Review
           key={proposal.proposal_id}
           round={round}

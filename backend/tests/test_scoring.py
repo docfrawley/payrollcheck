@@ -39,16 +39,16 @@ def test_a_case_the_agent_didnt_decide_counts_as_a_referral():
     assert answer_of(APPROVE, 420) == Answer(APPROVE, 420)
 
 
-def scored(agent, handler, seconds, grade=None):
-    """A copy decided as the agent did, beside the handler's decision."""
-    (decision, payout), (handler_decision, handler_payout) = agent, handler
+def scored(agent, reviewer, seconds, grade=None):
+    """A copy decided as the agent did, beside the reviewer's decision."""
+    (decision, payout), (reviewer_decision, reviewer_payout) = agent, reviewer
     answer, expected = (
         answer_of(decision, payout),
-        Answer(handler_decision, handler_payout),
+        Answer(reviewer_decision, reviewer_payout),
     )
     return ScoredCase(
         case_id="CLM-1104-E1",
-        customer_name="Ada Lovelace",
+        subcontractor_name="Ada Lovelace",
         case_type="baggage",
         summary="A suitcase",
         amount_claimed=300,
@@ -63,8 +63,8 @@ def scored(agent, handler, seconds, grade=None):
         copy_of="CLM-1104",
         reason=None,
         section=None,
-        handler_decision=handler_decision,
-        handler_payout=handler_payout,
+        reviewer_decision=reviewer_decision,
+        reviewer_payout=reviewer_payout,
         right=is_right(answer, expected),
         mistake_cost=mistake_cost(answer, expected),
         grade=grade,

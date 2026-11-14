@@ -1,6 +1,6 @@
 import { use } from "react";
 import { Link, NavLink, useMatch } from "react-router";
-import { HandlerContext } from "../handler";
+import { ReviewerContext } from "../reviewer";
 import {
   CASE_PAGE,
   CONFIGURATION,
@@ -12,9 +12,9 @@ import { AccountMenu } from "./AccountMenu";
 import { Brand } from "./Brand";
 
 // The band across the top of every signed-in page: the brand, the main nav,
-// and the handler signed in with their menu once they have loaded.
+// and the reviewer signed in with their menu once they have loaded.
 export function Header() {
-  const handler = use(HandlerContext);
+  const reviewer = use(ReviewerContext);
   // A case's page belongs to the queue.
   const queuePage = useMatch(QUEUE);
   const casePage = useMatch(CASE_PAGE);
@@ -37,11 +37,11 @@ export function Header() {
           <NavLink to={IMPROVEMENT}>Improvement</NavLink>
           <NavLink to={CONFIGURATION}>Configuration</NavLink>
         </nav>
-        {handler && (
+        {reviewer && (
           <div className="who" role="group" aria-label="Signed in">
             <p className="who-text">
-              <span className="who-name">{handler.name}</span>
-              <span className="who-role">{handler.role}</span>
+              <span className="who-name">{reviewer.name}</span>
+              <span className="who-role">{reviewer.role}</span>
             </p>
             <AccountMenu />
           </div>

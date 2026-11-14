@@ -115,7 +115,7 @@ function ScoredCases({ cases }: Readonly<{ cases: ScoredCase[] }>) {
             <tr>
               <th>Copy</th>
               <th>Of</th>
-              <th>Handler</th>
+              <th>Reviewer</th>
               <th>Agent</th>
               <th>Score</th>
               <th>Grade</th>
@@ -136,8 +136,8 @@ function ScoredCases({ cases }: Readonly<{ cases: ScoredCase[] }>) {
                 <td className="mono nowrap">{caseRecord.copy_of}</td>
                 <td className="nowrap">
                   <DecisionPayout
-                    decision={caseRecord.handler_decision}
-                    payout={caseRecord.handler_payout}
+                    decision={caseRecord.reviewer_decision}
+                    payout={caseRecord.reviewer_payout}
                   />
                 </td>
                 <td className="nowrap">

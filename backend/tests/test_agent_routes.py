@@ -1,6 +1,6 @@
 """The app's two routes to the agent: its AgentCore app's /invocations on the laptop,
 with the agent's key, or its runtime on AgentCore Runtime through boto3; and what
-the handler gets when the agent takes the work, refuses it, can't be reached, gives
+the reviewer gets when the agent takes the work, refuses it, can't be reached, gives
 an error answer or doesn't answer in time."""
 
 import json

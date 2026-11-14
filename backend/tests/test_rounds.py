@@ -76,7 +76,7 @@ def test_one_round_is_open_at_a_time(client):
     )
 
 
-def test_a_proposal_changes_nothing_until_a_handler_approves_it(client):
+def test_a_proposal_changes_nothing_until_a_reviewer_approves_it(client):
     round_id = create_round(client).json()["round_id"]
     before = configuration(client)
     proposal = propose_change(client, round_id).json()
@@ -134,13 +134,13 @@ def test_a_round_chooses_each_evaluations_set(client):
     assert first == tried == ["evaluation", "held_out", "held_out"]
 
 
-def test_only_a_senior_handler_reviews_a_proposal(client):
+def test_only_a_compliance_manager_reviews_a_proposal(client):
     round_id = create_round(client).json()["round_id"]
     proposal = propose_change(client, round_id).json()
-    refused = review(client, round_id, proposal["proposal_id"], handler_id="HND-02")
+    refused = review(client, round_id, proposal["proposal_id"], reviewer_id="HND-02")
     assert (refused.status_code, refused.json()["detail"]) == (
         403,
-        "Only a handler who can sign off payouts over $1,000.00 can approve or "
+        "Only a reviewer who can sign off payouts over $1,000.00 can approve or "
         "reject the improver's proposals. Marcus Oyelaran can't.",
     )
 
@@ -205,7 +205,7 @@ def test_a_round_stopped_before_its_verdict_leaves_the_current_version(client):
 
 def kept_version_2(client, round_id):
     """Play a round out to a verdict that keeps version 2: version 1 gets every
-    held-out case wrong, and version 2 decides each as the handlers did."""
+    held-out case wrong, and version 2 decides each as the reviewers did."""
     for _ in range(3):
         play_out(client, round_id)
     approved_change(client, round_id)

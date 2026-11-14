@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { SUGGESTED_QUESTIONS } from "../copilot";
 
-// What an empty conversation shows: a greeting by the handler's first name, and
+// What an empty conversation shows: a greeting by the reviewer's first name, and
 // a few questions to start from, each sent with a click.
 export function CopilotGreeting({
   name,

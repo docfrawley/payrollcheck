@@ -1,4 +1,4 @@
-"""Holding an approval the Gateway refused to pay, for a handler's sign-off."""
+"""Holding an approval the Gateway refused to pay, for a reviewer's sign-off."""
 
 import pytest
 

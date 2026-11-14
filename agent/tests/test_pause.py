@@ -1,5 +1,5 @@
-"""The pause for a handler's answer: an approval held for sign-off pauses the case
-graph, with its place saved on the case's thread, and a handler's sign-off resumes
+"""The pause for a reviewer's answer: an approval held for sign-off pauses the case
+graph, with its place saved on the case's thread, and a reviewer's sign-off resumes
 it."""
 
 import pytest
@@ -63,7 +63,7 @@ def test_a_case_stopped_before_its_pause_ran_isnt_paused(client):
         hold(saver=saver)
     agent = agent_on(stub(), saver)
     state = state_of(agent, client, "CLM-1003")
-    assert (state.next, state.interrupts) == ((harness.WAIT_FOR_HANDLER,), ())
+    assert (state.next, state.interrupts) == ((harness.WAIT_FOR_REVIEWER,), ())
     assert case_of(client, "CLM-1003")["status"] == "waiting_for_sign_off"
     assert not harness.paused(case_of(client, "CLM-1003"), agent)
 

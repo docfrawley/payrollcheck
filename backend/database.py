@@ -82,6 +82,9 @@ RECORD_KEYS = {
     "claim_id": "case_id",
     "claim_type": "case_type",
     "previous_claims": "previous_cases",
+    "customer_id": "subcontractor_id",
+    "customer_since": "subcontractor_since",
+    "handler_id": "reviewer_id",
 }
 
 metadata = MetaData()
@@ -124,19 +127,19 @@ documents = Table(
     # The version in the document's front matter, such as the manual's 2026.2.
     Column("version", Text, nullable=False),
 )
-handlers = Table(
-    "handlers",
+reviewers = Table(
+    "reviewers",
     metadata,
-    Column("handler_id", Text, primary_key=True),
+    Column("reviewer_id", Text, primary_key=True),
     Column("name", Text, nullable=False),
     Column("role", Text, nullable=False),
     Column("email", Text, nullable=False, unique=True),
     Column("can_approve_over_limit", Boolean, nullable=False),
 )
-customers = Table(
-    "customers",
+subcontractors = Table(
+    "subcontractors",
     metadata,
-    Column("customer_id", Text, primary_key=True),
+    Column("subcontractor_id", Text, primary_key=True),
     Column("name", Text, nullable=False),
     Column("record", JSON, nullable=False),
 )
@@ -150,7 +153,12 @@ cases = Table(
     "cases",
     metadata,
     Column("case_id", Text, primary_key=True),
-    Column("customer_id", Text, ForeignKey("customers.customer_id"), nullable=False),
+    Column(
+        "subcontractor_id",
+        Text,
+        ForeignKey("subcontractors.subcontractor_id"),
+        nullable=False,
+    ),
     Column("record", JSON, nullable=False),
     Column("status", Text, nullable=False),
     Column("thread_id", Text),
@@ -166,8 +174,8 @@ held_out_cases = Table(
     Column("case_id", Text, primary_key=True),
     Column("record", JSON, nullable=False),
 )
-handler_decisions = Table(
-    "handler_decisions",
+reviewer_decisions = Table(
+    "reviewer_decisions",
     metadata,
     Column("evaluation_set", Text, primary_key=True),
     Column("case_id", Text, primary_key=True),
@@ -198,7 +206,7 @@ decisions = Table(
     # Why the Gateway refused to pay an approval, which then waits for sign-off.
     Column("gateway_refusal", Text),
 )
-# The decisions handlers sent back to the agent, each with its note, who sent it
+# The decisions reviewers sent back to the agent, each with its note, who sent it
 # back and when.
 sent_back_decisions = Table(
     "sent_back_decisions",
@@ -287,7 +295,7 @@ recipes = Table(
     Column("approved_at", Text),
     Column("created_at", Text, nullable=False),
 )
-# The improver's proposals, each waiting for a handler until it is reviewed.
+# The improver's proposals, each waiting for a reviewer until it is reviewed.
 proposals = Table(
     "proposals",
     metadata,
@@ -404,21 +412,21 @@ work_times = Table(
 )
 
 
-# The Copilot's conversations, each its handler's, with how many turns it has, which
+# The Copilot's conversations, each its reviewer's, with how many turns it has, which
 # a new turn moves on from n to n + 1 with a conditional update, so a conversation
 # takes one message at a time.
 conversations = Table(
     "conversations",
     metadata,
     Column("conversation_id", Text, primary_key=True),
-    Column("handler_id", Text, ForeignKey("handlers.handler_id"), nullable=False),
+    Column("reviewer_id", Text, ForeignKey("reviewers.reviewer_id"), nullable=False),
     Column("title", Text, nullable=False),
     Column("turns", Integer, nullable=False),
     Column("created_at", Text, nullable=False),
 )
 # Each message to the Copilot and its answer: where the turn stands, how it ended,
-# and the card of a sign-off waiting for the handler's confirmation, with the held
-# decision's decided_at, and the handler's answer.
+# and the card of a sign-off waiting for the reviewer's confirmation, with the held
+# decision's decided_at, and the reviewer's answer.
 copilot_turns = Table(
     "copilot_turns",
     metadata,
@@ -472,8 +480,8 @@ copilot_steps = Table(
 
 
 class LabeledSet(NamedTuple):
-    """A set of cases our handlers have decided: the table its cases are kept in,
-    and the file in data/evals/ with the handlers' decisions, which only seeding
+    """A set of cases our reviewers have decided: the table its cases are kept in,
+    and the file in data/evals/ with the reviewers' decisions, which only seeding
     reads."""
 
     cases: Table
@@ -495,7 +503,7 @@ case_view = (
         cases.c.evaluation_id,
         cases.c.copy_of,
         cases.c.resume_heard_at,
-        customers.c.name.label("customer_name"),
+        subcontractors.c.name.label("subcontractor_name"),
         decisions.c.decision,
         decisions.c.payout,
         decisions.c.section,
@@ -511,7 +519,7 @@ case_view = (
         payments.c.amount,
         payments.c.paid_at,
     )
-    .join(customers, customers.c.customer_id == cases.c.customer_id)
+    .join(subcontractors, subcontractors.c.subcontractor_id == cases.c.subcontractor_id)
     .outerjoin(decisions, decisions.c.case_id == cases.c.case_id)
     .outerjoin(payments, payments.c.case_id == cases.c.case_id)
 )
@@ -615,7 +623,7 @@ def load(name: str) -> Any:
 
 def queue_records(name: str) -> list[dict[str, Any]]:
     """Read the queue's records of one kind: those in data/ and the security team's
-    in data/security/, whose handler's decision is never seeded."""
+    in data/security/, whose reviewer's decision is never seeded."""
     return load(name) + load(f"security/{name}")
 
 
@@ -624,7 +632,7 @@ def waiting_case(record: dict[str, Any], **columns: Any) -> dict[str, Any]:
     columns given."""
     return {
         "case_id": record["case_id"],
-        "customer_id": record["customer_id"],
+        "subcontractor_id": record["subcontractor_id"],
         "record": record,
         "status": Status.WAITING,
         "thread_id": None,
@@ -635,8 +643,8 @@ def waiting_case(record: dict[str, Any], **columns: Any) -> dict[str, Any]:
 def seed(db: Engine) -> dict[str, int]:
     """Build the tables afresh from data/ and count what they hold."""
     company = load("company.json")
-    handler_rows = load("handlers.json")
-    customer_rows = queue_records("customers.json")
+    reviewer_rows = load("reviewers.json")
+    subcontractor_rows = queue_records("customers.json")
     policy_rows = queue_records("policies.json")
     case_rows = queue_records("claims.json")
     with db.begin() as connection:
@@ -652,23 +660,27 @@ def seed(db: Engine) -> dict[str, int]:
         seed_models_allowed(connection)
         seed_documents(connection)
         connection.execute(
-            insert(handlers),
+            insert(reviewers),
             [
                 {
-                    "handler_id": h["handler_id"],
+                    "reviewer_id": h["reviewer_id"],
                     "name": h["name"],
                     "role": h["role"],
                     "email": h["email"],
                     "can_approve_over_limit": h["can_approve_over_limit"],
                 }
-                for h in handler_rows
+                for h in reviewer_rows
             ],
         )
         connection.execute(
-            insert(customers),
+            insert(subcontractors),
             [
-                {"customer_id": c["customer_id"], "name": c["name"], "record": c}
-                for c in customer_rows
+                {
+                    "subcontractor_id": c["subcontractor_id"],
+                    "name": c["name"],
+                    "record": c,
+                }
+                for c in subcontractor_rows
             ],
         )
         connection.execute(
@@ -683,8 +695,8 @@ def seed(db: Engine) -> dict[str, int]:
     return {
         "cases": len(case_rows),
         "policies": len(policy_rows),
-        "customers": len(customer_rows),
-        "handlers": len(handler_rows),
+        "subcontractors": len(subcontractor_rows),
+        "reviewers": len(reviewer_rows),
     } | labeled
 
 
@@ -745,7 +757,7 @@ def seed_first_version(connection: Connection) -> None:
 
 
 def seed_evaluations(connection: Connection) -> dict[str, int]:
-    """Store the held-out cases, out of the queue, and the handlers' decisions on
+    """Store the held-out cases, out of the queue, and the reviewers' decisions on
     both labeled sets, and count them."""
     held_out = load(HELD_OUT_CASES)
     connection.execute(
@@ -765,5 +777,5 @@ def seed_evaluations(connection: Connection) -> dict[str, int]:
         for evaluation_set, labeled in LABELED_SETS.items()
         for d in load(labeled.decisions)
     ]
-    connection.execute(insert(handler_decisions), rows)
-    return {"held_out_cases": len(held_out), "handler_decisions": len(rows)}
+    connection.execute(insert(reviewer_decisions), rows)
+    return {"held_out_cases": len(held_out), "reviewer_decisions": len(rows)}

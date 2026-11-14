@@ -28,11 +28,11 @@
   --overlay-shadow: light-dark(rgb(7 59 76 / 0.18), rgb(0 0 0 / 0.6));
   /* Marigold as text or an icon on a light surface. */
   --marigold-text: light-dark(#8a5a00, var(--marigold));
-  /* The Copilot's own surfaces, its mark, its tab and the handler's messages:
+  /* The Copilot's own surfaces, its mark, its tab and the reviewer's messages:
      Midnight, lifted off the black panel in dark mode. */
   --copilot: light-dark(var(--midnight), #0f4152);
   --on-copilot: #ffffff;
-  /* What waits on a handler: a held payout, and a note sent back. */
+  /* What waits on a reviewer: a held payout, and a note sent back. */
   --held: color-mix(in srgb, var(--marigold) 22%, var(--panel));
   --sans: "Instrument Sans", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
@@ -132,7 +132,7 @@ p {
 }
 
 /* The header: a band across the page in Midnight, with the brand, the main
-   nav and the handler signed in. */
+   nav and the reviewer signed in. */
 .header {
   background: var(--header);
   color: var(--on-header);
@@ -561,7 +561,7 @@ p {
   color: #ffffff;
 }
 
-.status-left_for_handler,
+.status-left_for_reviewer,
 .step-failed,
 .step-refused,
 .score-miss,
@@ -895,7 +895,7 @@ p {
   flex-basis: 100%;
 }
 
-/* The decisions sent back, each with the handler's note set apart. */
+/* The decisions sent back, each with the reviewer's note set apart. */
 .sent-back {
   list-style: none;
   margin: 0;
@@ -1404,7 +1404,7 @@ fieldset.panel legend + * {
   gap: 12px;
 }
 
-/* A form that asks a handler for a few words: why a proposal is rejected, or what
+/* A form that asks a reviewer for a few words: why a proposal is rejected, or what
    the agent should look at again. */
 .reason-form {
   display: grid;
@@ -1765,7 +1765,7 @@ fieldset.panel legend + * {
   gap: 10px;
 }
 
-.from-handler {
+.from-reviewer {
   justify-self: end;
   max-width: 86%;
   padding: 10px 14px;
@@ -2177,7 +2177,7 @@ fieldset.panel legend + * {
   color: var(--red-text);
 }
 
-/* The handler's earlier conversations. */
+/* The reviewer's earlier conversations. */
 .earlier {
   display: grid;
   gap: 10px;

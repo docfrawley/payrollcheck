@@ -7,7 +7,7 @@ import httpx
 import pytest
 from sqlalchemy import func, select, update
 
-from backend.database import engine, grades, handler_decisions, runs
+from backend.database import engine, grades, reviewer_decisions, runs
 from backend.tests.case_requests import decide, start
 from backend.tests.judging import answer
 from backend.tests.run_requests import (
@@ -24,32 +24,32 @@ def count_grades():
 
 
 def decide_all_but_one(client, evaluation, evaluation_set="held_out"):
-    """Decide every copy as its handler did, but leave the first undecided."""
+    """Decide every copy as its reviewer did, but leave the first undecided."""
     copies = [c["case_id"] for c in evaluation["cases"]]
     with engine().connect() as db:
         rows = db.execute(
-            select(handler_decisions).where(
-                handler_decisions.c.evaluation_set == evaluation_set
+            select(reviewer_decisions).where(
+                reviewer_decisions.c.evaluation_set == evaluation_set
             )
         ).mappings()
-        handlers = {row["case_id"]: row for row in rows}
+        reviewers = {row["case_id"]: row for row in rows}
     for copy in copies[1:]:
-        handler = handlers[copy.rsplit("-E", 1)[0]]
+        reviewer = reviewers[copy.rsplit("-E", 1)[0]]
         start(client, copy)
-        decide(client, copy, handler["decision"], handler["payout"])
+        decide(client, copy, reviewer["decision"], reviewer["payout"])
     return copies
 
 
-def test_seeding_stores_the_handlers_reasons_and_references():
+def test_seeding_stores_the_reviewers_reasons_and_references():
     with engine().connect() as db:
-        rows = db.execute(select(handler_decisions)).mappings().all()
+        rows = db.execute(select(reviewer_decisions)).mappings().all()
     assert len(rows) == 50
     assert all(row["reason"] and row["reference"] for row in rows)
 
 
 def test_nothing_the_payroll_agent_reads_holds_a_reason_or_a_reference(client):
     with engine().connect() as db:
-        query = select(handler_decisions.c.reason, handler_decisions.c.reference)
+        query = select(reviewer_decisions.c.reason, reviewer_decisions.c.reference)
         texts = [text for row in db.execute(query) for text in row]
     evaluation = create_evaluation(client, "evaluation").json()
     copies = decide_all_but_one(client, evaluation, "evaluation")
@@ -90,7 +90,7 @@ def test_an_evaluation_is_graded_as_it_finishes(client, judged):
     assert scored["model_cost"] == 0
     request = judged[0]["state"]
     assert set(request["agent"]) == {"decision", "reason", "section"}
-    assert set(request["handler"]) == {"decision", "reason", "reference"}
+    assert set(request["reviewer"]) == {"decision", "reason", "reference"}
 
 
 def test_a_case_the_judge_cant_grade_is_left_out_of_the_average(client, judge_answers):

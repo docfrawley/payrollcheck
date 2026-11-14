@@ -7,7 +7,7 @@ from sqlalchemy import select, update
 from backend.database import (
     INSTRUCTIONS,
     engine,
-    handler_decisions,
+    reviewer_decisions,
     runs,
     seed,
     versions,
@@ -176,9 +176,9 @@ def in_a_round(client, *evaluations):
 
 def a_held_out_decline():
     with engine().connect() as db:
-        query = select(handler_decisions.c.case_id).where(
-            handler_decisions.c.evaluation_set == "held_out",
-            handler_decisions.c.decision == "decline",
+        query = select(reviewer_decisions.c.case_id).where(
+            reviewer_decisions.c.evaluation_set == "held_out",
+            reviewer_decisions.c.decision == "decline",
         )
         return db.execute(query).scalars().first()
 
