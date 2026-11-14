@@ -1,6 +1,8 @@
 # Status
 
-PayrollCheck is planned, and no stage is built yet. `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
+PayrollCheck is planned, and stage 1, the rebrand, is being built (`docs/PLAN_REBRAND.md`). `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
+
+Stage 1 so far: the course-only folders (`community_contributions/`, `guides/`, `setup/` and `assets/`) are deleted.
 
 The code is Ed Donner's UnderCover `week3day5-end` as it was imported (commit `ecca35dd`), so everything below describes UnderCover: its claims, handlers, customers and payouts, and its `UNDERCOVER_*` settings. The plans it names, such as `docs/PLAN_COPILOT.md`, are no longer in `docs/`; the import commit has them.
 

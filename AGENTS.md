@@ -51,4 +51,4 @@ Ed's day briefs and plans for UnderCover are no longer in `docs/`. The import co
 - `data/`: the business data, all of it synthetic
 - `labs/`: Ed's notebooks, kept only as the source for the AWS and Supabase provisioning steps until stage 7 ports them into the runbook and deletes the folder. Don't run them
 
-`community_contributions/`, `guides/`, `setup/` and `assets/` are course material that stage 1 deletes before it renames anything. Nothing in the product depends on them.
+Stage 1 deleted the course material that came with the code (`community_contributions/`, `guides/`, `setup/` and `assets/`). Nothing in the product depended on it.

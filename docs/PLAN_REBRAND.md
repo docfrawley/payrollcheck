@@ -124,11 +124,11 @@ Every module's job and dependencies, every route's behaviour, the API rules (an 
 
 Remove `community_contributions/`, `guides/`, `setup/` and `assets/` with `git rm -r`, and fix whatever pointed at them. The survey found nothing in `pyproject.toml`, `package.json`, `tsconfig.json`, `eslint.config.js`, Prettier's paths or `lefthook.yml`. Only `AGENTS.md`'s Folders section names them, and it becomes a line saying they're gone. `labs/` stays as it is. The commit holds the deletion and that one fix, nothing else.
 
-- [ ] `git ls-files community_contributions guides setup assets` lists nothing, and the four folders aren't on disk
-- [ ] `git grep -n -E 'community_contributions|guides/|(^|[^/])setup/|(^|[^a-z/])assets/'` outside `labs/` finds only `docs/ROADMAP.md`, `docs/stages/01_REBRAND.md` and the `/assets/` build path in `backend/tests/test_dashboard.py`
-- [ ] `git diff --stat main` shows only deletions under the four folders and `AGENTS.md`
-- [ ] `npm run check` is green with no `.env`, with the baseline's counts
-- [ ] Commit: "Delete the course-only folders"
+- [x] `git ls-files community_contributions guides setup assets` lists nothing, and the four folders aren't on disk
+- [x] `git grep -n -E 'community_contributions|guides/|(^|[^/])setup/|(^|[^a-z/])assets/'` outside `labs/` finds only `docs/ROADMAP.md`, `docs/stages/01_REBRAND.md` and the `/assets/` build path in `backend/tests/test_dashboard.py`
+- [x] `git diff --stat main` shows only deletions under the four folders and `AGENTS.md`
+- [x] `npm run check` is green with no `.env`, with the baseline's counts
+- [x] Commit: "Delete the course-only folders"
 
 ## Phase 2: The product's name, the packages and the settings
 
