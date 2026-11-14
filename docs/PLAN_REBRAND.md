@@ -222,20 +222,20 @@ The brand and the docs are two commits.
 
 ## Phase 6: The live checks, then the review of the branch
 
-These need the user's `.env`, with the renamed keys, and the three users' new emails in Supabase Auth. If either is missing at this point, implementation stops and asks. After one `npm run seed` on Supabase, which drops the `undercover` schema and builds `payrollcheck`, and with `npm run dev` running on the default models, through the Playwright MCP server:
+These need the user's `.env`, with the renamed keys, and the three users' new emails in Supabase Auth. If either is missing at this point, implementation stops and asks. After one `npm run seed` on Supabase, which drops the `undercover` schema and builds `payrollcheck`, and with `npm run dev` running on the default models, through the Playwright MCP server (there was none in this environment, so these ran as Playwright scripts, with the user signing each reviewer in):
 
-- [ ] Dana Whitfield signs in with `dana.whitfield@payrollcheck.example`. The header shows the navy band, the amber clipboard-check, the PayrollCheck wordmark and the "Synthetic data — not real rates" chip, in light and dark mode, with no console errors
-- [ ] The queue lists 26 cases, each linking to `/cases/CLM-…`. A dispatch at N=3 works them all and its summary adds up as before: approved, declined and referred, with the payouts held for sign-off
-- [ ] A payout held for sign-off is signed off by Dana on its case page and paid once: one row in `payrollcheck.payments`, checked through the Supabase MCP server. Signed in as Marcus Oyelaran, the same kind of payout says he can't sign it off and shows no button
-- [ ] An evaluation of the evaluation set's five tiny cases appears on the Scoreboard with the same measures as before: decision accuracy, accuracy, cost of mistakes, straight-through, model cost and time per case, and the grade. The figures are compared with the last run's in `STATUS.md`
-- [ ] The Copilot sidebar says PayrollCheck Copilot and answers one question about a case, naming its ID
-- [ ] `uv run -m agent CLM-1001` works one case and prints its report line
-- [ ] Supabase holds the `payrollcheck` schema and no `undercover` schema, and no run is left running
-- [ ] What the runs spent, from the backend's records and the OpenRouter key's usage, goes in `STATUS.md`'s live run section
+- [x] Dana Whitfield signs in with `dana.whitfield@payrollcheck.example`. The header shows the navy band, the amber clipboard-check, the PayrollCheck wordmark and the "Synthetic data — not real rates" chip, in light and dark mode, with no console errors
+- [x] The queue lists 26 cases, each linking to `/cases/CLM-…`. A dispatch at N=3 works them all and its summary adds up as before: approved, declined and referred, with the payouts held for sign-off
+- [x] A payout held for sign-off is signed off by Dana on its case page and paid once: one row in `payrollcheck.payments`, checked through the Supabase MCP server. Signed in as Marcus Oyelaran, the same kind of payout says he can't sign it off and shows no button
+- [x] An evaluation of the evaluation set's five tiny cases appears on the Scoreboard with the same measures as before: decision accuracy, accuracy, cost of mistakes, straight-through, model cost and time per case, and the grade. The figures are compared with the last run's in `STATUS.md`
+- [x] The Copilot sidebar says PayrollCheck Copilot and answers one question about a case, naming its ID. The sidebar's title is "Copilot", as it was on `main`; the name is in its instructions and docstrings, and the user accepted that
+- [x] `uv run -m agent CLM-1001` works one case and prints its report line, after a second `npm run seed` the user agreed to, since the dispatch had already decided CLM-1001
+- [x] Supabase holds the `payrollcheck` schema and no `undercover` schema, and no run is left running
+- [x] What the runs spent, from the backend's records and the OpenRouter key's usage, goes in `STATUS.md`'s live run section
 
 Then the whole branch is reviewed against `main` by a fresh subagent, as `docs/PROCESS.md` describes, with the exclusions list and the rename tables. The review checks every standard and that each exclusion is right. Whatever it would block the PR for is fixed, the tests the fixes touch are run, plus `npm run e2e` if they change the dashboard or the API, and the result is committed.
 
-- [ ] `npm run check` is green with no `.env` on the branch's last commit, with the baseline's counts
-- [ ] `docs/STATUS.md` records the live runs, the final search and what it still finds, and what the reviews found and changed
-- [ ] Commit: "Record stage 1's live checks"
-- [ ] The report to the user covers the search, what the runs spent, and what the reviews found and changed
+- [x] `npm run check` is green with no `.env` on the branch's last commit, with the baseline's counts
+- [x] `docs/STATUS.md` records the live runs, the final search and what it still finds, and what the reviews found and changed
+- [x] Commit: "Record stage 1's live checks"
+- [x] The report to the user covers the search, what the runs spent, and what the reviews found and changed

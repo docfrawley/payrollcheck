@@ -13,14 +13,14 @@ PayrollCheck works these travel insurance records as cases until stage 3 replace
 - `reviewers.json`: the reviewers, with the email each signs in with and their role: Dana Whitfield is the compliance manager, and Marcus Oyelaran and Priya Raman are reviewers. Only Dana Whitfield (`dana.whitfield@payrollcheck.example`) can sign off payouts over the limit, start and stop rounds, review the improver's proposals and change the settings; Marcus Oyelaran and Priya Raman can't.
 - `improvement.json`: the improver's settings to start with, from the lab: the objectives on the held-out set, the noise and the tolerance for accuracy, the grade, cost per case and time per case, the spending limit for each round and the payroll agents at once in its evaluations.
 - `models.json`: the models the payroll agent may use, with their reasoning efforts and prices in US dollars per million tokens.
-- `claims.json`: the cases queue, twenty-five cases. Each has the subcontractor's story, the items claimed and the supporting documents as text.
+- `claims.json`: the queue, twenty-five cases. Each has the subcontractor's story, the items claimed and the supporting documents as text.
 
 Set `MODEL_NAME` in `.env` before `npm run seed` if you're on a free model: seeding chooses version 1 of the payroll agent and the models allowed from it.
 
 ## The documents
 
 - `policy_wording.md`: the contract with the subcontractor. Short enough to fit in a prompt.
-- `claims_manual.md`: the internal handling manual. Longer, and it holds rules the wording does not, such as the third case in 12 months, losses to wild animals and meals without receipts.
+- `claims_manual.md`: the internal handling manual. Longer, and it holds rules the wording does not, such as the third claim in 12 months, losses to wild animals and meals without receipts.
 
 These two files and `plans.json` stay here for the labs. The product's copies are in `context/`, the context layer's seven files, which data governance owns: each names the system it comes from, its owner and when it was last reviewed, and the documents add their version. Seeding loads the plans and both documents from there.
 

@@ -1,6 +1,6 @@
 # Status
 
-Stage 1, the rebrand, is built (`docs/PLAN_REBRAND.md`); its live checks on Supabase are still to run. `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
+Stage 1, the rebrand, is built and its live checks on Supabase have run (`docs/PLAN_REBRAND.md`, and "Last live run" below). `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
 
 The code is Ed Donner's UnderCover `week3day5-end` (commit `ecca35dd`) under PayrollCheck's names. It still works UnderCover's travel insurance claims, now called cases, until stage 3 replaces them with payrolls, so everything below describes PayrollCheck working travel cases: its cases, reviewers, subcontractors and payouts, the payroll agent, and its `PAYROLLCHECK_*` settings. The words policy, plan, payout and payment keep their names until stage 3. The plans it names, such as `docs/PLAN_COPILOT.md`, are no longer in `docs/`; the import commit has them.
 
@@ -100,6 +100,7 @@ A search of the repo outside `labs/`, `docs/research/`, `docs/SPEC.md`, `docs/RO
 
 ## Known gaps
 
+- `e2e/copilot.spec.ts`'s narrow-window test sometimes fails under load, "Not on the page" after about 250 ms, because `boxOf` reads the sidebar's bounding box before it is laid out instead of waiting for it. It failed twice in stage 1's runs of `npm run check` and passes when run again.
 - A sign-off whose resume fails, because the call to the agent fails or the resumed work does, isn't remembered: the case is paid, but the agent's work on it isn't finished, so it isn't saved to memory.
 - A resume that fails, such as on a rate limit, isn't tried again: it's logged, and the next dispatch carries the case on once the resume has been quiet for five minutes.
 - A request that asks the agent for something, such as a sign-off or a start, holds its database connection until the agent answers, up to 10 seconds, while the agent may call the app back before it answers. With the laptop's four connections, several such requests at once while a dispatch is busy could wait out the 10 seconds; nobody has seen it happen.
@@ -160,6 +161,21 @@ These problems passed every check. Each phase was built, checked against its cri
 
 ## Last live run
 
+For stage 1, on November 14, 2026, after one `npm run seed` (26 cases, 51 policies, 50 subcontractors and 3 reviewers, with 25 held-out cases and 50 reviewers' decisions, into the `payrollcheck` schema on Postgres, which dropped the `undercover` schema), with `.env` under the new keys, the three reviewers' emails changed to `@payrollcheck.example` in Supabase Auth, and `npm run dev` running on the default models on the direct route. The browser checks ran through Playwright scripts, since this environment had no Playwright MCP server and the Claude in Chrome extension's tab couldn't reach `localhost`; the user signed in each reviewer in a visible Playwright window, and the scripts used the saved session:
+
+- **The header:** signed in as Dana Whitfield, the queue showed the Steel Navy band (`#12263A`; black in dark mode), the clipboard-check in Hi-Vis Amber (`#F5A524`), the PayrollCheck wordmark and the "Synthetic data — not real rates" chip, on a `#F2F4F7` page in light mode and `#0B1724` in dark mode, with no console errors or warnings.
+- **The queue and a dispatch:** the queue listed 26 cases, each linking to `/cases/CLM-…`. A dispatch at N=3 worked them all in 3 min 6 s at a model cost of $0.0412: 19 approved, 4 declined and 3 referred, with four payouts held for sign-off (CLM-1008 $2,240.00, CLM-1011 $1,150.00, CLM-1003 $3,750.00 and CLM-1021 $1,053.00) and none left for a reviewer or the next dispatch.
+- **Sign-off:** Dana signed off CLM-1008 on its case page, which showed "Paid $2,240.00, signed off by Dana Whitfield", and `payrollcheck.payments` held one row for it, beside the 15 payouts under the limit. Signed in as Marcus Oyelaran, CLM-1011's held payout said "Only a reviewer who can sign off payouts over $1,000.00 can sign this off or send it back. Marcus Oyelaran can't." with no button, and the Settings page showed the settings read only, saying why.
+- **An evaluation of the evaluation set's five tiny cases** at five payroll agents at once scored 100% decision accuracy, 100% accuracy, $0.00 of mistakes, 80% straight through and a grade of 1.31, at $0.0018 and 22 seconds a case, in 25 seconds, against 100%, 80%, $300.00, 80%, 1.39, $0.0016, 25 seconds and 31 seconds in the last run.
+- **The Copilot:** "Why does CLM-1011 need me?" read the case, its steps and the settings and answered that CLM-1011 waits for sign-off because its $1,150.00 payout is over the $1,000.00 approval limit, in 4 model calls and $0.0032. The sidebar's title is "Copilot", as it was before stage 1; "UnderCover Copilot" was only ever in its instructions and docstrings, which now say "PayrollCheck Copilot", and the user accepted that as the check.
+- **One case:** `uv run -m agent CLM-1001` after the dispatch got a 409, since the dispatch had decided the case, so with the user's agreement a second `npm run seed` put the cases back, and `uv run -m agent CLM-1001` then printed `CLM-1001  approve  $420.00`, decided by "PayrollCheck Agent, version 1", in 6 model calls and $0.0019. The second seed cleared the dispatch, the evaluation and the payments above.
+- **Supabase:** the `payrollcheck` schema and no `undercover` schema, and no run running.
+- **What it cost:** the backend recorded $0.0552: the dispatch $0.0412 for 150 model calls, the evaluation $0.0088 for 31, the judge's five grades $0.0002, the Copilot's turn $0.0032 and CLM-1001 on the command line $0.0019 for 6. The OpenRouter key's usage rose by $0.0552 over the same time.
+- **The review of the branch:** a fresh reviewer read the whole branch against `main` with `docs/CODE_STANDARDS.md`, the exclusions and the rename tables, and found nothing to block it: every exclusion right, no assertion changed beyond the names but `e2e/settings.spec.ts`'s page colours, which match `styles.css`, seeding's key renames and schema drop correct, the brand matching `docs/BRAND.md`, and every `PAYROLLCHECK_*` setting spelled the same everywhere. Of its notes, two over-mechanical renames in `data/README.md` were put right ("the queue", and the manual's "third claim in 12 months"); "the contract with the subcontractor" stays, as in `backend/instructions/payroll.md`.
+- **`npm run check`** with no `.env` was green in 1 minute 39 seconds with the baseline's counts: 834 pytest tests at 99% coverage, 178 vitest tests, and the 30 Playwright tests. The run before it failed only `copilot.spec.ts`'s narrow-window test, which reads the sidebar's box before it is laid out under load (Known gaps); `npm run e2e` alone then passed three times out of three.
+
+## Earlier live runs
+
 The live runs below ran before stage 1, under UnderCover's names; they are described with today's names, and text in quotes is as it appeared then.
 
 For the Copilot, on October 10, 2026, after one `npm run seed` (26 cases, 51 policies, 50 subcontractors and 3 reviewers, with 25 held-out cases and 50 reviewers' decisions, into the `payrollcheck` schema on Postgres), with `npm run dev` running on the default models, the Copilot on `openai/gpt-6-luna` at `low`, on the direct route with memory off, through the Playwright MCP server:
@@ -177,8 +193,6 @@ For the Copilot, on October 10, 2026, after one `npm run seed` (26 cases, 51 pol
 - **The sidebar with these turns**, in light and dark mode, with no console errors.
 - **Supabase:** the dispatch and the evaluation are finished and no run is running; the 11 turns in the two conversations, Dana's and Marcus's, are done, with their 16 cards. No table holds a sign-in: no checkpoint, checkpoint blob or write, case step, card, turn or note contains an access token. The connections as `postgres` were 3, all idle, before the run; 10 while the Copilot waited for the dispatch (6 idle, 4 idle in a transaction); and 10 while it waited for the evaluation (9 idle, 1 idle in a transaction).
 - **What it cost:** the backend recorded $0.102183: the dispatch $0.042559 for 152 model calls, the evaluation $0.044243 for 158, CLM-1008's resume after the send back $0.000840 for 2, the judge's 25 grades $0.000765, and the Copilot's 11 turns $0.013776 for 26 model calls, from $0.000280 for Marcus's refusal to $0.005472 for "Why does CLM-1008 need me?". CLM-1011's resume after its sign-off made no model call. The OpenRouter key's usage rose by $0.102183 over the same time.
-
-## Earlier live runs
 
 For sending cases back and the agent as an AgentCore app, on October 9, 2026, after one `npm run seed` (26 cases, 51 policies, 50 subcontractors and 3 reviewers into the `payrollcheck` schema on Postgres), on the default models, on the direct route with no `PAYROLLCHECK_GATEWAY_URL`, `PAYROLLCHECK_MEMORY_ID` or `PAYROLLCHECK_AGENT_RUNTIME` in `.env`, signed in as Dana Whitfield through the Playwright MCP server:
 - **The platform team's runner:** with `npm run dev` stopped, `uv run --env-file .env --isolated --only-group runtime python -m runtime.main` served the agent on port 8080; `/ping` answered Healthy and `{"operation": "health"}` posted to `/invocations` answered `{"healthy": true}`, having checked the key and opened its pool on Supabase.
