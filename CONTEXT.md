@@ -10,7 +10,7 @@ The ubiquitous language for PayrollCheck. Code, tables, routes and UI use these 
 
 **Submission** — One upload of a payroll into a case. A case holds one or more submissions, numbered in order; a corrected upload after Returned to sub is a new submission on the same case, which reopens it.
 
-**Intake** — Turning an uploaded CSV (one flat template, one row per worker-week line, certification repeated on every row) into a submission, by a deterministic parser with no model. The reviewer uploads on the subcontractor's behalf. Intake rejects only a file that can't become a submission (not CSV, missing columns, certification differing between rows, unparseable value, unknown project); an *intake error* creates no case. Anything a valid file says that the rules forbid is accepted and becomes an exception.
+**Intake** — Turning an uploaded CSV (one flat template, one row per worker-week line, certification repeated on every row) into a submission, by a deterministic parser with no model. The reviewer uploads on the subcontractor's behalf. A No Work Week filing is one row with the certification filled, the worker columns blank and `no_work_week` set to `true`, and becomes a submission with zero lines. Intake rejects only a file that can't become a submission (not CSV, missing columns, certification differing between rows, unparseable value, unknown project); an *intake error* creates no case. Anything a valid file says that the rules forbid is accepted and becomes an exception.
 
 **Payroll agent** — The agent that checks a case's latest submission and writes its exception report. It flags; it never accepts.
 

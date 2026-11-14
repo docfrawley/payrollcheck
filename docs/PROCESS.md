@@ -1,6 +1,6 @@
 # Process
 
-`uv sync` and `npm install` at the repo root install everything, including a git pre-commit hook. `npm run dev` starts the backend, the agent's AgentCore app on port 8080 (`agent.entrypoint:app` with uvicorn, reloading as `agent/` changes), the Copilot's AgentCore app on 127.0.0.1:8081 (`agent.copilot.entrypoint:app`, reloading as `agent/` changes), the context layer and the dashboard, passing `.env` to the backend, the agent and the Copilot. Stop Lab 1's `agentcore dev` first, which serves on port 8080 too. `npm run build` builds the dashboard into `dashboard/dist`, which the backend then serves beside the API. `npm run seed` rebuilds the database `npm run dev` uses, on Supabase when `DATABASE_URL` is in `.env`. The agent and the Copilot always need `DATABASE_URL`, where they save their progress.
+`uv sync` and `npm install` at the repo root install everything, including a git pre-commit hook. `npm run dev` starts the backend, the agent's AgentCore app on port 8080 (`agent.entrypoint:app` with uvicorn, reloading as `agent/` changes), the Copilot's AgentCore app on 127.0.0.1:8081 (`agent.copilot.entrypoint:app`, reloading as `agent/` changes), the context layer and the dashboard, passing `.env` to the backend, the agent and the Copilot. Stop anything else serving on port 8080 first, such as `agentcore dev`. `npm run build` builds the dashboard into `dashboard/dist`, which the backend then serves beside the API. `npm run seed` rebuilds the database `npm run dev` uses, on Supabase when `DATABASE_URL` is in `.env`. The agent and the Copilot always need `DATABASE_URL`, where they save their progress.
 
 `npm run check` runs every check but the end-to-end tests at once with `concurrently`, each one's output shown in one piece, in this order, then the end-to-end tests on their own, since their timeouts need a machine that isn't busy:
 
@@ -17,7 +17,7 @@ The pre-commit hook runs the format, lint, type and unit test checks on every co
 
 ## Planning
 
-When asked to plan, as in "Please plan the pilot", write the plan to `docs/PLAN.md` and write no code.
+When asked to plan a stage, as in "Please plan stage 1 from `docs/stages/01_REBRAND.md`", write the plan to `docs/PLAN_<NAME>.md`, such as `docs/PLAN_REBRAND.md`, and write no code. The stage's brief in `docs/stages/` says what to build; plan it against the code as it stands after the previous stage.
 
 - Start with the design: the modules, what each one is for, and how they depend on each other. Check it against `docs/CODE_STANDARDS.md` before you write the phases. Describe the agent's instructions by their goals, never as a list of steps.
 - Split the work into phases, usually 5 or 6, each building on the last.
@@ -26,12 +26,12 @@ When asked to plan, as in "Please plan the pilot", write the plan to `docs/PLAN.
 
 ## Implementing
 
-When asked to implement the plan, as in "Please implement the plan for the pilot", build every phase in order without stopping. For each phase:
+When asked to implement the plan, as in "Please implement the plan for stage 1", build every phase in order without stopping. For each phase:
 
 1. Build it, with tests. While you work, run only the tests for the code you're changing, without coverage, for example `uv run pytest agent/tests/test_entrypoint.py --no-cov`.
 2. Check every success criterion and fix whatever fails. Then run `npm run check` and fix whatever fails.
 3. Review the phase's changes, as described below, and fix what the review finds. After the fixes, run only the tests they touch, plus `npm run e2e` if they change the dashboard or the API.
-4. Tick off its criteria in `docs/PLAN.md` and update `docs/STATUS.md`.
+4. Tick off its criteria in the stage's plan and update `docs/STATUS.md`.
 5. Commit without running `npm run check` again. The pre-commit hook reruns the checks; if it fails, fix the problem and commit again.
 
 When the last phase is done, review the whole branch against `main` in the same way. Fix what the review finds, run the tests the fixes touch, plus `npm run e2e` if they change the dashboard or the API, and commit. Then report the results, including what the reviews found and what you changed.
@@ -47,8 +47,8 @@ The checks show that the code works, but not that it is fit to merge. Every code
 ## Rules
 
 - Add tests with each change. Tests never call a model; use a stub model.
-- Every page needs a signed-in handler. For browser checks with the Playwright MCP server, sign in on `/sign-in` with a handler's email from `data/handlers.json` and `HANDLER_PASSWORD` from `.env`: Dana Whitfield to act, Marcus Oyelaran to see what a handler who can't sign off over the limit sees.
-- Before the live runs with the real model, reseed once with `npm run seed`. Evaluations work their own copies and need no reseed. Keep to the runs the plan asks for: for the context layer, memory and the Gateway, on the direct route with memory off, `uv run -m agent CLM-1001`, then `CLM-1005` and `CLM-1006`, a dispatch at N=25 on the queue page and an evaluation of the evaluation set's five tiny claims, then CLM-1005's and CLM-1006's pages in light and dark mode; for the Copilot, the conversation in `docs/PLAN_COPILOT.md`'s last phase. Report what they spent from the backend's records and the OpenRouter key's usage.
+- Every page needs a signed-in reviewer. For browser checks with the Playwright MCP server, sign in on `/sign-in` with a reviewer's email and `HANDLER_PASSWORD` from `.env`. The people are in `data/handlers.json` until stage 1 renames it `data/reviewers.json`. Sign in as Dana Whitfield, the compliance manager, to act, and as Marcus Oyelaran to see what a reviewer whose scope is limited sees.
+- Before the live runs with the real model, reseed once with `npm run seed`. Evaluations work their own copies and need no reseed. Keep to the live runs the stage brief lists. Report what they spent from the backend's records and the OpenRouter key's usage.
 - Outside a plan, commit each change once you have checked and reviewed it.
 - Outside a plan, run `npm run check` before you hand work over.
 - Never use `git commit --no-verify`.

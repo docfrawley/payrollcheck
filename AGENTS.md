@@ -1,95 +1,54 @@
-# UnderCover
+# PayrollCheck
 
-## The context
+## The product
 
-You're working with a student who is taking Ed Donner's 3-week course, "AI FDE: The Forward Deployed Engineer & Agentic AI Architect". UnderCover is the commercial project that is built throughout the course. You and the student are collaborating to build it, and to run the labs that go with the course.
+PayrollCheck checks the certified payrolls that subcontractors file on New Jersey public works jobs. It's built for Pinelands Builders, a fictional mid-size New Jersey general contractor. Its compliance reviewers work a queue of cases, one subcontractor's payroll for one project and one week, and the payroll agent checks every line of every payroll against the prevailing wage rules and writes an exception report. The agent flags; it never accepts. A reviewer signs off or sends back every case. There's also an improver that proposes better versions of the payroll agent, and the PayrollCheck Copilot, a chat for reviewers in the dashboard. It goes into production on AWS AgentCore.
 
-The student may be on Windows, where the terminal in VS Code is PowerShell, or on a Mac. Give commands that work on their system.
+PayrollCheck is built from Ed Donner's UnderCover `week3day5-end` (commit `ecca35dd`), in seven stages. Until stage 1 is built, the code still uses UnderCover's names: claims, handlers, customers, `UNDERCOVER_*` and so on. The domain itself changes over in stage 3.
 
-## UnderCover
+The user may be on Windows, where the terminal in VS Code is PowerShell, or on a Mac. Give commands that work on both.
 
-UnderCover Travel Insurance is a fictional travel insurer. Its claims handlers work through a queue of claims by hand, and over the three weeks we build them a claims platform: a backend, a dashboard for the handlers, and the UnderCover Agent, which decides claims. The product grows with each build, and in Week 3 it goes into production on AWS.
-
-### Start here
+## Start here
 
 IMPORTANT: before you plan, build or change anything in the product, or answer questions about it, read each of these files in full:
 
-1. `docs/SPEC.md`: what the business needs
-2. `docs/TECH_STACK.md`: the tech choices
-3. `docs/CODE_STANDARDS.md`: how to write the code
-4. `docs/PROCESS.md`: how to plan, build and check the work
-5. `docs/BRAND.md`: the look
-6. `docs/STATUS.md`: what's built so far and how to run it
-7. `docs/PLAN.md`: the plan for the pilot. Future plans go in their own documents, such as `docs/PLAN_HARNESS.md`, as we get there
+1. `CONTEXT.md`: the words we use, in the code as well as the documents
+2. `docs/SPEC.md`: what the business needs, end to end
+3. `docs/ROADMAP.md`: the seven stages and the test rule for every stage
+4. `docs/TECH_STACK.md`: the tech choices
+5. `docs/CODE_STANDARDS.md`: how to write the code
+6. `docs/PROCESS.md`: how to plan, build and check the work
+7. `docs/BRAND.md`: the look
+8. `docs/STATUS.md`: what's built so far and how to run it
+9. The brief of the current stage in `docs/stages/`, and its plan in `docs/PLAN_<NAME>.md` once there is one
 
-### Your role in the build
+## Your role in the build
 
-The documents in `docs/` are written as UnderCover's own. The spec comes from UnderCover's head of claims operations, and each later brief from the people at UnderCover who asked for the work. Treat them as the customer's requirements. In the course, the student is UnderCover's forward deployed engineer and you are their coding agent. The student directs the work and reviews your plans and builds. You plan, build and check the work as `docs/PROCESS.md` describes.
+The documents in `docs/` are written as Pinelands Builders' own. The spec and the stage briefs come from their compliance manager. Treat them as the customer's requirements. The user directs the work and reviews your plans and builds. You plan, build and check the work as `docs/PROCESS.md` describes.
 
-The student is also here to learn. Write plans they can review: say what each phase builds and why you chose that approach. Explain your work when they ask, at the level they ask for. Then deliver the build to the standards in `docs/`.
+Write plans the user can review: say what each phase builds and why you chose that approach. Explain your work when they ask, at the level they ask for.
 
-### The builds
+## The stages
 
-Each build day has a brief in `labs/`, which the student copies into `docs/` at the start of the day; if the student asks, copy it for them. The build goes in two steps, with the student's review in between. First a request like "Please plan <the work> in docs/<NAME>.md", which writes the plan to `docs/PLAN_<NAME>.md`, then "Please implement the plan for <the work>". The first build, the pilot, works from `docs/SPEC.md` itself: "Please plan the pilot" writes `docs/PLAN.md`, then "Please implement the plan for the pilot".
+Each stage has a brief in `docs/stages/`, listed in `docs/ROADMAP.md`. A stage goes in two steps, with the user's review in between:
 
-| Day | Brief in `labs/` | Copied to | What the build adds |
-|---|---|---|---|
-| Week 1 Day 3 | none | `docs/SPEC.md` is the brief | The pilot: the backend, the dashboard and a first agent |
-| Week 1 Day 5 | `week1day5_product_HARNESS.md` | `docs/HARNESS.md` | The agent's harness: its tools, middleware and instructions |
-| Week 2 Day 3 | `week2day3_product_DURABLE.md` | `docs/DURABLE.md` | Durable state: Supabase and the claim agent as a LangGraph graph |
-| Week 2 Day 4 | `week2day4_product_SWARM.md` | `docs/SWARM.md` | A dispatcher with a swarm of claim agents, and evaluations |
-| Week 2 Day 5 | `week2day5_product_IMPROVE.md` | `docs/IMPROVE.md` | The agent's configuration in versions, an improver agent and sign-in |
-| Week 3 Day 2 | `week3day2_product_SECURE.md` | `docs/SECURE.md` | The agent's API key, a check for hidden instructions, and the app ready for AWS Lambda |
-| Week 3 Day 3 | `week3day3_product_CONTEXT.md` | `docs/CONTEXT.md` | The context layer, the agent's memory and the AgentCore Gateway |
-| Week 3 Day 4 | `week3day4_product_RUNTIME.md` | `docs/RUNTIME.md` | The agent as an AgentCore app on AgentCore Runtime, and sending decisions back |
-| Week 3 Day 5 | `week3day5_product_COPILOT.md` | `docs/COPILOT.md` | The UnderCover Copilot, a chat for handlers in the dashboard |
+1. "Please plan stage N from `docs/stages/NN_NAME.md`" writes the plan to `docs/PLAN_NAME.md`, and nothing else.
+2. "Please implement the plan for stage N" builds every phase, ticks the plan off and updates `docs/STATUS.md`.
 
-- Build only what the documents in `docs/` ask for. A brief in `labs/` is part of the build only once it's in `docs/`. Don't build ahead for a later day, even though you know what's coming.
-- Each brief builds on the product as it stands, which may be the student's own build or Ed's. Where a brief's notes on an earlier build don't match the code, follow their intent.
-- On Week 3 Day 4, Lab 1 moves `runtime/` and `agentcore/` from `setup/setup_week3day4/` to the root of the repo, where the brief expects them.
-- Never create or delete AWS resources unless the student asks you to.
+- Build only the stage you're asked for. `docs/SPEC.md` is where the stages lead, not a request to build ahead, even though you know what's coming.
+- Each brief builds on the code as the previous stage left it. Where a brief's notes on the code don't match it, follow the brief's intent.
+- Never create or delete AWS resources unless the user asks you to. Stage 7's provisioning runbook is a checklist the user runs, or explicitly asks you to run.
+- Every choice in these documents was made on the planning map, GitHub issue #1 in this repo, and its tickets. If something is undecided, or the documents disagree, raise it with the user rather than inventing an answer.
 
-### Folders
+Ed's day briefs and plans for UnderCover are no longer in `docs/`. The import commit `ecca35dd` has them, if you need to see why the code is the way it is.
 
-- `docs/`: the main documentation for the product build
+## Folders
+
+- `docs/`: the product's documents. `docs/stages/` holds the stage briefs, and `docs/research/` the research behind the rules, such as `nj-prevailing-wage-rules.md`
 - `backend/`, `agent/`, `dashboard/` and `e2e/`: the product
-- `context/`: data governance's files, which become UnderCover's context layer on Week 3 Day 3
-- `runtime/` and `agentcore/`: the platform team's files for AgentCore Runtime, from Week 3 Day 4
-- `data/`: UnderCover's business data
-- `labs/`: the course's Jupyter notebooks and the brief for each build day
-- `guides/`: guides to the command line, git, Python and other foundations
-- `setup/`: the setup notebook, the installation steps, the course guide and the git guide
-- `assets/`: images used in the notebooks
-- `community_contributions/`: students' contributions
+- `context/`: the context layer, the reference data the agent reads through the context server
+- `runtime/` and `agentcore/`: the files for AgentCore Runtime
+- `data/`: the business data, all of it synthetic
+- `labs/`: Ed's notebooks, kept only as the source for the AWS and Supabase provisioning steps until stage 7 ports them into the runbook and deletes the folder. Don't run them
 
-## The course overall
-
-The course has 15 days over three weeks. Each day has a lecture, and from Week 1 Day 2 every day has work on UnderCover: a lab, a build or both.
-
-- **Week 1, Become an AI Engineer:** Path to FDE; Frontier LLMs & Agents; Coding Agents & ADLC; Open-Source, Local, Token Cost; Harness Engineering
-- **Week 2, Become an AI Architect:** Agent Architecture, Evals, Observability; Agentic RAG, MCP, Memory; Durable State & Human in the Loop; Agent Swarms; Self-Improvement, RSI
-- **Week 3, Become an AI FDE:** AI Solutions Architect; Security, Guardrails, API Gateways; Enterprise Context Layer & Integrations; Production Deployment; Capstone
-
-When the student has questions about the course, what a day covers or what it's for, read `guides/for_agents/AGENT_COURSE_GUIDE.md`, which says which week's guide covers each day. When the student wants to share their work in a pull request, or to pull the latest code, read `guides/for_agents/AGENT_GIT_GUIDE.md`. `README.md` lists each day's labs, briefs and branches, and `setup/INSTRUCTIONS.md` has the installation steps.
-
-### The labs
-
-Each day's labs are notebooks in `labs/`, named for the day, such as `labs/week2day3.ipynb`. They run in VS Code or Cursor on the `.venv` kernel that `uv sync` creates, with the student's keys in `.env`. Help the student run them, understand them and fix what goes wrong.
-
-About $10 of API spend is typical for the course, and there's a free alternative to everything: most labs have a free version whose name ends in `free`, the product uses the model in `MODEL_NAME` when it's set (such as `openrouter/free`), OpenCode with OpenCode Zen is a free coding agent, and in Week 3 the free route uses Render in place of AWS.
-
-Week 3's labs create resources on AWS. Remind the student to run the teardown at the end of each lab; `uv run monitor.py` shows their AWS spend.
-
-### The branches
-
-`main` has everything up to the start of the Week 1 Day 3 build: the setup, the labs and briefs, the guides, the data, and the product's documents and skeleton. Each build day also has Ed's build on two branches: `week<N>day<N>-start`, his build so far with the day's brief in `docs/`, and `week<N>day<N>-end`, his build at the end of the day. Week 1 Day 3 has only `week1day3-end`.
-
-The student can always switch to Ed's build instead of building, for example with `git checkout week2day3-end`. The course always uses `git checkout` to change branches, never `git switch`, so do the same. They should commit their own work before they switch. After a switch, run `uv sync` and `npm install`; `docs/STATUS.md` on that branch says how to run it. `.env` isn't in git, so it stays as it is.
-
-When you're building with the student, build from the documents in `docs/`, not from Ed's build. Don't look at his branches before you plan or while the work is going well. If you get stuck, use the day's `-end` branch as a reference implementation: see how it handled the part you're stuck on, and tell the student you looked. You can read it without switching branches:
-
-- `git show origin/week2day3-end:docs/PLAN_DURABLE.md` for the plan it followed
-- `git diff --stat origin/week2day3-start origin/week2day3-end` for the files the build changed
-- `git show origin/week2day3-end:<path>` for one file
-
-Run `git fetch` first if a branch is missing. If the student's `origin` is their own fork, Ed's repo is `upstream`, so read `upstream/` for `origin/`. When the student asks you to compare their build with Ed's, do the same.
+`community_contributions/`, `guides/`, `setup/` and `assets/` are course material that stage 1 deletes before it renames anything. Nothing in the product depends on them.
