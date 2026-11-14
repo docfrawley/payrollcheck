@@ -55,7 +55,7 @@ it("closes the menu on Escape, back on the avatar, on a click outside it, or as 
   fireEvent.click(avatar);
   fireEvent.pointerDown(who.getByText("dana.whitfield@payrollcheck.example"));
   expect(menuOpen()).not.toBeNull();
-  fireEvent.pointerDown(screen.getByRole("heading", { name: "Cases queue" }));
+  fireEvent.pointerDown(screen.getByRole("heading", { name: "Case queue" }));
   expect(menuOpen()).toBeNull();
 
   // The dispatch panel shows its button once its own request answers.

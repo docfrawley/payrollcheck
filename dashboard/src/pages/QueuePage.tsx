@@ -28,7 +28,7 @@ const STATUS_ICONS: Record<Status, LucideIcon> = {
 
 export function QueuePage() {
   const { data: cases, error } = useLoad(api.listCases, REFRESH_MS);
-  const header = <PageHeader title="Cases queue" />;
+  const header = <PageHeader title="Case queue" />;
   if (!cases)
     return (
       <>

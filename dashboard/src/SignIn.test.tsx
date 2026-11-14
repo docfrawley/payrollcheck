@@ -76,7 +76,7 @@ it("sends a signed-in reviewer on from the sign-in page", async () => {
   stubApi({ "GET /api/cases": [], "GET /api/dispatches/latest": null });
   renderAt("/sign-in");
   expect(
-    await screen.findByRole("heading", { name: "Cases queue" }),
+    await screen.findByRole("heading", { name: "Case queue" }),
   ).toBeDefined();
 });
 

@@ -3,9 +3,7 @@ import { REVIEWERS } from "./reviewers";
 
 test("the queue lists every case", async ({ page }) => {
   await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: "Cases queue" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case queue" })).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(26);
   for (const caseId of ["CLM-1025", "CLM-1901"]) {
     const row = page.getByRole("row").filter({ hasText: caseId });
