@@ -54,7 +54,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        lead="The approval limit and the rules for improving the claim agent."
+        lead="The approval limit and the rules for improving the payroll agent."
       />
       {page ? (
         <SettingsPanels page={page} onSaved={setSaved} />
@@ -270,7 +270,7 @@ function ModelsAllowed({ models }: Readonly<{ models: ModelAllowed[] }>) {
     <section className="panel" aria-labelledby="models-title">
       <h2 id="models-title">Models allowed</h2>
       <p className="muted small">
-        The models the claim agent can use, set in data/models.json.
+        The models the payroll agent can use, set in data/models.json.
       </p>
       <div className="table-scroll">
         <table className="table">

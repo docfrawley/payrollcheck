@@ -162,7 +162,7 @@ def pause_turn(
 ) -> CopilotTurn:
     """Record that a working turn waits for the handler to confirm a sign-off."""
     turn = conversations.working_turn(db, turn_id, handler)
-    conversations.pause(db, turn, request.claim_id)
+    conversations.pause(db, turn, request.case_id)
     return conversations.turn_view(db, turn_id)
 
 

@@ -172,7 +172,7 @@ def test_a_round_keeps_its_settings_when_they_change(client):
 
 def test_a_round_stopped_before_its_verdict_leaves_the_current_version(client):
     round_id = create_round(client).json()["round_id"]
-    copy = round_evaluation(client, round_id).json()["claims"][0]["claim_id"]
+    copy = round_evaluation(client, round_id).json()["cases"][0]["case_id"]
     approved_change(client, round_id)
     stopped = stop_round(client, round_id)
     assert stopped.status_code == 200
@@ -197,7 +197,7 @@ def test_a_round_stopped_before_its_verdict_leaves_the_current_version(client):
         client.post(f"{round_path(round_id)}/verdict"),
         improver_call(client, round_id, 0.01),
         client.post(f"{round_path(round_id)}/finish"),
-        client.post(f"/api/claims/{copy}/start", json={"thread_id": "late"}),
+        client.post(f"/api/cases/{copy}/start", json={"thread_id": "late"}),
     ]
     assert [r.status_code for r in refusals] == [409] * len(refusals)
     assert {r.json()["detail"] for r in refusals} == {"Round 1 is stopped"}
@@ -205,7 +205,7 @@ def test_a_round_stopped_before_its_verdict_leaves_the_current_version(client):
 
 def kept_version_2(client, round_id):
     """Play a round out to a verdict that keeps version 2: version 1 gets every
-    held-out claim wrong, and version 2 decides each as the handlers did."""
+    held-out case wrong, and version 2 decides each as the handlers did."""
     for _ in range(3):
         play_out(client, round_id)
     approved_change(client, round_id)

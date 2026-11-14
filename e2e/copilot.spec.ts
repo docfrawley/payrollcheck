@@ -1,5 +1,5 @@
 import { type Locator, type Page, expect, test } from "@playwright/test";
-import { decide, nextStarted, startClaim, started, stopTheWork } from "./api";
+import { decide, nextStarted, startCase, started, stopTheWork } from "./api";
 
 // The Copilot's sidebar on every signed-in page, driving a stand-in for the
 // Copilot, which plays scripted turns through the backend with the handler's
@@ -26,7 +26,7 @@ async function boxOf(locator: Locator) {
 
 const PAGES = [
   "/",
-  "/claims/CLM-1002",
+  "/cases/CLM-1002",
   "/scoreboard",
   "/improvement",
   "/configuration",
@@ -95,10 +95,10 @@ test("the Copilot's steps show as cards, then its answer, and the page shows its
   const action = copilot.locator(".card", { hasText: "start_dispatch" });
   await expect(action.getByLabel("Done")).toBeVisible();
   await expect(action).toHaveClass(/card-action/);
-  const refused = copilot.locator(".card", { hasText: "send_back_claim" });
+  const refused = copilot.locator(".card", { hasText: "send_back_case" });
   await expect(refused.getByText("Refused")).toBeVisible();
   await expect(refused).toContainText(
-    "Claim CLM-1009 is not waiting for sign-off",
+    "Case CLM-1009 is not waiting for sign-off",
   );
   await expect(copilot.getByRole("table")).toBeVisible();
   await expect(copilot.getByText("3 model calls, $0.0021")).toBeVisible();
@@ -109,15 +109,15 @@ test("the Copilot's steps show as cards, then its answer, and the page shows its
     page.getByRole("region", { name: "Dispatch" }).getByText("Running"),
   ).toBeVisible();
   await copilot.getByRole("link", { name: "CLM-1009" }).first().click();
-  await expect(page).toHaveURL("/claims/CLM-1009");
+  await expect(page).toHaveURL("/cases/CLM-1009");
 });
 
 async function holdForSignOff(
-  request: Parameters<typeof startClaim>[0],
-  claimId: string,
+  request: Parameters<typeof startCase>[0],
+  caseId: string,
 ) {
-  await startClaim(request, claimId, `e2e-copilot-${claimId}`);
-  await decide(request, claimId, {
+  await startCase(request, caseId, `e2e-copilot-${caseId}`);
+  await decide(request, caseId, {
     decision: "approve",
     payout: 1350,
     section: "Section 7, Emergency Medical",
@@ -149,13 +149,13 @@ test("a sign-off waits for Dana's confirmation, even after a reload, and pays on
   await expect(card.getByText("$1,350.00")).toBeVisible();
   await card.getByRole("button", { name: "Sign off and pay" }).click();
   await expect(card.getByRole("status")).toHaveText("Signed off and paid");
-  await page.goto("/claims/CLM-1008");
+  await page.goto("/cases/CLM-1008");
   await expect(
     page.getByText(/^Paid \$1,350\.00, signed off by Dana Whitfield at /),
   ).toBeVisible();
 });
 
-test("Cancel leaves the claim held, and the answer says nothing was signed off", async ({
+test("Cancel leaves the case held, and the answer says nothing was signed off", async ({
   page,
   request,
 }) => {
@@ -170,7 +170,7 @@ test("Cancel leaves the claim held, and the answer says nothing was signed off",
       "I haven't signed off CLM-1011. What would you like to do instead?",
     ),
   ).toBeVisible();
-  await page.goto("/claims/CLM-1011");
+  await page.goto("/cases/CLM-1011");
   await expect(
     page.locator(".page-header").getByText("Waiting for sign-off"),
   ).toBeVisible();

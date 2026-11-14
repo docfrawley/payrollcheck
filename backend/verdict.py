@@ -1,4 +1,4 @@
-"""The business's rule that keeps or rolls back a new version of the claim agent, as
+"""The business's rule that keeps or rolls back a new version of the payroll agent, as
 the lab's compare and keep_or_roll_back: from the new version's held-out scores, the
 current version's and the round's settings."""
 
@@ -9,19 +9,19 @@ from backend.models import Measures, Settings, Verdict
 # Compared as differences: accuracy from 0 to 1, the grade from 0 to 3.
 DIFFERENCES = ("accuracy", "grade")
 # Compared as fractions of the old value, so 0.15 means 15% and 1.0 double.
-FRACTIONS = ("cost_per_claim", "seconds_per_claim")
+FRACTIONS = ("cost_per_case", "seconds_per_case")
 # Where each measure is in the scores.
 SCORES = {
     "accuracy": "accuracy",
     "grade": "grade",
-    "cost_per_claim": "model_cost_per_claim",
-    "seconds_per_claim": "seconds_per_claim",
+    "cost_per_case": "model_cost_per_case",
+    "seconds_per_case": "seconds_per_case",
 }
 RULE = (
     "A new version is kept when it meets the objectives on the held-out set, at "
     "least one measure improves by more than its noise and none gets worse by more "
     "than its tolerance. Accuracy and the grade are compared as differences, and "
-    "cost and time per claim as fractions of the old value."
+    "cost and time per case as fractions of the old value."
 )
 
 

@@ -23,8 +23,8 @@ export function measures(accuracy: number, grade: number | null): Measures {
     cost_of_mistakes: 0,
     straight_through: 1,
     grade,
-    model_cost_per_claim: 0.002,
-    seconds_per_claim: 20,
+    model_cost_per_case: 0.002,
+    seconds_per_case: 20,
     run_seconds: 60,
   };
 }
@@ -62,7 +62,7 @@ export const change: WaitingProposal = {
     removed: 0,
     hunks: [
       [
-        { kind: "context", text: "# Working a claim" },
+        { kind: "context", text: "# Working a case" },
         { kind: "added", text: "A stolen phone needs a police report." },
       ],
     ],

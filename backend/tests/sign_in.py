@@ -39,7 +39,7 @@ def token(
     """A Supabase access token for an email, as Supabase Auth signs one, issued now
     by Supabase's clock, or that many seconds ahead of ours."""
     issued = int(time.time()) + issued_in
-    claims = {
+    cases = {
         "sub": email,
         "email": email,
         "aud": audience,
@@ -47,7 +47,7 @@ def token(
         "iat": issued,
         "exp": issued + expires_in,
     }
-    return jwt.encode(claims, key, algorithm="ES256", headers={"kid": KEY_ID})
+    return jwt.encode(cases, key, algorithm="ES256", headers={"kid": KEY_ID})
 
 
 def bearer(access_token: str) -> dict[str, str]:

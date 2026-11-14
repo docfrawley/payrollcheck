@@ -8,8 +8,8 @@ def read(client, path):
     return client.get(path, headers=signed_in())
 
 
-def steps_of(client, claim_id):
-    return read(client, f"/api/claims/{claim_id}/steps").json()
+def steps_of(client, case_id):
+    return read(client, f"/api/cases/{case_id}/steps").json()
 
 
 def configuration(client):

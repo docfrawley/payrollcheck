@@ -11,7 +11,7 @@ from backend.database import (
     seed,
     settings,
 )
-from backend.tests.claim_requests import decide, pay, sign_off, start
+from backend.tests.case_requests import decide, pay, sign_off, start
 from backend.tests.dashboard_reads import settings_page
 from backend.tests.rows import count
 from backend.tests.settings_requests import STARTING, change_settings
@@ -92,7 +92,7 @@ def test_a_new_approval_limit_applies_to_the_decisions_after_it(client):
         "in_progress"
     )
     assert pay(client, "CLM-1003", 1350.0).json()["status"] == "decided"
-    assert client.get("/api/claims/CLM-1002").json()["status"] == (
+    assert client.get("/api/cases/CLM-1002").json()["status"] == (
         "waiting_for_sign_off"
     )
 
@@ -124,11 +124,11 @@ def test_a_payout_held_names_the_limit_it_was_held_under(client):
 
 def test_a_lower_limit_holds_an_approval_not_yet_paid(client):
     """A known gap: the payment checks the limit in force before it reads the
-    claim, and only a payout held when it was decided can be signed off, so an
+    case, and only a payout held when it was decided can be signed off, so an
     approval left unpaid when the limit drops below it waits for a handler."""
     start(client, "CLM-1001")
     decide(client, "CLM-1001", "approve", 420.0)
     change_settings(client, approval_limit=300.0)
     assert pay(client, "CLM-1001", 420.0).status_code == 403
     assert sign_off(client, "CLM-1001").status_code == 409
-    assert client.get("/api/claims/CLM-1001").json()["status"] == "in_progress"
+    assert client.get("/api/cases/CLM-1001").json()["status"] == "in_progress"

@@ -19,7 +19,7 @@ import { modelCost } from "./format";
 // What the sidebar shows of each kind of card: its icon and what it's about.
 export const CARD_KINDS: Record<CardKind, { icon: LucideIcon; label: string }> =
   {
-    claims: { icon: FileText, label: "Claims" },
+    cases: { icon: FileText, label: "Cases" },
     customers: { icon: Users, label: "Customers and policies" },
     context: { icon: BookOpen, label: "The context layer" },
     work: { icon: Bot, label: "The agent's work" },
@@ -27,9 +27,9 @@ export const CARD_KINDS: Record<CardKind, { icon: LucideIcon; label: string }> =
     action: { icon: Zap, label: "Action" },
   };
 
-// The Copilot's step that signs off a claim, whose card shows how a sign-off
+// The Copilot's step that signs off a case, whose card shows how a sign-off
 // the handler confirmed went.
-export const SIGN_OFF = "sign_off_claim";
+export const SIGN_OFF = "sign_off_case";
 
 // What this browser remembers of the sidebar for each handler: whether it is
 // open, and the conversation open in it.

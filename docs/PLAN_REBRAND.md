@@ -70,7 +70,16 @@ These share a word with the vocabulary but aren't it, or are record contents tha
 - `context/`'s seven files, data governance's: `claim_rules.yaml`, `claims_manual.md`, `policy_wording.md`, `plans.yaml`, `reference_data.yaml`, `data_dictionary.yaml` and `glossary.yaml`, with their contents. These include "UnderCover" as the travel insurer's name inside the documents, and the claims manual's title
 - The record IDs: `CLM-…`, `CUS-…`, `POL-…`, `HND-01` to `HND-03`, and copies like `CLM-1104-E7`
 
-These records stay as they are because seeding stores each one as JSON, and the payroll agent and the Copilot read that JSON as it is through their tools. Leaving them alone means the model reads exactly what it read before, so no score can move because of the rename. It also leaves `data/evals/` unopened. Seeding becomes the one place that reads the old keys: `record["claim_id"]` fills `case_id`, and `record["customer_id"]` fills `subcontractor_id`. The dashboard's type for a record's contents keeps their keys too. Stage 3 deletes all of it.
+The files stay as they are because the labs read them (`labs/` stays unrenamed until stage 7), and stage 3 deletes them. Their keys can't reach the app under the old names, though: the API builds a case straight from its record (`Case(**record | ...)`), and the brief renames `claim_id` to `case_id` there. So seeding gives the keys the app's names as it loads each file, in one place, `with_our_names` in `backend/database.py`, from `RECORD_KEYS`: `claim_id` → `case_id`, `claim_type` → `case_type`, `previous_claims` → `previous_cases`, and in phase 4 `customer_id` → `subcontractor_id`, `customer_since` → `subcontractor_since`, `handler_id` → `reviewer_id`. Every value, ID and story is unchanged, and `data/evals/` stays unopened. `amount_claimed` keeps its name, since "claimed" is the travel claimant's verb. (Found while implementing phase 3. The first version of this plan kept the keys as they were, which the API's case can't accept.)
+
+`data/improvement.json` is the improver's settings, which outlive stage 3, and no lab reads it, so its keys are renamed in the file itself (`cost_per_claim` → `cost_per_case`, `seconds_per_claim` → `seconds_per_case`).
+
+The data dictionary in `context/` still describes the records' fields under their old names (`claim_id`, `claim_type`, `previous_claims`), while the agent now reads them as `case_id`, `case_type` and `previous_cases`. This is a small change in what the model sees, which stage 3 removes with both, and the live evaluation is read with it in mind.
+
+**Context content the code quotes.** These come from data governance's files or the labs, so they keep their words:
+- The data dictionary's record names, `"claim"` and `"previous_claim"`, which `describe_fields` takes (`RecordName` in `context/files.py` and `agent/context_tools.py`), so its lookup still reads "Fields of a previous claim"
+- "Repeat claims", the manual's rule, also where the agent's instructions name it; section titles such as "Repeat claims", the system "Claims operations", the rule `repeat_claims` and the search "REPEAT CLAIMS", quoted in tests
+- The screening prompt, its answer's field descriptions and its docstring, which the model reads as the tool's description, in `agent/screening.py`. `test_screening.py` checks them word for word against `labs/week3day2_lab1.ipynb`
 
 **Named documents.** "The claims manual" and its "section 14" are the document's title, so copy and messages that cite them keep the title, as in "Claims manual section 14: …". The `get_claim_rules` context tool reads `claim_rules.yaml`, and as a tool it's plumbing, so it's renamed `get_case_rules`. The file keeps its name.
 
@@ -159,14 +168,14 @@ The largest phase. With the table above:
 
 The record IDs, the record contents and their keys, the claims manual's title and the JWT's claims stay.
 
-- [ ] `git grep -n -i -w -E 'claims?|claim_[a-z_]+|[a-z_]+_claims?'` with the camel and Pascal forms (`claimId`, `ClaimPage` and the like), outside the exclusions, `labs/` and the target docs, finds nothing but the listed exclusions. The search and what it finds go in the phase's commit message
-- [ ] `curl` against the backend started with `uv run -m uvicorn backend.main:app` on a fresh SQLite seed: `GET /api/openapi.json` lists no path or operation id with "claim", and `GET /api/agent/openapi.json` with the test key lists exactly `get_case`, `get_policy`, `get_case_history`, `calculate_payout`, `record_decision` and `pay_case`
-- [ ] The API-rules test (`backend/tests/test_openapi.py` and `api_rules.py`) passes unchanged except for renamed names
-- [ ] A test-file diff through the phase's table leaves no differences, and the test files moved with `git mv` (`git log --follow` on `test_payroll_agent.py` reaches the import commit)
-- [ ] pyright and ruff agree with every `case` used as a Python name, and no TypeScript identifier is named `case`
-- [ ] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
-- [ ] The phase's review by a fresh subagent finds nothing it would block the PR for, and checks every exclusion
-- [ ] Commit: "Rename claim to case and the claim agent to the payroll agent"
+- [x] `git grep -n -i -w -E 'claims?|claim_[a-z_]+|[a-z_]+_claims?'` with the camel and Pascal forms (`claimId`, `ClaimPage` and the like), outside the exclusions, `labs/` and the target docs, finds nothing but the listed exclusions. The search and what it finds go in the phase's commit message
+- [x] `curl` against the backend started with `uv run -m uvicorn backend.main:app` on a fresh SQLite seed: `GET /api/openapi.json` lists no path or operation id with "claim", and `GET /api/agent/openapi.json` with the test key lists exactly `get_case`, `get_policy`, `get_case_history`, `calculate_payout`, `record_decision` and `pay_case`
+- [x] The API-rules test (`backend/tests/test_openapi.py` and `api_rules.py`) passes unchanged except for renamed names
+- [x] A test-file diff through the phase's table leaves no differences, and the test files moved with `git mv` (`git log --follow` on `test_payroll_agent.py` reaches the import commit; three heavily edited files, `payroll.md`, `case_requests.py` and `CaseLink.tsx`, fall below git's default similarity, so their history needs `git log --follow -M30%`)
+- [x] pyright and ruff agree with every `case` used as a Python name, and no TypeScript identifier is named `case`
+- [x] `npm run check` is green with no `.env`, with the baseline's counts and coverage of at least 80% for both languages
+- [x] The phase's review by a fresh subagent finds nothing it would block the PR for, and checks every exclusion
+- [x] Commit: "Rename claim to case and the claim agent to the payroll agent"
 
 ## Phase 4: The people: reviewers, the compliance manager and subcontractors
 

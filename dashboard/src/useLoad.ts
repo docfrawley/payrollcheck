@@ -13,7 +13,7 @@ export interface Loaded<T> {
 }
 
 // What came back, kept with the load it came from, so a different load, such as
-// another claim's page, starts afresh rather than showing the last one's data.
+// another case's page, starts afresh rather than showing the last one's data.
 interface Answer<T> {
   load?: () => Promise<T>;
   data?: T;

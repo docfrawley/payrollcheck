@@ -1,4 +1,4 @@
-"""Runs the tests work, which a handler starts and the app creates, with claim graphs
+"""Runs the tests work, which a handler starts and the app creates, with payroll graphs
 on a stub model."""
 
 import os
@@ -40,7 +40,7 @@ def new_evaluation(evaluation_set="held_out", tiny=True, agents=5):
 
 
 def dispatch(model, saver=None, agents=3):
-    """Work a new dispatch with claim graphs on the model, which share a saver as
+    """Work a new dispatch with payroll graphs on the model, which share a saver as
     they share the database in the agent, and return its report lines."""
     saver = saver or InMemorySaver()
     work = partial(harness.work_in_run, new_agent=partial(agent_on, model, saver))

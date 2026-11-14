@@ -69,7 +69,7 @@ it("shows each card with its kind, call and state", async () => {
         }),
         step({
           step_id: 5,
-          tool: "list_claims",
+          tool: "list_cases",
           input: "",
           status: "working",
           seconds: 2.5,
@@ -80,7 +80,7 @@ it("shows each card with its kind, call and state", async () => {
   const copilot = await openSidebar();
   const list = within(await copilot.findByRole("list", { name: "Steps" }));
   const [lookup, read, action, failed, working] = list.getAllByRole("listitem");
-  expect(lookup.textContent).toContain("get_claim CLM-1012");
+  expect(lookup.textContent).toContain("get_case CLM-1012");
   expect(within(lookup).getByLabelText("Done")).toBeDefined();
   expect(lookup.textContent).toContain("0.4 s");
   expect(action.className).toContain("card-action");
@@ -134,34 +134,34 @@ const ANSWER = [
   "",
   "- It is held for sign-off.",
   "",
-  "| Claim | Payout |",
+  "| Case | Payout |",
   "| --- | --- |",
   "| CLM-1003 | $3,750.00 |",
 ].join("\n");
 
-it("formats the answer with claim links and its small print", async () => {
+it("formats the answer with case links and its small print", async () => {
   showConversation(turn({ answer: ANSWER }));
   const copilot = await openSidebar();
   const [link] = await copilot.findAllByRole("link", { name: "CLM-1003" });
-  expect(link.getAttribute("href")).toBe("/claims/CLM-1003");
+  expect(link.getAttribute("href")).toBe("/cases/CLM-1003");
   expect(copilot.getByRole("table")).toBeDefined();
   expect(copilot.getByText("It is held for sign-off.")).toBeDefined();
   expect(copilot.getByText("4 model calls, $0.0021, 12 seconds")).toBeDefined();
 });
 
-it("links a claim id once, even in a link, and opens another site in a tab of its own", async () => {
+it("links a case id once, even in a link, and opens another site in a tab of its own", async () => {
   showConversation(
     turn({
       answer:
-        "See [CLM-1003](/claims/CLM-1003), https://example.com/CLM-1004 and [the guide](//example.com/claims).",
+        "See [CLM-1003](/cases/CLM-1003), https://example.com/CLM-1004 and [the guide](//example.com/cases).",
     }),
   );
   const copilot = await openSidebar();
   const links = await copilot.findAllByRole("link");
   expect(links.map((link) => link.getAttribute("href"))).toEqual([
-    "/claims/CLM-1003",
+    "/cases/CLM-1003",
     "https://example.com/CLM-1004",
-    "//example.com/claims",
+    "//example.com/cases",
   ]);
   expect(document.querySelector(".answer a a")).toBeNull();
   expect(links[2].getAttribute("target")).toBe("_blank");
@@ -199,7 +199,7 @@ it("shows the confirmation card from the app's records and answers its own turn"
 const ANSWERED_AT = "2026-10-10T09:01:00.000+00:00";
 const signOff = (changes: Parameters<typeof step>[0]) =>
   step({
-    tool: "sign_off_claim",
+    tool: "sign_off_case",
     kind: "action",
     input: "CLM-1003",
     started_at: "2026-10-10T09:01:00.500+00:00",
@@ -239,13 +239,13 @@ it("says Signed off and paid only once the sign-off is done", async () => {
         steps: [
           signOff({
             status: "refused",
-            reason: "Claim CLM-1003 is not waiting for sign-off",
+            reason: "Case CLM-1003 is not waiting for sign-off",
           }),
         ],
         status: "done",
       },
       "Not signed off",
-      "Claim CLM-1003 is not waiting for sign-off",
+      "Case CLM-1003 is not waiting for sign-off",
     ],
     [
       { steps: [signOff({ status: "done", input: "CLM-1003, as asked" })] },
@@ -279,11 +279,11 @@ it("says Signed off and paid only once the sign-off is done", async () => {
     [
       {
         confirmation_answer: "cancel",
-        canceled_because: "The claim changed since the card was shown",
+        canceled_because: "The case changed since the card was shown",
         status: "done",
       },
       "Canceled",
-      "The claim changed since the card was shown",
+      "The case changed since the card was shown",
     ],
     [
       {
@@ -321,7 +321,7 @@ it("shows a refused answer on the card that was answered, and no other, and read
     ),
     [`POST ${CONVERSATION_PATH}/confirmation`]: new Refusal(
       409,
-      "The claim changed",
+      "The case changed",
     ),
   });
   renderAt("/settings");
@@ -333,9 +333,9 @@ it("shows a refused answer on the card that was answered, and no other, and read
     within(waitingCard).getByRole("button", { name: "Sign off and pay" }),
   );
   expect(
-    await within(waitingCard).findByText("The claim changed"),
+    await within(waitingCard).findByText("The case changed"),
   ).toBeDefined();
-  expect(within(earlier).queryByText("The claim changed")).toBeNull();
+  expect(within(earlier).queryByText("The case changed")).toBeNull();
   await waitFor(() => {
     expect(sent(fetchMock, `GET ${CONVERSATION_PATH}`)).toHaveLength(2);
   });

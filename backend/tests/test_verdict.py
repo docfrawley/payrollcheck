@@ -17,8 +17,8 @@ def scores(accuracy, grade, cost, seconds):
         cost_of_mistakes=0,
         straight_through=1,
         grade=grade,
-        model_cost_per_claim=cost,
-        seconds_per_claim=seconds,
+        model_cost_per_case=cost,
+        seconds_per_case=seconds,
         run_seconds=60,
     )
 
@@ -30,8 +30,8 @@ OLD = scores(0.60, 1.50, 0.0010, 20)
     ("new", "verdict", "reason"),
     [
         (scores(0.72, 1.50, 0.0019, 24), "kept", "accuracy improved"),
-        (scores(0.72, 1.50, 0.0021, 24), "rolled_back", "cost_per_claim got worse"),
-        (scores(0.60, 1.50, 0.0008, 20), "kept", "cost_per_claim improved"),
+        (scores(0.72, 1.50, 0.0021, 24), "rolled_back", "cost_per_case got worse"),
+        (scores(0.60, 1.50, 0.0008, 20), "kept", "cost_per_case improved"),
         (
             scores(0.68, 1.60, 0.0010, 20),
             "rolled_back",

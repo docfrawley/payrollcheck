@@ -1,20 +1,20 @@
 """Rounds of the improver the tests work through the agent's service: a stub
-improver that follows a script of tool calls, and stub claim agents that decide
+improver that follows a script of tool calls, and stub payroll agents that decide
 better once their instructions hold the improver's rule."""
 
 from agent.tests.stubs import StubModel, calculate, call, stub
 from backend.database import INSTRUCTIONS
 from backend.tests.round_requests import handler_answers
 
-# What the improver adds to the claim agent's instructions in the tests, and what
-# makes the stub claim agents decide as the handlers did.
-RULE = "\nA general rule: decide each claim as a careful handler would.\n"
-VERSION_1 = (INSTRUCTIONS / "claim.md").read_text(encoding="utf-8")
+# What the improver adds to the payroll agent's instructions in the tests, and what
+# makes the stub payroll agents decide as the handlers did.
+RULE = "\nA general rule: decide each case as a careful handler would.\n"
+VERSION_1 = (INSTRUCTIONS / "payroll.md").read_text(encoding="utf-8")
 LUNA = {"model": "openai/gpt-6-luna", "reasoning_effort": "low"}
 
 
 class RuleFollowingModel(StubModel):
-    """A stub claim agent that reads its claim, then refers it, or once its
+    """A stub payroll agent that reads its case, then refers it, or once its
     instructions hold the rule, decides it as the handler did, working out an
     approval's payout first."""
 
@@ -22,8 +22,8 @@ class RuleFollowingModel(StubModel):
 
     def next_reply(self, messages):
         if len(messages) == 2:
-            return call("get_claim")
-        copy_id = messages[1].content.removeprefix("Claim ")
+            return call("get_case")
+        copy_id = messages[1].content.removeprefix("Case ")
         decision, payout = ("refer", 0)
         if RULE.strip() in messages[0].content:
             decision, payout = self.answers[copy_id.rsplit("-E", 1)[0]]
@@ -38,7 +38,7 @@ class RuleFollowingModel(StubModel):
         )
 
 
-def claim_agents_model():
+def payroll_agents_model():
     answers = handler_answers("evaluation") | handler_answers("held_out")
     return RuleFollowingModel(messages=iter(()), answers=answers)
 
@@ -47,7 +47,7 @@ def propose(instructions=VERSION_1 + RULE, **model):
     return call(
         "propose_change",
         instructions=instructions,
-        reason="It approved claims the handlers declined.",
+        reason="It approved cases the handlers declined.",
         **(LUNA | model),
     )
 

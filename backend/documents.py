@@ -1,5 +1,5 @@
 """The policy wording and the claims manual: their numbered sections' headings,
-which the claim agent's instructions end with, and the manual's version."""
+which the payroll agent's instructions end with, and the manual's version."""
 
 import re
 

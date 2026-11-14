@@ -72,7 +72,7 @@ def test_the_letter_is_the_likeliest_level_not_the_score_rounded(judge_answers):
     ],
     ids=["a timeout", "an error", "no grade"],
 )
-def test_a_claim_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
+def test_a_case_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
     calls = []
 
     def once(request):

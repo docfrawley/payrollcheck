@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import func, select, update
 
 from backend.database import engine, grades, handler_decisions, runs
-from backend.tests.claim_requests import decide, start
+from backend.tests.case_requests import decide, start
 from backend.tests.judging import answer
 from backend.tests.run_requests import (
     create_evaluation,
@@ -25,14 +25,14 @@ def count_grades():
 
 def decide_all_but_one(client, evaluation, evaluation_set="held_out"):
     """Decide every copy as its handler did, but leave the first undecided."""
-    copies = [c["claim_id"] for c in evaluation["claims"]]
+    copies = [c["case_id"] for c in evaluation["cases"]]
     with engine().connect() as db:
         rows = db.execute(
             select(handler_decisions).where(
                 handler_decisions.c.evaluation_set == evaluation_set
             )
         ).mappings()
-        handlers = {row["claim_id"]: row for row in rows}
+        handlers = {row["case_id"]: row for row in rows}
     for copy in copies[1:]:
         handler = handlers[copy.rsplit("-E", 1)[0]]
         start(client, copy)
@@ -47,7 +47,7 @@ def test_seeding_stores_the_handlers_reasons_and_references():
     assert all(row["reason"] and row["reference"] for row in rows)
 
 
-def test_nothing_the_claim_agent_reads_holds_a_reason_or_a_reference(client):
+def test_nothing_the_payroll_agent_reads_holds_a_reason_or_a_reference(client):
     with engine().connect() as db:
         query = select(handler_decisions.c.reason, handler_decisions.c.reference)
         texts = [text for row in db.execute(query) for text in row]
@@ -56,10 +56,10 @@ def test_nothing_the_claim_agent_reads_holds_a_reason_or_a_reference(client):
     finished = finish(client, evaluation["run_id"]).json()
     seen = json.dumps(
         [
-            client.get("/api/claims/CLM-1001").json(),
-            client.get("/api/claims").json(),
+            client.get("/api/cases/CLM-1001").json(),
+            client.get("/api/cases").json(),
             client.get("/api/versions/current").json(),
-            client.get(f"/api/claims/{copies[1]}").json(),
+            client.get(f"/api/cases/{copies[1]}").json(),
             finished,
         ]
     )
@@ -74,7 +74,7 @@ def test_an_evaluation_is_graded_as_it_finishes(client, judged):
     assert "grade" not in finished.text
 
     scored = get_evaluation(client, evaluation["run_id"])
-    by_copy = {c["claim_id"]: c for c in scored["claims"]}
+    by_copy = {c["case_id"]: c for c in scored["cases"]}
     assert by_copy[copies[0]]["grade"] == {
         "score": 0.0,
         "letter": "F",
@@ -93,7 +93,7 @@ def test_an_evaluation_is_graded_as_it_finishes(client, judged):
     assert set(request["handler"]) == {"decision", "reason", "reference"}
 
 
-def test_a_claim_the_judge_cant_grade_is_left_out_of_the_average(client, judge_answers):
+def test_a_case_the_judge_cant_grade_is_left_out_of_the_average(client, judge_answers):
     answers = iter([httpx.Response(500, json={"error": "Down"})])
 
     def first_fails(request):
@@ -104,16 +104,16 @@ def test_a_claim_the_judge_cant_grade_is_left_out_of_the_average(client, judge_a
     decide_all_but_one(client, evaluation)
     finish(client, evaluation["run_id"])
     scored = get_evaluation(client, evaluation["run_id"])
-    assert [c["grade"] is None for c in scored["claims"]].count(True) == 1
+    assert [c["grade"] is None for c in scored["cases"]].count(True) == 1
     assert scored["measures"]["grade"] == pytest.approx((0 + 3 * 3.0) / 4)
 
 
 def test_an_evaluation_with_none_graded_has_no_grade(client, judge_answers):
     judge_answers(lambda request: httpx.Response(500, json={"error": "Down"}))
     evaluation = create_evaluation(client).json()
-    for copy in evaluation["claims"]:
-        start(client, copy["claim_id"])
-        decide(client, copy["claim_id"], "refer", 0)
+    for copy in evaluation["cases"]:
+        start(client, copy["case_id"])
+        decide(client, copy["case_id"], "refer", 0)
     finish(client, evaluation["run_id"])
     assert get_evaluation(client, evaluation["run_id"])["measures"]["grade"] is None
 
@@ -125,9 +125,9 @@ def test_grading_25_copies_runs_them_at_once(client, judge_answers):
 
     judge_answers(slow)
     evaluation = create_evaluation(client, tiny=False).json()
-    for copy in evaluation["claims"]:
-        start(client, copy["claim_id"])
-        decide(client, copy["claim_id"], "refer", 0)
+    for copy in evaluation["cases"]:
+        start(client, copy["case_id"])
+        decide(client, copy["case_id"], "refer", 0)
     started = time.monotonic()
     assert finish(client, evaluation["run_id"]).status_code == 200
     assert time.monotonic() - started < 2
@@ -140,8 +140,8 @@ def test_a_student_on_a_free_model_has_no_judge(client, judged, monkeypatch):
     decide_all_but_one(client, evaluation)
     finish(client, evaluation["run_id"])
     assert judged == []
-    claims = get_evaluation(client, evaluation["run_id"])["claims"]
-    assert {c["grade"] is None for c in claims} == {True}
+    cases = get_evaluation(client, evaluation["run_id"])["cases"]
+    assert {c["grade"] is None for c in cases} == {True}
 
 
 def test_a_stopped_evaluation_isnt_graded(client, judged):

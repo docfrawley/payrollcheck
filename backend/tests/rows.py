@@ -6,8 +6,8 @@ from sqlalchemy import Table, func, select, update
 
 from backend.calculation import keep_calculation
 from backend.database import (
-    claim_view,
-    claims,
+    case_view,
+    cases,
     engine,
     metadata,
     rounds,
@@ -23,15 +23,15 @@ def count(table: Table) -> int:
         return db.execute(select(func.count()).select_from(table)).scalar_one()
 
 
-def calculated(claim_id: str, payout: float) -> None:
-    """Keep a calculation of a payout for a started claim's current attempt, as
+def calculated(case_id: str, payout: float) -> None:
+    """Keep a calculation of a payout for a started case's current attempt, as
     calculate_payout keeps one."""
     with engine().begin() as db:
-        query = select(claims.c.thread_id).where(claims.c.claim_id == claim_id)
+        query = select(cases.c.thread_id).where(cases.c.case_id == case_id)
         thread_id = db.execute(query).scalar_one()
         steps = [CalculationStep(step="The covered costs", amount=payout)]
         worked_out = Payout(calculation=steps, payout=payout, needs_sign_off=False)
-        keep_calculation(db, claim_id, thread_id, worked_out)
+        keep_calculation(db, case_id, thread_id, worked_out)
 
 
 def heard(table: Table, key: str, value: str, ago: timedelta, column="heard_at"):
@@ -41,9 +41,9 @@ def heard(table: Table, key: str, value: str, ago: timedelta, column="heard_at")
         db.execute(update(table).where(table.c[key] == value).values({column: moment}))
 
 
-def resume_heard(claim_id: str, ago: timedelta) -> None:
-    """Set when the agent last said a resume was working on a claim."""
-    heard(claims, "claim_id", claim_id, ago, "resume_heard_at")
+def resume_heard(case_id: str, ago: timedelta) -> None:
+    """Set when the agent last said a resume was working on a case."""
+    heard(cases, "case_id", case_id, ago, "resume_heard_at")
 
 
 def run_heard(run_id: str, ago: timedelta) -> None:
@@ -54,10 +54,10 @@ def round_heard(round_id: str, ago: timedelta) -> None:
     heard(rounds, "round_id", round_id, ago)
 
 
-def committed_claim(claim_id: str):
-    """A claim's row as another connection reads it: what has been committed."""
+def committed_case(case_id: str):
+    """A case's row as another connection reads it: what has been committed."""
     with engine().connect() as db:
-        query = claim_view.where(claims.c.claim_id == claim_id)
+        query = case_view.where(cases.c.case_id == case_id)
         return db.execute(query).mappings().one()
 
 

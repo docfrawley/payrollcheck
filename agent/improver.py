@@ -1,4 +1,4 @@
-"""The improver: a LangChain agent that follows a recipe to improve the claim agent's
+"""The improver: a LangChain agent that follows a recipe to improve the payroll agent's
 configuration, as in labs/week2day5.ipynb. A handler approves each change and each
 new recipe before it takes effect, and the backend keeps or rolls back each version
 by the business's rule."""
@@ -48,7 +48,7 @@ TRACE_NAME = "Improver"
 APPROVE_OR_REJECT: list[DecisionType] = ["approve", "reject"]
 
 # Works one of the round's evaluations through the dispatcher, given the run the
-# backend created for it: the entry point binds it to the claim agents.
+# backend created for it: the entry point binds it to the payroll agents.
 Evaluate = Callable[[dict[str, Any]], None]
 Start = dict[str, Any] | Command
 
@@ -63,7 +63,7 @@ class RoundContext:
 
 
 def is_allowed(round: dict[str, Any], model: str, reasoning_effort: str) -> bool:
-    """Say whether the claim agent may use a model at a reasoning effort."""
+    """Say whether the payroll agent may use a model at a reasoning effort."""
     return any(
         allowed["model"] == model and reasoning_effort in allowed["reasoning_efforts"]
         for allowed in round["models_allowed"]
@@ -76,7 +76,7 @@ def round_of(runtime: ToolRuntime[RoundContext] | Runtime[RoundContext]) -> str:
 
 @tool
 def read_results(runtime: ToolRuntime[RoundContext]) -> str:
-    """Read the current version of the claim agent's configuration, its scores, its mistakes and weakest explanations on the evaluation set, the earlier rounds, the objectives, the round's spending limit and the models allowed."""  # noqa: E501
+    """Read the current version of the payroll agent's configuration, its scores, its mistakes and weakest explanations on the evaluation set, the earlier rounds, the objectives, the round's spending limit and the models allowed."""  # noqa: E501
     return as_json(improver_api.get_improver_view(round_of(runtime)), indent=2)
 
 
@@ -88,10 +88,10 @@ def propose_change(
     reason: str,
     runtime: ToolRuntime[RoundContext],
 ) -> str:
-    """Propose a new version of the claim agent's configuration. A human reviews it before it's saved.
+    """Propose a new version of the payroll agent's configuration. A human reviews it before it's saved.
 
     Args:
-        instructions: The claim agent's complete instructions
+        instructions: The payroll agent's complete instructions
         model: One of the models allowed
         reasoning_effort: A reasoning level allowed for that model
         reason: Why this change should improve the scores
@@ -120,7 +120,7 @@ def run_evaluation(runtime: ToolRuntime[RoundContext]) -> str:
 
 @tool(parse_docstring=True)
 def propose_recipe(recipe: str, reason: str, runtime: ToolRuntime[RoundContext]) -> str:
-    """Propose a new version of your recipe for improving the claim agent. A human reviews it before it's saved.
+    """Propose a new version of your recipe for improving the payroll agent. A human reviews it before it's saved.
 
     Args:
         recipe: The complete new recipe
@@ -134,7 +134,7 @@ IMPROVER_TOOLS = [read_results, propose_change, run_evaluation, propose_recipe]
 
 
 def needs_a_handler(request: ToolCallRequest) -> bool:
-    """Pause for a handler only for a change the claim agent may use; any other
+    """Pause for a handler only for a change the payroll agent may use; any other
     goes straight to the tool, which tells the improver it isn't allowed."""
     args = request.tool_call["args"]
     context = cast(RoundContext, request.runtime.context)

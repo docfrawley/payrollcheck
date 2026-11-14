@@ -61,7 +61,7 @@ def carry_round_on(round_id: str, proposal_id: str) -> None:
     )
 
 
-def resume_claim(claim_id: str) -> None:
-    """Ask the agent to resume a paused claim with its handler's answer, which it
-    reads from the claim."""
-    ask({"operation": "resume_claim", "claim_id": claim_id})
+def resume_case(case_id: str) -> None:
+    """Ask the agent to resume a paused case with its handler's answer, which it
+    reads from the case."""
+    ask({"operation": "resume_case", "case_id": case_id})

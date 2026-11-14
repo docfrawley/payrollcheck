@@ -1,4 +1,4 @@
-"""The claim agent's configuration in versions."""
+"""The payroll agent's configuration in versions."""
 
 import httpx
 import pytest
@@ -12,7 +12,7 @@ from backend.database import (
     seed,
     versions,
 )
-from backend.tests.claim_requests import decide, start
+from backend.tests.case_requests import decide, start
 from backend.tests.dashboard_reads import (
     configuration,
     evaluations,
@@ -30,7 +30,7 @@ from backend.tests.run_requests import (
 )
 from backend.tests.versions import add_version
 
-CLAIM_MD = (INSTRUCTIONS / "claim.md").read_text(encoding="utf-8")
+PAYROLL_MD = (INSTRUCTIONS / "payroll.md").read_text(encoding="utf-8")
 
 
 def version_1():
@@ -39,9 +39,9 @@ def version_1():
         return db.execute(query).mappings().one()
 
 
-def test_version_1_is_the_claim_agent_as_it_was():
+def test_version_1_is_the_payroll_agent_as_it_was():
     row = version_1()
-    assert row["instructions"] == CLAIM_MD
+    assert row["instructions"] == PAYROLL_MD
     assert (row["model"], row["reasoning_effort"]) == ("openai/gpt-6-luna", "none")
     assert (row["proposed_by"], row["approved_by"]) == ("The claims team", None)
     assert row["based_on"] is None
@@ -54,13 +54,13 @@ def test_version_1_is_the_free_model_for_students_on_free_models(monkeypatch):
     assert (row["model"], row["reasoning_effort"]) == ("openrouter/free", "default")
 
 
-def test_the_claim_agent_reads_a_version_with_the_documents_contents(client):
+def test_the_payroll_agent_reads_a_version_with_the_documents_contents(client):
     for path in ("/api/versions/current", "/api/versions/1"):
         version = client.get(path).json()
         assert list(version) == ["number", "instructions", "model", "reasoning_effort"]
         assert version["number"] == 1
-        assert version["instructions"].startswith(CLAIM_MD)
-        contents = version["instructions"][len(CLAIM_MD) :]
+        assert version["instructions"].startswith(PAYROLL_MD)
+        contents = version["instructions"][len(PAYROLL_MD) :]
         assert "## Contents of the policy wording" in contents
         assert contents.endswith("14. Records\n")
         assert (version["model"], version["reasoning_effort"]) == (
@@ -75,8 +75,8 @@ def test_the_claim_agent_reads_a_version_with_the_documents_contents(client):
 
 
 def test_the_current_version_is_the_newest_kept(client):
-    add_version(CLAIM_MD + "\nA rule for baggage.\n", verdict="kept")
-    add_version(CLAIM_MD + "\nAnother rule.\n", based_on=2)
+    add_version(PAYROLL_MD + "\nA rule for baggage.\n", verdict="kept")
+    add_version(PAYROLL_MD + "\nAnother rule.\n", based_on=2)
     assert client.get("/api/versions/current").json()["number"] == 2
 
     page = configuration(client)
@@ -95,17 +95,19 @@ def test_the_current_version_is_the_newest_kept(client):
 
 
 def test_a_rolled_back_version_leaves_the_current_one(client):
-    add_version(CLAIM_MD + "\nA rule.\n", verdict="rolled_back")
+    add_version(PAYROLL_MD + "\nA rule.\n", verdict="rolled_back")
     assert client.get("/api/versions/current").json()["number"] == 1
     statuses = [v["status"] for v in configuration(client)["versions"]]
     assert statuses == ["rolled_back", "current"]
 
 
 def test_a_versions_details_hold_its_diff(client):
-    add_version(CLAIM_MD.replace("PayrollCheck Agent", "PayrollCheck claim agent", 1))
+    add_version(
+        PAYROLL_MD.replace("PayrollCheck Agent", "PayrollCheck payroll agent", 1)
+    )
     details = version_details(client, 2)
     assert details["based_on"] == 1
-    assert details["instructions"].startswith("# PayrollCheck claim agent")
+    assert details["instructions"].startswith("# PayrollCheck payroll agent")
     assert (details["diff"]["added"], details["diff"]["removed"]) == (1, 1)
     [hunk] = details["diff"]["hunks"]
     assert [line["kind"] for line in hunk[:2]] == ["removed", "added"]
@@ -131,10 +133,12 @@ def test_runs_record_the_current_version(client):
 
 
 def test_a_version_after_one_rolled_back_changes_the_current_one(client):
-    add_version(CLAIM_MD + "\nA rule for baggage.\n", verdict="kept")
-    add_version(CLAIM_MD + "\nA rule that failed.\n", verdict="rolled_back", based_on=2)
+    add_version(PAYROLL_MD + "\nA rule for baggage.\n", verdict="kept")
     add_version(
-        CLAIM_MD + "\nA rule for baggage.\nAnother rule.\n",
+        PAYROLL_MD + "\nA rule that failed.\n", verdict="rolled_back", based_on=2
+    )
+    add_version(
+        PAYROLL_MD + "\nA rule for baggage.\nAnother rule.\n",
         model="openai/gpt-6-luna",
         reasoning_effort="medium",
         based_on=2,
@@ -157,11 +161,11 @@ def finished_evaluation(client, tiny):
 
 
 def referred_evaluation(client):
-    """Start an evaluation of the held-out set's tiny claims, and refer each copy."""
+    """Start an evaluation of the held-out set's tiny cases, and refer each copy."""
     evaluation = create_evaluation(client).json()
-    for copy in evaluation["claims"]:
-        start(client, copy["claim_id"])
-        decide(client, copy["claim_id"], "refer", 0)
+    for copy in evaluation["cases"]:
+        start(client, copy["case_id"])
+        decide(client, copy["case_id"], "refer", 0)
     return evaluation
 
 
@@ -172,7 +176,7 @@ def in_a_round(client, *evaluations):
 
 def a_held_out_decline():
     with engine().connect() as db:
-        query = select(handler_decisions.c.claim_id).where(
+        query = select(handler_decisions.c.case_id).where(
             handler_decisions.c.evaluation_set == "held_out",
             handler_decisions.c.decision == "decline",
         )
@@ -211,7 +215,7 @@ def test_a_run_with_nothing_graded_leaves_the_grade_to_the_others(
     ungraded = referred_evaluation(client)
     finish(client, ungraded["run_id"])
     in_a_round(client, graded, ungraded)
-    # Count the five tiny claims as a whole set, to keep the test short.
+    # Count the five tiny cases as a whole set, to keep the test short.
     with engine().begin() as db:
         db.execute(update(runs).values(tiny=False))
 

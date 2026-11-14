@@ -1,4 +1,4 @@
-// The most claim agents a dispatch or an evaluation works at once, as the
+// The most payroll agents a dispatch or an evaluation works at once, as the
 // backend allows, and how many a form offers first.
 export const MOST_AGENTS = 25;
 export const FIRST_CHOICE = 3;
@@ -10,7 +10,7 @@ export function AgentsChoice({
 }: Readonly<{ agents: number; onChange: (agents: number) => void }>) {
   return (
     <label>
-      Claim agents at once
+      Payroll agents at once
       <select
         value={agents}
         onChange={(event) => {

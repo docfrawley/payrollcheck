@@ -30,17 +30,17 @@ export type StepKind =
   // A handler's note on a decision sent back, which only the app records.
   | "sent_back";
 
-export interface ClaimSummary {
-  claim_id: string;
+export interface CaseSummary {
+  case_id: string;
   customer_name: string;
-  claim_type: string;
+  case_type: string;
   summary: string;
   amount_claimed: number;
   submitted_on: string;
   status: Status;
   decision: DecisionKind | null;
   payout: number | null;
-  // A resume is working on the claim, so a dispatch leaves it alone.
+  // A resume is working on the case, so a dispatch leaves it alone.
   resuming: boolean;
 }
 
@@ -50,7 +50,7 @@ export interface Item {
   amount: number;
 }
 
-export interface ClaimDocument {
+export interface CaseDocument {
   name: string;
   type: string;
   content: string;
@@ -105,12 +105,12 @@ export interface SentBackDecision extends DecisionRecord {
   sent_back_at: string;
 }
 
-export interface Claim {
-  claim_id: string;
+export interface Case {
+  case_id: string;
   policy_id: string;
   customer_id: string;
   customer_name: string;
-  claim_type: string;
+  case_type: string;
   submitted_on: string;
   incident_date: string;
   incident_location: string;
@@ -118,11 +118,11 @@ export interface Claim {
   story: string;
   items: Item[];
   amount_claimed: number;
-  documents: ClaimDocument[];
+  documents: CaseDocument[];
   status: Status;
   thread_id: string | null;
   attempts: number;
-  // Set on an evaluation's copy of a claim.
+  // Set on an evaluation's copy of a case.
   evaluation_id: string | null;
   copy_of: string | null;
   decision: Decision | null;
@@ -148,11 +148,11 @@ export interface Policy {
   status: string;
 }
 
-export interface PreviousClaim {
-  claim_id: string;
+export interface PreviousCase {
+  case_id: string;
   filed_on: string;
   incident_date: string;
-  claim_type: string;
+  case_type: string;
   summary: string;
   outcome: string;
   amount_paid: number;
@@ -182,7 +182,7 @@ export const evaluationSets = ["evaluation", "held_out"] as const;
 export type EvaluationSet = (typeof evaluationSets)[number];
 
 export interface HeldPayout {
-  claim_id: string;
+  case_id: string;
   payout: number;
 }
 
@@ -196,8 +196,8 @@ export interface DispatchSummary {
   unfinished: string[];
 }
 
-// A claim's line in the queue, with its cost and time in a run.
-export interface RunClaim extends ClaimSummary {
+// A case's line in the queue, with its cost and time in a run.
+export interface RunCase extends CaseSummary {
   started_at: string | null;
   seconds: number;
   model_cost: number;
@@ -227,7 +227,7 @@ export interface Run extends RunDetails {
   evaluation_set: EvaluationSet | null;
   tiny: boolean | null;
   summary: DispatchSummary | null;
-  claims: RunClaim[];
+  cases: RunCase[];
 }
 
 export interface Measures {
@@ -235,10 +235,10 @@ export interface Measures {
   accuracy: number;
   cost_of_mistakes: number;
   straight_through: number;
-  // The judge's average grade from 0 to 3, or null when it graded no claim.
+  // The judge's average grade from 0 to 3, or null when it graded no case.
   grade: number | null;
-  model_cost_per_claim: number;
-  seconds_per_claim: number;
+  model_cost_per_case: number;
+  seconds_per_case: number;
   run_seconds: number | null;
 }
 
@@ -246,7 +246,7 @@ export type Letter = "F" | "C" | "B" | "A";
 
 // The judge's grade of an explanation: its score from 0 to 3, the likeliest
 // level, and the chances it gave the same grounds and section as the handler.
-export interface ClaimGrade {
+export interface CaseGrade {
   score: number;
   letter: Letter;
   same_grounds: number;
@@ -254,11 +254,11 @@ export interface ClaimGrade {
   cost: number;
 }
 
-// An evaluation's copy of a claim beside the handler's decision on it.
-export interface ScoredClaim extends RunClaim {
+// An evaluation's copy of a case beside the handler's decision on it.
+export interface ScoredCase extends RunCase {
   copy_of: string;
   reason: string | null;
-  grade: ClaimGrade | null;
+  grade: CaseGrade | null;
   handler_decision: DecisionKind;
   handler_payout: number;
   right: boolean;
@@ -274,7 +274,7 @@ export interface Evaluation extends RunDetails {
 }
 
 export interface ScoredEvaluation extends Evaluation {
-  claims: ScoredClaim[];
+  cases: ScoredCase[];
 }
 
 export interface Accepted {
@@ -336,12 +336,12 @@ export interface Configuration {
 }
 
 // A setting for each measure the rule compares: accuracy and the grade as
-// differences, cost and time per claim as fractions of the old value.
+// differences, cost and time per case as fractions of the old value.
 export interface MeasureSettings {
   accuracy: number;
   grade: number;
-  cost_per_claim: number;
-  seconds_per_claim: number;
+  cost_per_case: number;
+  seconds_per_case: number;
 }
 
 export interface SettingsValues {
@@ -479,9 +479,8 @@ export interface Improvement {
 const askTheCopilot = (path: string, body: object) =>
   send<Conversation>("POST", path, body, freshAccessToken);
 
-const CLAIMS = "/api/claims";
-const claimPath = (claimId: string) =>
-  `${CLAIMS}/${encodeURIComponent(claimId)}`;
+const CASES = "/api/cases";
+const casePath = (caseId: string) => `${CASES}/${encodeURIComponent(caseId)}`;
 const DISPATCHES = "/api/dispatches";
 const CONFIGURATION = "/api/configuration";
 const SETTINGS = "/api/settings";
@@ -497,15 +496,14 @@ const conversationPath = (conversationId: string) =>
   `${CONVERSATIONS}/${encodeURIComponent(conversationId)}`;
 
 export const api = {
-  listClaims: () => request<ClaimSummary[]>(CLAIMS),
-  getClaim: (claimId: string) => request<Claim>(claimPath(claimId)),
-  listSteps: (claimId: string) =>
-    request<Step[]>(`${claimPath(claimId)}/steps`),
+  listCases: () => request<CaseSummary[]>(CASES),
+  getCase: (caseId: string) => request<Case>(casePath(caseId)),
+  listSteps: (caseId: string) => request<Step[]>(`${casePath(caseId)}/steps`),
   getPolicy: (policyId: string) =>
     request<Policy>(`/api/policies/${encodeURIComponent(policyId)}`),
-  getClaimHistory: (customerId: string) =>
-    request<PreviousClaim[]>(
-      `/api/customers/${encodeURIComponent(customerId)}/claims`,
+  getCaseHistory: (customerId: string) =>
+    request<PreviousCase[]>(
+      `/api/customers/${encodeURIComponent(customerId)}/cases`,
     ),
   getConfiguration: () => request<Configuration>(CONFIGURATION),
   getVersionDetails: (number: string) =>
@@ -531,9 +529,9 @@ export const api = {
       tiny,
       agents,
     }),
-  signOff: (claimId: string) => post<Claim>(`${claimPath(claimId)}/sign-off`),
-  sendBack: (claimId: string, note: string) =>
-    post<Claim>(`${claimPath(claimId)}/send-back`, { note }),
+  signOff: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
+  sendBack: (caseId: string, note: string) =>
+    post<Case>(`${casePath(caseId)}/send-back`, { note }),
   getImprovement: () => request<Improvement>(IMPROVEMENT),
   getRecipe: (number: string) =>
     request<RecipeDetails>(

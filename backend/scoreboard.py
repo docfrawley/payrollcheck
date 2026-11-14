@@ -1,4 +1,4 @@
-"""Reading runs: a run's claims with their cost and time, an evaluation scored
+"""Reading runs: a run's cases with their cost and time, an evaluation scored
 against the handlers' decisions, and a version's scores from the evaluations its
 rounds ran on it."""
 
@@ -9,24 +9,24 @@ from sqlalchemy import Connection, RowMapping, and_, func, select
 
 from backend import scoring
 from backend.database import (
-    claim_view,
-    claims,
+    case_view,
+    cases,
     grades,
     handler_decisions,
     model_calls,
-    run_claims,
+    run_cases,
     runs,
     work_times,
 )
 from backend.lookups import round_numbers
 from backend.models import (
-    ClaimGrade,
+    CaseGrade,
     EvaluationSet,
     Measures,
-    RunClaim,
+    RunCase,
     RunKind,
     RunStatus,
-    ScoredClaim,
+    ScoredCase,
     ScoredEvaluation,
     VersionScores,
 )
@@ -35,34 +35,34 @@ from backend.views import to_summary
 Expected = dict[tuple[str, str], scoring.Answer]
 
 
-def claims_of_runs(db: Connection, run_ids: list[str]) -> dict[str, list[RowMapping]]:
-    """Return the rows of each run's claims, in order, with each one's model cost,
+def cases_of_runs(db: Connection, run_ids: list[str]) -> dict[str, list[RowMapping]]:
+    """Return the rows of each run's cases, in order, with each one's model cost,
     its seconds of work, the start of its first spell in the run and its grade, in
     one query for all the runs."""
     cost = (
         select(
             model_calls.c.run_id,
-            model_calls.c.claim_id,
+            model_calls.c.case_id,
             func.sum(model_calls.c.cost).label("cost"),
         )
         .where(model_calls.c.run_id.in_(run_ids))
-        .group_by(model_calls.c.run_id, model_calls.c.claim_id)
+        .group_by(model_calls.c.run_id, model_calls.c.case_id)
         .subquery()
     )
     spells = (
         select(
             work_times.c.run_id,
-            work_times.c.claim_id,
+            work_times.c.case_id,
             func.min(work_times.c.started_at).label("first_started_at"),
             func.sum(work_times.c.seconds).label("seconds"),
         )
         .where(work_times.c.run_id.in_(run_ids))
-        .group_by(work_times.c.run_id, work_times.c.claim_id)
+        .group_by(work_times.c.run_id, work_times.c.case_id)
         .subquery()
     )
     query = (
-        claim_view.add_columns(
-            run_claims.c.run_id,
+        case_view.add_columns(
+            run_cases.c.run_id,
             func.coalesce(cost.c.cost, 0).label("model_cost"),
             spells.c.first_started_at,
             func.coalesce(spells.c.seconds, 0).label("seconds"),
@@ -72,24 +72,24 @@ def claims_of_runs(db: Connection, run_ids: list[str]) -> dict[str, list[RowMapp
             grades.c.same_section,
             func.coalesce(grades.c.cost, 0).label("judge_cost"),
         )
-        .join(run_claims, run_claims.c.claim_id == claims.c.claim_id)
+        .join(run_cases, run_cases.c.case_id == cases.c.case_id)
         .outerjoin(
             cost,
             and_(
-                cost.c.run_id == run_claims.c.run_id,
-                cost.c.claim_id == claims.c.claim_id,
+                cost.c.run_id == run_cases.c.run_id,
+                cost.c.case_id == cases.c.case_id,
             ),
         )
         .outerjoin(
             spells,
             and_(
-                spells.c.run_id == run_claims.c.run_id,
-                spells.c.claim_id == claims.c.claim_id,
+                spells.c.run_id == run_cases.c.run_id,
+                spells.c.case_id == cases.c.case_id,
             ),
         )
-        .outerjoin(grades, grades.c.claim_id == claims.c.claim_id)
-        .where(run_claims.c.run_id.in_(run_ids))
-        .order_by(run_claims.c.run_id, run_claims.c.position)
+        .outerjoin(grades, grades.c.case_id == cases.c.case_id)
+        .where(run_cases.c.run_id.in_(run_ids))
+        .order_by(run_cases.c.run_id, run_cases.c.position)
     )
     by_run: dict[str, list[RowMapping]] = {run_id: [] for run_id in run_ids}
     for row in db.execute(query).mappings():
@@ -97,14 +97,14 @@ def claims_of_runs(db: Connection, run_ids: list[str]) -> dict[str, list[RowMapp
     return by_run
 
 
-def claims_of(db: Connection, run_id: str) -> list[RowMapping]:
-    """Return the rows of a run's claims, in order, as claims_of_runs does."""
-    return claims_of_runs(db, [run_id])[run_id]
+def cases_of(db: Connection, run_id: str) -> list[RowMapping]:
+    """Return the rows of a run's cases, in order, as cases_of_runs does."""
+    return cases_of_runs(db, [run_id])[run_id]
 
 
-def to_run_claim(row: RowMapping) -> RunClaim:
-    """Build a run's claim: its line in the queue, and its cost and time in the run."""
-    return RunClaim(
+def to_run_case(row: RowMapping) -> RunCase:
+    """Build a run's case: its line in the queue, and its cost and time in the run."""
+    return RunCase(
         **to_summary(row).model_dump(),
         started_at=row["first_started_at"],
         seconds=row["seconds"],
@@ -137,11 +137,11 @@ def model_cost_of(db: Connection, run_id: str) -> float:
     return model_costs(db, [run_id])[run_id]
 
 
-def grade_of(row: RowMapping) -> ClaimGrade | None:
+def grade_of(row: RowMapping) -> CaseGrade | None:
     """Return the judge's grade of a copy, or nothing when it wasn't graded."""
     if row["grade_score"] is None:
         return None
-    return ClaimGrade(
+    return CaseGrade(
         score=row["grade_score"],
         letter=row["letter"],
         same_grounds=row["same_grounds"],
@@ -150,11 +150,11 @@ def grade_of(row: RowMapping) -> ClaimGrade | None:
     )
 
 
-def scored_claim(row: RowMapping, expected: scoring.Answer) -> ScoredClaim:
+def scored_case(row: RowMapping, expected: scoring.Answer) -> ScoredCase:
     """Put an evaluation's copy beside the handler's decision on its original."""
     answer = scoring.answer_of(row["decision"], row["payout"])
-    return ScoredClaim(
-        **to_run_claim(row).model_dump(),
+    return ScoredCase(
+        **to_run_case(row).model_dump(),
         copy_of=row["copy_of"],
         reason=row["reason"],
         section=row["section"],
@@ -167,10 +167,10 @@ def scored_claim(row: RowMapping, expected: scoring.Answer) -> ScoredClaim:
 
 
 def expected_answers(db: Connection) -> Expected:
-    """Return the handlers' decisions on every labeled claim, by set and claim."""
+    """Return the handlers' decisions on every labeled case, by set and case."""
     rows = db.execute(select(handler_decisions)).mappings()
     return {
-        (d["evaluation_set"], d["claim_id"]): scoring.Answer(d["decision"], d["payout"])
+        (d["evaluation_set"], d["case_id"]): scoring.Answer(d["decision"], d["payout"])
         for d in rows
     }
 
@@ -185,8 +185,8 @@ def scored_evaluation(
     """Score an evaluation from its copies as they stand and the handlers'
     decisions on their originals."""
     scored = [
-        scored_claim(claim, expected[row["evaluation_set"], claim["copy_of"]])
-        for claim in copies
+        scored_case(case, expected[row["evaluation_set"], case["copy_of"]])
+        for case in copies
     ]
     seconds = seconds_between(row["started_at"], row["finished_at"])
     return ScoredEvaluation(
@@ -197,7 +197,7 @@ def scored_evaluation(
         judge_cost=sum(copy["judge_cost"] for copy in copies),
         size=len(scored),
         measures=scoring.measures(scored, model_cost, seconds),
-        claims=scored,
+        cases=scored,
     )
 
 
@@ -206,7 +206,7 @@ def score_all(
 ) -> list[ScoredEvaluation]:
     """Score evaluations, in three queries for them all."""
     run_ids = [row["run_id"] for row in rows]
-    copies, costs = claims_of_runs(db, run_ids), model_costs(db, run_ids)
+    copies, costs = cases_of_runs(db, run_ids), model_costs(db, run_ids)
     numbers = round_numbers(db, [row["round_id"] for row in rows])
     return [
         scored_evaluation(
@@ -227,7 +227,7 @@ def score(db: Connection, row: RowMapping, expected: Expected) -> ScoredEvaluati
 
 def average(measures: list[Measures]) -> Measures | None:
     """Average the measures of several runs, or nothing when there are none. A run
-    with no graded claims leaves the grade to the others."""
+    with no graded cases leaves the grade to the others."""
     if not measures:
         return None
     averaged = {}

@@ -58,7 +58,7 @@ it("waits for an email and a password before signing in", async () => {
 });
 
 it("shows who is signed in, and signs them out", async () => {
-  stubApi({ "GET /api/claims": [], "GET /api/dispatches/latest": null });
+  stubApi({ "GET /api/cases": [], "GET /api/dispatches/latest": null });
   renderAt("/");
   const who = within(await screen.findByLabelText("Signed in"));
   expect(who.getByText("Dana Whitfield")).toBeDefined();
@@ -73,10 +73,10 @@ it("shows who is signed in, and signs them out", async () => {
 });
 
 it("sends a signed-in handler on from the sign-in page", async () => {
-  stubApi({ "GET /api/claims": [], "GET /api/dispatches/latest": null });
+  stubApi({ "GET /api/cases": [], "GET /api/dispatches/latest": null });
   renderAt("/sign-in");
   expect(
-    await screen.findByRole("heading", { name: "Claims queue" }),
+    await screen.findByRole("heading", { name: "Cases queue" }),
   ).toBeDefined();
 });
 

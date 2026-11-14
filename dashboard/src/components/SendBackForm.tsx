@@ -8,14 +8,14 @@ import { ReasonForm } from "./ReasonForm";
 // Sends a held decision back to the agent with a note, as the handler signed
 // in: a button that opens the note, which the handler must write.
 export function SendBackForm({
-  claimId,
+  caseId,
   onSentBack,
-}: Readonly<{ claimId: string; onSentBack: () => void }>) {
+}: Readonly<{ caseId: string; onSentBack: () => void }>) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const formId = useId();
   const { run, sending, error } = useAction(() =>
-    api.sendBack(claimId, note.trim()).then(onSentBack),
+    api.sendBack(caseId, note.trim()).then(onSentBack),
   );
 
   return (

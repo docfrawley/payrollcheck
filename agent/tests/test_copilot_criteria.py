@@ -12,7 +12,7 @@ from agent.tests.copilot_driver import Copilot, started_run
 from agent.tests.memory_stand_in import MemoryStandIn
 from agent.tests.stubs import call, stub
 from backend.database import engine, handler_decisions, now, payments
-from backend.tests.claim_requests import decide, held, sign_off, start
+from backend.tests.case_requests import decide, held, sign_off, start
 from backend.tests.run_requests import (
     another_running_dispatch,
     fail_run,
@@ -43,12 +43,12 @@ def quick_waits(monkeypatch):
 
 def handlers_decided() -> list[str]:
     """Set our handlers' decisions on the held-out set, in the test's own database,
-    so the test knows the measures: the first three claims referred, the rest
-    approved at $100.00. Return the claims in that order."""
+    so the test knows the measures: the first three cases referred, the rest
+    approved at $100.00. Return the cases in that order."""
     with engine().begin() as db:
         held_out = handler_decisions.c.evaluation_set == "held_out"
-        query = select(handler_decisions.c.claim_id).where(held_out)
-        claims = sorted(db.execute(query).scalars())
+        query = select(handler_decisions.c.case_id).where(held_out)
+        cases = sorted(db.execute(query).scalars())
         db.execute(
             update(handler_decisions)
             .where(held_out)
@@ -56,21 +56,21 @@ def handlers_decided() -> list[str]:
         )
         db.execute(
             update(handler_decisions)
-            .where(held_out, handler_decisions.c.claim_id.in_(claims[:3]))
+            .where(held_out, handler_decisions.c.case_id.in_(cases[:3]))
             .values(decision="refer", payout=0.0)
         )
-    assert len(claims) == 25
-    return claims
+    assert len(cases) == 25
+    return cases
 
 
-def work_the_copies(client, run_id: str, claims: list[str]) -> None:
+def work_the_copies(client, run_id: str, cases: list[str]) -> None:
     """Decide the evaluation's copies as the agent would, so that 5 of 25 are
     referred, 80% straight through, and 22 are right, 88% accuracy: the three the
     handlers referred, two more referred, one approved at $200.00 and the rest
     approved at $100.00, then finish the evaluation."""
-    for copy in client.get(run_path(run_id)).json()["claims"]:
-        copy_id = copy["claim_id"]
-        place = claims.index(copy_id.rsplit("-E", 1)[0])
+    for copy in client.get(run_path(run_id)).json()["cases"]:
+        copy_id = copy["case_id"]
+        place = cases.index(copy_id.rsplit("-E", 1)[0])
         start(client, copy_id)
         if place < 5:
             decide(client, copy_id, "refer", 0)
@@ -109,11 +109,11 @@ def table(straight, accuracy, over, verdict, objective="60%"):
 
 
 def test_the_success_criteria(client, copilot: Copilot, agent_calls):
-    claims = handlers_decided()
+    cases = handlers_decided()
     held(client, "CLM-1002", 1350.0)
     sign_off(client, "CLM-1002")
     turn = check(
-        copilot, client, agent_calls, lambda run: work_the_copies(client, run, claims)
+        copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
     )
     run = client.get(run_path(started_run(agent_calls))).json()
     assert (run["kind"], run["evaluation_set"], run["tiny"], run["agents"]) == (
@@ -132,10 +132,10 @@ def test_the_success_criteria(client, copilot: Copilot, agent_calls):
 
 
 def test_the_answer_is_written_in_code(client, copilot: Copilot, agent_calls):
-    claims = handlers_decided()
+    cases = handlers_decided()
     copilot.store = MemoryStandIn()
     turn = check(
-        copilot, client, agent_calls, lambda run: work_the_copies(client, run, claims)
+        copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
     )
     criteria = turn["answer"]
     assert criteria == table(
@@ -156,21 +156,21 @@ def test_the_answer_is_written_in_code(client, copilot: Copilot, agent_calls):
     assert later["answer"] == "We're doing well."
 
 
-def paid_without_a_sign_off(claim_id, amount):
+def paid_without_a_sign_off(case_id, amount):
     """Write a payment straight into the table, as nothing in the app would for a
     payout held for sign-off."""
     with engine().begin() as db:
         db.execute(
-            insert(payments).values(claim_id=claim_id, amount=amount, paid_at=now())
+            insert(payments).values(case_id=case_id, amount=amount, paid_at=now())
         )
 
 
 def test_the_third_with_none_paid_and_with_one_unsigned(
     client, copilot: Copilot, agent_calls
 ):
-    claims = handlers_decided()
+    cases = handlers_decided()
     turn = check(
-        copilot, client, agent_calls, lambda run: work_the_copies(client, run, claims)
+        copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
     )
     assert "| None paid over the limit yet | Yes |" in turn["answer"]
     held(client, "CLM-1002", 1350.0)
@@ -179,7 +179,7 @@ def test_the_third_with_none_paid_and_with_one_unsigned(
     paid_without_a_sign_off("CLM-1008", 1200.0)
     agent_calls.clear()
     turn = check(
-        copilot, client, agent_calls, lambda run: work_the_copies(client, run, claims)
+        copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
     )
     assert turn["answer"] == table(
         ("80%", "Yes"),
@@ -236,11 +236,11 @@ def test_a_start_the_app_refuses_gives_its_reason(client, copilot: Copilot):
 def test_the_accuracy_objective_comes_from_the_settings(
     client, dashboard, copilot: Copilot, agent_calls
 ):
-    claims = handlers_decided()
+    cases = handlers_decided()
     objectives = {"accuracy": 0.9, "grade": 1.0}
     assert change_settings(dashboard, objectives=objectives).status_code == 200
     turn = check(
-        copilot, client, agent_calls, lambda run: work_the_copies(client, run, claims)
+        copilot, client, agent_calls, lambda run: work_the_copies(client, run, cases)
     )
     assert turn["answer"] == table(
         ("80%", "Yes"),

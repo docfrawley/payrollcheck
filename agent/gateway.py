@@ -1,4 +1,4 @@
-"""The Gateway route: the claim agent's tools and its payment as the AgentCore
+"""The Gateway route: the payroll agent's tools and its payment as the AgentCore
 Gateway's MCP tools, each request signed for bedrock-agentcore with the AWS CLI's
 credentials and region, so the Gateway's Policy sees every call."""
 

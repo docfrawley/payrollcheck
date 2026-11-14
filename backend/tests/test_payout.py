@@ -1,15 +1,15 @@
 import pytest
 
-from backend.tests.claim_requests import line, start, work_out_payout
+from backend.tests.case_requests import line, start, work_out_payout
 from backend.tests.settings_requests import change_settings
 
 
 @pytest.fixture(autouse=True)
 def started(client):
-    """Start every claim in the queue, since only a claim in progress has its
+    """Start every case in the queue, since only a case in progress has its
     payout worked out."""
-    for claim in client.get("/api/claims").json():
-        start(client, claim["claim_id"])
+    for case in client.get("/api/cases").json():
+        start(client, case["case_id"])
 
 
 def steps(result):
@@ -142,8 +142,8 @@ def test_sign_off_follows_the_limit_in_settings(client):
 
 def test_working_out_a_payout_decides_nothing(client):
     work_out_payout(client, "CLM-1001", "trip_delay", [line("Taxis", 80, "expense")])
-    claim = client.get("/api/claims/CLM-1001").json()
-    assert (claim["status"], claim["decision"]) == ("in_progress", None)
+    case = client.get("/api/cases/CLM-1001").json()
+    assert (case["status"], case["decision"]) == ("in_progress", None)
 
 
 @pytest.mark.parametrize(
@@ -169,6 +169,6 @@ def test_what_others_paid_cant_be_negative(client):
     assert response.status_code == 422
 
 
-def test_an_unknown_claim(client):
+def test_an_unknown_case(client):
     response = work_out_payout(client, "CLM-9999", "baggage", [line("Hat", 30)])
     assert response.status_code == 404

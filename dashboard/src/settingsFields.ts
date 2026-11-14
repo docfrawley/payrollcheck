@@ -49,7 +49,7 @@ export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
   },
   objectives: {
     title: "Objectives on the held-out set",
-    lead: "The lowest scores a new version of the claim agent can have and be kept.",
+    lead: "The lowest scores a new version of the payroll agent can have and be kept.",
   },
   noise: {
     title: "Noise",
@@ -65,7 +65,7 @@ export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
   },
   evaluations: {
     title: "The improver's evaluations",
-    lead: "How many claim agents work at once in a round's evaluations.",
+    lead: "How many payroll agents work at once in a round's evaluations.",
   },
 };
 
@@ -74,8 +74,8 @@ type Measure = keyof SettingsValues["noise"];
 const MEASURES: { measure: Measure; label: string; unit: Unit }[] = [
   { measure: "accuracy", label: "Accuracy", unit: "percent" },
   { measure: "grade", label: "Grade", unit: "grade" },
-  { measure: "cost_per_claim", label: "Model cost per claim", unit: "percent" },
-  { measure: "seconds_per_claim", label: "Time per claim", unit: "percent" },
+  { measure: "cost_per_case", label: "Model cost per case", unit: "percent" },
+  { measure: "seconds_per_case", label: "Time per case", unit: "percent" },
 ];
 
 function measureFields(group: "noise" | "tolerance"): SettingField[] {
@@ -143,8 +143,8 @@ export const SETTING_FIELDS: SettingField[] = [
   {
     id: "agents",
     group: "evaluations",
-    label: "Claim agents at once",
-    name: "Claim agents at once in the improver's evaluations",
+    label: "Payroll agents at once",
+    name: "Payroll agents at once in the improver's evaluations",
     unit: "agents",
     max: MOST_AGENTS,
     get: (values) => values.agents,

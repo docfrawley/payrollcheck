@@ -46,9 +46,8 @@ from backend.lookups import (
 from backend.models import (
     Accepted,
     AgentAnswer,
+    CaseBesideHandler,
     ChangeProposalRequest,
-    ClaimAgentVersion,
-    ClaimBesideHandler,
     Diff,
     EarlierRound,
     Evaluation,
@@ -63,6 +62,7 @@ from backend.models import (
     JudgeAnswer,
     Measures,
     NewNumber,
+    PayrollAgentVersion,
     Proposal,
     ProposalKind,
     RecipeDetails,
@@ -76,7 +76,7 @@ from backend.models import (
     RoundSummary,
     RoundView,
     RunStatus,
-    ScoredClaim,
+    ScoredCase,
     Spending,
     Verdict,
     VerdictResult,
@@ -114,7 +114,7 @@ from backend.scoreboard import (
 IMPROVER_MODEL = ("openai/gpt-6.1-sol", "medium")
 ROUND_OPEN = "Round {number} is open. Finish or stop it first."
 NOT_WAITING = "Proposal {proposal_id} isn't waiting for a handler: it was {review}"
-# How many of the right claims the improver reads, those the judge graded lowest.
+# How many of the right cases the improver reads, those the judge graded lowest.
 EXPLAINED_LEAST_WELL = 5
 YES_FROM = 0.5
 
@@ -173,7 +173,7 @@ def proposer(row: RowMapping) -> str:
 
 
 def is_allowed(db: Connection, model: str, reasoning_effort: str) -> bool:
-    """Say whether the claim agent may use a model at a reasoning effort."""
+    """Say whether the payroll agent may use a model at a reasoning effort."""
     return any(
         allowed.model == model and reasoning_effort in allowed.reasoning_efforts
         for allowed in allowed_models(db)
@@ -263,18 +263,18 @@ def yes_or_no(chance: float) -> Literal["yes", "no"]:
     return "yes" if chance >= YES_FROM else "no"
 
 
-def beside_handler(claim: ScoredClaim, handler: RowMapping) -> ClaimBesideHandler:
+def beside_handler(case: ScoredCase, handler: RowMapping) -> CaseBesideHandler:
     """An evaluation's copy as the improver reads it: under its original's id, the
     agent's answer beside the handler's, and the judge's grade."""
-    grade = claim.grade
-    return ClaimBesideHandler(
-        claim_id=claim.copy_of,
-        summary=claim.summary,
+    grade = case.grade
+    return CaseBesideHandler(
+        case_id=case.copy_of,
+        summary=case.summary,
         agent=AgentAnswer(
-            decision=claim.decision,
-            payout=claim.payout,
-            reason=claim.reason,
-            section=claim.section,
+            decision=case.decision,
+            payout=case.payout,
+            reason=case.reason,
+            section=case.section,
         ),
         handler=HandlerAnswer(
             decision=handler["decision"],
@@ -295,18 +295,18 @@ def beside_handler(claim: ScoredClaim, handler: RowMapping) -> ClaimBesideHandle
 def evaluation_set_results(
     db: Connection, version: int, expected: Expected
 ) -> EvaluationSetResults:
-    """From a version's latest round evaluation on the evaluation set, the claims it
+    """From a version's latest round evaluation on the evaluation set, the cases it
     got wrong and the right ones the judge graded lowest, with the handlers'
     reasons. Nothing from the held-out set."""
     latest = round_evaluations(db, version)[EvaluationSet.EVALUATION][-1:]
     if not latest:
         return EvaluationSetResults(wrong=[], explained_least_well=[])
-    claims = score(db, latest[0], expected).claims
+    cases = score(db, latest[0], expected).cases
     handlers_ = handler_reasons(db)
-    right = [c for c in claims if c.right]
+    right = [c for c in cases if c.right]
     weakest = sorted(right, key=lambda c: c.grade.score if c.grade else 3)
     return EvaluationSetResults(
-        wrong=[beside_handler(c, handlers_[c.copy_of]) for c in claims if not c.right],
+        wrong=[beside_handler(c, handlers_[c.copy_of]) for c in cases if not c.right],
         explained_least_well=[
             beside_handler(c, handlers_[c.copy_of])
             for c in weakest[:EXPLAINED_LEAST_WELL]
@@ -319,7 +319,7 @@ def handler_reasons(db: Connection) -> dict[str, RowMapping]:
     query = select(handler_decisions).where(
         handler_decisions.c.evaluation_set == EvaluationSet.EVALUATION
     )
-    return {row["claim_id"]: row for row in db.execute(query).mappings()}
+    return {row["case_id"]: row for row in db.execute(query).mappings()}
 
 
 def earlier_round(db: Connection, row: RowMapping) -> EarlierRound:
@@ -347,7 +347,7 @@ def improver_view(db: Connection, row: RowMapping) -> ImproverView:
     settings = settings_number(db, row["settings"])
     earlier = select(rounds).where(rounds.c.number < row["number"])
     return ImproverView(
-        current_version=ClaimAgentVersion(**current),
+        current_version=PayrollAgentVersion(**current),
         scores=version_scores(db, current["number"], expected),
         evaluation_set=evaluation_set_results(db, current["number"], expected),
         earlier_rounds=[
@@ -461,7 +461,7 @@ def view_of(
     return RoundView(
         **summary.model_dump(),
         waiting=waiting_view(db, row),
-        evaluations=[Evaluation(**s.model_dump(exclude={"claims"})) for s in scored],
+        evaluations=[Evaluation(**s.model_dump(exclude={"cases"})) for s in scored],
     )
 
 
@@ -629,7 +629,7 @@ def get_round(round_id: str, db: Database) -> RoundForTheAgent:
     dependencies=[AgentKey],
 )
 def get_improver_view(round_id: str, db: Database) -> ImproverView:
-    """Get what the improver reads in a round: no held-out claim, only scores."""
+    """Get what the improver reads in a round: no held-out case, only scores."""
     return improver_view(db, round_row(db, round_id))
 
 

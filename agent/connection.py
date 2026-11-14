@@ -1,5 +1,5 @@
 """The connection to the PayrollCheck backend: its address, the one HTTP client, the
-agent's API key, and how a request is sent and refused. The claim agent's API and the
+agent's API key, and how a request is sent and refused. The payroll agent's API and the
 improver's API send their requests through it with the agent's key, and the
 Copilot's with a handler's sign-in."""
 

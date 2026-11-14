@@ -93,11 +93,11 @@ def left_open(graph: CopilotGraph, config: RunnableConfig) -> list[ToolMessage]:
 
 
 def tell_the_app(turn: Turn, saved: StateSnapshot) -> None:
-    """Tell the app how the turn ended: paused on a claim, once the interrupt is
+    """Tell the app how the turn ended: paused on a case, once the interrupt is
     saved, or answered, with its model calls and their cost."""
     if saved.interrupts:
-        claim_id = saved.interrupts[0].value["claim_id"]
-        app_api.pause_turn(turn.sign_in, turn.turn_id, claim_id)
+        case_id = saved.interrupts[0].value["case_id"]
+        app_api.pause_turn(turn.sign_in, turn.turn_id, case_id)
         return
     values = saved.values
     answer = values["messages"][-1].text
@@ -145,7 +145,7 @@ def take_turn(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
 def resume_of(record: dict[str, Any]) -> dict[str, Any]:
     """The handler's answer to the confirmation, read from the app's record of the
     turn: Sign off, Cancel, or a Sign off the app took as a Cancel because the
-    claim changed."""
+    case changed."""
     answer: dict[str, Any] = {"answer": record["confirmation_answer"]}
     if record["canceled_because"]:
         answer["changed"] = True

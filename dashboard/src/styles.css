@@ -646,7 +646,7 @@ p {
 }
 
 /* A table whose cells fill in as the page refreshes, such as an evaluation's
-   claims while it runs: its columns keep the widths set here, so a value that
+   cases while it runs: its columns keep the widths set here, so a value that
    arrives never moves the others. */
 .table.steady {
   table-layout: fixed;
@@ -660,7 +660,7 @@ p {
   white-space: normal;
 }
 
-.col-claim {
+.col-case {
   width: 8.5rem;
 }
 
@@ -763,7 +763,7 @@ p {
   font-family: var(--sans);
 }
 
-.claim-layout {
+.case-layout {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 20px;
@@ -778,7 +778,7 @@ p {
 }
 
 @container page (max-width: 960px) {
-  .claim-layout {
+  .case-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -2112,9 +2112,9 @@ fieldset.panel legend + * {
   font-size: 0.85em;
 }
 
-/* A claim's id links to its page, set as ids are, and never breaks across
+/* A case's id links to its page, set as ids are, and never breaks across
    lines. */
-.answer a[href^="/claims/"] {
+.answer a[href^="/cases/"] {
   font-family: var(--mono);
   font-size: 0.9em;
   white-space: nowrap;

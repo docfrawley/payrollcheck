@@ -9,13 +9,13 @@ export type TurnStatus =
   // A turn still working long after it started, which the app reads as stopped.
   | "stopped";
 export type CardKind =
-  "claims" | "customers" | "context" | "work" | "memory" | "action";
+  "cases" | "customers" | "context" | "work" | "memory" | "action";
 export type CardStatus = "working" | "done" | "refused" | "failed";
 export type ConfirmationAnswer = "sign_off" | "cancel";
 
 // A sign-off waiting for the handler's confirmation, from the app's records.
 export interface Confirmation {
-  claim_id: string;
+  case_id: string;
   customer_name: string;
   payout: number;
   reason: string;

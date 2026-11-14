@@ -115,14 +115,14 @@ it("shows a finished round's verdict and why", async () => {
     waiting: null,
     version: 2,
     verdict: "rolled_back",
-    verdict_reason: "cost_per_claim got worse",
+    verdict_reason: "cost_per_case got worse",
   };
   showPage(improvement(finished));
   const round = await panel("Round 1");
   expect(round.getByText("Rolled back", { selector: ".chip" }).className).toBe(
     "chip verdict-rolled_back",
   );
-  expect(round.getByText(/cost per claim got worse/)).toBeDefined();
+  expect(round.getByText(/cost per case got worse/)).toBeDefined();
   expect(
     round.queryByRole("list", { name: "Where the round has got to" }),
   ).toBeNull();

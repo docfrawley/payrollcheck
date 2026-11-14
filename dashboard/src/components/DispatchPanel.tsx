@@ -1,6 +1,6 @@
 import { Play } from "lucide-react";
 import { Fragment, useState } from "react";
-import { api, type DispatchSummary, type Run, type RunClaim } from "../api";
+import { api, type DispatchSummary, type Run, type RunCase } from "../api";
 import {
   agentsAtOnce,
   dateTime,
@@ -12,7 +12,7 @@ import {
 } from "../format";
 import { REFRESH_MS, useLoad } from "../useLoad";
 import { DecisionChip, RunChip, StatusChip } from "./Chips";
-import { ClaimLink } from "./ClaimLink";
+import { CaseLink } from "./CaseLink";
 import { StateMessage } from "./StateMessage";
 import { ActionForm } from "./ActionForm";
 import { AgentsChoice, FIRST_CHOICE } from "./AgentsChoice";
@@ -36,7 +36,7 @@ export function DispatchPanel() {
       </ActionForm>
       {dispatch === undefined && <StateMessage error={error} />}
       {dispatch === null && (
-        <StateMessage empty="No dispatch yet. Start one to work the waiting claims." />
+        <StateMessage empty="No dispatch yet. Start one to work the waiting cases." />
       )}
       {dispatch && <DispatchDetails dispatch={dispatch} />}
     </section>
@@ -63,26 +63,26 @@ function DispatchDetails({ dispatch }: Readonly<{ dispatch: Run }>) {
           {dispatch.stopped_because
             ? stoppedBecause(dispatch.stopped_because)
             : "It stopped before it finished."}{" "}
-          The next dispatch carries on its claims.
+          The next dispatch carries on its cases.
         </p>
       )}
-      {dispatch.claims.length > 0 ? (
-        <RunClaims claims={dispatch.claims} />
+      {dispatch.cases.length > 0 ? (
+        <RunCases cases={dispatch.cases} />
       ) : (
-        <StateMessage empty="No claims in this dispatch: the queue had none waiting or in progress when it started." />
+        <StateMessage empty="No cases in this dispatch: the queue had none waiting or in progress when it started." />
       )}
       {dispatch.summary && <Summary summary={dispatch.summary} />}
     </>
   );
 }
 
-function RunClaims({ claims }: Readonly<{ claims: RunClaim[] }>) {
+function RunCases({ cases }: Readonly<{ cases: RunCase[] }>) {
   return (
     <div className="table-scroll">
       <table className="table">
         <thead>
           <tr>
-            <th>Claim</th>
+            <th>Case</th>
             <th>Customer</th>
             <th>State</th>
             <th>Decision</th>
@@ -93,26 +93,28 @@ function RunClaims({ claims }: Readonly<{ claims: RunClaim[] }>) {
           </tr>
         </thead>
         <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.claim_id}>
+          {cases.map((caseRecord) => (
+            <tr key={caseRecord.case_id}>
               <td className="nowrap">
-                <ClaimLink claimId={claim.claim_id} />
+                <CaseLink caseId={caseRecord.case_id} />
               </td>
-              <td>{claim.customer_name}</td>
+              <td>{caseRecord.customer_name}</td>
               <td>
-                <StatusChip status={claim.status} />
+                <StatusChip status={caseRecord.status} />
               </td>
               <td>
-                {claim.decision && <DecisionChip decision={claim.decision} />}
+                {caseRecord.decision && (
+                  <DecisionChip decision={caseRecord.decision} />
+                )}
               </td>
               <td className="num mono">
-                {claim.payout !== null && money(claim.payout)}
+                {caseRecord.payout !== null && money(caseRecord.payout)}
               </td>
               <td className="nowrap">
-                {claim.started_at && time(claim.started_at)}
+                {caseRecord.started_at && time(caseRecord.started_at)}
               </td>
-              <td className="num mono">{duration(claim.seconds)}</td>
-              <td className="num mono">{modelCost(claim.model_cost)}</td>
+              <td className="num mono">{duration(caseRecord.seconds)}</td>
+              <td className="num mono">{modelCost(caseRecord.model_cost)}</td>
             </tr>
           ))}
         </tbody>
@@ -122,11 +124,11 @@ function RunClaims({ claims }: Readonly<{ claims: RunClaim[] }>) {
 }
 
 function Summary({ summary }: Readonly<{ summary: DispatchSummary }>) {
-  const held = summary.waiting_for_sign_off.map(({ claim_id, payout }) => ({
-    claim_id,
+  const held = summary.waiting_for_sign_off.map(({ case_id, payout }) => ({
+    case_id,
     note: money(payout),
   }));
-  const only = (ids: string[]) => ids.map((claim_id) => ({ claim_id }));
+  const only = (ids: string[]) => ids.map((case_id) => ({ case_id }));
   return (
     <div className="dispatch-summary">
       <h3 id="dispatch-summary-title">When it finished</h3>
@@ -135,32 +137,32 @@ function Summary({ summary }: Readonly<{ summary: DispatchSummary }>) {
           {summary.approved} approved, {summary.declined} declined and{" "}
           {summary.referred} referred.
         </li>
-        <ClaimLine label="Waiting for sign-off" claims={held} />
-        <ClaimLine
+        <CaseLine label="Waiting for sign-off" cases={held} />
+        <CaseLine
           label="Left for a handler"
-          claims={only(summary.left_for_handler)}
+          cases={only(summary.left_for_handler)}
         />
-        <ClaimLine
+        <CaseLine
           label="Left for the next dispatch"
-          claims={only(summary.unfinished)}
+          cases={only(summary.unfinished)}
         />
       </ul>
     </div>
   );
 }
 
-function ClaimLine({
+function CaseLine({
   label,
-  claims,
-}: Readonly<{ label: string; claims: { claim_id: string; note?: string }[] }>) {
-  if (claims.length === 0) return null;
+  cases,
+}: Readonly<{ label: string; cases: { case_id: string; note?: string }[] }>) {
+  if (cases.length === 0) return null;
   return (
     <li>
       {label}:{" "}
-      {claims.map(({ claim_id, note }, index) => (
-        <Fragment key={claim_id}>
+      {cases.map(({ case_id, note }, index) => (
+        <Fragment key={case_id}>
           {index > 0 && ", "}
-          <ClaimLink claimId={claim_id} />
+          <CaseLink caseId={case_id} />
           {note && <span className="mono"> {note}</span>}
         </Fragment>
       ))}

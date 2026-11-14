@@ -41,7 +41,7 @@ def build_server(security: TransportSecuritySettings | None = None) -> FastMCP:
 
     @server.tool(annotations=READ_ONLY)
     def describe_fields(record: files.RecordName) -> dict[str, Any]:
-        """Describe a record the claim agent reads and the meaning of its fields."""
+        """Describe a record the payroll agent reads and the meaning of its fields."""
         return files.describe_fields(record)
 
     @server.tool(annotations=READ_ONLY)
@@ -50,9 +50,9 @@ def build_server(security: TransportSecuritySettings | None = None) -> FastMCP:
         return files.get_plan(plan)
 
     @server.tool(annotations=READ_ONLY)
-    def get_claim_rules() -> dict[str, Any]:
-        """Get the rules claims operations applies to every claim."""
-        return files.get_claim_rules()
+    def get_case_rules() -> dict[str, Any]:
+        """Get the rules claims operations applies to every case."""
+        return files.get_case_rules()
 
     @server.tool(annotations=READ_ONLY)
     def search_reference_data(query: Query) -> dict[str, Any]:

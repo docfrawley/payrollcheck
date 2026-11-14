@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from backend import auth
 from backend.database import engine, handlers, load
-from backend.tests.claim_requests import decide, start
+from backend.tests.case_requests import decide, start
 from backend.tests.gates import HANDLER_OPERATIONS
 from backend.tests.rows import everything_recorded
 from backend.tests.sign_in import DANA, OTHER_KEY, SUPABASE_URL, signed_in, token

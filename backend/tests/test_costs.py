@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from backend import main
-from backend.tests.claim_requests import record_call, record_time, start
+from backend.tests.case_requests import record_call, record_time, start
 from backend.tests.run_requests import create_dispatch
 
 RECORDED_AT = "2026-10-02T12:00:30+00:00"
@@ -22,7 +22,7 @@ def test_record_a_model_call(client, monkeypatch, run_id, in_run):
     response = record_call(client, "CLM-1004", named)
     assert response.status_code == 200
     assert response.json() == {
-        "claim_id": "CLM-1004",
+        "case_id": "CLM-1004",
         "thread_id": "t-1",
         "run_id": named,
         "input_tokens": 1200,
@@ -46,7 +46,7 @@ def test_record_a_spell_of_work(client, run_id, in_run):
     after = datetime.now(UTC)
     assert response.status_code == 200
     spell = response.json()
-    assert (spell["claim_id"], spell["thread_id"], spell["run_id"]) == (
+    assert (spell["case_id"], spell["thread_id"], spell["run_id"]) == (
         "CLM-1004",
         "t-1",
         named,
@@ -58,10 +58,10 @@ def test_record_a_spell_of_work(client, run_id, in_run):
 
 
 @pytest.mark.parametrize("record", [record_call, record_time])
-def test_recording_needs_a_started_claim_and_a_known_run(client, record):
+def test_recording_needs_a_started_case_and_a_known_run(client, record):
     not_started = record(client, "CLM-1004", None)
     assert not_started.status_code == 409
-    assert not_started.json()["detail"] == "Claim CLM-1004 has not been started"
+    assert not_started.json()["detail"] == "Case CLM-1004 has not been started"
     assert record(client, "CLM-9999", None).status_code == 404
     start(client, "CLM-1004")
     unknown = record(client, "CLM-1004", "run-9")

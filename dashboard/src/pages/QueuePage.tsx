@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { api, type Status, statuses } from "../api";
 import { DecisionChip, StatusChip } from "../components/Chips";
-import { ClaimLink } from "../components/ClaimLink";
+import { CaseLink } from "../components/CaseLink";
 import { StateMessage } from "../components/StateMessage";
 import { DispatchPanel } from "../components/DispatchPanel";
 import { PageHeader } from "../components/PageHeader";
@@ -27,9 +27,9 @@ const STATUS_ICONS: Record<Status, LucideIcon> = {
 };
 
 export function QueuePage() {
-  const { data: claims, error } = useLoad(api.listClaims, REFRESH_MS);
-  const header = <PageHeader title="Claims queue" />;
-  if (!claims)
+  const { data: cases, error } = useLoad(api.listCases, REFRESH_MS);
+  const header = <PageHeader title="Cases queue" />;
+  if (!cases)
     return (
       <>
         {header}
@@ -40,9 +40,9 @@ export function QueuePage() {
   return (
     <>
       {header}
-      <section className="tiles" aria-label="Claims by state">
+      <section className="tiles" aria-label="Cases by state">
         {statuses.map((status) => {
-          const count = claims.filter((c) => c.status === status).length;
+          const count = cases.filter((c) => c.status === status).length;
           const Icon = STATUS_ICONS[status];
           return (
             <div
@@ -61,13 +61,13 @@ export function QueuePage() {
         })}
       </section>
       <DispatchPanel />
-      <section className="panel" aria-labelledby="claims-title">
-        <h2 id="claims-title">Claims</h2>
+      <section className="panel" aria-labelledby="cases-title">
+        <h2 id="cases-title">Cases</h2>
         <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>
-                <th>Claim</th>
+                <th>Case</th>
                 <th>Customer</th>
                 <th>Type</th>
                 <th>Summary</th>
@@ -79,26 +79,28 @@ export function QueuePage() {
               </tr>
             </thead>
             <tbody>
-              {claims.map((claim) => (
-                <tr key={claim.claim_id}>
+              {cases.map((caseRecord) => (
+                <tr key={caseRecord.case_id}>
                   <td className="nowrap">
-                    <ClaimLink claimId={claim.claim_id} />
+                    <CaseLink caseId={caseRecord.case_id} />
                   </td>
-                  <td className="nowrap">{claim.customer_name}</td>
-                  <td className="nowrap">{label(claim.claim_type)}</td>
-                  <td>{claim.summary}</td>
-                  <td className="num mono">{money(claim.amount_claimed)}</td>
-                  <td className="nowrap">{date(claim.submitted_on)}</td>
+                  <td className="nowrap">{caseRecord.customer_name}</td>
+                  <td className="nowrap">{label(caseRecord.case_type)}</td>
+                  <td>{caseRecord.summary}</td>
+                  <td className="num mono">
+                    {money(caseRecord.amount_claimed)}
+                  </td>
+                  <td className="nowrap">{date(caseRecord.submitted_on)}</td>
                   <td>
-                    <StatusChip status={claim.status} />
+                    <StatusChip status={caseRecord.status} />
                   </td>
                   <td>
-                    {claim.decision && (
-                      <DecisionChip decision={claim.decision} />
+                    {caseRecord.decision && (
+                      <DecisionChip decision={caseRecord.decision} />
                     )}
                   </td>
                   <td className="num mono">
-                    {claim.payout !== null && money(claim.payout)}
+                    {caseRecord.payout !== null && money(caseRecord.payout)}
                   </td>
                 </tr>
               ))}

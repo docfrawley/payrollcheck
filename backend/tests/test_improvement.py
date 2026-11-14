@@ -6,7 +6,7 @@ import httpx
 import pytest
 from sqlalchemy import event, select
 
-from backend.database import engine, handler_decisions, held_out_claims
+from backend.database import engine, handler_decisions, held_out_cases
 from backend.tests.agent_answers import unreachable
 from backend.tests.dashboard_reads import read, recipe
 from backend.tests.judging import answer
@@ -181,7 +181,7 @@ def stage(client):
 def whole_round(client, right, improver_cost, rejected=False):
     """Play out a round from start to finish: the improver's spending, the first
     evaluations the current version needs, a change rejected first if asked, an
-    approved change whose evaluations get `right` claims right, a verdict and an
+    approved change whose evaluations get `right` cases right, a verdict and an
     approved recipe. Return the round's id."""
     round_ = create_round(client).json()
     round_id = round_["round_id"]
@@ -318,19 +318,19 @@ def test_the_page_follows_a_round_through_its_stages(client):
 
 
 def held_out_texts():
-    """Every held-out claim's id and summary, and the handlers' reasons on them.
+    """Every held-out case's id and summary, and the handlers' reasons on them.
     Their references, such as "Policy wording, section 5", are shared with the
     evaluation set."""
     with engine().connect() as db:
-        claims = db.execute(select(held_out_claims)).mappings().all()
+        cases = db.execute(select(held_out_cases)).mappings().all()
         reasons = db.execute(
             select(handler_decisions.c.reason).where(
                 handler_decisions.c.evaluation_set == "held_out"
             )
         ).scalars()
         return (
-            [c["claim_id"] for c in claims]
-            + [c["record"]["summary"] for c in claims]
+            [c["case_id"] for c in cases]
+            + [c["record"]["summary"] for c in cases]
             + list(reasons)
         )
 
@@ -351,7 +351,7 @@ def test_the_improver_reads_nothing_from_the_held_out_set_but_scores(client):
     assert view["scores"]["held_out"]["accuracy"] is not None
     wrong = view["evaluation_set"]["wrong"]
     assert wrong
-    assert set(wrong[0]) == {"claim_id", "summary", "agent", "handler", "judge"}
+    assert set(wrong[0]) == {"case_id", "summary", "agent", "handler", "judge"}
     assert wrong[0]["handler"]["reason"]
     assert wrong[0]["judge"]["same_grounds"] in {"yes", "no"}
     assert len(view["evaluation_set"]["explained_least_well"]) <= 5
@@ -381,7 +381,7 @@ def test_the_improver_reads_the_earlier_rounds(client):
     assert earlier["why"] == "the round was stopped before its verdict"
 
 
-def test_the_improver_reads_the_five_right_claims_the_judge_graded_lowest(
+def test_the_improver_reads_the_five_right_cases_the_judge_graded_lowest(
     client, judge_answers
 ):
     reasons = handler_reasons("evaluation")
@@ -398,11 +398,11 @@ def test_the_improver_reads_the_five_right_claims_the_judge_graded_lowest(
     play_out(client, round_id)
     play_out(client, round_id)
 
-    right = [c["copy_of"] for c in evaluation["claims"] if c["right"]]
+    right = [c["copy_of"] for c in evaluation["cases"] if c["right"]]
     assert len(right) == 10
-    lowest = sorted(right, key=lambda claim_id: rank[reasons[claim_id]])[:5]
+    lowest = sorted(right, key=lambda case_id: rank[reasons[case_id]])[:5]
     view = client.get(f"{round_path(round_id)}/results").json()
     weakest = view["evaluation_set"]["explained_least_well"]
-    assert [c["claim_id"] for c in weakest] == lowest
+    assert [c["case_id"] for c in weakest] == lowest
     assert [c["handler"]["reason"] for c in weakest] == [reasons[c] for c in lowest]
     assert len(view["evaluation_set"]["wrong"]) == 15

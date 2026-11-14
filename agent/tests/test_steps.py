@@ -1,4 +1,4 @@
-"""Every step of the claim agent's work on the claim's page: each lookup and where
+"""Every step of the payroll agent's work on the case's page: each lookup and where
 it came from, each search of the memory and each save to it, each refusal, and each
 call named as its route names it."""
 
@@ -16,7 +16,7 @@ LOOKUPS = [
     (call("describe_fields", record="previous_claim"), "Fields of a previous claim",
      ["data_dictionary.yaml"]),
     (call("get_plan", plan="premium"), "Plan: premium", ["plans.yaml"]),
-    (call("get_claim_rules"), "The claim rules", ["claim_rules.yaml"]),
+    (call("get_case_rules"), "The case rules", ["claim_rules.yaml"]),
     (call("search_reference_data", query="Lisbon strike"),
      'Reference data: "Lisbon strike"', ["reference_data.yaml"]),
     (call("search_reference_data", query="zeppelin"), 'Reference data: "zeppelin"',
@@ -28,13 +28,13 @@ LOOKUPS = [
 ]  # fmt: skip
 
 
-def steps_of_kind(client, claim_id, kind):
-    return [s for s in steps_of(client, claim_id) if s["kind"] == kind]
+def steps_of_kind(client, case_id, kind):
+    return [s for s in steps_of(client, case_id) if s["kind"] == kind]
 
 
 def test_each_context_tool_records_what_it_looked_up_and_where_from(client):
     model = stub(*(reply for reply, _, _ in LOOKUPS), *decide("refer", 0))
-    harness.work_claim("CLM-1003", None, agent_on(model))
+    harness.work_case("CLM-1003", None, agent_on(model))
     lookups = steps_of_kind(client, "CLM-1003", "lookup")
     assert [(s["content"], [f["file"] for f in s["sources"]]) for s in lookups] == [
         (looked_up, files) for _, looked_up, files in LOOKUPS
@@ -48,14 +48,14 @@ def test_a_memory_search_and_a_save_are_recorded(client):
         memories=[("/customers/CUS-3005/facts/", "Oliver Grant travels a lot.")]
     )
     model = stub(
-        call("search_memory", query="earlier claims"),
+        call("search_memory", query="earlier cases"),
         call("search_memory", query="pets"),
         *decide("refer", 0),
     )
-    harness.work_claim("CLM-1006", None, agent_on(model, store=store))
+    harness.work_case("CLM-1006", None, agent_on(model, store=store))
     searches = steps_of_kind(client, "CLM-1006", "memory_search")
     assert [s["content"] for s in searches] == [
-        '"earlier claims"\n- Oliver Grant travels a lot.',
+        '"earlier cases"\n- Oliver Grant travels a lot.',
         '"pets"\n- Oliver Grant travels a lot.',
     ]
     assert all(s["sources"] == [] for s in searches)
@@ -67,17 +67,17 @@ def test_a_memory_search_and_a_save_are_recorded(client):
 
 def test_a_memory_search_that_finds_nothing_says_so(client):
     model = stub(call("search_memory", query="pets"), *decide("refer", 0))
-    harness.work_claim("CLM-1006", None, agent_on(model, store=MemoryStandIn()))
+    harness.work_case("CLM-1006", None, agent_on(model, store=MemoryStandIn()))
     [search] = steps_of_kind(client, "CLM-1006", "memory_search")
     assert search["content"] == '"pets": nothing found'
 
 
 def test_each_call_is_named_as_its_route_names_it(client, gateway):
     replies = [call("lookup_term", term="unattended"), *decide("refer", 0)]
-    harness.work_claim(
+    harness.work_case(
         "CLM-1003", None, agent_on(stub(*replies), route=Gateway(gateway.url))
     )
-    harness.work_claim(
+    harness.work_case(
         "CLM-1004", None, agent_on(stub(*replies), route=direct.from_environment())
     )
     on_the_gateway = [
@@ -86,13 +86,13 @@ def test_each_call_is_named_as_its_route_names_it(client, gateway):
     directly = [s["content"] for s in steps_of_kind(client, "CLM-1004", "tool_call")]
     assert on_the_gateway == [
         'payrollcheck-context___lookup_term(term="unattended")',
-        "payrollcheck-app___get_claim()",
+        "payrollcheck-app___get_case()",
         'payrollcheck-app___record_decision(decision="refer", payout=0, '
         'section="Section 3, Trip Delay", reason="The delay was covered.")',
     ]
     assert directly == [
         'lookup_term(term="unattended")',
-        "get_claim()",
+        "get_case()",
         'record_decision(decision="refer", payout=0, section="Section 3, Trip Delay", '
         'reason="The delay was covered.")',
     ]

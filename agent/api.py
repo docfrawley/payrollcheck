@@ -1,4 +1,4 @@
-"""The PayrollCheck backend's API for the claim agent and the agent's entry point: one
+"""The PayrollCheck backend's API for the payroll agent and the agent's entry point: one
 function for each operation they use. It has no way to the scores, the settings,
 the rounds or the handlers' decisions."""
 
@@ -38,7 +38,7 @@ LineKind = Literal[
 
 
 class Line(BaseModel):
-    """One covered item or expense on a claim."""
+    """One covered item or expense on a case."""
 
     description: str = Field(description="What the item or expense is")
     amount: float = Field(
@@ -69,20 +69,20 @@ class Line(BaseModel):
     )
 
 
-def list_claims() -> list[dict[str, Any]]:
-    return call("GET", "/claims")
+def list_cases() -> list[dict[str, Any]]:
+    return call("GET", "/cases")
 
 
-def get_claim(claim_id: str) -> dict[str, Any]:
-    return call("GET", f"/claims/{claim_id}")
+def get_case(case_id: str) -> dict[str, Any]:
+    return call("GET", f"/cases/{case_id}")
 
 
 def get_policy(policy_id: str) -> dict[str, Any]:
     return call("GET", f"/policies/{policy_id}")
 
 
-def get_claim_history(customer_id: str) -> list[dict[str, Any]]:
-    return call("GET", f"/customers/{customer_id}/claims")
+def get_case_history(customer_id: str) -> list[dict[str, Any]]:
+    return call("GET", f"/customers/{customer_id}/cases")
 
 
 def get_version(number: int) -> dict[str, Any]:
@@ -98,21 +98,21 @@ def get_screening() -> dict[str, Any]:
 
 
 def calculate_payout(
-    claim_id: str, benefit: Benefit, lines: list[dict[str, Any]], paid_by_others: float
+    case_id: str, benefit: Benefit, lines: list[dict[str, Any]], paid_by_others: float
 ) -> dict[str, Any]:
     body = {"benefit": benefit, "lines": lines, "paid_by_others": paid_by_others}
-    return call("POST", f"/claims/{claim_id}/payout", json=body)
+    return call("POST", f"/cases/{case_id}/payout", json=body)
 
 
-def start_claim(claim_id: str, thread_id: str) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/start", json={"thread_id": thread_id})
+def start_case(case_id: str, thread_id: str) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/start", json={"thread_id": thread_id})
 
 
 def record_step(
-    claim_id: str, kind: StepKind, content: str, sources: Sources
+    case_id: str, kind: StepKind, content: str, sources: Sources
 ) -> dict[str, Any]:
     body = {"kind": kind, "content": content, "sources": sources}
-    return call("POST", f"/claims/{claim_id}/steps", json=body)
+    return call("POST", f"/cases/{case_id}/steps", json=body)
 
 
 class DecisionRequest(TypedDict):
@@ -126,34 +126,32 @@ class DecisionRequest(TypedDict):
 
 
 # The body's fields as keywords, as the direct route passes a tool's inputs.
-def record_decision(
-    claim_id: str, **request: Unpack[DecisionRequest]
-) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/decision", json=request)
+def record_decision(case_id: str, **request: Unpack[DecisionRequest]) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/decision", json=request)
 
 
-def pay_claim(claim_id: str, amount: float) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/payment", json={"amount": amount})
+def pay_case(case_id: str, amount: float) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/payment", json={"amount": amount})
 
 
-def hold_payment(claim_id: str, reason: str) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/hold", json={"reason": reason})
+def hold_payment(case_id: str, reason: str) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/hold", json={"reason": reason})
 
 
-def fail_claim(claim_id: str, reason: str) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/failure", json={"reason": reason})
+def fail_case(case_id: str, reason: str) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/failure", json={"reason": reason})
 
 
-def take_claim(claim_id: str, run_id: str | None) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/take", json={"run_id": run_id})
+def take_case(case_id: str, run_id: str | None) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/take", json={"run_id": run_id})
 
 
-def record_claim_heartbeat(claim_id: str) -> dict[str, Any]:
-    return call("POST", f"/claims/{claim_id}/heartbeat")
+def record_case_heartbeat(case_id: str) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/heartbeat")
 
 
 def record_model_call(
-    claim_id: str,
+    case_id: str,
     run_id: str | None,
     input_tokens: int,
     output_tokens: int,
@@ -165,14 +163,14 @@ def record_model_call(
         "output_tokens": output_tokens,
         "cost": cost,
     }
-    return call("POST", f"/claims/{claim_id}/model-calls", json=body)
+    return call("POST", f"/cases/{case_id}/model-calls", json=body)
 
 
 def record_work_time(
-    claim_id: str, run_id: str | None, seconds: float
+    case_id: str, run_id: str | None, seconds: float
 ) -> dict[str, Any]:
     body = {"run_id": run_id, "seconds": seconds}
-    return call("POST", f"/claims/{claim_id}/work-times", json=body)
+    return call("POST", f"/cases/{case_id}/work-times", json=body)
 
 
 def get_run(run_id: str) -> dict[str, Any]:
@@ -187,8 +185,8 @@ def fail_run(run_id: str, reason: str) -> dict[str, Any]:
     return call("POST", f"/runs/{run_id}/failure", json={"reason": reason})
 
 
-def record_run_claims(run_id: str, claim_ids: list[str]) -> dict[str, Any]:
-    return call("PUT", f"/runs/{run_id}/claims", json={"claim_ids": claim_ids})
+def record_run_cases(run_id: str, case_ids: list[str]) -> dict[str, Any]:
+    return call("PUT", f"/runs/{run_id}/cases", json={"case_ids": case_ids})
 
 
 def finish_run(run_id: str) -> dict[str, Any]:

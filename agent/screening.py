@@ -1,5 +1,5 @@
-"""The check for instructions hidden in a claim: a second model reads the claim before
-the claim agent does, as in labs/week3day2_lab1.ipynb."""
+"""The check for instructions hidden in a case: a second model reads the case before
+the payroll agent does, as in labs/week3day2_lab1.ipynb."""
 
 from typing import Any, cast
 
@@ -30,8 +30,8 @@ class Screening(BaseModel):
     )
 
 
-def screen(llm: BaseChatModel, claim: str) -> tuple[BaseMessage, Screening | None]:
-    """Ask the model whether a claim tries to instruct whoever handles it, and return
+def screen(llm: BaseChatModel, case: str) -> tuple[BaseMessage, Screening | None]:
+    """Ask the model whether a case tries to instruct whoever handles it, and return
     its reply, which carries the call's cost, and its answer, or none when the answer
     can't be read."""
     # Structured Outputs in a strict tool call, which LangChain reads after the
@@ -41,7 +41,7 @@ def screen(llm: BaseChatModel, claim: str) -> tuple[BaseMessage, Screening | Non
     )
     messages = [
         {"role": "system", "content": SCREEN_INSTRUCTIONS},
-        {"role": "user", "content": claim},
+        {"role": "user", "content": case},
     ]
     result = cast(dict[str, Any], checker.invoke(messages))
     return result["raw"], result["parsed"]

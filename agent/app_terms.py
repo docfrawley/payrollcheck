@@ -1,5 +1,5 @@
-"""The app's words for its records, as the claim agent and the Copilot both read
-them: where a claim stands, the kinds of decision and run, where a run stands, and
+"""The app's words for its records, as the payroll agent and the Copilot both read
+them: where a case stands, the kinds of decision and run, where a run stands, and
 the labeled sets an evaluation works."""
 
 from enum import StrEnum
@@ -19,7 +19,7 @@ HELD_OUT: EvaluationSet = "held_out"
 
 
 class Status(StrEnum):
-    """Where a claim stands."""
+    """Where a case stands."""
 
     WAITING = "waiting"
     IN_PROGRESS = "in_progress"

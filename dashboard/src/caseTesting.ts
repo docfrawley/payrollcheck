@@ -1,10 +1,10 @@
-// A claim as the backend gives it to the claim page, with its decision and
+// A case as the backend gives it to the case page, with its decision and
 // the agent's steps, for the page's tests.
 
-import type { Claim, Decision, Step } from "./api";
+import type { Case, Decision, Step } from "./api";
 import type { Source } from "./sources";
 import {
-  claim,
+  caseRecord,
   history,
   panel,
   policy,
@@ -30,15 +30,15 @@ export const step = (
   created_at: decidedAt,
 });
 
-export function showClaim(shown: Claim, stepsShown: Step[] = []) {
+export function showCase(shown: Case, stepsShown: Step[] = []) {
   const routes: Routes = {
-    "GET /api/claims/CLM-1002": shown,
-    "GET /api/claims/CLM-1002/steps": stepsShown,
+    "GET /api/cases/CLM-1002": shown,
+    "GET /api/cases/CLM-1002/steps": stepsShown,
     "GET /api/policies/POL-2002": policy,
-    "GET /api/customers/CUS-3002/claims": history,
+    "GET /api/customers/CUS-3002/cases": history,
   };
   const fetchMock = stubApi(routes);
-  renderAt("/claims/CLM-1002");
+  renderAt("/cases/CLM-1002");
   return { routes, fetchMock };
 }
 
@@ -65,8 +65,8 @@ export const approval: Decision = {
   gateway_refusal: null,
 };
 
-export const approved: Claim = {
-  ...claim,
+export const approved: Case = {
+  ...caseRecord,
   status: "decided",
   thread_id: "t-1",
   decision: approval,
@@ -78,7 +78,7 @@ export const approved: Claim = {
   },
 };
 
-export const held: Claim = {
+export const held: Case = {
   ...approved,
   status: "waiting_for_sign_off",
   decision: { ...approval, payout: 1350 },

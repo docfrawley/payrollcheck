@@ -11,13 +11,12 @@ import { HANDLERS, signedInAs } from "./handlers";
 import { roundPath, runPath } from "./paths";
 import { AGENT_KEY_HEADERS, AGENT_STAND_IN } from "./servers";
 
-// Stands in for the agent and its claim agents, with one function for each
+// Stands in for the agent and its payroll agents, with one function for each
 // backend operation the tests use, sent through the dashboard's proxy with the
 // agent's key.
 type Request = APIRequestContext;
 
-const claimPath = (claimId: string) =>
-  `/api/claims/${encodeURIComponent(claimId)}`;
+const casePath = (caseId: string) => `/api/cases/${encodeURIComponent(caseId)}`;
 
 // Sends a request as the agent's side does, with its key, and returns the
 // backend's answer, which may be a refusal.
@@ -39,25 +38,25 @@ async function send(
   return response;
 }
 
-export const startClaim = (request: Request, claimId: string, thread: string) =>
-  send(request, "POST", `${claimPath(claimId)}/start`, { thread_id: thread });
+export const startCase = (request: Request, caseId: string, thread: string) =>
+  send(request, "POST", `${casePath(caseId)}/start`, { thread_id: thread });
 
 // Records a step, with the context files a lookup came from, and none for any
 // other step.
 export const recordStep = (
   request: Request,
-  claimId: string,
+  caseId: string,
   kind: StepKind,
   content: string,
   sources: Source[] = [],
 ) =>
-  send(request, "POST", `${claimPath(claimId)}/steps`, {
+  send(request, "POST", `${casePath(caseId)}/steps`, {
     kind,
     content,
     sources,
   });
 
-// Who makes the decisions the tests record, as the claim agent says it.
+// Who makes the decisions the tests record, as the payroll agent says it.
 const MAKER = "PayrollCheck Agent, version 1";
 
 interface DecisionRequest {
@@ -70,20 +69,20 @@ interface DecisionRequest {
 
 const recordDecision = (
   request: Request,
-  claimId: string,
+  caseId: string,
   decision: DecisionRequest,
-) => send(request, "POST", `${claimPath(claimId)}/decision`, decision);
+) => send(request, "POST", `${casePath(caseId)}/decision`, decision);
 
 const calculatePayout = (
   request: Request,
-  claimId: string,
+  caseId: string,
   payout: { benefit: string; lines: object[]; paid_by_others: number },
-) => send(request, "POST", `${claimPath(claimId)}/payout`, payout);
+) => send(request, "POST", `${casePath(caseId)}/payout`, payout);
 
 // Works out the payout on one emergency medical bill, which the backend keeps
-// for the claim's attempt, and returns what it pays.
-async function payoutOnABill(request: Request, claimId: string, bill: number) {
-  const response = await calculatePayout(request, claimId, {
+// for the case's attempt, and returns what it pays.
+async function payoutOnABill(request: Request, caseId: string, bill: number) {
+  const response = await calculatePayout(request, caseId, {
     benefit: "emergency_medical",
     lines: [
       {
@@ -101,54 +100,53 @@ async function payoutOnABill(request: Request, claimId: string, bill: number) {
   return payout;
 }
 
-// Records a decision as the claim agent does, with its maker. An approval's
+// Records a decision as the payroll agent does, with its maker. An approval's
 // payout is worked out first: a bill for the payout alone shows the plan's
 // deductible, and a bill for the payout and the deductible leaves exactly the
 // payout on file.
 export async function decide(
   request: Request,
-  claimId: string,
+  caseId: string,
   decision: Omit<DecisionRequest, "decided_by">,
 ) {
   if (decision.decision === "approve") {
     const deductible =
-      decision.payout -
-      (await payoutOnABill(request, claimId, decision.payout));
-    await payoutOnABill(request, claimId, decision.payout + deductible);
+      decision.payout - (await payoutOnABill(request, caseId, decision.payout));
+    await payoutOnABill(request, caseId, decision.payout + deductible);
   }
-  return recordDecision(request, claimId, { ...decision, decided_by: MAKER });
+  return recordDecision(request, caseId, { ...decision, decided_by: MAKER });
 }
 
-// Asks to pay a claim and returns the backend's answer, which may be a refusal.
-export const askToPay = (request: Request, claimId: string, amount: number) =>
-  asTheAgent(request, "POST", `${claimPath(claimId)}/payment`, { amount });
+// Asks to pay a case and returns the backend's answer, which may be a refusal.
+export const askToPay = (request: Request, caseId: string, amount: number) =>
+  asTheAgent(request, "POST", `${casePath(caseId)}/payment`, { amount });
 
-export async function payClaim(
+export async function payCase(
   request: Request,
-  claimId: string,
+  caseId: string,
   amount: number,
 ) {
-  await expect(await askToPay(request, claimId, amount)).toBeOK();
+  await expect(await askToPay(request, caseId, amount)).toBeOK();
 }
 
-export const failClaim = (request: Request, claimId: string, reason: string) =>
-  send(request, "POST", `${claimPath(claimId)}/failure`, { reason });
+export const failCase = (request: Request, caseId: string, reason: string) =>
+  send(request, "POST", `${casePath(caseId)}/failure`, { reason });
 
-// Takes a sent-back claim back into work, for a dispatch's run or, with none,
+// Takes a sent-back case back into work, for a dispatch's run or, with none,
 // for a resume.
-export const takeClaim = (
+export const takeCase = (
   request: Request,
-  claimId: string,
+  caseId: string,
   runId: string | null,
-) => send(request, "POST", `${claimPath(claimId)}/take`, { run_id: runId });
+) => send(request, "POST", `${casePath(caseId)}/take`, { run_id: runId });
 
 export const recordModelCall = (
   request: Request,
-  claimId: string,
+  caseId: string,
   runId: string,
   cost: number,
 ) =>
-  send(request, "POST", `${claimPath(claimId)}/model-calls`, {
+  send(request, "POST", `${casePath(caseId)}/model-calls`, {
     run_id: runId,
     input_tokens: 1200,
     output_tokens: 300,
@@ -157,11 +155,11 @@ export const recordModelCall = (
 
 export const recordWorkTime = (
   request: Request,
-  claimId: string,
+  caseId: string,
   runId: string,
   seconds: number,
 ) =>
-  send(request, "POST", `${claimPath(claimId)}/work-times`, {
+  send(request, "POST", `${casePath(caseId)}/work-times`, {
     run_id: runId,
     seconds,
   });
@@ -206,11 +204,11 @@ export const startEvaluation = (
     agents,
   });
 
-export const recordRunClaims = (
+export const recordRunCases = (
   request: Request,
   runId: string,
-  claimIds: string[],
-) => send(request, "PUT", `${runPath(runId)}/claims`, { claim_ids: claimIds });
+  caseIds: string[],
+) => send(request, "PUT", `${runPath(runId)}/cases`, { case_ids: caseIds });
 
 export const finishRun = (request: Request, runId: string) =>
   send(request, "POST", `${runPath(runId)}/finish`);
@@ -329,9 +327,9 @@ export async function nextStarted(
   return next;
 }
 
-// The claims the backend has asked the agent to resume, oldest first.
+// The cases the backend has asked the agent to resume, oldest first.
 export async function resumes(request: Request): Promise<unknown[]> {
   return (await started(request))
-    .filter((payload) => payload.operation === "resume_claim")
-    .map((payload) => payload.claim_id);
+    .filter((payload) => payload.operation === "resume_case")
+    .map((payload) => payload.case_id);
 }

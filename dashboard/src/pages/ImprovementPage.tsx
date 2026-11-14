@@ -41,7 +41,7 @@ export function ImprovementPage() {
   const header = (
     <PageHeader
       title="Improvement"
-      lead="Use self-improvement and recursive self-improvement with a goal of increasing claim agent accuracy."
+      lead="Use self-improvement and recursive self-improvement with a goal of increasing payroll agent accuracy."
       action={page && <RoundAction open={open} onDone={reload} />}
     />
   );
@@ -137,7 +137,7 @@ function StopRound({
         }}
       >
         <p>
-          No more of its claims start and the improver stops. A version under
+          No more of its cases start and the improver stops. A version under
           test is rolled back, and the current version stays as it is.
         </p>
       </ConfirmDialog>

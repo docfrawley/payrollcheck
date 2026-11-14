@@ -12,7 +12,7 @@ from pydantic import (
 
 
 class Status(StrEnum):
-    """Where a claim stands."""
+    """Where a case stands."""
 
     WAITING = "waiting"
     IN_PROGRESS = "in_progress"
@@ -40,21 +40,21 @@ class RunStatus(StrEnum):
 
 
 class EvaluationSet(StrEnum):
-    """The labeled sets of claims an evaluation can work."""
+    """The labeled sets of cases an evaluation can work."""
 
     EVALUATION = "evaluation"
     HELD_OUT = "held_out"
 
 
 class Verdict(StrEnum):
-    """Whether the business's rule kept a version of the claim agent."""
+    """Whether the business's rule kept a version of the payroll agent."""
 
     KEPT = "kept"
     ROLLED_BACK = "rolled_back"
 
 
 class VersionStatus(StrEnum):
-    """Where a version of the claim agent stands."""
+    """Where a version of the payroll agent stands."""
 
     CURRENT = "current"
     KEPT = "kept"
@@ -132,7 +132,7 @@ StepKind = RecordedStepKind | Literal["sent_back"]
 MOST_AGENTS = 25
 NOTE_LENGTH = 1000
 Agents = Annotated[
-    int, Field(ge=1, le=MOST_AGENTS, description="How many claim agents work at once")
+    int, Field(ge=1, le=MOST_AGENTS, description="How many payroll agents work at once")
 ]
 Benefit = Literal[
     "trip_cancellation",
@@ -204,25 +204,25 @@ class SentBackDecision(DecisionRecord):
     sent_back_at: str
 
 
-class ClaimSummary(BaseModel):
-    claim_id: str
+class CaseSummary(BaseModel):
+    case_id: str
     customer_name: str
-    claim_type: str
+    case_type: str
     summary: str
     amount_claimed: float
     submitted_on: str
     status: Status
     decision: DecisionKind | None
     payout: float | None
-    resuming: bool = Field(description="A resume is working on the claim")
+    resuming: bool = Field(description="A resume is working on the case")
 
 
-class Claim(BaseModel):
-    claim_id: str
+class Case(BaseModel):
+    case_id: str
     policy_id: str
     customer_id: str
     customer_name: str
-    claim_type: str
+    case_type: str
     submitted_on: str
     incident_date: str
     incident_location: str
@@ -262,11 +262,11 @@ class Policy(BaseModel):
     status: str
 
 
-class PreviousClaim(BaseModel):
-    claim_id: str
+class PreviousCase(BaseModel):
+    case_id: str
     filed_on: str
     incident_date: str
-    claim_type: str
+    case_type: str
     summary: str
     outcome: str
     amount_paid: float
@@ -300,12 +300,12 @@ class Step(BaseModel):
 
 class MeasureSettings(BaseModel):
     """A setting for each measure the rule compares: accuracy and the grade as
-    differences, cost and time per claim as fractions of the old value."""
+    differences, cost and time per case as fractions of the old value."""
 
     accuracy: float = Field(ge=0)
     grade: float = Field(ge=0)
-    cost_per_claim: float = Field(ge=0)
-    seconds_per_claim: float = Field(ge=0)
+    cost_per_case: float = Field(ge=0)
+    seconds_per_case: float = Field(ge=0)
 
 
 class Objectives(BaseModel):
@@ -356,7 +356,7 @@ class StepRequest(BaseModel):
 
 
 class NewStep(BaseModel):
-    """A step the app adds to a claim, recorded by the agent or the app itself."""
+    """A step the app adds to a case, recorded by the agent or the app itself."""
 
     kind: StepKind
     content: str
@@ -372,7 +372,7 @@ class SendBackRequest(BaseModel):
 
 class TakeRequest(BaseModel):
     run_id: str | None = Field(
-        description="The dispatch taking the claim, or null for a resume"
+        description="The dispatch taking the case, or null for a resume"
     )
 
 
@@ -466,7 +466,7 @@ class ModelCallRequest(BaseModel):
 
 
 class ModelCall(BaseModel):
-    claim_id: str
+    case_id: str
     thread_id: str
     run_id: str | None
     input_tokens: int
@@ -477,11 +477,11 @@ class ModelCall(BaseModel):
 
 class WorkTimeRequest(BaseModel):
     run_id: str | None = Field(description="The run the work was done in, or null")
-    seconds: float = Field(ge=0, description="How long the agent worked on the claim")
+    seconds: float = Field(ge=0, description="How long the agent worked on the case")
 
 
 class WorkTime(BaseModel):
-    claim_id: str
+    case_id: str
     thread_id: str
     run_id: str | None
     started_at: str
@@ -492,12 +492,12 @@ class StartDispatchRequest(BaseModel):
     agents: Agents
 
 
-class RunClaimsRequest(BaseModel):
-    claim_ids: list[str] = Field(description="The claims a dispatch works, in order")
+class RunCasesRequest(BaseModel):
+    case_ids: list[str] = Field(description="The cases a dispatch works, in order")
 
 
 class HeldPayout(BaseModel):
-    claim_id: str
+    case_id: str
     payout: float
 
 
@@ -510,7 +510,7 @@ class DispatchSummary(BaseModel):
     unfinished: list[str]
 
 
-class RunClaim(ClaimSummary):
+class RunCase(CaseSummary):
     started_at: str | None
     seconds: float
     model_cost: float
@@ -538,12 +538,12 @@ class Run(RunDetails):
     evaluation_set: EvaluationSet | None
     tiny: bool | None
     summary: DispatchSummary | None
-    claims: list[RunClaim]
+    cases: list[RunCase]
 
 
 class StartEvaluationRequest(StartDispatchRequest):
     evaluation_set: EvaluationSet
-    tiny: bool = Field(description="Only the set's five tiny claims")
+    tiny: bool = Field(description="Only the set's five tiny cases")
 
 
 class Measures(BaseModel):
@@ -552,12 +552,12 @@ class Measures(BaseModel):
     cost_of_mistakes: float
     straight_through: float
     grade: float | None = Field(description="From 0 to 3, or null with none graded")
-    model_cost_per_claim: float
-    seconds_per_claim: float
+    model_cost_per_case: float
+    seconds_per_case: float
     run_seconds: float | None
 
 
-class ClaimGrade(BaseModel):
+class CaseGrade(BaseModel):
     """The judge's grade of an explanation: its score from 0 to 3, the likeliest
     level, and the chances of the same grounds and the same section as the
     handler's."""
@@ -569,11 +569,11 @@ class ClaimGrade(BaseModel):
     cost: float
 
 
-class ScoredClaim(RunClaim):
+class ScoredCase(RunCase):
     copy_of: str
     reason: str | None
     section: str | None
-    grade: ClaimGrade | None
+    grade: CaseGrade | None
     handler_decision: DecisionKind
     handler_payout: float
     right: bool
@@ -589,7 +589,7 @@ class Evaluation(RunDetails):
 
 
 class ScoredEvaluation(Evaluation):
-    claims: list[ScoredClaim]
+    cases: list[ScoredCase]
 
 
 class Accepted(BaseModel):
@@ -603,8 +603,8 @@ class ScreeningModel(BaseModel):
     reasoning_effort: str
 
 
-class ClaimAgentVersion(BaseModel):
-    """A version as the claim agent reads it, with no scores."""
+class PayrollAgentVersion(BaseModel):
+    """A version as the payroll agent reads it, with no scores."""
 
     number: int
     instructions: str
@@ -765,11 +765,11 @@ class JudgeAnswer(BaseModel):
     same_section: Literal["yes", "no"]
 
 
-class ClaimBesideHandler(BaseModel):
-    """A claim of the evaluation set, with the agent's answer beside the
+class CaseBesideHandler(BaseModel):
+    """A case of the evaluation set, with the agent's answer beside the
     handler's and the judge's grade."""
 
-    claim_id: str
+    case_id: str
     summary: str
     agent: AgentAnswer
     handler: HandlerAnswer
@@ -777,8 +777,8 @@ class ClaimBesideHandler(BaseModel):
 
 
 class EvaluationSetResults(BaseModel):
-    wrong: list[ClaimBesideHandler]
-    explained_least_well: list[ClaimBesideHandler]
+    wrong: list[CaseBesideHandler]
+    explained_least_well: list[CaseBesideHandler]
 
 
 class EarlierRound(BaseModel):
@@ -801,7 +801,7 @@ class Spending(BaseModel):
 
 
 class ImproverView(BaseModel):
-    current_version: ClaimAgentVersion = Field(
+    current_version: PayrollAgentVersion = Field(
         description="Without the contents of the documents, which never change"
     )
     scores: VersionScores
@@ -927,10 +927,10 @@ class TurnStatus(StrEnum):
 
 
 class CardKind(StrEnum):
-    """What a card's tool does: looks up claims, customers and policies or the
+    """What a card's tool does: looks up cases, customers and policies or the
     context layer, works with the agent's work or the memory, or acts."""
 
-    CLAIMS = "claims"
+    CASES = "cases"
     CUSTOMERS = "customers"
     CONTEXT = "context"
     WORK = "work"
@@ -962,7 +962,7 @@ class ConfirmationRequest(BaseModel):
 class Confirmation(BaseModel):
     """A sign-off waiting for the handler's confirmation, from the app's records."""
 
-    claim_id: str
+    case_id: str
     customer_name: str
     payout: float
     reason: str
@@ -1047,7 +1047,7 @@ class TurnFinishRequest(BaseModel):
 
 
 class PauseRequest(BaseModel):
-    claim_id: str = Field(description="The claim the sign-off waits on")
+    case_id: str = Field(description="The case the sign-off waits on")
 
 
 class TurnFailureRequest(BaseModel):
@@ -1064,16 +1064,16 @@ class CustomerMatch(BaseModel):
 
 class Customer(CustomerMatch):
     """Who a customer is, without their contact details or date of birth, their
-    policies, their earlier claims and their claims in our queue."""
+    policies, their earlier cases and their cases in our queue."""
 
     customer_since: str
     policies: list[Policy]
-    earlier_claims: list[PreviousClaim]
-    claims_in_the_queue: list[ClaimSummary]
+    earlier_cases: list[PreviousCase]
+    cases_in_the_queue: list[CaseSummary]
 
 
 class PayoutsOverTheLimit(BaseModel):
-    """The queue's claims paid more than the approval limit on their decision, and
+    """The queue's cases paid more than the approval limit on their decision, and
     how many of those a handler signed off."""
 
     paid_over_the_limit: int

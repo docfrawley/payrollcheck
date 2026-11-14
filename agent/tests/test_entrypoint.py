@@ -29,7 +29,7 @@ from agent.tests.dispatching import (
     new_dispatch,
     new_evaluation,
 )
-from agent.tests.held import StopAtThePause, hold, resume_claim
+from agent.tests.held import StopAtThePause, hold, resume_case
 from agent.tests.invoking import (
     ACCEPTED,
     HEALTH,
@@ -38,9 +38,9 @@ from agent.tests.invoking import (
     work_run,
 )
 from agent.tests.queue_setup import leave_waiting
-from agent.tests.records import claim_of, model_calls_of, work_times_of
+from agent.tests.records import case_of, model_calls_of, work_times_of
 from agent.tests.stubs import agent_on, approve, decide, stub, swarm
-from backend.tests.claim_requests import sign_off
+from backend.tests.case_requests import sign_off
 from backend.tests.dashboard_reads import evaluations
 from backend.tests.round_requests import (
     create_round,
@@ -156,7 +156,7 @@ def test_off_runtime_a_request_without_the_key_is_refused(client, serve, headers
         401,
         {"error": "This needs the agent's API key"},
     )
-    assert latest_dispatch(client)["claims"] == []
+    assert latest_dispatch(client)["cases"] == []
 
 
 def test_off_runtime_a_payload_it_cant_read_without_the_key_is_refused(serve):
@@ -169,7 +169,7 @@ def test_off_runtime_a_payload_it_cant_read_without_the_key_is_refused(serve):
 
 UNKNOWN = (
     "Unknown operation: it must be one of 'health', 'work_run', 'work_round', "
-    "'carry_round_on', 'resume_claim'"
+    "'carry_round_on', 'resume_case'"
 )
 
 
@@ -189,7 +189,7 @@ UNKNOWN = (
         ),
         ({"operation": "carry_round_on", "round_id": "round-1"}, "proposal_id: "
          "Field required"),
-        ({"operation": "resume_claim"}, "claim_id: Field required"),
+        ({"operation": "resume_case"}, "case_id: Field required"),
     ],
 )  # fmt: skip
 def test_a_payload_it_cant_read_gets_a_400_saying_why(serve, payload, error):
@@ -201,7 +201,7 @@ def test_a_payload_it_cant_read_gets_a_400_saying_why(serve, payload, error):
 def test_work_a_dispatch_the_app_created(client, serve):
     ids = ["CLM-1001", "CLM-1003", "CLM-1004"]
     leave_waiting(*ids)
-    scripts = {claim_id: decide("refer", 0) for claim_id in ids}
+    scripts = {case_id: decide("refer", 0) for case_id in ids}
     model = swarm(scripts, pause=0.05, fill=2)
     agent = serve(model)
     response = agent.invoke(work_run(new_dispatch(2)["run_id"]))
@@ -210,7 +210,7 @@ def test_work_a_dispatch_the_app_created(client, serve):
     dispatch = latest_dispatch(client)
     assert (dispatch["status"], dispatch["agents"]) == ("finished", 2)
     assert (dispatch["version"], dispatch["model"]) == (1, "openai/gpt-6-luna")
-    assert [c["status"] for c in dispatch["claims"]] == ["decided"] * 3
+    assert [c["status"] for c in dispatch["cases"]] == ["decided"] * 3
     assert model.most_at_once == 2
 
 
@@ -253,14 +253,14 @@ def test_a_resume_that_raised_is_logged_and_its_task_completed(
     sign_off(client, "CLM-1003")
     raised = threading.Event()
 
-    def broken(claim_id, agent):
+    def broken(case_id, agent):
         raised.set()
         raise RuntimeError("The backend is unreachable")
 
     monkeypatch.setattr(work, "resume", broken)
     agent = serve(stub(), saver)
     # Its answer waits until /ping says Healthy, once the task is completed.
-    assert resume_claim(agent, "CLM-1003").json() == ACCEPTED
+    assert resume_case(agent, "CLM-1003").json() == ACCEPTED
     assert raised.is_set()
     [logged] = [r for r in caplog.records if r.name == work.log.name]
     assert logged.getMessage() == "The resume of CLM-1003 stopped"
@@ -341,7 +341,7 @@ def test_a_run_whose_context_layer_isnt_answering_stops_with_one_line(
     def down(version, kind):
         raise ConnectionError("The context layer isn't answering at http://x/mcp")
 
-    entrypoint.ready.get().claim_agents = down
+    entrypoint.ready.get().payroll_agents = down
     assert agent.invoke(work_run(new_dispatch()["run_id"])).json() == ACCEPTED
     assert latest_dispatch(client)["stopped_because"] == (
         "ConnectionError: The context layer isn't answering at http://x/mcp"
@@ -389,11 +389,11 @@ def test_a_run_keeps_its_version_when_another_is_kept_meanwhile(client, serve):
 def test_the_workers_are_built_on_the_processs_pool(monkeypatch):
     pool = cast(checkpoints.Pool, object())
     monkeypatch.setattr(
-        entrypoint, "claim_graphs", lambda version, kind, pool: (version, kind, pool)
+        entrypoint, "payroll_graphs", lambda version, kind, pool: (version, kind, pool)
     )
     monkeypatch.setattr(entrypoint, "PostgresSaver", lambda on: ("saver", on))
     workers = entrypoint.workers_on(pool)
-    assert workers.claim_agents({"number": 2}, "evaluation") == (
+    assert workers.payroll_agents({"number": 2}, "evaluation") == (
         {"number": 2},
         "evaluation",
         pool,
@@ -409,7 +409,7 @@ def heard(monkeypatch):
     told = []
     for module, name in (
         (api, "record_run_heartbeat"),
-        (api, "record_claim_heartbeat"),
+        (api, "record_case_heartbeat"),
         (improver_api, "record_round_heartbeat"),
     ):
         real = getattr(module, name)
@@ -459,7 +459,7 @@ def test_the_app_hears_from_a_resume_while_it_works(client, serve, monkeypatch, 
     held = HeldWork()
     monkeypatch.setattr(work, "resume", held.work)
     agent = serve(stub(), saver)
-    payload = {"operation": "resume_claim", "claim_id": "CLM-1003"}
+    payload = {"operation": "resume_case", "case_id": "CLM-1003"}
     assert heard_while_working(agent, held, heard, payload) > 2
     assert set(heard) == {"CLM-1003"}
 
@@ -476,59 +476,59 @@ class HeldWork:
 
 
 def built_on(saver, built):
-    """Claim agents on a stub model, sharing a saver, that keep the version and the
+    """Payroll agents on a stub model, sharing a saver, that keep the version and the
     kind of run each was built for."""
 
-    def claim_agents(version, kind):
+    def payroll_agents(version, kind):
         built.append((version["number"], kind))
         return partial(agent_on, stub(), saver, version)
 
-    return claim_agents
+    return payroll_agents
 
 
-def test_a_signed_off_claim_is_resumed_in_the_background(client, serve):
+def test_a_signed_off_case_is_resumed_in_the_background(client, serve):
     add_version("Version 2's instructions", verdict="kept")
     saver = InMemorySaver()
     hold(saver=saver)
     sign_off(client, "CLM-1003")
     calls, times = model_calls_of("CLM-1003"), work_times_of("CLM-1003")
     agent, built = serve(stub(), saver), []
-    entrypoint.ready.get().claim_agents = built_on(saver, built)
-    response = resume_claim(agent, "CLM-1003")
+    entrypoint.ready.get().payroll_agents = built_on(saver, built)
+    response = resume_case(agent, "CLM-1003")
     assert (response.status_code, response.json()) == (200, ACCEPTED)
     assert built == [(2, None)]
-    claim = claim_of(client, "CLM-1003")
-    assert claim["status"] == "decided"
-    assert not harness.paused(claim, agent_on(stub(), saver))
+    case = case_of(client, "CLM-1003")
+    assert case["status"] == "decided"
+    assert not harness.paused(case, agent_on(stub(), saver))
     assert work_times_of("CLM-1003")[: len(times)] == times
     [resumed] = work_times_of("CLM-1003")[len(times) :]
     assert resumed["run_id"] is None
-    # A sign-off has already paid the claim, so the resume calls no model.
+    # A sign-off has already paid the case, so the resume calls no model.
     assert model_calls_of("CLM-1003") == calls
 
 
-def test_resume_claim_refuses_a_claim_that_isnt_paused_with_an_answer(client, serve):
+def test_resume_case_refuses_a_case_that_isnt_paused_with_an_answer(client, serve):
     saver = StopAtThePause()
     with pytest.raises(KeyboardInterrupt):
         hold("CLM-1002", 1350.0, saver)
     sign_off(client, "CLM-1002")
     hold(saver=saver)
-    harness.work_claim("CLM-1001", None, agent_on(stub(*decide("decline", 0)), saver))
+    harness.work_case("CLM-1001", None, agent_on(stub(*decide("decline", 0)), saver))
     run_id = new_evaluation("evaluation")["run_id"]
     copy = agent_on(stub(*approve("CLM-1020", 1240.0)), saver, pauses=False)
     harness.work_in_run("CLM-1020-E1", run_id, lambda: copy)
 
     agent = serve(stub(), saver)
-    for claim_id, reason in [
-        ("CLM-1003", "Claim CLM-1003 has no answer from a handler yet"),
-        ("CLM-1001", "Claim CLM-1001 isn't paused for a handler"),
-        ("CLM-1020-E1", "Claim CLM-1020-E1 isn't paused for a handler"),
-        ("CLM-1002", "Claim CLM-1002 isn't paused for a handler"),
-        ("CLM-9999", "Claim CLM-9999 not found"),
+    for case_id, reason in [
+        ("CLM-1003", "Case CLM-1003 has no answer from a handler yet"),
+        ("CLM-1001", "Case CLM-1001 isn't paused for a handler"),
+        ("CLM-1020-E1", "Case CLM-1020-E1 isn't paused for a handler"),
+        ("CLM-1002", "Case CLM-1002 isn't paused for a handler"),
+        ("CLM-9999", "Case CLM-9999 not found"),
     ]:
-        refused = resume_claim(agent, claim_id)
+        refused = resume_case(agent, case_id)
         assert (refused.status_code, refused.json()) == (200, {"refused": reason})
-    assert claim_of(client, "CLM-1003")["status"] == "waiting_for_sign_off"
+    assert case_of(client, "CLM-1003")["status"] == "waiting_for_sign_off"
 
 
 def test_a_resume_is_accepted_while_a_dispatch_is_running(client, serve, held_run):
@@ -542,10 +542,10 @@ def test_a_resume_is_accepted_while_a_dispatch_is_running(client, serve, held_ru
     assert held_run.working.wait(5)
 
     resumed = agent.invoke(
-        {"operation": "resume_claim", "claim_id": "CLM-1003"}, wait=False
+        {"operation": "resume_case", "case_id": "CLM-1003"}, wait=False
     )
     assert resumed.json() == ACCEPTED
     held_run.release.set()
     agent.settle()
-    assert not harness.paused(claim_of(client, "CLM-1003"), agent_on(stub(), saver))
+    assert not harness.paused(case_of(client, "CLM-1003"), agent_on(stub(), saver))
     assert latest_dispatch(client)["status"] == "finished"

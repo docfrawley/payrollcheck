@@ -1,4 +1,4 @@
-"""Versions of the claim agent's configuration that the tests add straight to the
+"""Versions of the payroll agent's configuration that the tests add straight to the
 backend's table, as a round does once a handler approves a change."""
 
 from sqlalchemy import func, insert, select

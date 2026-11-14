@@ -10,24 +10,24 @@ OPEN = {"health"}
 
 # Every operation only the agent's side calls.
 AGENT_OPERATIONS = {
-    "start_claim",
+    "start_case",
     "record_step",
     "record_model_call",
     "record_work_time",
     "record_decision",
     "calculate_payout",
-    "pay_claim",
+    "pay_case",
     "hold_payment",
-    "fail_claim",
-    "take_claim",
-    "record_claim_heartbeat",
+    "fail_case",
+    "take_case",
+    "record_case_heartbeat",
     "get_version",
     "get_current_version",
     "get_screening",
     "record_run_heartbeat",
     "fail_run",
     "create_round_evaluation",
-    "record_run_claims",
+    "record_run_cases",
     "finish_run",
     "get_round",
     "get_proposal",
@@ -46,10 +46,10 @@ AGENT_OPERATIONS = {
 # The reads both the dashboard and the agent use, with a path each answers, the
 # run's once a dispatch has started.
 SHARED_READS = {
-    "list_claims": "/api/claims",
-    "get_claim": "/api/claims/CLM-1001",
+    "list_cases": "/api/cases",
+    "get_case": "/api/cases/CLM-1001",
     "get_policy": "/api/policies/POL-2001",
-    "get_claim_history": "/api/customers/CUS-3001/claims",
+    "get_case_history": "/api/customers/CUS-3001/cases",
     "get_agent_api": "/api/agent/openapi.json",
     "get_run": "/api/runs/{run_id}",
 }
@@ -60,7 +60,7 @@ TURN = "/api/copilot/turns/turn-1"
 # Every operation only a signed-in handler may use, with a body it would accept.
 HANDLER_OPERATIONS = {
     "get_signed_in_handler": ("GET", "/api/me", None),
-    "list_steps": ("GET", "/api/claims/CLM-1002/steps", None),
+    "list_steps": ("GET", "/api/cases/CLM-1002/steps", None),
     "get_configuration": ("GET", "/api/configuration", None),
     "get_version_details": ("GET", "/api/configuration/versions/1", None),
     "get_settings": ("GET", "/api/settings", None),
@@ -74,10 +74,10 @@ HANDLER_OPERATIONS = {
         "/api/evaluations",
         {"evaluation_set": "held_out", "tiny": True, "agents": 5},
     ),
-    "sign_off_claim": ("POST", "/api/claims/CLM-1002/sign-off", None),
-    "send_back_claim": (
+    "sign_off_case": ("POST", "/api/cases/CLM-1002/sign-off", None),
+    "send_back_case": (
         "POST",
-        "/api/claims/CLM-1002/send-back",
+        "/api/cases/CLM-1002/send-back",
         {"note": "Check the receipts again."},
     ),
     "get_improvement": ("GET", "/api/improvement", None),
@@ -110,7 +110,7 @@ HANDLER_OPERATIONS = {
     "start_copilot_step": (
         "POST",
         f"{TURN}/steps",
-        {"tool": "get_claim", "kind": "claims", "input": "CLM-1001", "asked": "{}"},
+        {"tool": "get_case", "kind": "cases", "input": "CLM-1001", "asked": "{}"},
     ),
     "finish_copilot_step": (
         "POST",
@@ -122,6 +122,6 @@ HANDLER_OPERATIONS = {
         f"{TURN}/finish",
         {"answer": "Nothing needs you.", "model_calls": 2, "cost": 0.001},
     ),
-    "pause_turn": ("POST", f"{TURN}/pause", {"claim_id": "CLM-1002"}),
+    "pause_turn": ("POST", f"{TURN}/pause", {"case_id": "CLM-1002"}),
     "fail_turn": ("POST", f"{TURN}/failure", {"reason": "It broke"}),
 }

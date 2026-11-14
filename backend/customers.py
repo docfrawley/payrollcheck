@@ -1,5 +1,5 @@
 """The backend's operations on customers, for the Copilot: finding them by name, and
-one customer with their policies and claims, without their contact details or date
+one customer with their policies and cases, without their contact details or date
 of birth."""
 
 from typing import Annotated
@@ -7,10 +7,10 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from sqlalchemy import func, select
 
-from backend.database import claim_view, claims, customers, policies
+from backend.database import case_view, cases, customers, policies
 from backend.dependencies import Database, SignedInHandler
 from backend.lookups import customer_record
-from backend.models import Customer, CustomerMatch, Policy, PreviousClaim
+from backend.models import Customer, CustomerMatch, Policy, PreviousCase
 from backend.views import to_summary
 
 router = APIRouter()
@@ -39,22 +39,22 @@ def find_customers(name: Name, db: Database) -> list[CustomerMatch]:
     dependencies=[SignedInHandler],
 )
 def get_customer(customer_id: str, db: Database) -> Customer:
-    """Get a customer with their policies, earlier claims and claims in our queue."""
+    """Get a customer with their policies, earlier cases and cases in our queue."""
     record = customer_record(db, customer_id)
     theirs = select(policies.c.record).where(
         policies.c.record["customer_id"].as_string() == customer_id
     )
     their_policies = [Policy(**policy) for policy in db.execute(theirs).scalars()]
-    in_the_queue = claim_view.where(
-        claims.c.customer_id == customer_id, claims.c.evaluation_id.is_(None)
-    ).order_by(claims.c.claim_id)
+    in_the_queue = case_view.where(
+        cases.c.customer_id == customer_id, cases.c.evaluation_id.is_(None)
+    ).order_by(cases.c.case_id)
     return Customer(
         customer_id=customer_id,
         name=record["name"],
         customer_since=record["customer_since"],
         policies=their_policies,
-        earlier_claims=[PreviousClaim(**c) for c in record["previous_claims"]],
-        claims_in_the_queue=[
+        earlier_cases=[PreviousCase(**c) for c in record["previous_cases"]],
+        cases_in_the_queue=[
             to_summary(row) for row in db.execute(in_the_queue).mappings()
         ],
     )

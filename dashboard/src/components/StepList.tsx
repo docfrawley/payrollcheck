@@ -14,7 +14,7 @@ import { StateMessage } from "./StateMessage";
 
 const SUMMARY_LENGTH = 90;
 
-// The agent's steps on a claim as it works, oldest first, so a new step joins
+// The agent's steps on a case as it works, oldest first, so a new step joins
 // the end and moves nothing above it.
 export function StepList({
   steps,
@@ -25,7 +25,7 @@ export function StepList({
       <h2 id="steps-title">Agent at work</h2>
       {!steps && <StateMessage error={error} />}
       {steps?.length === 0 && (
-        <StateMessage empty="No steps yet. They appear here as the agent works on the claim." />
+        <StateMessage empty="No steps yet. They appear here as the agent works on the case." />
       )}
       {steps && steps.length > 0 && (
         <ol className="steps">

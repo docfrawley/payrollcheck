@@ -14,7 +14,7 @@ import type {
   CopilotTurn,
 } from "../conversation";
 import { money } from "../format";
-import { ClaimLink } from "./ClaimLink";
+import { CaseLink } from "./CaseLink";
 import { FormError } from "./FormError";
 
 const ICONS: Record<Outcome["tone"], ReactNode> = {
@@ -25,7 +25,7 @@ const ICONS: Record<Outcome["tone"], ReactNode> = {
   unknown: <CircleHelp aria-hidden />,
 };
 
-// The card a sign-off waits on: the claim, the customer, the amount it will pay
+// The card a sign-off waits on: the case, the customer, the amount it will pay
 // and the agent's reason, all from our records, with Sign off and pay and
 // Cancel, which answer this turn's card and no other. Once answered, it shows
 // how the sign-off went.
@@ -55,9 +55,9 @@ export function ConfirmationCard({
       </p>
       <dl className="confirmation-facts">
         <div>
-          <dt>Claim</dt>
+          <dt>Case</dt>
           <dd>
-            <ClaimLink claimId={confirmation.claim_id} />
+            <CaseLink caseId={confirmation.case_id} />
           </dd>
         </div>
         <div>

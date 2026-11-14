@@ -59,8 +59,8 @@ def latest(conversation):
     return conversation["turns"][-1]
 
 
-def start_step(client, turn_id, tool="get_claim", input="CLM-1012", email=DANA):
-    body = {"tool": tool, "kind": "claims", "input": input, "asked": '{"claim_id": 1}'}
+def start_step(client, turn_id, tool="get_case", input="CLM-1012", email=DANA):
+    body = {"tool": tool, "kind": "cases", "input": input, "asked": '{"case_id": 1}'}
     return client.post(f"{TURNS}/{turn_id}/steps", json=body, headers=signed_in(email))
 
 
@@ -78,10 +78,10 @@ def finish_turn(client, turn_id, email=DANA, answer="Nothing needs you today."):
     return client.post(f"{TURNS}/{turn_id}/finish", json=body, headers=signed_in(email))
 
 
-def pause_turn(client, turn_id, claim_id="CLM-1003", email=DANA):
+def pause_turn(client, turn_id, case_id="CLM-1003", email=DANA):
     return client.post(
         f"{TURNS}/{turn_id}/pause",
-        json={"claim_id": claim_id},
+        json={"case_id": case_id},
         headers=signed_in(email),
     )
 

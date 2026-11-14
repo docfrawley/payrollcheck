@@ -2,7 +2,7 @@ import { use } from "react";
 import { Link, NavLink, useMatch } from "react-router";
 import { HandlerContext } from "../handler";
 import {
-  CLAIM_PAGE,
+  CASE_PAGE,
   CONFIGURATION,
   IMPROVEMENT,
   QUEUE,
@@ -15,10 +15,10 @@ import { Brand } from "./Brand";
 // and the handler signed in with their menu once they have loaded.
 export function Header() {
   const handler = use(HandlerContext);
-  // A claim's page belongs to the queue.
+  // A case's page belongs to the queue.
   const queuePage = useMatch(QUEUE);
-  const claimPage = useMatch(CLAIM_PAGE);
-  const onQueue = queuePage !== null || claimPage !== null;
+  const casePage = useMatch(CASE_PAGE);
+  const onQueue = queuePage !== null || casePage !== null;
   return (
     <header className="header">
       <div className="header-bar">

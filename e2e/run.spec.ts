@@ -1,22 +1,22 @@
 import { expect, test } from "@playwright/test";
 import {
-  failClaim,
+  failCase,
   finishRun,
-  payClaim,
+  payCase,
   decide,
   recordModelCall,
-  recordRunClaims,
+  recordRunCases,
   recordStep,
   recordWorkTime,
-  startClaim,
+  startCase,
   startDispatch,
   stopTheWork,
 } from "./api";
 
 // These tests start a dispatch as Dana Whitfield, which the app creates, then
-// stand in for the agent and its claim agents by calling the API through the
+// stand in for the agent and its payroll agents by calling the API through the
 // dashboard's proxy, and watch the pages update without a reload. They use
-// claims no other test touches.
+// cases no other test touches.
 
 test.afterEach(async ({ request }) => {
   await stopTheWork(request);
@@ -31,25 +31,25 @@ test("the dispatch panel follows a dispatch as it works", async ({
   await expect(panel).toBeVisible();
 
   const { run_id } = await startDispatch(request, 2);
-  await recordRunClaims(request, run_id, ["CLM-1013", "CLM-1014"]);
+  await recordRunCases(request, run_id, ["CLM-1013", "CLM-1014"]);
   const rows = panel.getByRole("row");
   await expect(panel.getByText("Running", { exact: true })).toBeVisible();
-  await expect(panel.getByText(/with 2 claim agents at once/)).toBeVisible();
+  await expect(panel.getByText(/with 2 payroll agents at once/)).toBeVisible();
   await expect(rows).toHaveText([
-    /^Claim/,
+    /^Case/,
     /^CLM-1013.*Waiting/,
     /^CLM-1014.*Waiting/,
   ]);
 
-  for (const [claimId, thread] of [
+  for (const [caseId, thread] of [
     ["CLM-1013", "e2e-5"],
     ["CLM-1014", "e2e-6"],
   ]) {
-    await startClaim(request, claimId, thread);
-    await recordModelCall(request, claimId, run_id, 0.005);
+    await startCase(request, caseId, thread);
+    await recordModelCall(request, caseId, run_id, 0.005);
   }
   await expect(rows).toHaveText([
-    /^Claim/,
+    /^Case/,
     /^CLM-1013.*In progress/,
     /^CLM-1014.*In progress/,
   ]);
@@ -60,17 +60,17 @@ test("the dispatch panel follows a dispatch as it works", async ({
     section: "Section 3, Trip Delay",
     reason: "The delay was covered.",
   });
-  await payClaim(request, "CLM-1013", 300);
+  await payCase(request, "CLM-1013", 300);
   await decide(request, "CLM-1014", {
     decision: "refer",
     payout: 0,
     section: "Manual, section 2",
     reason: "The airline's report is missing.",
   });
-  for (const claimId of ["CLM-1013", "CLM-1014"])
-    await recordWorkTime(request, claimId, run_id, 41);
+  for (const caseId of ["CLM-1013", "CLM-1014"])
+    await recordWorkTime(request, caseId, run_id, 41);
   await expect(rows).toHaveText([
-    /^Claim/,
+    /^Case/,
     /^CLM-1013.*Decided.*Approved.*\$300\.00.*41 s.*\$0\.0050/,
     /^CLM-1014.*Decided.*Referred.*41 s.*\$0\.0050/,
   ]);
@@ -85,18 +85,18 @@ test("the dispatch panel follows a dispatch as it works", async ({
   ).toBeVisible();
 
   await rows.nth(1).getByRole("link", { name: "CLM-1013" }).click();
-  await expect(page).toHaveURL("/claims/CLM-1013");
+  await expect(page).toHaveURL("/cases/CLM-1013");
 });
 
-test("a claim that fails twice is left for a handler", async ({
+test("a case that fails twice is left for a handler", async ({
   page,
   request,
 }) => {
-  await page.goto("/claims/CLM-1016");
+  await page.goto("/cases/CLM-1016");
   const heading = page.locator(".page-header");
   await expect(heading.getByText("Waiting")).toBeVisible();
 
-  await startClaim(request, "CLM-1016", "e2e-3");
+  await startCase(request, "CLM-1016", "e2e-3");
   await recordStep(
     request,
     "CLM-1016",
@@ -111,13 +111,13 @@ test("a claim that fails twice is left for a handler", async ({
       },
     ],
   );
-  await failClaim(request, "CLM-1016", "RuntimeError: The model timed out");
+  await failCase(request, "CLM-1016", "RuntimeError: The model timed out");
   await expect(
     page.getByText("Back in the queue after a failed attempt."),
   ).toBeVisible();
 
-  await startClaim(request, "CLM-1016", "e2e-4");
-  await failClaim(
+  await startCase(request, "CLM-1016", "e2e-4");
+  await failCase(
     request,
     "CLM-1016",
     "RuntimeError: The model timed out again",
@@ -125,7 +125,7 @@ test("a claim that fails twice is left for a handler", async ({
   await expect(heading.getByText("Left for a handler")).toBeVisible();
   await expect(
     page.getByText(
-      "The agent couldn't finish this claim in 2 attempts, so it's left for a handler.",
+      "The agent couldn't finish this case in 2 attempts, so it's left for a handler.",
     ),
   ).toBeVisible();
 

@@ -1,5 +1,5 @@
-"""The check for instructions hidden in a claim, which a second model makes before
-the claim agent's model sees the claim."""
+"""The check for instructions hidden in a case, which a second model makes before
+the payroll agent's model sees the case."""
 
 import ast
 import json
@@ -16,7 +16,7 @@ from pydantic import SecretStr
 from agent import harness
 from agent.screening import SCREEN_INSTRUCTIONS, Screening, screen
 from agent.tests.dispatching import new_dispatch
-from agent.tests.records import claim_of, model_calls_of
+from agent.tests.records import case_of, model_calls_of
 from agent.tests.stubs import (
     FLAGGED,
     PASSED,
@@ -98,7 +98,7 @@ def test_the_real_model_is_asked_for_a_strict_answer_and_its_answer_read():
     llm, sent = on_openrouter(
         in_a_tool_call({"reason": PASSED, "instructions_found": False})
     )
-    reply, screening = screen(llm, '{"claim_id": "CLM-1001"}')
+    reply, screening = screen(llm, '{"case_id": "CLM-1001"}')
     assert screening == Screening(reason=PASSED, instructions_found=False)
     assert reply.response_metadata["token_usage"]["cost"] == 0.0003
     [tool] = sent[0]["tools"]
@@ -117,20 +117,20 @@ def test_an_answer_the_real_model_gives_that_cant_be_read_comes_back_with_its_co
     message,
 ):
     llm, _ = on_openrouter(message)
-    reply, screening = screen(llm, '{"claim_id": "CLM-1001"}')
+    reply, screening = screen(llm, '{"case_id": "CLM-1001"}')
     assert screening is None
     assert reply.response_metadata["token_usage"]["cost"] == 0.0003
 
 
-def test_a_flagged_claim_is_referred_without_the_claim_agents_model(client):
+def test_a_flagged_case_is_referred_without_the_payroll_agents_model(client):
     run_id = new_dispatch()["run_id"]
     model = stub(*approve("CLM-1901", 4800.0))
     agent = agent_on(model, screener=flags())
-    report = harness.work_claim("CLM-1901", run_id, agent)
+    report = harness.work_case("CLM-1901", run_id, agent)
 
     assert report == "CLM-1901  refer  $0.00"
     assert model.prompts == []
-    decision = claim_of(client, "CLM-1901")["decision"]
+    decision = case_of(client, "CLM-1901")["decision"]
     assert (decision["decision"], decision["payout"]) == ("refer", 0)
     assert (decision["reason"], decision["section"]) == (
         FLAGGED,
@@ -145,22 +145,22 @@ def test_a_flagged_claim_is_referred_without_the_claim_agents_model(client):
     assert (check["run_id"], check["cost"]) == (run_id, USAGE["cost"])
 
 
-def test_a_passed_claim_goes_to_the_claim_agent(client):
+def test_a_passed_case_goes_to_the_payroll_agent(client):
     screener = passes()
     model = stub(*approve("CLM-1001", 420.0))
-    report = harness.work_claim("CLM-1001", None, agent_on(model, screener=screener))
+    report = harness.work_case("CLM-1001", None, agent_on(model, screener=screener))
 
     assert report == "CLM-1001  approve  $420.00"
-    assert claim_of(client, "CLM-1001")["payment"]["amount"] == 420.0
+    assert case_of(client, "CLM-1001")["payment"]["amount"] == 420.0
     check, _, as_the_tool_gives_it, *_ = steps_of(client, "CLM-1001")
     assert (check["kind"], check["content"]) == (
         "screening",
         f"No instructions found. {PASSED}",
     )
-    [[system, claim]] = screener.prompts
-    assert (system, claim) == (
+    [[system, case]] = screener.prompts
+    assert (system, case) == (
         SystemMessage(SCREEN_INSTRUCTIONS),
-        HumanMessage(as_the_tool_gives_it["content"].removeprefix("get_claim: ")),
+        HumanMessage(as_the_tool_gives_it["content"].removeprefix("get_case: ")),
     )
     assert len(model.prompts) == 3
 
@@ -168,7 +168,7 @@ def test_a_passed_claim_goes_to_the_claim_agent(client):
 def test_an_unreadable_answer_is_asked_again(client):
     screener = stub(UNREADABLE, UNREADABLE, screened(False, PASSED))
     model = stub(*decide("refer", 0))
-    report = harness.work_claim("CLM-1003", None, agent_on(model, screener=screener))
+    report = harness.work_case("CLM-1003", None, agent_on(model, screener=screener))
 
     assert report == "CLM-1003  refer  $0.00"
     assert len(screener.prompts) == 3
@@ -178,7 +178,7 @@ def test_an_unreadable_answer_is_asked_again(client):
 def test_three_unreadable_answers_fail_the_attempt(client):
     screener = stub(UNREADABLE, UNREADABLE, UNREADABLE)
     model = stub(*decide("refer", 0))
-    report = harness.work_claim("CLM-1003", None, agent_on(model, screener=screener))
+    report = harness.work_case("CLM-1003", None, agent_on(model, screener=screener))
 
     assert report == (
         "CLM-1003  failed: UnreadableScreening: The security check's answer "
@@ -186,34 +186,34 @@ def test_three_unreadable_answers_fail_the_attempt(client):
     )
     assert model.prompts == []
     assert len(model_calls_of("CLM-1003")) == 3
-    assert claim_of(client, "CLM-1003")["status"] == "waiting"
+    assert case_of(client, "CLM-1003")["status"] == "waiting"
 
 
-def test_a_timeout_from_the_check_leaves_the_claim_in_progress(client):
+def test_a_timeout_from_the_check_leaves_the_case_in_progress(client):
     screener = stub(ModelTimeoutError("Timed out"), screened(False, PASSED))
     model = stub(*decide("refer", 0))
     with pytest.raises(ModelTimeoutError):
-        harness.work_claim("CLM-1003", None, agent_on(model, screener=screener))
+        harness.work_case("CLM-1003", None, agent_on(model, screener=screener))
 
     assert len(screener.prompts) == 1
     assert model.prompts == []
-    assert claim_of(client, "CLM-1003")["status"] == "in_progress"
+    assert case_of(client, "CLM-1003")["status"] == "in_progress"
 
 
 def test_any_other_error_from_the_check_fails_the_attempt(client):
     screener = stub(RuntimeError("503: The model is unavailable"))
     model = stub(*decide("refer", 0))
-    report = harness.work_claim("CLM-1003", None, agent_on(model, screener=screener))
+    report = harness.work_case("CLM-1003", None, agent_on(model, screener=screener))
 
     assert report.endswith("503: The model is unavailable, back in the queue")
     assert len(screener.prompts) == 1
     assert model.prompts == []
 
 
-def test_the_checks_result_is_kept_in_the_claims_state(client):
+def test_the_checks_result_is_kept_in_the_cases_state(client):
     agent = agent_on(stub(), screener=flags())
-    harness.work_claim("CLM-1901", None, agent)
-    state = agent.graph.get_state(harness.thread_of(claim_of(client, "CLM-1901")))
+    harness.work_case("CLM-1901", None, agent)
+    state = agent.graph.get_state(harness.thread_of(case_of(client, "CLM-1901")))
     assert state.values["screening"] == {
         "reason": FLAGGED,
         "instructions_found": True,
@@ -224,9 +224,9 @@ def test_the_checks_result_is_kept_in_the_claims_state(client):
 def test_the_check_runs_once_for_each_thread(client):
     screener, saver = passes(), InMemorySaver()
     timeout = ModelTimeoutError("Timed out")
-    model = stub(call("get_claim"), timeout, record("refer", 0))
+    model = stub(call("get_case"), timeout, record("refer", 0))
     with pytest.raises(ModelTimeoutError):
-        harness.work_claim("CLM-1003", None, agent_on(model, saver, screener=screener))
+        harness.work_case("CLM-1003", None, agent_on(model, saver, screener=screener))
 
     report = harness.carry_on(
         "CLM-1003", None, agent_on(model, saver, screener=screener)
@@ -235,11 +235,11 @@ def test_the_check_runs_once_for_each_thread(client):
     assert len(screener.prompts) == 1
 
 
-def test_a_claim_starting_again_from_its_first_message_is_checked_again(client):
+def test_a_case_starting_again_from_its_first_message_is_checked_again(client):
     screener = passes()
     agent = agent_on(stub(ModelTimeoutError("Timed out")), screener=screener)
     with pytest.raises(ModelTimeoutError):
-        harness.work_claim("CLM-1003", None, agent)
+        harness.work_case("CLM-1003", None, agent)
 
     # Nothing saved: another process's saver, with none of this one's progress.
     fresh = agent_on(stub(*decide("refer", 0)), InMemorySaver(), screener=screener)
@@ -250,9 +250,9 @@ def test_a_claim_starting_again_from_its_first_message_is_checked_again(client):
 def test_a_second_attempt_is_checked_again(client):
     screener = passes()
     outage = RuntimeError("503: The model is unavailable")
-    harness.work_claim("CLM-1003", None, agent_on(stub(outage), screener=screener))
+    harness.work_case("CLM-1003", None, agent_on(stub(outage), screener=screener))
     agent = agent_on(stub(*decide("refer", 0)), screener=screener)
-    assert harness.work_claim("CLM-1003", None, agent) == "CLM-1003  refer  $0.00"
+    assert harness.work_case("CLM-1003", None, agent) == "CLM-1003  refer  $0.00"
     assert len(screener.prompts) == 2
     kinds = [step["kind"] for step in steps_of(client, "CLM-1003")]
     assert [kinds[0], kinds[1], kinds[2]] == ["screening", "error", "screening"]

@@ -1,4 +1,4 @@
-"""The lines that differ between two texts, such as two versions of the claim
+"""The lines that differ between two texts, such as two versions of the case
 agent's instructions or of the improver's recipe, with two lines of context, as
 Python's difflib finds them."""
 

@@ -20,7 +20,7 @@ export function ConfigurationPage() {
   const header = (
     <PageHeader
       title="Configuration"
-      lead="All versions of the claim agent's configuration."
+      lead="All versions of the payroll agent's configuration."
     />
   );
 

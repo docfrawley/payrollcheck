@@ -102,7 +102,7 @@ export function dateTime(isoTime: string): string {
 }
 
 export function agentsAtOnce(agents: number): string {
-  return `${String(agents)} claim ${agents === 1 ? "agent" : "agents"} at once`;
+  return `${String(agents)} payroll ${agents === 1 ? "agent" : "agents"} at once`;
 }
 
 // A handler's initials, from their first and last names, such as DW for Dana
@@ -166,7 +166,7 @@ export const stageLabels: Record<RoundStage, string> = {
 };
 export const roundStages = Object.keys(stageLabels) as RoundStage[];
 
-// A verdict's reason in words: the rule names measures such as cost_per_claim.
+// A verdict's reason in words: the rule names measures such as cost_per_case.
 export function inWords(reason: string | null): string {
   return (reason ?? "").replaceAll("_", " ");
 }
@@ -193,7 +193,7 @@ export const evaluationSetLabels: Record<EvaluationSet, string> = {
 };
 
 export function evaluationSetName(set: EvaluationSet, size: number): string {
-  return `${evaluationSetLabels[set]}, ${String(size)} claims`;
+  return `${evaluationSetLabels[set]}, ${String(size)} cases`;
 }
 
 export const decisionLabels: Record<DecisionKind, string> = {

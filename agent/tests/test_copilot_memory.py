@@ -11,7 +11,7 @@ from agent.copilot.memory import MEMORY_ID, memory_store
 from agent.tests.copilot_driver import Copilot
 from agent.tests.memory_stand_in import MemoryStandIn
 from agent.tests.stubs import call, stub
-from backend.tests.claim_requests import held
+from backend.tests.case_requests import held
 from backend.tests.sign_in import MARCUS
 
 PREFERENCE = "Dana likes amounts first, in short bullet points"
@@ -47,7 +47,7 @@ def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
 ):
     held(client, "CLM-1003", 3750.0)
     copilot.store = remembering()
-    copilot.model = stub(call("get_claim", claim_id="CLM-1003"), ANSWER)
+    copilot.model = stub(call("get_case", case_id="CLM-1003"), ANSWER)
     conversation_id = copilot.ask(QUESTION)["conversation_id"]
     message, answer = copilot.store.events
     assert (message.actor, message.session) == ("HND-01", conversation_id)
@@ -72,7 +72,7 @@ def test_each_handler_is_searched_alone(copilot: Copilot):
 def test_a_paused_turn_saves_once_after_its_answer(client, copilot: Copilot):
     held(client, "CLM-1003", 3750.0)
     copilot.store = remembering()
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1003"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
     conversation_id = copilot.ask("Sign off CLM-1003")["conversation_id"]
     assert copilot.store.events == []
     copilot.answer(conversation_id, "cancel")
@@ -86,7 +86,7 @@ def test_a_paused_turn_saves_once_after_its_answer(client, copilot: Copilot):
 def test_a_signed_off_turn_saves_once_after_the_models_answer(client, copilot: Copilot):
     held(client, "CLM-1003", 3750.0)
     copilot.store = remembering()
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1003"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
     conversation_id = copilot.ask("Sign off CLM-1003")["conversation_id"]
     copilot.model = stub("Signed off and paid.")
     copilot.answer(conversation_id, "sign_off")

@@ -28,7 +28,7 @@ export function ScoreboardPage() {
     <>
       <PageHeader
         title="Scoreboard"
-        lead="How the claim agent scores against our handlers' decisions."
+        lead="How the payroll agent scores against our handlers' decisions."
       />
       <div className="column">
         <StartEvaluation />
@@ -72,7 +72,7 @@ function StartEvaluation() {
           </select>
         </label>
         <label>
-          Claims
+          Cases
           <select
             value={tiny ? "tiny" : "all"}
             onChange={(event) => {
@@ -80,7 +80,7 @@ function StartEvaluation() {
             }}
           >
             <option value="all">All 25</option>
-            <option value="tiny">The five tiny claims</option>
+            <option value="tiny">The five tiny cases</option>
           </select>
         </label>
         <AgentsChoice agents={agents} onChange={setAgents} />

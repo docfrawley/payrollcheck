@@ -1,4 +1,4 @@
-"""The claim agent's own API document, which the Gateway turns into tools."""
+"""The payroll agent's own API document, which the Gateway turns into tools."""
 
 from api_rules import rule_breaks
 from backend.agent_api import OPERATIONS
@@ -15,19 +15,19 @@ def operations_in(document):
     }
 
 
-def test_the_document_holds_the_claim_agents_six_operations(client):
+def test_the_document_holds_the_payroll_agents_six_operations(client):
     document = client.get(PATH).json()
     operations = operations_in(document)
     assert (
         set(operations)
         == OPERATIONS
         == {
-            "get_claim",
+            "get_case",
             "get_policy",
-            "get_claim_history",
+            "get_case_history",
             "calculate_payout",
             "record_decision",
-            "pay_claim",
+            "pay_case",
         }
     )
     app_operations = operations_in(client.get("/openapi.json").json())
@@ -47,8 +47,8 @@ def test_the_document_has_no_servers_and_nothing_about_the_key(client):
 
 def test_the_payment_keeps_its_amount_for_the_gateways_policy(client):
     document = client.get(PATH).json()
-    pay_claim = operations_in(document)["pay_claim"]
-    body = pay_claim["requestBody"]["content"]["application/json"]["schema"]
+    pay_case = operations_in(document)["pay_case"]
+    body = pay_case["requestBody"]["content"]["application/json"]["schema"]
     model = document["components"]["schemas"][body["$ref"].split("/")[-1]]
     assert model["required"] == ["amount"]
 

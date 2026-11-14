@@ -1,5 +1,5 @@
 """A round of the improver as its records stand, which the improvement router, the
-runs router and the claim operations all need: finding a round, where it has got
+runs router and the case operations all need: finding a round, where it has got
 to, what it has spent against its limit, and stopping it."""
 
 from fastapi import HTTPException
@@ -131,8 +131,8 @@ def left_to_spend(db: Connection, row: RowMapping) -> float:
     return spending_of(db, row).left
 
 
-def why_no_claim_starts(db: Connection, row: RowMapping) -> str | None:
-    """Say why no new claim may start in a round's evaluations, if it may not: the
+def why_no_case_starts(db: Connection, row: RowMapping) -> str | None:
+    """Say why no new case may start in a round's evaluations, if it may not: the
     round is no longer open, or it has spent its limit."""
     if row["status"] != RoundStatus.OPEN:
         return NOT_OPEN.format(number=row["number"], status=row["status"])

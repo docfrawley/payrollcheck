@@ -1,4 +1,4 @@
-"""The direct route: the claim agent's tools and its payment straight to the app,
+"""The direct route: the payroll agent's tools and its payment straight to the app,
 through the agent's API with its key, and the context layer's tools over MCP at
 PAYROLLCHECK_CONTEXT, or on the laptop, unsigned."""
 

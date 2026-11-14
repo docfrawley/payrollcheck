@@ -44,7 +44,7 @@ def how_it_went(sign_in: str, run: dict[str, Any]) -> dict[str, Any]:
     if run["status"] == STOPPED:
         return went | {"stopped_because": run["stopped_because"]}
     if run["kind"] == DISPATCH:
-        queue = app_api.list_claims(sign_in)
+        queue = app_api.list_cases(sign_in)
         return went | {
             "summary": run["summary"],
             "seconds": run["seconds"],

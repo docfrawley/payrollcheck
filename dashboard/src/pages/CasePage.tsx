@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router";
-import { api, type Claim } from "../api";
+import { api, type Case } from "../api";
 import { StatusChip } from "../components/Chips";
 import { ContextUsed } from "../components/ContextUsed";
 import { DecisionPanel } from "../components/DecisionPanel";
@@ -13,20 +13,20 @@ import { date, label, money } from "../format";
 import { evaluationPage, QUEUE } from "../paths";
 import { REFRESH_MS, useLoad } from "../useLoad";
 
-export function ClaimPage() {
-  const { claimId = "" } = useParams();
-  const load = useCallback(() => api.getClaim(claimId), [claimId]);
-  const { data: claim, error, reload } = useLoad(load, REFRESH_MS);
-  const loadSteps = useCallback(() => api.listSteps(claimId), [claimId]);
+export function CasePage() {
+  const { caseId = "" } = useParams();
+  const load = useCallback(() => api.getCase(caseId), [caseId]);
+  const { data: caseRecord, error, reload } = useLoad(load, REFRESH_MS);
+  const loadSteps = useCallback(() => api.listSteps(caseId), [caseId]);
   const steps = useLoad(loadSteps, REFRESH_MS);
 
-  if (!claim)
+  if (!caseRecord)
     return (
       <>
-        <PageHeader eyebrow={<Link to={QUEUE}>Queue</Link>} title={claimId} />
+        <PageHeader eyebrow={<Link to={QUEUE}>Queue</Link>} title={caseId} />
         <StateMessage
           error={error}
-          notFound="Claim not found. Choose one from the queue."
+          notFound="Case not found. Choose one from the queue."
         />
       </>
     );
@@ -36,42 +36,46 @@ export function ClaimPage() {
       <PageHeader
         eyebrow={
           <>
-            {claim.evaluation_id ? (
-              <Link to={evaluationPage(claim.evaluation_id)}>Evaluation</Link>
+            {caseRecord.evaluation_id ? (
+              <Link to={evaluationPage(caseRecord.evaluation_id)}>
+                Evaluation
+              </Link>
             ) : (
               <Link to={QUEUE}>Queue</Link>
             )}{" "}
-            <span className="mono">/ {claim.claim_id}</span>
+            <span className="mono">/ {caseRecord.case_id}</span>
           </>
         }
-        title={claim.summary}
-        status={<StatusChip status={claim.status} />}
+        title={caseRecord.summary}
+        status={<StatusChip status={caseRecord.status} />}
         lead={
-          claim.evaluation_id ? (
+          caseRecord.evaluation_id ? (
             <>
-              A copy of <span className="mono">{claim.copy_of}</span> in an{" "}
-              <Link to={evaluationPage(claim.evaluation_id)}>evaluation</Link>
+              A copy of <span className="mono">{caseRecord.copy_of}</span> in an{" "}
+              <Link to={evaluationPage(caseRecord.evaluation_id)}>
+                evaluation
+              </Link>
             </>
           ) : (
-            `${claim.customer_name}'s ${label(claim.claim_type).toLowerCase()} claim`
+            `${caseRecord.customer_name}'s ${label(caseRecord.case_type).toLowerCase()} case`
           )
         }
       />
       {/* The agent's steps grow at the end of the right column, and the context
           it used at the end of the left, so neither moves anything as the
           page refreshes. */}
-      <div className="claim-layout">
+      <div className="case-layout">
         <div className="column">
-          <ClaimDetails claim={claim} />
-          <ItemsPanel claim={claim} />
-          <DocumentsPanel claim={claim} />
-          <PolicyPanel policyId={claim.policy_id} />
-          <HistoryPanel customerId={claim.customer_id} />
+          <CaseDetails caseRecord={caseRecord} />
+          <ItemsPanel caseRecord={caseRecord} />
+          <DocumentsPanel caseRecord={caseRecord} />
+          <PolicyPanel policyId={caseRecord.policy_id} />
+          <HistoryPanel customerId={caseRecord.customer_id} />
           <ContextUsed steps={steps.data} />
         </div>
         <div className="column">
-          <DecisionPanel claim={claim} onAnswered={reload} />
-          <SentBackDecisions decisions={claim.sent_back_decisions} />
+          <DecisionPanel caseRecord={caseRecord} onAnswered={reload} />
+          <SentBackDecisions decisions={caseRecord.sent_back_decisions} />
           <StepList steps={steps.data} error={steps.error} />
         </div>
       </div>
@@ -79,42 +83,42 @@ export function ClaimPage() {
   );
 }
 
-function ClaimDetails({ claim }: Readonly<{ claim: Claim }>) {
+function CaseDetails({ caseRecord }: Readonly<{ caseRecord: Case }>) {
   return (
-    <section className="panel" aria-labelledby="claim-title">
-      <h2 id="claim-title">Claim</h2>
+    <section className="panel" aria-labelledby="case-title">
+      <h2 id="case-title">Case</h2>
       <dl className="facts">
         <div>
           <dt>Customer</dt>
-          <dd>{claim.customer_name}</dd>
+          <dd>{caseRecord.customer_name}</dd>
         </div>
         <div>
           <dt>Type</dt>
-          <dd>{label(claim.claim_type)}</dd>
+          <dd>{label(caseRecord.case_type)}</dd>
         </div>
         <div>
           <dt>Incident</dt>
           <dd>
-            {date(claim.incident_date)}, {claim.incident_location}
+            {date(caseRecord.incident_date)}, {caseRecord.incident_location}
           </dd>
         </div>
         <div>
           <dt>Submitted</dt>
-          <dd>{date(claim.submitted_on)}</dd>
+          <dd>{date(caseRecord.submitted_on)}</dd>
         </div>
         <div>
           <dt>Amount claimed</dt>
-          <dd className="mono">{money(claim.amount_claimed)}</dd>
+          <dd className="mono">{money(caseRecord.amount_claimed)}</dd>
         </div>
       </dl>
       <h3>The customer's story</h3>
-      <p className="story">{claim.story}</p>
+      <p className="story">{caseRecord.story}</p>
     </section>
   );
 }
 
-function ItemsPanel({ claim }: Readonly<{ claim: Claim }>) {
-  const total = claim.items.reduce((sum, item) => sum + item.amount, 0);
+function ItemsPanel({ caseRecord }: Readonly<{ caseRecord: Case }>) {
+  const total = caseRecord.items.reduce((sum, item) => sum + item.amount, 0);
   return (
     <section className="panel" aria-labelledby="items-title">
       <h2 id="items-title">Items claimed</h2>
@@ -128,7 +132,7 @@ function ItemsPanel({ claim }: Readonly<{ claim: Claim }>) {
             </tr>
           </thead>
           <tbody>
-            {claim.items.map((item) => (
+            {caseRecord.items.map((item) => (
               <tr key={item.description}>
                 <td>{item.description}</td>
                 <td>{label(item.category)}</td>
@@ -150,11 +154,11 @@ function ItemsPanel({ claim }: Readonly<{ claim: Claim }>) {
   );
 }
 
-function DocumentsPanel({ claim }: Readonly<{ claim: Claim }>) {
+function DocumentsPanel({ caseRecord }: Readonly<{ caseRecord: Case }>) {
   return (
     <section className="panel" aria-labelledby="documents-title">
       <h2 id="documents-title">Documents</h2>
-      {claim.documents.map((document) => (
+      {caseRecord.documents.map((document) => (
         <article className="document" key={document.name}>
           <h3>{document.name}</h3>
           <p className="muted small">{label(document.type)}</p>

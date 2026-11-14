@@ -1,4 +1,4 @@
-"""Finding a claim, a run, a version, the settings and the models allowed, and the
+"""Finding a case, a run, a version, the settings and the models allowed, and the
 messages for what isn't found or can't be answered, which more than one of the
 backend's modules need."""
 
@@ -8,8 +8,8 @@ from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, func, select
 
 from backend.database import (
-    claim_view,
-    claims,
+    case_view,
+    cases,
     customers,
     models_allowed,
     rounds,
@@ -20,19 +20,19 @@ from backend.database import (
 from backend.models import ModelAllowed, Settings, Verdict
 
 RUN_NOT_FOUND = "Run {run_id} not found"
-CLAIM_NOT_FOUND = "Claim {claim_id} not found"
+CASE_NOT_FOUND = "Case {case_id} not found"
 VERSION_NOT_FOUND = "Version {number} not found"
 CUSTOMER_NOT_FOUND = "Customer {customer_id} not found"
-NOT_WAITING_FOR_SIGN_OFF = "Claim {claim_id} is not waiting for sign-off"
-A_COPY = "Claim {claim_id} is a copy in an evaluation and can't be {answered}"
+NOT_WAITING_FOR_SIGN_OFF = "Case {case_id} is not waiting for sign-off"
+A_COPY = "Case {case_id} is a copy in an evaluation and can't be {answered}"
 
 
-def find_claim(db: Connection, claim_id: str) -> RowMapping:
-    """Return one claim's row, or raise a 404."""
-    query = claim_view.where(claims.c.claim_id == claim_id)
+def find_case(db: Connection, case_id: str) -> RowMapping:
+    """Return one case's row, or raise a 404."""
+    query = case_view.where(cases.c.case_id == case_id)
     row = db.execute(query).mappings().first()
     if row is None:
-        raise HTTPException(404, CLAIM_NOT_FOUND.format(claim_id=claim_id))
+        raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))
     return row
 
 
@@ -69,7 +69,7 @@ def round_number(db: Connection, round_id: str | None) -> int | None:
 
 
 def version_row(db: Connection, number: int) -> RowMapping:
-    """Return one version of the claim agent's configuration, or raise a 404."""
+    """Return one version of the payroll agent's configuration, or raise a 404."""
     query = select(versions).where(versions.c.number == number)
     row = db.execute(query).mappings().first()
     if row is None:
@@ -94,7 +94,7 @@ def current_settings(db: Connection) -> Settings:
 
 
 def allowed_models(db: Connection) -> list[ModelAllowed]:
-    """Return the models the claim agent may use, with their reasoning efforts and
+    """Return the models the payroll agent may use, with their reasoning efforts and
     prices."""
     query = select(models_allowed).order_by(models_allowed.c.position)
     return [ModelAllowed(**row) for row in db.execute(query).mappings()]

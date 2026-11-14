@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 const QUEUE_ROUTES = {
-  "GET /api/claims": [],
+  "GET /api/cases": [],
   "GET /api/dispatches/latest": null,
 };
 
@@ -55,7 +55,7 @@ it("closes the menu on Escape, back on the avatar, on a click outside it, or as 
   fireEvent.click(avatar);
   fireEvent.pointerDown(who.getByText("dana.whitfield@undercover.example"));
   expect(menuOpen()).not.toBeNull();
-  fireEvent.pointerDown(screen.getByRole("heading", { name: "Claims queue" }));
+  fireEvent.pointerDown(screen.getByRole("heading", { name: "Cases queue" }));
   expect(menuOpen()).toBeNull();
 
   // The dispatch panel shows its button once its own request answers.

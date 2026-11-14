@@ -4,7 +4,7 @@ agent and the dashboard do."""
 from sqlalchemy import select, update
 
 from backend.database import engine, handler_decisions, runs
-from backend.tests.claim_requests import decide
+from backend.tests.case_requests import decide
 from backend.tests.dashboard_reads import read
 from backend.tests.rows import newest_round
 from backend.tests.run_requests import get_evaluation
@@ -17,12 +17,12 @@ EMAILS = {
 }
 
 CHANGE = {
-    "instructions": "# Working a claim\n\nA rule for stolen phones.\n",
+    "instructions": "# Working a case\n\nA rule for stolen phones.\n",
     "model": "openai/gpt-6-luna",
     "reasoning_effort": "low",
     "reason": "Two stolen phones were approved",
 }
-ALL = 100  # more claims than any set holds
+ALL = 100  # more cases than any set holds
 RECIPE = {
     "recipe": "1. Read the results.\n2. Improve the recipe.\n",
     "reason": "Shorter",
@@ -132,22 +132,22 @@ def into_round(round_id, *evaluations):
 
 
 def handler_reasons(evaluation_set):
-    """The handlers' reasons on a labeled set, by claim."""
+    """The handlers' reasons on a labeled set, by case."""
     with engine().connect() as db:
         query = select(handler_decisions).where(
             handler_decisions.c.evaluation_set == evaluation_set
         )
-        return {row["claim_id"]: row["reason"] for row in db.execute(query).mappings()}
+        return {row["case_id"]: row["reason"] for row in db.execute(query).mappings()}
 
 
 def handler_answers(evaluation_set):
-    """The handlers' decisions and payouts on a labeled set, by claim."""
+    """The handlers' decisions and payouts on a labeled set, by case."""
     with engine().connect() as db:
         query = select(handler_decisions).where(
             handler_decisions.c.evaluation_set == evaluation_set
         )
         return {
-            row["claim_id"]: (row["decision"], row["payout"])
+            row["case_id"]: (row["decision"], row["payout"])
             for row in db.execute(query).mappings()
         }
 
@@ -157,12 +157,12 @@ def decide_copies(client, run, right):
     says, and the rest otherwise: declining what they didn't decline, and
     referring what they declined."""
     answers = handler_answers(run["evaluation_set"])
-    for n, copy in enumerate(run["claims"]):
-        copy_id = copy["claim_id"]
+    for n, copy in enumerate(run["cases"]):
+        copy_id = copy["case_id"]
         decision, payout = answers[copy_id.rsplit("-E", 1)[0]]
         if n >= right:
             decision, payout = ("refer" if decision == "decline" else "decline"), 0
-        client.post(f"/api/claims/{copy_id}/start", json={"thread_id": copy_id})
+        client.post(f"/api/cases/{copy_id}/start", json={"thread_id": copy_id})
         decide(client, copy_id, decision, payout, section="Section 3")
 
 

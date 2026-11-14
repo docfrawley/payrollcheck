@@ -17,7 +17,7 @@ import { HANDLERS } from "./handlers";
 // the app and reaching the stand-in for the agent.
 
 const RULE = "A stolen phone needs a police report.";
-const INSTRUCTIONS = `# Working a claim\n\n${RULE}\n`;
+const INSTRUCTIONS = `# Working a case\n\n${RULE}\n`;
 
 test.afterEach(async ({ request }) => {
   await stopTheWork(request);
@@ -89,7 +89,7 @@ test("a recipe rejected on the page records its reason and reaches the agent", a
   await waiting.getByRole("button", { name: "Reject" }).click();
   await waiting
     .getByLabel("Why reject it?")
-    .fill("Keep the step that reads the wrong claims");
+    .fill("Keep the step that reads the wrong cases");
   await waiting.getByRole("button", { name: "Reject the recipe" }).click();
   await expect
     .poll(() => started(request))
@@ -100,7 +100,7 @@ test("a recipe rejected on the page records its reason and reaches the agent", a
     });
   expect(await getProposal(request, round, proposal)).toMatchObject({
     review: "rejected",
-    rejection_reason: "Keep the step that reads the wrong claims",
+    rejection_reason: "Keep the step that reads the wrong cases",
   });
 });
 

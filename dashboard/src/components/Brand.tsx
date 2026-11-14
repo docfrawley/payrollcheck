@@ -6,7 +6,7 @@ export function Brand() {
   return (
     <>
       <ShieldCheck />
-      UnderCover <span className="tagline">claims</span>
+      UnderCover <span className="tagline">cases</span>
     </>
   );
 }

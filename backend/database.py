@@ -52,12 +52,12 @@ INSTRUCTIONS = Path(__file__).resolve().parent / "instructions"
 # Version 1 is kept from the start, so the current version is the newest kept.
 FIRST_VERSION = {
     "number": 1,
-    "reason": "The claim agent as the claims team built it",
+    "reason": "The payroll agent as the claims team built it",
     "proposed_by": "The claims team",
     "verdict": Verdict.KEPT,
     "verdict_reason": "the first version",
 }
-# The model version 1 of the claim agent is on, with no reasoning, so a higher
+# The model version 1 of the payroll agent is on, with no reasoning, so a higher
 # reasoning effort is an improvement to find, unless a student is on a free model.
 FIRST_MODEL = ("openai/gpt-6-luna", "none")
 FIRST_RECIPE = {
@@ -67,7 +67,7 @@ FIRST_RECIPE = {
     "not yet tried, then adds a rule for each mistake",
     "proposed_by": "The claims team",
 }
-HELD_OUT_CLAIMS = "evals/held_out_claims.json"
+HELD_OUT_CASES = "evals/held_out_claims.json"
 SCHEMA = "payrollcheck"
 CONNECTIONS = 4
 CONNECTION_WAIT = 120
@@ -77,6 +77,12 @@ RETIRED = ["todos"]
 # The schema of an earlier version, under the product's old name, dropped with all it
 # holds, the checkpointer's tables included.
 RETIRED_SCHEMA = "undercover"
+# The keys of the records in data/ that the app calls by other names.
+RECORD_KEYS = {
+    "claim_id": "case_id",
+    "claim_type": "case_type",
+    "previous_claims": "previous_cases",
+}
 
 metadata = MetaData()
 
@@ -140,10 +146,10 @@ policies = Table(
     Column("policy_id", Text, primary_key=True),
     Column("record", JSON, nullable=False),
 )
-claims = Table(
-    "claims",
+cases = Table(
+    "cases",
     metadata,
-    Column("claim_id", Text, primary_key=True),
+    Column("case_id", Text, primary_key=True),
     Column("customer_id", Text, ForeignKey("customers.customer_id"), nullable=False),
     Column("record", JSON, nullable=False),
     Column("status", Text, nullable=False),
@@ -151,20 +157,20 @@ claims = Table(
     Column("attempts", Integer, nullable=False),
     Column("evaluation_id", Text, ForeignKey("runs.run_id")),
     Column("copy_of", Text),
-    # When the agent last said a resume was working on the claim.
+    # When the agent last said a resume was working on the case.
     Column("resume_heard_at", Text),
 )
-held_out_claims = Table(
-    "held_out_claims",
+held_out_cases = Table(
+    "held_out_cases",
     metadata,
-    Column("claim_id", Text, primary_key=True),
+    Column("case_id", Text, primary_key=True),
     Column("record", JSON, nullable=False),
 )
 handler_decisions = Table(
     "handler_decisions",
     metadata,
     Column("evaluation_set", Text, primary_key=True),
-    Column("claim_id", Text, primary_key=True),
+    Column("case_id", Text, primary_key=True),
     Column("decision", Text, nullable=False),
     Column("payout", Float, nullable=False),
     Column("tiny", Boolean, nullable=False),
@@ -174,7 +180,7 @@ handler_decisions = Table(
 decisions = Table(
     "decisions",
     metadata,
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
     Column("decision", Text, nullable=False),
     Column("payout", Float, nullable=False),
     Column("section", Text, nullable=False),
@@ -198,7 +204,7 @@ sent_back_decisions = Table(
     "sent_back_decisions",
     metadata,
     Column("sent_back_id", Integer, primary_key=True),
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), nullable=False),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
     Column("decision", Text, nullable=False),
     Column("payout", Float, nullable=False),
     Column("calculation", JSON),
@@ -212,12 +218,12 @@ sent_back_decisions = Table(
     Column("sent_back_by", Text, nullable=False),
     Column("sent_back_at", Text, nullable=False),
 )
-# Each claim's latest calculation of its payout, on the thread of the attempt it was
+# Each case's latest calculation of its payout, on the thread of the attempt it was
 # made in, which an approval in that attempt must match.
 calculations = Table(
     "calculations",
     metadata,
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
     Column("thread_id", Text, nullable=False),
     Column("lines", JSON, nullable=False),
     Column("payout", Float, nullable=False),
@@ -226,7 +232,7 @@ calculations = Table(
 payments = Table(
     "payments",
     metadata,
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
     Column("amount", Float, nullable=False),
     Column("paid_at", Text, nullable=False),
 )
@@ -234,7 +240,7 @@ steps = Table(
     "steps",
     metadata,
     Column("step_id", Integer, primary_key=True),
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), nullable=False),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
     Column("thread_id", Text, nullable=False),
     Column("kind", Text, nullable=False),
     Column("content", Text, nullable=False),
@@ -243,7 +249,7 @@ steps = Table(
     Column("created_at", Text, nullable=False),
 )
 # The improver's rounds, each to the settings, the recipe and the version of the
-# claim agent in force when it started.
+# payroll agent in force when it started.
 rounds = Table(
     "rounds",
     metadata,
@@ -358,7 +364,7 @@ AGENTS_WORK = "the agent's work"
 grades = Table(
     "grades",
     metadata,
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
     Column("run_id", Text, ForeignKey("runs.run_id"), nullable=False),
     Column("score", Float),
     Column("letter", Text),
@@ -367,18 +373,18 @@ grades = Table(
     Column("cost", Float, nullable=False),
     Column("graded_at", Text, nullable=False),
 )
-run_claims = Table(
-    "run_claims",
+run_cases = Table(
+    "run_cases",
     metadata,
     Column("run_id", Text, ForeignKey("runs.run_id"), primary_key=True),
     Column("position", Integer, primary_key=True),
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), nullable=False),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
 )
 model_calls = Table(
     "model_calls",
     metadata,
     Column("model_call_id", Integer, primary_key=True),
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), nullable=False),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
     Column("thread_id", Text, nullable=False),
     Column("run_id", Text, ForeignKey("runs.run_id")),
     Column("input_tokens", Integer, nullable=False),
@@ -390,7 +396,7 @@ work_times = Table(
     "work_times",
     metadata,
     Column("work_time_id", Integer, primary_key=True),
-    Column("claim_id", Text, ForeignKey("claims.claim_id"), nullable=False),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
     Column("thread_id", Text, nullable=False),
     Column("run_id", Text, ForeignKey("runs.run_id")),
     Column("started_at", Text, nullable=False),
@@ -466,31 +472,29 @@ copilot_steps = Table(
 
 
 class LabeledSet(NamedTuple):
-    """A set of claims our handlers have decided: the table its claims are kept in,
+    """A set of cases our handlers have decided: the table its cases are kept in,
     and the file in data/evals/ with the handlers' decisions, which only seeding
     reads."""
 
-    claims: Table
+    cases: Table
     decisions: str
 
 
 LABELED_SETS = {
-    EvaluationSet.EVALUATION: LabeledSet(claims, "evals/decisions.json"),
-    EvaluationSet.HELD_OUT: LabeledSet(
-        held_out_claims, "evals/held_out_decisions.json"
-    ),
+    EvaluationSet.EVALUATION: LabeledSet(cases, "evals/decisions.json"),
+    EvaluationSet.HELD_OUT: LabeledSet(held_out_cases, "evals/held_out_decisions.json"),
 }
 
-claim_view = (
+case_view = (
     select(
-        claims.c.claim_id,
-        claims.c.record,
-        claims.c.status,
-        claims.c.thread_id,
-        claims.c.attempts,
-        claims.c.evaluation_id,
-        claims.c.copy_of,
-        claims.c.resume_heard_at,
+        cases.c.case_id,
+        cases.c.record,
+        cases.c.status,
+        cases.c.thread_id,
+        cases.c.attempts,
+        cases.c.evaluation_id,
+        cases.c.copy_of,
+        cases.c.resume_heard_at,
         customers.c.name.label("customer_name"),
         decisions.c.decision,
         decisions.c.payout,
@@ -507,9 +511,9 @@ claim_view = (
         payments.c.amount,
         payments.c.paid_at,
     )
-    .join(customers, customers.c.customer_id == claims.c.customer_id)
-    .outerjoin(decisions, decisions.c.claim_id == claims.c.claim_id)
-    .outerjoin(payments, payments.c.claim_id == claims.c.claim_id)
+    .join(customers, customers.c.customer_id == cases.c.customer_id)
+    .outerjoin(decisions, decisions.c.case_id == cases.c.case_id)
+    .outerjoin(payments, payments.c.case_id == cases.c.case_id)
 )
 
 
@@ -591,12 +595,22 @@ def location(db: Engine) -> str:
 
 def is_seeded(db: Engine) -> bool:
     """Say whether the database has its tables."""
-    return inspect(db).has_table("claims")
+    return inspect(db).has_table("cases")
+
+
+def with_our_names(value: Any) -> Any:
+    """Give the keys of a record in data/ the app's names, leaving every value as it
+    is: the records keep the words of the claims platform they came from."""
+    if isinstance(value, dict):
+        return {RECORD_KEYS.get(k, k): with_our_names(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [with_our_names(v) for v in value]
+    return value
 
 
 def load(name: str) -> Any:
-    """Read one of the JSON files in data/."""
-    return json.loads((DATA / name).read_text(encoding="utf-8"))
+    """Read one of the JSON files in data/, with its keys under the app's names."""
+    return with_our_names(json.loads((DATA / name).read_text(encoding="utf-8")))
 
 
 def queue_records(name: str) -> list[dict[str, Any]]:
@@ -605,11 +619,11 @@ def queue_records(name: str) -> list[dict[str, Any]]:
     return load(name) + load(f"security/{name}")
 
 
-def waiting_claim(record: dict[str, Any], **columns: Any) -> dict[str, Any]:
-    """Return the row of a claim waiting in the queue, never started, with any other
+def waiting_case(record: dict[str, Any], **columns: Any) -> dict[str, Any]:
+    """Return the row of a case waiting in the queue, never started, with any other
     columns given."""
     return {
-        "claim_id": record["claim_id"],
+        "case_id": record["case_id"],
         "customer_id": record["customer_id"],
         "record": record,
         "status": Status.WAITING,
@@ -624,7 +638,7 @@ def seed(db: Engine) -> dict[str, int]:
     handler_rows = load("handlers.json")
     customer_rows = queue_records("customers.json")
     policy_rows = queue_records("policies.json")
-    claim_rows = queue_records("claims.json")
+    case_rows = queue_records("claims.json")
     with db.begin() as connection:
         if on_postgres(db.url):
             connection.execute(DropSchema(RETIRED_SCHEMA, cascade=True, if_exists=True))
@@ -661,13 +675,13 @@ def seed(db: Engine) -> dict[str, int]:
             insert(policies),
             [{"policy_id": p["policy_id"], "record": p} for p in policy_rows],
         )
-        connection.execute(insert(claims), [waiting_claim(c) for c in claim_rows])
+        connection.execute(insert(cases), [waiting_case(c) for c in case_rows])
         seed_first_version(connection)
         connection.execute(insert(recipes).values(**FIRST_RECIPE, created_at=now()))
         connection.execute(insert(locks).values(name=AGENTS_WORK))
         labeled = seed_evaluations(connection)
     return {
-        "claims": len(claim_rows),
+        "cases": len(case_rows),
         "policies": len(policy_rows),
         "customers": len(customer_rows),
         "handlers": len(handler_rows),
@@ -702,7 +716,7 @@ def seed_settings(connection: Connection, approval_limit: float) -> None:
 
 
 def seed_models_allowed(connection: Connection) -> None:
-    """Store the models the claim agent may use, from data/models.json, or the free
+    """Store the models the payroll agent may use, from data/models.json, or the free
     model alone for students on free models."""
     listed = [ModelAllowed(**model) for model in load("models.json")]
     connection.execute(
@@ -715,14 +729,14 @@ def seed_models_allowed(connection: Connection) -> None:
 
 
 def seed_first_version(connection: Connection) -> None:
-    """Make version 1 of the claim agent's configuration, from its instructions file,
+    """Make version 1 of the payroll agent's configuration, from its instructions file,
     on GPT-6 Luna with no reasoning, or the free model for students on free
     models."""
     model, reasoning_effort = model_or_free(*FIRST_MODEL)
     connection.execute(
         insert(versions).values(
             **FIRST_VERSION,
-            instructions=(INSTRUCTIONS / "claim.md").read_text(encoding="utf-8"),
+            instructions=(INSTRUCTIONS / "payroll.md").read_text(encoding="utf-8"),
             model=model,
             reasoning_effort=reasoning_effort,
             created_at=now(),
@@ -731,17 +745,17 @@ def seed_first_version(connection: Connection) -> None:
 
 
 def seed_evaluations(connection: Connection) -> dict[str, int]:
-    """Store the held-out claims, out of the queue, and the handlers' decisions on
+    """Store the held-out cases, out of the queue, and the handlers' decisions on
     both labeled sets, and count them."""
-    held_out = load(HELD_OUT_CLAIMS)
+    held_out = load(HELD_OUT_CASES)
     connection.execute(
-        insert(held_out_claims),
-        [{"claim_id": c["claim_id"], "record": c} for c in held_out],
+        insert(held_out_cases),
+        [{"case_id": c["case_id"], "record": c} for c in held_out],
     )
     rows = [
         {
             "evaluation_set": evaluation_set,
-            "claim_id": d["claim_id"],
+            "case_id": d["case_id"],
             "decision": d["decision"],
             "payout": d["payout"],
             "tiny": d["tiny"],
@@ -752,4 +766,4 @@ def seed_evaluations(connection: Connection) -> dict[str, int]:
         for d in load(labeled.decisions)
     ]
     connection.execute(insert(handler_decisions), rows)
-    return {"held_out_claims": len(held_out), "handler_decisions": len(rows)}
+    return {"held_out_cases": len(held_out), "handler_decisions": len(rows)}

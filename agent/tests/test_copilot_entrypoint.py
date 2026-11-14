@@ -30,7 +30,7 @@ from agent.tests.local_server import serving
 from agent.tests.records import payments_of
 from agent.tests.stubs import call, stub
 from backend import copilot_service
-from backend.tests.claim_requests import held
+from backend.tests.case_requests import held
 from backend.tests.copilot_requests import (
     answer,
     conversation_of,
@@ -277,7 +277,7 @@ def test_an_answer_resumes_the_paused_conversation(
     client, copilot: Copilot, copilot_app
 ):
     held(client, "CLM-1003", 3750.0)
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1003"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
     app = copilot_app()
     assert app.invoke(a_turn(copilot, "Sign off CLM-1003")).json() == ACCEPTED
     conversation_id = copilot.last_payload()["conversation_id"]
@@ -303,7 +303,7 @@ def test_an_answer_with_none_recorded_or_nothing_paused_is_refused(
         "refused": f"Turn {payload['turn_id']} has no answer to its confirmation yet"
     }
     held(client, "CLM-1003", 3750.0)
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1003"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
     app.invoke(a_turn(copilot, "Sign off CLM-1003"))
     conversation_id = copilot.last_payload()["conversation_id"]
     turn_id = latest(copilot.read(conversation_id))["turn_id"]
@@ -321,7 +321,7 @@ def test_a_pause_in_one_process_is_answered_in_another(
     client, copilot: Copilot, copilot_app
 ):
     held(client, "CLM-1008", 2240.0)
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1008"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1008"))
     first = copilot_app()
     first.invoke(a_turn(copilot, "Sign off CLM-1008"))
     conversation_id = copilot.last_payload()["conversation_id"]
@@ -333,7 +333,7 @@ def test_a_pause_in_one_process_is_answered_in_another(
     assert second.invoke(copilot.last_payload()).json() == ACCEPTED
     [payment] = payments_of("CLM-1008")
     assert payment["amount"] == 2240.0
-    decision = client.get("/api/claims/CLM-1008").json()["decision"]
+    decision = client.get("/api/cases/CLM-1008").json()["decision"]
     assert decision["signed_off_by"] == "Dana Whitfield"
 
 
@@ -369,7 +369,7 @@ def test_the_app_and_the_copilot_on_the_laptop_end_to_end(
         started_one = start_conversation(dashboard, access_token=own)
         conversation_id = started_one.json()["conversation_id"]
         assert ended(dashboard, conversation_id)["answer"] == "Nothing needs you."
-        copilot.model = stub(call("sign_off_claim", claim_id="CLM-1008"), "Paid.")
+        copilot.model = stub(call("sign_off_case", case_id="CLM-1008"), "Paid.")
         headers = bearer(own)
         sent = dashboard.post(
             f"/api/copilot/conversations/{conversation_id}/messages",
@@ -382,7 +382,7 @@ def test_the_app_and_the_copilot_on_the_laptop_end_to_end(
         answer(dashboard, conversation_id, paused["turn_id"], "sign_off", headers)
         assert ended(dashboard, conversation_id)["answer"] == "Paid."
     assert [p["amount"] for p in payments_of("CLM-1008")] == [2240.0]
-    decision = client.get("/api/claims/CLM-1008").json()["decision"]
+    decision = client.get("/api/cases/CLM-1008").json()["decision"]
     assert decision["signed_off_by"] == "Dana Whitfield"
     assert sent_headers
     for headers in sent_headers:

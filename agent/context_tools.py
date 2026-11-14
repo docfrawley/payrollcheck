@@ -66,9 +66,9 @@ def get_plan(plan: PlanName, runtime: ToolRuntime[RouteContext]) -> tuple[str, L
 
 
 @tool(response_format="content_and_artifact")
-def get_claim_rules(runtime: ToolRuntime[RouteContext]) -> tuple[str, Lookup]:
-    """Get the rules claims operations applies to every claim."""
-    return looked_up(on_context(runtime, "get_claim_rules"), "The claim rules")
+def get_case_rules(runtime: ToolRuntime[RouteContext]) -> tuple[str, Lookup]:
+    """Get the rules claims operations applies to every case."""
+    return looked_up(on_context(runtime, "get_case_rules"), "The case rules")
 
 
 @tool(response_format="content_and_artifact")
@@ -103,7 +103,7 @@ CONTEXT_TOOLS = [
     lookup_term,
     describe_fields,
     get_plan,
-    get_claim_rules,
+    get_case_rules,
     search_reference_data,
     search_documents,
     read_section,

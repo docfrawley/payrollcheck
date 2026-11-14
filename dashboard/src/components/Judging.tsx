@@ -1,9 +1,9 @@
-import type { ClaimGrade } from "../api";
+import type { CaseGrade } from "../api";
 import { grade as shownGrade } from "../format";
 import { NOT_GRADED } from "../measures";
 
-// The judge's grade of a claim's explanation as a chip, with its score.
-export function GradeChip({ grade }: Readonly<{ grade: ClaimGrade | null }>) {
+// The judge's grade of a case's explanation as a chip, with its score.
+export function GradeChip({ grade }: Readonly<{ grade: CaseGrade | null }>) {
   if (!grade) return <span className="muted">{NOT_GRADED}</span>;
   return (
     <span className="nowrap">

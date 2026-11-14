@@ -33,15 +33,15 @@ def create_dispatch(client, agents=3):
     return started_run(client, start_dispatch(client, agents, DANA))
 
 
-def dispatch_of(client, *claim_ids):
-    """Create a dispatch and record its claims, and return its id."""
+def dispatch_of(client, *case_ids):
+    """Create a dispatch and record its cases, and return its id."""
     run_id = create_dispatch(client).json()["run_id"]
-    record_claims(client, run_id, *claim_ids)
+    record_cases(client, run_id, *case_ids)
     return run_id
 
 
-def record_claims(client, run_id, *claim_ids):
-    return client.put(f"{run_path(run_id)}/claims", json={"claim_ids": claim_ids})
+def record_cases(client, run_id, *case_ids):
+    return client.put(f"{run_path(run_id)}/cases", json={"case_ids": case_ids})
 
 
 def finish(client, run_id):
@@ -88,4 +88,4 @@ def get_evaluation(client, run_id):
 
 
 def queue(client):
-    return client.get("/api/claims").json()
+    return client.get("/api/cases").json()

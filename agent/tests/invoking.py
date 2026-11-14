@@ -31,8 +31,8 @@ def carry_round_on(round_id: str, proposal_id: str) -> dict[str, Any]:
     }
 
 
-def resume_claim(claim_id: str) -> dict[str, Any]:
-    return {"operation": "resume_claim", "claim_id": claim_id}
+def resume_case(case_id: str) -> dict[str, Any]:
+    return {"operation": "resume_case", "case_id": case_id}
 
 
 def take_turn(conversation_id: str, turn_id: str, sign_in: str) -> dict[str, Any]:

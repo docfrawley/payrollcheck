@@ -20,7 +20,7 @@ interface Turn {
   message: string;
   confirmation_answer: string | null;
   canceled_because: string | null;
-  confirmation: { claim_id: string; payout: number } | null;
+  confirmation: { case_id: string; payout: number } | null;
 }
 
 const app = process.env.PAYROLLCHECK_API ?? "";
@@ -32,7 +32,7 @@ const SOURCE = {
   owner: "Head of product",
   reviewed: "2026-09-01",
 };
-// The claim the scripted turn links to, and the one it tries to send back, which
+// The case the scripted turn links to, and the one it tries to send back, which
 // isn't held, so the app refuses.
 const LINKED = "CLM-1009";
 const ANSWER = [
@@ -40,7 +40,7 @@ const ANSWER = [
   "",
   "| What | Where it stands |",
   "| --- | --- |",
-  "| The dispatch | Started with 3 claim agents |",
+  "| The dispatch | Started with 3 payroll agents |",
   `| ${LINKED} | Not held, so it can't be sent back |`,
 ].join("\n");
 
@@ -132,17 +132,17 @@ async function takeTurn(payload: Payload) {
   const { message } = await theTurn(payload);
   const asked = /sign off (CLM-\d{4})/i.exec(message);
   if (asked) {
-    const claimId = asked[1];
+    const caseId = asked[1];
     await card(
       payload,
-      { tool: "get_claim", kind: "claims", input: claimId },
-      () => asTheHandler(payload.sign_in, "GET", `/claims/${claimId}`),
+      { tool: "get_case", kind: "cases", input: caseId },
+      () => asTheHandler(payload.sign_in, "GET", `/cases/${caseId}`),
     );
     await asTheHandler(
       payload.sign_in,
       "POST",
       `/copilot/turns/${payload.turn_id}/pause`,
-      { claim_id: claimId },
+      { case_id: caseId },
     );
     return;
   }
@@ -159,9 +159,9 @@ async function takeTurn(payload: Payload) {
   );
   await card(
     payload,
-    { tool: "send_back_claim", kind: "action", input: LINKED },
+    { tool: "send_back_case", kind: "action", input: LINKED },
     () =>
-      asTheHandler(payload.sign_in, "POST", `/claims/${LINKED}/send-back`, {
+      asTheHandler(payload.sign_in, "POST", `/cases/${LINKED}/send-back`, {
         note: "Check the receipts again.",
       }),
   );
@@ -170,29 +170,27 @@ async function takeTurn(payload: Payload) {
 }
 
 // The handler's answer to a confirmation, read from the app's record of the
-// turn: a Sign off signs the claim off as the handler, which pays it.
+// turn: a Sign off signs the case off as the handler, which pays it.
 async function answerConfirmation(payload: Payload) {
   const turn = await theTurn(payload);
-  const claimId = turn.confirmation?.claim_id ?? "";
+  const caseId = turn.confirmation?.case_id ?? "";
   if (turn.confirmation_answer !== "sign_off") {
     await finish(
       payload,
       turn.canceled_because
-        ? "The claim changed since the card was shown, so I canceled this sign-off without making a payment. Please ask again."
-        : `I haven't signed off ${claimId}. What would you like to do instead?`,
+        ? "The case changed since the card was shown, so I canceled this sign-off without making a payment. Please ask again."
+        : `I haven't signed off ${caseId}. What would you like to do instead?`,
     );
     return;
   }
   const paid = await card(
     payload,
-    { tool: "sign_off_claim", kind: "action", input: claimId },
-    () => asTheHandler(payload.sign_in, "POST", `/claims/${claimId}/sign-off`),
+    { tool: "sign_off_case", kind: "action", input: caseId },
+    () => asTheHandler(payload.sign_in, "POST", `/cases/${caseId}/sign-off`),
   );
   await finish(
     payload,
-    paid
-      ? `Signed off and paid ${claimId}.`
-      : `I couldn't sign off ${claimId}.`,
+    paid ? `Signed off and paid ${caseId}.` : `I couldn't sign off ${caseId}.`,
   );
 }
 

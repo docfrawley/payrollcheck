@@ -11,8 +11,8 @@ from agent import connection
 from agent.copilot import waiting
 from agent.tests.copilot_driver import Copilot, started_run
 from agent.tests.stubs import call, stub
-from backend.tests.claim_requests import decide, fail, held, pay, send_back, start
-from backend.tests.run_requests import fail_run, finish, record_claims, run_path
+from backend.tests.case_requests import decide, fail, held, pay, send_back, start
+from backend.tests.run_requests import fail_run, finish, record_cases, run_path
 
 SUMMARY = "CLM-1003 is held for your sign-off and CLM-1018 was referred."
 
@@ -48,7 +48,7 @@ def test_the_wait_for_a_dispatch(client, copilot: Copilot, agent_calls, monkeypa
 
     def play_the_dispatch_out():
         run_id = started_run(agent_calls)
-        record_claims(client, run_id, "CLM-1003", "CLM-1018")
+        record_cases(client, run_id, "CLM-1003", "CLM-1018")
         while not [s for _, s, _ in reads.sent if s == f"/runs/{run_id}"]:
             time.sleep(0.01)
         conversation = copilot.read(copilot.last_payload()["conversation_id"])
@@ -75,10 +75,10 @@ def test_the_wait_for_a_dispatch(client, copilot: Copilot, agent_calls, monkeypa
     went = json.loads(copilot.model.prompts[2][-1].text)
     assert went["status"] == "finished"
     assert went["summary"]["waiting_for_sign_off"] == [
-        {"claim_id": "CLM-1003", "payout": 3750.0}
+        {"case_id": "CLM-1003", "payout": 3750.0}
     ]
     assert went["needs_a_handler"] == {
-        "held_for_sign_off": [{"claim_id": "CLM-1003", "payout": 3750.0}],
+        "held_for_sign_off": [{"case_id": "CLM-1003", "payout": 3750.0}],
         "referred": ["CLM-1018"],
         "left_for_a_handler": [],
         "sent_back_not_taken_up": [],
@@ -98,10 +98,10 @@ def test_what_needs_a_handler(client, copilot: Copilot):
     start(client, "CLM-1002")
     decide(client, "CLM-1002", "approve", 420.0)
     pay(client, "CLM-1002", 420.0)
-    copilot.model = stub(call("what_needs_a_handler"), "Two claims need you.")
+    copilot.model = stub(call("what_needs_a_handler"), "Two cases need you.")
     [turn] = copilot.ask("What needs me today?")["turns"]
     assert [(c["tool"], c["kind"]) for c in turn["steps"]] == [
-        ("what_needs_a_handler", "claims")
+        ("what_needs_a_handler", "cases")
     ]
     assert json.loads(copilot.model.prompts[1][-1].text) == {
         "held_for_sign_off": [],
@@ -136,9 +136,9 @@ def test_the_wait_for_an_evaluation_gives_its_measures(
 ):
     def play_the_evaluation_out():
         run_id = started_run(agent_calls)
-        for copy in client.get(run_path(run_id)).json()["claims"]:
-            start(client, copy["claim_id"])
-            decide(client, copy["claim_id"], "refer", 0)
+        for copy in client.get(run_path(run_id)).json()["cases"]:
+            start(client, copy["case_id"])
+            decide(client, copy["case_id"], "refer", 0)
         finish(client, run_id)
 
     evaluation = threading.Thread(target=play_the_evaluation_out)
@@ -148,7 +148,7 @@ def test_the_wait_for_an_evaluation_gives_its_measures(
         wait_for_the_run,
         "Done.",
     )
-    copilot.ask("Evaluate the held-out set's tiny claims")
+    copilot.ask("Evaluate the held-out set's tiny cases")
     evaluation.join(10)
     went = json.loads(copilot.model.prompts[2][-1].text)
     assert (went["kind"], went["status"]) == ("evaluation", "finished")

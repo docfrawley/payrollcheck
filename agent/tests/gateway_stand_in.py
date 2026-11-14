@@ -33,7 +33,7 @@ from backend.dependencies import API_KEY_HEADER
 from backend.main import app
 from context.server import build_server
 
-PAY_CLAIM = f"{Target.APP}{SEPARATOR}pay_claim"
+PAY_CASE = f"{Target.APP}{SEPARATOR}pay_case"
 CONTEXT = f"{Target.CONTEXT}{SEPARATOR}"
 LIMIT = 1000.0
 DENIED = "Tool Execution Denied: Tool call not allowed due to policy enforcement"
@@ -157,7 +157,7 @@ class GatewayStandIn:
         return types.ServerResult(types.CallToolResult(content=[text], isError=refused))
 
     def policy_refuses(self, name: str, inputs: dict[str, Any]) -> bool:
-        over_the_limit = name == PAY_CLAIM and inputs["amount"] > LIMIT
+        over_the_limit = name == PAY_CASE and inputs["amount"] > LIMIT
         return over_the_limit or name in self.refused
 
     async def look_up(self, tool: str, inputs: dict[str, Any]) -> types.CallToolResult:

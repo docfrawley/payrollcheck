@@ -15,7 +15,7 @@ test("a dispatch started on the queue page reaches the agent", async ({
   await page.goto("/");
   const panel = page.getByRole("region", { name: "Dispatch" });
   await panel
-    .getByRole("combobox", { name: "Claim agents at once" })
+    .getByRole("combobox", { name: "Payroll agents at once" })
     .selectOption("7");
   const button = panel.getByRole("button", { name: "Start a dispatch" });
   const before = (await started(request)).length;
@@ -29,7 +29,7 @@ test("a dispatch started on the queue page reaches the agent", async ({
   expect(run).toMatchObject({ kind: "dispatch", agents: 7, status: "running" });
   await expect(button).toHaveAttribute("aria-disabled", "false");
   await expect(panel.getByRole("alert")).toHaveCount(0);
-  await expect(panel.getByText(/with 7 claim agents at once/)).toBeVisible();
+  await expect(panel.getByText(/with 7 payroll agents at once/)).toBeVisible();
 
   await button.click();
   await expect(panel.getByRole("alert")).toHaveText("A dispatch is running");
@@ -48,10 +48,10 @@ test("an evaluation started on the Scoreboard reaches the agent", async ({
     .getByRole("combobox", { name: "Set" })
     .selectOption("Held-out set");
   await form
-    .getByRole("combobox", { name: "Claims" })
-    .selectOption("The five tiny claims");
+    .getByRole("combobox", { name: "Cases" })
+    .selectOption("The five tiny cases");
   await form
-    .getByRole("combobox", { name: "Claim agents at once" })
+    .getByRole("combobox", { name: "Payroll agents at once" })
     .selectOption("5");
   const button = form.getByRole("button", { name: "Start an evaluation" });
   const before = (await started(request)).length;

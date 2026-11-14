@@ -1,5 +1,5 @@
 """A senior handler sends a held decision back to the agent with a note: the decision
-is kept with the note and cleared from the claim, the claim waits for the agent,
+is kept with the note and cleared from the case, the case waits for the agent,
 and a dispatch or a resume takes it back into work once."""
 
 import json
@@ -12,7 +12,7 @@ import pytest
 
 from backend.database import calculations, payments
 from backend.tests.agent_answers import slow, unreachable
-from backend.tests.claim_requests import (
+from backend.tests.case_requests import (
     NOTE,
     decide,
     fail,
@@ -24,7 +24,7 @@ from backend.tests.claim_requests import (
     take,
 )
 from backend.tests.dashboard_reads import steps_of
-from backend.tests.rows import committed_claim, count, resume_heard
+from backend.tests.rows import committed_case, count, resume_heard
 from backend.tests.run_requests import (
     create_evaluation,
     dispatch_of,
@@ -34,8 +34,8 @@ from backend.tests.run_requests import (
 from backend.tests.sign_in import MARCUS
 
 
-def summary_of(client, claim_id):
-    [line] = [c for c in queue(client) if c["claim_id"] == claim_id]
+def summary_of(client, case_id):
+    [line] = [c for c in queue(client) if c["case_id"] == case_id]
     return line
 
 
@@ -47,19 +47,19 @@ def test_a_send_back_keeps_the_decision_with_the_note_and_clears_it(
 
     def accept(request):
         calls.append(json.loads(request.content))
-        seen.append(committed_claim("CLM-1008")["status"])
+        seen.append(committed_case("CLM-1008")["status"])
         return httpx.Response(200, json={"accepted": True})
 
     agent_answers(accept)
     response = send_back(client, "CLM-1008")
     assert response.status_code == 200
-    claim = response.json()
-    assert (claim["status"], claim["decision"], claim["payment"]) == (
+    case = response.json()
+    assert (case["status"], case["decision"], case["payment"]) == (
         "sent_back",
         None,
         None,
     )
-    [kept] = claim["sent_back_decisions"]
+    [kept] = case["sent_back_decisions"]
     decision = before["decision"]
     assert kept == {
         "decision": "approve",
@@ -82,11 +82,11 @@ def test_a_send_back_keeps_the_decision_with_the_note_and_clears_it(
     assert (step["kind"], step["content"], step["thread_id"]) == (
         "sent_back",
         f"Sent back by Dana Whitfield: {NOTE}",
-        claim["thread_id"],
+        case["thread_id"],
     )
-    assert calls == [{"operation": "resume_claim", "claim_id": "CLM-1008"}]
+    assert calls == [{"operation": "resume_case", "case_id": "CLM-1008"}]
     assert seen == ["sent_back"]
-    assert client.get("/api/claims/CLM-1008").json() == claim
+    assert client.get("/api/cases/CLM-1008").json() == case
 
 
 def test_a_note_can_be_1000_characters(client):
@@ -114,33 +114,31 @@ def test_the_send_backs_refusals(client, dashboard, agent_calls):
         "Marcus Oyelaran can't.",
     )
     assert (
-        dashboard.post(
-            "/api/claims/CLM-1008/send-back", json={"note": NOTE}
-        ).status_code
+        dashboard.post("/api/cases/CLM-1008/send-back", json={"note": NOTE}).status_code
         == 401
     )
 
     unknown = send_back(client, "CLM-9999")
     assert (unknown.status_code, unknown.json()["detail"]) == (
         404,
-        "Claim CLM-9999 not found",
+        "Case CLM-9999 not found",
     )
     start(client, "CLM-1001")
     decide(client, "CLM-1001", "approve", 420.0)
     waiting = send_back(client, "CLM-1001")
     assert (waiting.status_code, waiting.json()["detail"]) == (
         409,
-        "Claim CLM-1001 is not waiting for sign-off",
+        "Case CLM-1001 is not waiting for sign-off",
     )
     create_evaluation(client)
     held(client, "CLM-1112-E1", 1200.0)
     copy = send_back(client, "CLM-1112-E1")
     assert (copy.status_code, copy.json()["detail"]) == (
         409,
-        "Claim CLM-1112-E1 is a copy in an evaluation and can't be sent back",
+        "Case CLM-1112-E1 is a copy in an evaluation and can't be sent back",
     )
     assert summary_of(client, "CLM-1008")["status"] == "waiting_for_sign_off"
-    assert [c for c in agent_calls if c["operation"] == "resume_claim"] == []
+    assert [c for c in agent_calls if c["operation"] == "resume_case"] == []
 
 
 @pytest.mark.parametrize("answer", [unreachable, slow])
@@ -173,40 +171,40 @@ def test_a_sign_off_and_a_send_back_at_the_same_moment(client):
     for thread in answering:
         thread.join(10)
     assert sorted(a.status_code for a in answers) == [200, 409]
-    claim = client.get("/api/claims/CLM-1008").json()
-    if claim["status"] == "decided":
-        assert (count(payments), claim["sent_back_decisions"]) == (1, [])
+    case = client.get("/api/cases/CLM-1008").json()
+    if case["status"] == "decided":
+        assert (count(payments), case["sent_back_decisions"]) == (1, [])
     else:
-        assert claim["status"] == "sent_back"
-        assert (count(payments), len(claim["sent_back_decisions"])) == (0, 1)
+        assert case["status"] == "sent_back"
+        assert (count(payments), len(case["sent_back_decisions"])) == (0, 1)
 
 
-def test_a_sent_back_claim_is_taken_once(client, dashboard):
+def test_a_sent_back_case_is_taken_once(client, dashboard):
     before = held(client, "CLM-1008", 2240.0)
     send_back(client, "CLM-1008")
     assert (
-        dashboard.post("/api/claims/CLM-1008/take", json={"run_id": None}).status_code
+        dashboard.post("/api/cases/CLM-1008/take", json={"run_id": None}).status_code
         == 401
     )
 
     taken = take(client, "CLM-1008")
     assert taken.status_code == 200
-    claim = taken.json()
-    assert claim["status"] == "in_progress"
-    assert (claim["thread_id"], claim["attempts"]) == (
+    case = taken.json()
+    assert case["status"] == "in_progress"
+    assert (case["thread_id"], case["attempts"]) == (
         before["thread_id"],
         before["attempts"],
     )
     again = take(client, "CLM-1008")
     assert (again.status_code, again.json()["detail"]) == (
         409,
-        "Claim CLM-1008 isn't sent back",
+        "Case CLM-1008 isn't sent back",
     )
     assert take(client, "CLM-1001").status_code == 409
     assert take(client, "CLM-9999").status_code == 404
 
 
-def test_a_claim_taken_by_a_resume_is_resuming_while_the_agent_speaks_of_it(client):
+def test_a_case_taken_by_a_resume_is_resuming_while_the_agent_speaks_of_it(client):
     held(client, "CLM-1008", 2240.0)
     send_back(client, "CLM-1008")
     take(client, "CLM-1008")
@@ -218,7 +216,7 @@ def test_a_claim_taken_by_a_resume_is_resuming_while_the_agent_speaks_of_it(clie
     assert record_heartbeat(client, "CLM-9999").status_code == 404
 
 
-def test_a_claim_started_again_after_a_failed_resume_isnt_resuming(client):
+def test_a_case_started_again_after_a_failed_resume_isnt_resuming(client):
     held(client, "CLM-1008", 2240.0)
     send_back(client, "CLM-1008")
     take(client, "CLM-1008")
@@ -228,7 +226,7 @@ def test_a_claim_started_again_after_a_failed_resume_isnt_resuming(client):
     assert summary_of(client, "CLM-1008")["resuming"] is False
 
 
-def test_a_claim_taken_by_a_dispatch_is_never_resuming(client):
+def test_a_case_taken_by_a_dispatch_is_never_resuming(client):
     held(client, "CLM-1008", 2240.0)
     send_back(client, "CLM-1008")
     run_id = dispatch_of(client, "CLM-1008")
@@ -237,7 +235,7 @@ def test_a_claim_taken_by_a_dispatch_is_never_resuming(client):
     assert take(client, "CLM-1008", "run-9999").status_code == 404
 
 
-def test_the_queue_lists_a_sent_back_claim_and_a_dispatch_leaves_it_unfinished(client):
+def test_the_queue_lists_a_sent_back_case_and_a_dispatch_leaves_it_unfinished(client):
     held(client, "CLM-1008", 2240.0)
     run_id = dispatch_of(client, "CLM-1008")
     send_back(client, "CLM-1008")

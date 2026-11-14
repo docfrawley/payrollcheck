@@ -14,7 +14,7 @@ from backend.dependencies import (
     NEEDS_THE_KEY,
 )
 from backend.main import app
-from backend.tests.claim_requests import decide, start
+from backend.tests.case_requests import decide, start
 from backend.tests.dashboard_reads import read
 from backend.tests.gates import (
     AGENT_OPERATIONS,
@@ -113,7 +113,7 @@ def test_with_no_key_set_handlers_still_work_and_the_agents_routes_refuse(
 ):
     monkeypatch.delenv("PAYROLLCHECK_API_KEY")
     assert dashboard.get("/api/health").status_code == 200
-    assert len(read(dashboard, "/api/claims").json()) == 26
+    assert len(read(dashboard, "/api/cases").json()) == 26
     for route in AGENT_ROUTES:
         method, path = route.values
         refused = dashboard.request(method, path, headers={API_KEY_HEADER: ""})

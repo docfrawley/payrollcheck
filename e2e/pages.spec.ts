@@ -1,22 +1,22 @@
 import { expect, test } from "@playwright/test";
 import { HANDLERS } from "./handlers";
 
-test("the queue lists every claim", async ({ page }) => {
+test("the queue lists every case", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Claims queue" }),
+    page.getByRole("heading", { name: "Cases queue" }),
   ).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(26);
-  for (const claimId of ["CLM-1025", "CLM-1901"]) {
-    const row = page.getByRole("row").filter({ hasText: claimId });
+  for (const caseId of ["CLM-1025", "CLM-1901"]) {
+    const row = page.getByRole("row").filter({ hasText: caseId });
     await expect(row.getByText("Waiting")).toBeVisible();
   }
 });
 
-test("a claim opens from the queue", async ({ page }) => {
+test("a case opens from the queue", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "CLM-1001" }).click();
-  await expect(page).toHaveURL("/claims/CLM-1001");
+  await expect(page).toHaveURL("/cases/CLM-1001");
   await expect(page.getByText(/My flight home from Rome/)).toBeVisible();
   await expect(
     page.getByText("Hotel Aurelia Fiumicino", { exact: false }),
