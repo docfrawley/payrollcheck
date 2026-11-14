@@ -10,9 +10,11 @@ import {
 } from "../paths";
 import { AccountMenu } from "./AccountMenu";
 import { Brand } from "./Brand";
+import { SyntheticData } from "./SyntheticData";
 
-// The band across the top of every signed-in page: the brand, the main nav,
-// and the reviewer signed in with their menu once they have loaded.
+// The band across the top of every signed-in page: the brand, the chip saying
+// the data is synthetic, the main nav, and the reviewer signed in with their
+// menu once they have loaded.
 export function Header() {
   const reviewer = use(ReviewerContext);
   // A case's page belongs to the queue.
@@ -25,6 +27,7 @@ export function Header() {
         <Link to={QUEUE} className="brand">
           <Brand />
         </Link>
+        <SyntheticData />
         <nav className="nav" aria-label="Main">
           <Link
             to={QUEUE}

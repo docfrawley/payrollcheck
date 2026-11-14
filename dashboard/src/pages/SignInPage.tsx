@@ -4,6 +4,7 @@ import { signIn } from "../auth";
 import { ActionForm } from "../components/ActionForm";
 import { Brand } from "../components/Brand";
 import { PageHeader } from "../components/PageHeader";
+import { SyntheticData } from "../components/SyntheticData";
 import { type SignInState, useSignedIn } from "../reviewer";
 import { QUEUE } from "../paths";
 
@@ -23,6 +24,7 @@ export function SignInPage() {
       <p className="brand">
         <Brand />
       </p>
+      <SyntheticData />
       <section className="panel sign-in-panel">
         <PageHeader
           title="Sign in"

@@ -38,7 +38,7 @@ test("the appearance is kept in the browser", async ({ page }) => {
   await expect(root).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(4, 35, 46)",
+    "rgb(11, 23, 36)",
   );
   await page.reload();
   await expect(root).toHaveAttribute("data-theme", "dark");
@@ -47,7 +47,7 @@ test("the appearance is kept in the browser", async ({ page }) => {
   await appearance.getByLabel("Light").check();
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(240, 244, 245)",
+    "rgb(242, 244, 247)",
   );
 });
 

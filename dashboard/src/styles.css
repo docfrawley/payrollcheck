@@ -1,39 +1,42 @@
 :root {
-  --sea-green: #06d6a0;
-  --marigold: #ffc145;
-  --coral: #f78c6b;
-  --cerulean: #118ab2;
-  --raspberry: #ef476f;
-  --midnight: #073b4c;
-  --sea-mist: #cdd8db;
+  /* The palette, from the job site. Survey Blue and Rebar Rust are darkened
+     from #2d7dd2 and #c4572a so white text on them passes WCAG AA. */
+  --steel-navy: #12263a;
+  --hi-vis-amber: #f5a524;
+  --survey-blue: #2a6fbb;
+  --permit-green: #2e9e6a;
+  --rebar-rust: #b4501f;
+  --stop-red: #d7263d;
+  --slate: #5f6b78;
+  --chalk: #d5dde5;
 
   /* Each color for light mode, then dark mode. */
-  --page: light-dark(#f0f4f5, #04232e);
+  --page: light-dark(#f2f4f7, #0b1724);
   --panel: light-dark(#ffffff, #000000);
-  --inset: light-dark(#f4f7f8, #0a1d24);
-  --ink: light-dark(var(--midnight), var(--sea-mist));
-  --muted: light-dark(#4b6f7b, #93aab1);
-  --link: light-dark(#0b6e8f, #6fcbe8);
-  --green-text: light-dark(#037a5b, #6ff0c9);
-  --red-text: light-dark(#b8204a, #ff8fa8);
-  --disabled-surface: light-dark(#e3eaec, #163640);
-  --disabled-ink: light-dark(#7a949c, #6f8a92);
-  /* The header's band, darker than the page in both modes, and a menu raised
+  --inset: light-dark(#f4f6f9, #111e2b);
+  --ink: light-dark(var(--steel-navy), var(--chalk));
+  --muted: light-dark(#4f5d6b, #9aa5b1);
+  --link: light-dark(#1f63ae, #6aa8ec);
+  --green-text: light-dark(#1d7a50, #5cc795);
+  --red-text: light-dark(#c01f34, #ff6b7d);
+  --disabled-surface: light-dark(#e3e8ee, #1c2a38);
+  --disabled-ink: light-dark(#6b7784, #7d8a97);
+  /* The header's band, Steel Navy, or black in dark mode, and a menu raised
      above the page. */
-  --header: light-dark(var(--midnight), #000000);
+  --header: light-dark(var(--steel-navy), #000000);
   --on-header: #ffffff;
-  --raised: light-dark(#ffffff, #0b2c37);
-  --shadow: light-dark(rgb(7 59 76 / 0.07), rgb(0 0 0 / 0.5));
+  --raised: light-dark(#ffffff, #142334);
+  --shadow: light-dark(rgb(18 38 58 / 0.07), rgb(0 0 0 / 0.5));
   /* A panel opened over the page, as the Copilot is on a narrow window. */
-  --overlay-shadow: light-dark(rgb(7 59 76 / 0.18), rgb(0 0 0 / 0.6));
-  /* Marigold as text or an icon on a light surface. */
-  --marigold-text: light-dark(#8a5a00, var(--marigold));
+  --overlay-shadow: light-dark(rgb(18 38 58 / 0.18), rgb(0 0 0 / 0.6));
+  /* Hi-Vis Amber as text or an icon: too bright for a light surface as it is. */
+  --amber-text: light-dark(#8f5a00, #ffc766);
   /* The Copilot's own surfaces, its mark, its tab and the reviewer's messages:
-     Midnight, lifted off the black panel in dark mode. */
-  --copilot: light-dark(var(--midnight), #0f4152);
+     Steel Navy, lifted off the black panel in dark mode. */
+  --copilot: light-dark(var(--steel-navy), #1a3550);
   --on-copilot: #ffffff;
   /* What waits on a reviewer: a held payout, and a note sent back. */
-  --held: color-mix(in srgb, var(--marigold) 22%, var(--panel));
+  --held: color-mix(in srgb, var(--hi-vis-amber) 22%, var(--panel));
   --sans: "Instrument Sans", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
@@ -131,7 +134,7 @@ p {
   white-space: nowrap;
 }
 
-/* The header: a band across the page in Midnight, with the brand, the main
+/* The header: a band across the page in Steel Navy, with the brand, the main
    nav and the reviewer signed in. */
 .header {
   background: var(--header);
@@ -148,22 +151,22 @@ p {
   gap: 40px;
 }
 
-/* Sea Green shows on the band; the menu, on its own surface, keeps the
+/* Hi-Vis Amber shows on the band; the menu, on its own surface, keeps the
    usual ring. */
 .header-bar > .brand:focus-visible,
 .nav a:focus-visible,
 .avatar-button:focus-visible {
-  outline-color: var(--sea-green);
+  outline-color: var(--hi-vis-amber);
 }
 
-/* The brand, always on the header's Midnight or the sign-in page's. */
+/* The brand, always on the header's Steel Navy or the sign-in page's. */
 .brand {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--on-header);
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -171,18 +174,23 @@ p {
 .brand svg.lucide {
   width: 26px;
   height: 26px;
-  color: var(--sea-green);
+  color: var(--hi-vis-amber);
 }
 
-.tagline {
-  font-family: "Instrument Serif", serif;
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.3rem;
-  color: var(--sea-mist);
+/* The chip saying the data is invented, on the band and on the sign-in page,
+   always in sight. */
+.synthetic {
+  align-self: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: var(--on-header);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* Plain links, with a Sea Green bar under the page you're on. */
+/* Plain links, with a Hi-Vis Amber bar under the page you're on. */
 .nav {
   display: flex;
   align-items: stretch;
@@ -194,7 +202,7 @@ p {
   display: flex;
   align-items: center;
   padding: 0 12px;
-  color: var(--sea-mist);
+  color: var(--chalk);
   font-weight: 500;
   text-decoration: none;
 }
@@ -212,7 +220,7 @@ p {
   bottom: 0;
   height: 3px;
   border-radius: 3px 3px 0 0;
-  background: var(--sea-green);
+  background: var(--hi-vis-amber);
 }
 
 .who {
@@ -235,7 +243,7 @@ p {
 
 .who-role {
   font-size: 0.82rem;
-  color: var(--sea-mist);
+  color: var(--chalk);
 }
 
 .account {
@@ -250,7 +258,7 @@ p {
   border: none;
   border-radius: 999px;
   background: none;
-  color: var(--sea-mist);
+  color: var(--chalk);
   cursor: pointer;
 }
 
@@ -265,8 +273,8 @@ p {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--sea-green);
-  color: var(--midnight);
+  background: var(--hi-vis-amber);
+  color: var(--steel-navy);
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -413,7 +421,7 @@ p {
   color: var(--muted);
 }
 
-/* The sign-in page: its card in the middle of the header's Midnight, or of
+/* The sign-in page: its card in the middle of the header's Steel Navy, or of
    the page in dark mode, where the header's black would hide a black card. */
 .sign-in {
   min-height: 100vh;
@@ -423,10 +431,11 @@ p {
   justify-content: center;
   align-content: center;
   gap: 24px;
-  background: light-dark(var(--midnight), var(--page));
+  background: light-dark(var(--steel-navy), var(--page));
 }
 
-.sign-in .brand {
+.sign-in .brand,
+.sign-in .synthetic {
   justify-self: center;
 }
 
@@ -483,11 +492,10 @@ p {
   gap: 16px;
   padding: 18px 20px 20px;
   border-radius: 16px;
-  color: var(--midnight);
+  color: var(--steel-navy);
 }
 
-/* Large text (18.66px bold or more), which white on Cerulean and Raspberry
-   is clear enough for. */
+/* Large text (18.66px bold or more). */
 .tile-label {
   font-size: 1.25rem;
   font-weight: 700;
@@ -521,7 +529,7 @@ p {
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
-  color: var(--midnight);
+  color: var(--steel-navy);
 }
 
 .status-decided,
@@ -532,32 +540,37 @@ p {
 .round-finished,
 .verdict-kept,
 .grade-A {
-  background: var(--sea-green);
-}
-
-.status-in_progress,
-.status-sent_back,
-.decision-refer,
-.run-running,
-.version-under_test,
-.round-open,
-.grade-C {
-  background: var(--marigold);
+  background: var(--permit-green);
 }
 
 .status-waiting_for_sign_off,
+.decision-refer,
+.version-under_test,
+.grade-C {
+  background: var(--hi-vis-amber);
+}
+
+.status-sent_back,
 .decision-decline,
 .run-stopped,
 .version-rolled_back,
 .round-stopped,
 .verdict-rolled_back {
-  background: var(--coral);
+  background: var(--rebar-rust);
+  color: #ffffff;
 }
 
-.status-waiting,
+.status-in_progress,
+.run-running,
+.round-open,
 .version-current,
 .grade-B {
-  background: var(--cerulean);
+  background: var(--survey-blue);
+  color: #ffffff;
+}
+
+.status-waiting {
+  background: var(--slate);
   color: #ffffff;
 }
 
@@ -566,7 +579,7 @@ p {
 .step-refused,
 .score-miss,
 .grade-F {
-  background: var(--raspberry);
+  background: var(--stop-red);
   color: #ffffff;
 }
 
@@ -869,7 +882,7 @@ p {
   font-weight: 600;
 }
 
-/* A payout waiting for a sign-off, tinted Marigold as a state that needs
+/* A payout waiting for a sign-off, tinted Hi-Vis Amber as a state that needs
    someone to act. */
 .sign-off {
   margin-top: 16px;
@@ -963,15 +976,15 @@ p {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: var(--sea-green);
-  color: var(--midnight);
+  background: var(--hi-vis-amber);
+  color: var(--steel-navy);
   font-weight: 600;
   cursor: pointer;
 }
 
 .action-form button:enabled:not([aria-disabled="true"]):hover,
 .button:enabled:not([aria-disabled="true"]):hover {
-  background: color-mix(in srgb, var(--sea-green) 88%, var(--midnight));
+  background: color-mix(in srgb, var(--hi-vis-amber) 85%, var(--steel-navy));
 }
 
 .button.quiet {
@@ -1005,7 +1018,7 @@ p {
   align-items: flex-start;
   gap: 8px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--raspberry) 20%, transparent);
+  background: color-mix(in srgb, var(--stop-red) 20%, transparent);
   border-radius: 8px;
   padding: 8px 12px;
 }
@@ -1072,7 +1085,7 @@ p {
 }
 
 .step:has(.step-refused) {
-  background: color-mix(in srgb, var(--raspberry) 18%, transparent);
+  background: color-mix(in srgb, var(--stop-red) 18%, transparent);
 }
 
 /* Everything the agent looked up, grouped by the file it came from. */
@@ -1146,11 +1159,11 @@ p {
 }
 
 .diff-added {
-  background: color-mix(in srgb, var(--sea-green) 20%, transparent);
+  background: color-mix(in srgb, var(--permit-green) 20%, transparent);
 }
 
 .diff-removed {
-  background: color-mix(in srgb, var(--raspberry) 18%, transparent);
+  background: color-mix(in srgb, var(--stop-red) 18%, transparent);
 }
 
 .diff-line ins,
@@ -1286,13 +1299,13 @@ fieldset.panel legend + * {
 }
 
 .appearance:has(input:checked) {
-  background: var(--sea-green);
-  color: var(--midnight);
+  background: var(--hi-vis-amber);
+  color: var(--steel-navy);
   font-weight: 600;
 }
 
 .appearance:has(input:checked) svg.lucide {
-  color: var(--midnight);
+  color: var(--steel-navy);
 }
 
 .appearance:has(input:focus-visible) {
@@ -1317,7 +1330,7 @@ fieldset.panel legend + * {
 }
 
 .confirm-dialog::backdrop {
-  background: color-mix(in srgb, var(--midnight) 55%, transparent);
+  background: color-mix(in srgb, var(--steel-navy) 55%, transparent);
 }
 
 .confirm-body {
@@ -1367,8 +1380,8 @@ fieldset.panel legend + * {
 }
 
 .stage-current {
-  background: var(--marigold);
-  color: var(--midnight);
+  background: var(--hi-vis-amber);
+  color: var(--steel-navy);
   font-weight: 600;
 }
 
@@ -1390,7 +1403,7 @@ fieldset.panel legend + * {
 }
 
 .stage-current .stage-mark {
-  background: var(--midnight);
+  background: var(--steel-navy);
 }
 
 .review {
@@ -1477,7 +1490,7 @@ fieldset.panel legend + * {
 }
 
 .chart-first line {
-  stroke: var(--cerulean);
+  stroke: var(--survey-blue);
   stroke-width: 2;
   stroke-dasharray: 6 4;
 }
@@ -1496,15 +1509,15 @@ fieldset.panel legend + * {
 }
 
 .point-kept {
-  fill: var(--sea-green);
+  fill: var(--permit-green);
 }
 
 .point-rolled_back {
-  fill: var(--coral);
+  fill: var(--rebar-rust);
 }
 
 .point-under_test {
-  fill: var(--marigold);
+  fill: var(--hi-vis-amber);
 }
 
 .chart-key {
@@ -1531,20 +1544,20 @@ fieldset.panel legend + * {
 }
 
 .key-kept {
-  background: var(--sea-green);
+  background: var(--permit-green);
 }
 
 .key-rolled_back {
-  background: var(--coral);
+  background: var(--rebar-rust);
 }
 
 .key-under_test {
-  background: var(--marigold);
+  background: var(--hi-vis-amber);
 }
 
 .key-line {
   width: 18px;
-  border-top: 2px dashed var(--cerulean);
+  border-top: 2px dashed var(--survey-blue);
 }
 
 .facts.model-change {
@@ -1658,7 +1671,7 @@ fieldset.panel legend + * {
   display: grid;
   place-items: center;
   background: var(--copilot);
-  color: var(--sea-green);
+  color: var(--hi-vis-amber);
 }
 
 .copilot-mark svg.lucide {
@@ -1741,7 +1754,7 @@ fieldset.panel legend + * {
 }
 
 .suggestion:enabled:hover {
-  background: color-mix(in srgb, var(--sea-green) 16%, var(--panel));
+  background: color-mix(in srgb, var(--hi-vis-amber) 16%, var(--panel));
   transform: translateX(2px);
 }
 
@@ -1800,7 +1813,7 @@ fieldset.panel legend + * {
 }
 
 .card:has(.step-refused, .step-failed) {
-  background: color-mix(in srgb, var(--raspberry) 14%, var(--panel));
+  background: color-mix(in srgb, var(--stop-red) 14%, var(--panel));
 }
 
 .card-head {
@@ -1835,7 +1848,7 @@ fieldset.panel legend + * {
 }
 
 .card-action .card-kind {
-  color: var(--marigold-text);
+  color: var(--amber-text);
 }
 
 .card-call {
@@ -1956,7 +1969,7 @@ fieldset.panel legend + * {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--sea-green);
+  background: var(--hi-vis-amber);
   animation: working 1200ms ease-in-out infinite;
 }
 
@@ -1990,7 +2003,7 @@ fieldset.panel legend + * {
 }
 
 .confirmation.waiting {
-  background: color-mix(in srgb, var(--sea-green) 14%, var(--panel));
+  background: color-mix(in srgb, var(--hi-vis-amber) 14%, var(--panel));
   box-shadow: 0 8px 24px var(--shadow);
 }
 
@@ -2073,7 +2086,7 @@ fieldset.panel legend + * {
 }
 
 .confirmation-outcome.unknown svg.lucide {
-  color: var(--marigold-text);
+  color: var(--amber-text);
 }
 
 .confirmation-outcome.canceled svg.lucide,
@@ -2165,7 +2178,7 @@ fieldset.panel legend + * {
 }
 
 .turn-ended.failed {
-  background: color-mix(in srgb, var(--raspberry) 14%, var(--panel));
+  background: color-mix(in srgb, var(--stop-red) 14%, var(--panel));
   color: var(--ink);
 }
 
@@ -2284,13 +2297,13 @@ fieldset.panel legend + * {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: var(--sea-green);
-  color: var(--midnight);
+  background: var(--hi-vis-amber);
+  color: var(--steel-navy);
   cursor: pointer;
 }
 
 .send:enabled:hover {
-  background: color-mix(in srgb, var(--sea-green) 88%, var(--midnight));
+  background: color-mix(in srgb, var(--hi-vis-amber) 85%, var(--steel-navy));
 }
 
 .send:disabled {
@@ -2327,7 +2340,7 @@ fieldset.panel legend + * {
 .copilot-tab svg.lucide {
   width: 20px;
   height: 20px;
-  color: var(--sea-green);
+  color: var(--hi-vis-amber);
 }
 
 .copilot-tab span {
