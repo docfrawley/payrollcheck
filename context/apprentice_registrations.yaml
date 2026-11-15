@@ -1,0 +1,57 @@
+# The registered apprentices on our projects, by worker id, with their sponsor, program
+# and level by date. A worker who isn't here isn't registered.
+# Written by data/generate.py (npm run generate). Don't edit it by hand.
+
+source:
+  system: USDOL registered apprenticeship records, as we record them
+  owner: Compliance
+  reviewed: '2026-11-02'
+notice: Synthetic data — not real rates
+apprentices:
+- worker_id: W-059
+  name: Dana Novak
+  craft: electrician
+  sponsor: Central Jersey Electrical JATC
+  program: Inside wireman apprenticeship, USDOL program NJ-2025-1821
+  registered_on: '2025-09-02'
+  levels:
+  - level: 2
+    from: '2025-09-02'
+  - level: 3
+    from: '2026-10-19'
+- worker_id: W-060
+  name: Kim Kaplan
+  craft: electrician
+  sponsor: Central Jersey Electrical JATC
+  program: Inside wireman apprenticeship, USDOL program NJ-2026-7706
+  registered_on: '2026-03-02'
+  levels:
+  - level: 1
+    from: '2026-03-02'
+- worker_id: W-061
+  name: Uma Walsh
+  craft: carpenter
+  sponsor: Shore Carpenters Training Fund
+  program: Carpenter apprenticeship, USDOL program NJ-2025-5206
+  registered_on: '2025-06-02'
+  levels:
+  - level: 2
+    from: '2025-06-02'
+- worker_id: W-062
+  name: Alex Lopez
+  craft: plumber
+  sponsor: Raritan Bay Plumbers JATC
+  program: Plumber and pipefitter apprenticeship, USDOL program NJ-2024-0055
+  registered_on: '2024-09-03'
+  levels:
+  - level: 3
+    from: '2024-09-03'
+- worker_id: W-063
+  name: Rosa Chowdhury
+  craft: painter
+  sponsor: Finishing Trades Institute of NJ
+  program: Painter and decorator apprenticeship, USDOL program NJ-2026-3742
+  registered_on: '2026-02-02'
+  levels:
+  - level: 1
+    from: '2026-02-02'

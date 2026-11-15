@@ -16,18 +16,17 @@ from context.wage_rules import (
     STATEWIDE,
     WAGE_AND_FRINGE,
     WAGE_ONLY,
+    RateTable,
+    rate_table,
 )
+from data.payroll_world.reference import source
 
 ABOUT = (
     "The prevailing wage rate determinations the payroll checks read, with each "
     "craft's overtime rules, apprentice schedule and ratio."
 )
 COUNTIES = ("Middlesex", "Monmouth", "Ocean")
-SOURCE = {
-    "system": "NJDOL prevailing wage rate determinations, as we record them",
-    "owner": "Compliance",
-    "reviewed": "2026-11-02",
-}
+SOURCE = source("NJDOL prevailing wage rate determinations, as we record them")
 HOLIDAYS = [
     "2026-01-01",
     "2026-05-25",
@@ -282,3 +281,7 @@ def rate_determinations() -> dict[str, Any]:
         "crafts": CRAFTS,
         "determinations": [determination(*found) for found in DETERMINATIONS],
     }
+
+
+# The rate table the generator pays every line by, the same the context layer reads.
+RATES: RateTable = rate_table(rate_determinations())

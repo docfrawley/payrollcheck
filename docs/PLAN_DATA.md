@@ -10,11 +10,13 @@ On `stage-1-rebrand` at `c7b8359`, with no `.env`: ruff and pyright clean; pytes
 
 ## Decisions taken with the user while planning
 
-The brief disagrees with itself in three places, and the user chose:
+The brief disagrees with itself in three places, and the user chose the first three below. The last two were settled while building phase 2:
 
 1. **Week 12 has 24 expected filings: 22 filed and 2 missing.** Eight subcontractors on three projects make at most 24 (subcontractor, project) pairs, so the brief's "24 payrolls plus a couple missing" can't both hold. Every subcontractor is on every project in week 12, and seeding (stage 3) will load 22 Received cases, not 24.
 2. **Week 12's late filings are late by the wage payment date the subcontractor entered.** At the business date, the Monday after week 12 ends, no week-12 payroll can honestly be late, since wages for the week can't be paid before it ends. So one or two of the eight `timeliness.late` errors sit in week 12, and their corruption is a `wage_payment_date` more than 10 days before the day the payroll was received. The rule stays the literal one: received more than 10 days after the wage payment date.
 3. **The CSV template gets a `total_hours` column**, after `hours_sun`, as the MW-562 has it, so `arithmetic.hours_total` is the plain rule: the daily hours sum to `total_hours`.
+4. **Wages are paid on the Monday after the week ends.** The plan first put each subcontractor's payday on the Thursday or Friday of the payroll week, which pays wages before the week's last days of work, while week 12's wave must arrive on the business date. So every subcontractor pays on the Monday after the week ends: history payrolls are received 1 to 4 days later, and week 12's on payday, the business date.
+5. **Lateness can't be corrected.** The timeliness rule applies to each submission, as decision 2 says. A late history case stays Returned to sub with its exception open, as does the week of work while unregistered. Every other history correction arrives within the 10 days, so it is on time.
 
 ## Design
 
@@ -53,8 +55,9 @@ The rate logic lives in `context/` because the context layer's Lambda package ho
 - **About 60 workers**, each with an established craft. Six are apprentices; one of them isn't registered and works one week only, so the brief's single `apprentice.unregistered` label is the only one.
 - **The registry.** One subcontractor's registration expires partway through and is renewed a week later, so exactly one of its payrolls has a work date with no active registration.
 - **Case ids** are `PC-WWPP`: the week and the pair's number. So PC-0311 is week 3, pair 11, and every id is stable across runs. The held-out world uses weeks 51 to 58 for its own ids, `PC-51PP` onwards, so the two sets never share an id.
-- **Wage payment dates.** Each subcontractor has its own payday in the week (Thursday or Friday). History payrolls are received 1 to 10 days after it, and late ones 11 to 20 days after. Week 12's are received on the business date.
-- **History** (weeks 1 to 11). Most cases with labelled errors were Returned to sub, then got a clean corrected submission and are Accepted. A few are still Returned to sub with their exceptions open, PC-0311 among them, with exactly three. Clean cases are Accepted. Each history case names the reviewer who decided it: Marcus Oyelaran on his two projects, Priya Raman on the road resurfacing, and Dana Whitfield on a few. A label always belongs to the case's first submission, the one the manifest corrupted; corrections are clean.
+- **Wage payment dates.** Wages are paid on the Monday after the week ends (decision 4). History payrolls are received 1 to 4 days after it, and late ones 11 to 20 days after. Week 12's are received on the business date.
+- **Payroll numbers** run from 1 in the first week of the engagement window, one more each week, so a number is judged by its week, not by the week before.
+- **History** (weeks 1 to 11). Most cases with labelled errors were Returned to sub, then got a clean corrected submission and are Accepted. A few are still Returned to sub with their exceptions open: those the manifest names, PC-0311 among them with exactly three, and every late filing and the week of work while unregistered, which a correction can't undo (decision 5). Clean cases are Accepted. Each history case names the reviewer who decided it: Marcus Oyelaran on his two projects, Priya Raman on the road resurfacing, and Dana Whitfield on a few. A label always belongs to the case's first submission, the one the manifest corrupted; corrections are clean.
 
 ### The CSV template
 
@@ -137,7 +140,7 @@ The manifest places errors so that, after seeding and before any dispatch, these
 | File | Written by | Holds |
 |---|---|---|
 | `context/rate_determinations.yaml` | the generator | the determinations, their rows, overtime rules, apprentice schedules and ratios |
-| `context/contractor_registry.yaml` | the generator | every subcontractor of both worlds: holder, FEIN, registration number, effective and expiry dates, status |
+| `context/contractor_registry.yaml` | the generator | every subcontractor of both worlds: holder, FEIN, registration number, and the periods it was active, from which `check_registration` works out the status on a date |
 | `context/apprentice_registrations.yaml` | the generator | the registered apprentices of both worlds, by worker id: sponsor, program, registration date and level by date |
 | `context/filing_rules.yaml` | by hand | due within 10 calendar days of the wage payment date; No Work Week filings keep the sequence; a same-week resubmission is a correction |
 | `context/payroll_glossary.yaml` | by hand | the payroll terms: MW-562, determination, award date, fringe, cash in lieu, No Work Week, journeyman, apprentice, registration and the others |
@@ -196,14 +199,14 @@ Write `world.py`, `clean.py`, `template.py` and `lifecycle.py`. The generator no
 
 Every payroll is clean in this phase, and every case is Accepted. Write the rule audit as a test helper, `data/tests/rule_audit.py`: a reference that tells whether a submission passes each rule, built on `wage_rules`. It's what the consistency tests check against.
 
-- [ ] `uv run pytest data --no-cov` passes, covering:
+- [x] `uv run pytest data --no-cov` passes, covering:
   - **The template:** every CSV has exactly the template's 31 columns in order, the same certification on every row, and money with two decimals; `template.py` reads back what it wrote
   - **The world:** 3 projects in three counties, Middlesex among them; 8 subcontractors, Garden State Electric among them; about 60 workers across the 8 crafts; 6 apprentices, 5 of them registered; the registry's one expiry and its renewal; 24 pairs engaged in week 12; about 200 expected filings
   - **Clean lines:** in every line the daily hours sum to `total_hours`, the line's pay follows its own hours and rates, and the rule audit passes every submission
-- [ ] **Determinism:** `data/tests/test_determinism.py` runs the generator twice into temporary folders, finds them identical, and finds the committed files the same as what it writes
-- [ ] `npm run generate` twice leaves `git status` clean
-- [ ] `npm run check` is green with no `.env`
-- [ ] Commit: "Build the clean world and the CSV template"
+- [x] **Determinism:** `data/tests/test_determinism.py` runs the generator twice into temporary folders, finds them identical, and finds the committed files the same as what it writes
+- [x] `npm run generate` twice leaves `git status` clean
+- [x] `npm run check` is green with no `.env`
+- [x] Commit: "Build the clean world and the CSV template"
 
 ## Phase 3: The errors, the decoys and the demo anchors
 

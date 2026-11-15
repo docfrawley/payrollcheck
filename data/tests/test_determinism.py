@@ -5,8 +5,11 @@ from pathlib import Path
 
 from context import payroll_files
 from context.wage_rules import rate_table
-from data.generate import ROOT, generate
+from data.generate import DATA, DEVELOPMENT_FOLDER, ROOT, generate
 from data.payroll_world import determinations
+
+# The folders the generator writes in full.
+GENERATED_FOLDERS = [f"{DATA.name}/{DEVELOPMENT_FOLDER}"]
 
 
 def written(root: Path) -> dict[str, bytes]:
@@ -25,6 +28,12 @@ def test_two_runs_write_the_same_files_as_are_committed(tmp_path):
     assert first == written(tmp_path / "second")
     committed = {path: (ROOT / path).read_bytes() for path in first}
     assert first == committed
+
+
+def test_the_generated_folders_hold_nothing_the_generator_doesnt_write(tmp_path):
+    generate(tmp_path)
+    for folder in GENERATED_FOLDERS:
+        assert written(ROOT / folder) == written(tmp_path / folder)
 
 
 def test_the_written_rates_file_reads_back_as_the_same_rate_table():
