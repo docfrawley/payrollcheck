@@ -13,12 +13,15 @@ LINCOLN = "PRJ-01"
 MUNICIPAL = "PRJ-02"
 ROAD = "PRJ-03"
 GARDEN_STATE = "SUB-01"
+# The case the Copilot is asked to draft a send-back notice for.
+NOTICE_CASE = "PC-0311"
 
 DEVELOPMENT = Spec(
     name="development",
     seed=20260906,
     first_week_ending=date(2026, 9, 6),
     weeks=12,
+    history=True,
     case_week_offset=0,
     first_worker=1,
     business_date=date(2026, 11, 23),

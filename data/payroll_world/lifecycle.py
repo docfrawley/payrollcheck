@@ -14,9 +14,6 @@ from data.payroll_world.filings import Filing
 from data.payroll_world.template import Payroll
 from data.payroll_world.world import World
 
-# Errors a correction can't undo: a payroll filed late, or work done unregistered.
-UNCORRECTABLE = ("timeliness.late", "registration.inactive")
-
 
 class Status(StrEnum):
     RECEIVED = "Received"
@@ -50,6 +47,12 @@ class Case:
     reviewer: str | None
     returned_on: date | None
     accepted_on: date | None
+
+
+def waits(world: World, filing: Filing) -> bool:
+    """Whether a filing's case is still waiting for review: in the last week's wave,
+    or in a world with no history."""
+    return not world.spec.history or filing.week == world.spec.weeks
 
 
 def received_on(

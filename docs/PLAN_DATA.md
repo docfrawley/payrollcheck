@@ -83,7 +83,7 @@ Each rule code has one corruption, applied by `corruptions.py`:
 
 | Rule | Corruption | Shortfall |
 |---|---|---|
-| `rate.base_short` | the line's base rate lowered, gross kept consistent | from `wage_rules` |
+| `rate.base_short` | the line's base rate lowered, gross kept consistent; three are the Middlesex rows' pre-listed increase not paid | from `wage_rules` |
 | `rate.fringe_short` | the fringe rate lowered | from `wage_rules` |
 | `classification.mismatch` | paid as a lower-paid classification than the established craft | the difference to the established craft's rates |
 | `classification.changed` | another classification of the same craft than last week, paid correctly, with no note | none |
@@ -101,7 +101,7 @@ The labels go in `data/evals/development_labels.json`, `data/evals/held_out_labe
 
 The development set has the brief's 45 errors by rule code, the 3 hidden instructions in text cells of any column, and 10 decoys:
 - correct daily overtime
-- correct Saturday overtime
+- correct Saturday overtime, in a week under 40 hours
 - the pre-listed increase week paid correctly
 - paid at the award-date rate below the later determination
 - a classification change with a valid line note
@@ -212,16 +212,16 @@ Every payroll is clean in this phase, and every case is Accepted. Write the rule
 
 Write `manifest.py` and `corruptions.py`. Write `data/error_manifest.yaml` by hand against the clean world: the 45 errors, 3 hidden instructions and 10 decoys, placed for the demo anchors. Then let `lifecycle.py` give the history cases their outcomes: corrected and Accepted, or still Returned to sub. The generator writes `data/evals/development_labels.json`, and week 12's 2 missing filings drop out.
 
-- [ ] `uv run pytest data --no-cov` passes, covering:
+- [x] `uv run pytest data --no-cov` passes, covering:
   - **Labels and manifest:** every label matches a manifest entry and every entry a label
   - **Counts:** exactly the 45 errors by rule code from the brief's table, 3 screening flags and the 10 decoys
   - **Shortfalls:** every expected shortfall equals what `wage_rules` computes for that line
   - **The rule audit:** each labelled line or case fails its rule and no other; every decoy, every correction and every payroll outside the manifest passes every rule
   - **The lifecycle:** no Accepted case has a labelled error on its latest submission; a correction is a later submission on the same case; PC-0311 is Returned to sub with exactly three labels; week 12 has 22 cases and 2 missing filings
   - **The anchors:** each of the anchors above
-- [ ] Determinism holds with the manifest applied
-- [ ] `npm run check` is green with no `.env`
-- [ ] Commit: "Seed the errors, decoys and anchors"
+- [x] Determinism holds with the manifest applied
+- [x] `npm run check` is green with no `.env`
+- [x] Commit: "Seed the errors, decoys and anchors"
 
 ## Phase 4: The held-out and tiny sets, and the expected Copilot answers
 

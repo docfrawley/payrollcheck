@@ -92,6 +92,15 @@ def paid_correctly(line: Line, craft: str, works: dict[date, Work]) -> Line:
     return with_pay(line, base, fringe, 0, wage_rules.premium_hours(split))
 
 
+def with_hours(
+    world: World, filing: Filing, line: Line, hours: tuple[Decimal, ...]
+) -> Line:
+    """A worker's line with these hours in the filing's week, paid correctly."""
+    worker = world.worker(line.worker_id)
+    worked = replace(line, hours=hours)
+    return paid_correctly(worked, worker.craft, owed_works(world, filing, worker))
+
+
 def owed_works(world: World, filing: Filing, worker: Worker) -> dict[date, Work]:
     """What each day of the filing's week is owed as, for a worker on its crew."""
     project = world.project(filing.engagement.project_id)

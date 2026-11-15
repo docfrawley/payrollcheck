@@ -5,7 +5,7 @@ from datetime import date
 
 from context.wage_rules import APPRENTICE
 from data.payroll_world.filings import filings
-from data.tests.development_set import CASES, WORLD
+from data.tests.development_set import CASES, SEEDED, WORLD
 
 LAPSED = "SUB-06"
 
@@ -65,7 +65,8 @@ def test_every_pair_is_engaged_in_week_12_and_about_200_filings_are_expected():
     assert all(e.last_week == 12 for e in WORLD.engagements)
     assert all(1 <= e.first_week <= 9 for e in WORLD.engagements)
     assert 190 <= len(filings(WORLD)) <= 215
-    assert Counter(case.filing.week for case in CASES)[12] == 24
+    week_12 = Counter(case.filing.week for case in CASES)[12] + len(SEEDED.missing)
+    assert week_12 == 24
 
 
 def test_case_ids_carry_the_week_and_the_pair():

@@ -4,6 +4,7 @@ as the context layer's registry and apprentice files."""
 from typing import Any
 
 from context.sources import SYNTHETIC
+from data.payroll_world.cases import SeededSet
 from data.payroll_world.lifecycle import Case
 from data.payroll_world.reference import source
 from data.payroll_world.world import World
@@ -121,6 +122,25 @@ def cases_record(cases: tuple[Case, ...]) -> list[dict[str, Any]]:
         }
         for case in cases
     ]
+
+
+def labels_record(seeded: SeededSet) -> dict[str, Any]:
+    """The ground-truth labels: every exception a perfect review finds, by case,
+    and the cases it flags for a hidden instruction."""
+    return {
+        "notice": SYNTHETIC,
+        "exceptions": [
+            {
+                "case_id": label.case_id,
+                "rule": label.rule,
+                "worker_id": label.worker_id,
+                "line_no": label.line_no,
+                "expected_shortfall_cents": label.expected_shortfall_cents,
+            }
+            for label in seeded.labels
+        ],
+        "screening_flags": list(seeded.screening_flags),
+    }
 
 
 def registry_record(worlds: list[World]) -> dict[str, Any]:

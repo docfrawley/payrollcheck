@@ -48,6 +48,14 @@ LINE = (
     "line_notes",
 )
 COLUMNS: tuple[str, ...] = (*CERTIFICATION, *LINE, "payroll_notes")
+# The columns that hold free text, which no rule reads as a value.
+FREE_TEXT = (
+    "contractor_name",
+    "signed_by",
+    "worker_name",
+    "line_notes",
+    "payroll_notes",
+)
 TRUE = "true"
 FALSE = "false"
 

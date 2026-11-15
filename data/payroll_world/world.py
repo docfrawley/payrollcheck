@@ -162,6 +162,9 @@ class Spec:
     seed: int
     first_week_ending: date
     weeks: int
+    # Whether the weeks before the last are history, decided by a reviewer, or
+    # every case still waits, as in a set kept for evaluation.
+    history: bool
     case_week_offset: int
     first_worker: int
     business_date: date
