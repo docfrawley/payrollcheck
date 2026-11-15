@@ -25,7 +25,6 @@ ABOUT = (
     "The prevailing wage rate determinations the payroll checks read, with each "
     "craft's overtime rules, apprentice schedule and ratio."
 )
-COUNTIES = ("Middlesex", "Monmouth", "Ocean")
 SOURCE = source("NJDOL prevailing wage rate determinations, as we record them")
 HOLIDAYS = [
     "2026-01-01",
@@ -87,12 +86,12 @@ def craft(
     }
 
 
-ELECTRICIAN = [40, 49, 58, 68, 80]
+ELECTRICIAN_SCHEDULE = [40, 49, 58, 68, 80]
 CRAFTS = [
     craft(
         "Electrician",
         rules(True, WAGE_AND_FRINGE),
-        schedule(ELECTRICIAN, ELECTRICIAN),
+        schedule(ELECTRICIAN_SCHEDULE, ELECTRICIAN_SCHEDULE),
         (2, 3),
     ),
     craft(

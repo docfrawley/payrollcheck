@@ -12,6 +12,7 @@ from typing import Any
 
 from context import wage_rules
 from context.wage_rules import APPRENTICE
+from data.payroll_world import rules
 from data.payroll_world.classifications import classification_text
 from data.payroll_world.clean import (
     owed_works,
@@ -142,22 +143,22 @@ def late(world: World, filing: Filing, payroll: Payroll, given: Given) -> Payrol
 
 
 LINE_CORRUPTIONS: dict[str, Callable[[World, Filing, Line, Given], Line]] = {
-    "rate.base_short": base_cut,
-    "rate.fringe_short": fringe_cut,
-    "overtime.underpaid": overtime_at_straight_time,
-    "arithmetic.hours_total": wrong_total,
-    "arithmetic.gross": gross_cut,
-    "apprentice.unregistered": apprentice_rate,
-    "classification.mismatch": paid_as,
-    "classification.changed": paid_as,
+    rules.BASE_SHORT: base_cut,
+    rules.FRINGE_SHORT: fringe_cut,
+    rules.OVERTIME: overtime_at_straight_time,
+    rules.HOURS_TOTAL: wrong_total,
+    rules.GROSS: gross_cut,
+    rules.UNREGISTERED: apprentice_rate,
+    rules.MISMATCH: paid_as,
+    rules.CHANGED: paid_as,
 }
 PAYROLL_CORRUPTIONS: dict[str, Callable[[World, Filing, Payroll, Given], Payroll]] = {
-    "form.missing_field": blank_field,
-    "form.unsigned": unsigned,
-    "registration.inactive": worked_unregistered,
-    "apprentice.ratio": journeyman_absent,
-    "sequence.gap": number_skipped,
-    "timeliness.late": late,
+    rules.MISSING_FIELD: blank_field,
+    rules.UNSIGNED: unsigned,
+    rules.INACTIVE: worked_unregistered,
+    rules.RATIO: journeyman_absent,
+    rules.GAP: number_skipped,
+    rules.LATE: late,
 }
 
 
@@ -187,17 +188,17 @@ def shortfall(world: World, filing: Filing, line: Line, rule: str) -> int | None
     base_short = wage_rules.base_shortfall(split, wage, line.base_rate)
     fringe_short = wage_rules.fringe_shortfall(split, fringe, paid_fringe)
     match rule:
-        case "rate.base_short":
+        case rules.BASE_SHORT:
             return base_short
-        case "rate.fringe_short":
+        case rules.FRINGE_SHORT:
             return fringe_short
-        case "apprentice.unregistered" | "classification.mismatch":
+        case rules.UNREGISTERED | rules.MISMATCH:
             return base_short + fringe_short
-        case "overtime.underpaid":
+        case rules.OVERTIME:
             return wage_rules.overtime_shortfall(
                 split, line.overtime_hours, line.base_rate, paid_fringe
             )
-        case "arithmetic.gross":
+        case rules.GROSS:
             total = sum(line.hours, Decimal(0))
             return (
                 wage_rules.gross(line.base_rate, total, line.overtime_hours)

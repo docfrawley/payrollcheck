@@ -5,6 +5,7 @@ resubmission, and leaves no label."""
 from collections.abc import Callable
 from dataclasses import replace
 
+from data.payroll_world import rules
 from data.payroll_world.classifications import classification_text
 from data.payroll_world.clean import paid_correctly, with_hours, works_as
 from data.payroll_world.filings import Filing
@@ -81,16 +82,16 @@ def cash_fringe(
 
 
 SHAPES: dict[str, Callable[[World, Filing, Payroll, Decoy], list[Payroll]]] = {
-    "daily_overtime": worked,
-    "rate_increase_week": worked,
-    "saturday_overtime": worked,
-    "later_determination": as_it_is,
-    "apprentice_at_level": as_it_is,
-    "classification_note": noted_change,
-    "no_work_week": no_work,
-    "corrected_resubmission": resubmitted,
-    "name_variant": renamed,
-    "cash_in_lieu": cash_fringe,
+    rules.DAILY_OVERTIME: worked,
+    rules.RATE_INCREASE_WEEK: worked,
+    rules.SATURDAY_OVERTIME: worked,
+    rules.LATER_DETERMINATION: as_it_is,
+    rules.APPRENTICE_AT_LEVEL: as_it_is,
+    rules.CLASSIFICATION_NOTE: noted_change,
+    rules.NO_WORK_WEEK: no_work,
+    rules.CORRECTED_RESUBMISSION: resubmitted,
+    rules.NAME_VARIANT: renamed,
+    rules.CASH_IN_LIEU: cash_fringe,
 }
 
 

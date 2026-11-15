@@ -12,7 +12,8 @@ from context import wage_rules
 from context.payroll_files import RATES
 from context.wage_rules import JOURNEYMAN, Rate, Work
 from data.payroll_world.lifecycle import Case, Status
-from data.payroll_world.manifest import LINE_DECOYS, PAYROLL_DECOYS, Decoy
+from data.payroll_world.manifest import Decoy
+from data.payroll_world.rules import LINE_DECOYS, PAYROLL_DECOYS
 from data.payroll_world.template import Line, Payroll
 from data.payroll_world.world import World
 from data.payroll_world.worlds import GARDEN_STATE, LINCOLN, MARCUS, NOTICE_CASE

@@ -10,6 +10,13 @@ import yaml
 FOLDER = Path(__file__).parent
 # What every file of PayrollCheck's synthetic reference data says it is.
 SYNTHETIC = "Synthetic data — not real rates"
+# The payroll files. The first three are written by data/generate.py, so their
+# names are here, where nothing is read as they are imported.
+RATE_DETERMINATIONS = "rate_determinations.yaml"
+CONTRACTOR_REGISTRY = "contractor_registry.yaml"
+APPRENTICE_REGISTRATIONS = "apprentice_registrations.yaml"
+FILING_RULES = "filing_rules.yaml"
+PAYROLL_GLOSSARY = "payroll_glossary.yaml"
 
 
 class Refused(Exception):

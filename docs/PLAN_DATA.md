@@ -39,11 +39,18 @@ The brief disagrees with itself in three places, and the user chose the first th
 | `data/payroll_world/lifecycle.py` | The cases: ids, submissions, received dates, the reviewer and the outcome of each history case. |
 | `data/payroll_world/periods.py` | The one periods module: last week, this month and the last N weeks from a business date, matched on `week_ending`. The backend reuses it in stage 6. |
 | `data/payroll_world/expected_answers.py` | `data/copilot_expected.json`, computed from the world as seeding will leave it. |
-| `data/payroll_world/writing.py` | Writes JSON, YAML and CSV byte for byte the same on every run and on Windows: sorted where order isn't meaningful, `\n` line endings, UTF-8. |
+| `data/payroll_world/worlds.py` | The specs of the two worlds, and the anchors' names. Added while building. |
+| `data/payroll_world/draws.py`, `weeks.py`, `filings.py` | A world's random draws, a week's days and its expected filings, which several modules share. Added while building. |
+| `data/payroll_world/classifications.py` | A line's classification as the template writes it, and the craft and classification it names. Added while building. |
+| `data/payroll_world/decoys.py` | The decoys: clean payrolls shaped to look wrong. Added while building, beside `corruptions.py`. |
+| `data/payroll_world/cases.py` | A world's cases: pass one, the manifest and the lifecycle together, with the labels. Added while building. |
+| `data/payroll_world/records.py`, `reference.py` | A world and its cases as the files seeding loads and the context layer reads. Added while building. |
+| `context/registrations.py` | What a contractor's or an apprentice's registration says on a date, for the tools and the generator. Added while building. |
+| `data/payroll_world/writing.py` | Writes JSON, YAML and CSV byte for byte the same on every run and on Windows: in the order the generator gives, `\n` line endings, UTF-8. |
 
-The dependencies run one way. `data/payroll_world/` imports `context.wage_rules` and `context.payroll_files` (for the filing rules' 10 days), and nothing from `backend/` or `agent/`. `context/` imports nothing from `data/`. The generator writes the three generated context files from `determinations.py` and `world.py`, and `payroll_files.py` reads them back, so the generator and the server compute rates from the same data with the same code.
+The dependencies run one way. `data/payroll_world/` imports `context.wage_rules`, `context.registrations` and `context.sources` (the file names, and the hand-written filing rules' 10 days), never `context.payroll_files`, which reads the generator's own output, and nothing from `backend/` or `agent/`. `context/` imports nothing from `data/`. The generator writes the three generated context files from `determinations.py` and `world.py`, and `payroll_files.py` reads them back, so the generator and the server compute rates from the same data with the same code.
 
-The rate logic lives in `context/` because the context layer's Lambda package holds only `context/`, and `npm run check:context` must still pass. The generator can import from `context/`. This is a consequence for stage 3: its check tools, in the backend, will import `context.wage_rules`, so the backend's package will need that one file. Stage 3's plan settles how.
+The rate logic lives in `context/` because the context layer's Lambda package holds only `context/`, and `npm run check:context` must still pass. The generator can import from `context/`. This is a consequence for stage 3: its check tools, in the backend, will import `context.wage_rules` and `context.registrations`, so the backend's package will need those two files. Stage 3's plan settles how.
 
 ### The world's shape
 
@@ -254,17 +261,17 @@ Add the five tools to `context/server.py`, on `payroll_files.py`'s lookups.
 
 ## Phase 6: Through the running context layer, the docs, and the review of the branch
 
-- [ ] With `npm run dev` running, a short script calls each new tool over MCP at `http://127.0.0.1:8006/mcp`. `get_wage_rate` for the Middlesex journeyman electrician, at the Lincoln School renovation's award date and the business date, returns the row `data/copilot_expected.json` names. No model is called.
-- [ ] `data/README.md` describes the generator and how to run it, the manifests, the template column by column, the three sets and the labels. `docs/TECH_STACK.md` describes `wage_rules`, the new context files and tools, and the generator. `docs/STATUS.md` describes what's new and what stage 3 inherits: the backend package needing `context/wage_rules.py`, and seeding still loading the travel records.
-- [ ] A fresh reviewer reads the whole branch against `stage-1-rebrand` with `docs/CODE_STANDARDS.md` and this plan, as `docs/PROCESS.md` describes. Whatever it would block the PR for is fixed, and the tests the fixes touch are run.
-- [ ] `npm run check` is green with no `.env`, with coverage of at least 80% for Python and TypeScript
-- [ ] Commit: "Record stage 2"
+- [x] With the context layer running as `npm run dev` starts it (`npm run dev:context`), a short script calls each new tool over MCP at `http://127.0.0.1:8006/mcp`. `get_wage_rate` for the Middlesex journeyman electrician, at the Lincoln School renovation's award date and the business date, returns the row `data/copilot_expected.json` names. No model is called.
+- [x] `data/README.md` describes the generator and how to run it, the manifests, the template column by column, the three sets and the labels. `docs/TECH_STACK.md` describes `wage_rules`, the new context files and tools, and the generator. `docs/STATUS.md` describes what's new and what stage 3 inherits: the backend package needing `context/wage_rules.py` and `context/registrations.py`, and seeding still loading the travel records.
+- [x] A fresh reviewer reads the whole branch against `stage-1-rebrand` with `docs/CODE_STANDARDS.md` and this plan, as `docs/PROCESS.md` describes. Whatever it would block the PR for is fixed, and the tests the fixes touch are run.
+- [x] `npm run check` is green with no `.env`, with coverage of at least 80% for Python and TypeScript
+- [x] Commit: "Record stage 2"
 
 There are no live runs on a real model in this stage.
 
 ## Left for later stages
 
-- Seeding the new world, the new schema, intake, the check tools and the payroll agent (stage 3), and the backend's package carrying `context/wage_rules.py`.
+- Seeding the new world, the new schema, intake, the check tools and the payroll agent (stage 3), and the backend's package carrying `context/wage_rules.py` and `context/registrations.py`.
 - Giving either agent the new tools (stages 3 and 6).
 - Deleting the travel records, the old context files and the old tools (stage 3).
 - The two-year expiry of a determination, which the research notes: every date in both worlds falls well inside two years of its award, so `wage_rules` doesn't handle it, and STATUS lists it as a known gap.

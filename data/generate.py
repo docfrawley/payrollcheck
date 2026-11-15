@@ -5,12 +5,12 @@ from the app."""
 import shutil
 from pathlib import Path
 
-from context.payroll_files import (
+from context.sources import (
     APPRENTICE_REGISTRATIONS,
     CONTRACTOR_REGISTRY,
+    FOLDER,
     RATE_DETERMINATIONS,
 )
-from context.sources import FOLDER
 from data.payroll_world import determinations, records
 from data.payroll_world.cases import SeededSet, seeded_set
 from data.payroll_world.expected_answers import expected_answers

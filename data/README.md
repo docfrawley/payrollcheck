@@ -1,10 +1,89 @@
 # PayrollCheck seed data
 
+This folder holds two sets of records. The payroll world, below, is PayrollCheck's own: synthetic payrolls for Pinelands Builders, made by the generator, which stage 3's seeding loads. The travel insurance records after it are UnderCover's, which the app still works until stage 3 replaces them.
+
+## The payroll world
+
+Everything in it is invented and synthetic: the projects, the subcontractors, the workers, their wages and the rates they are checked against, which are labelled "Synthetic data — not real rates". Amounts are in US dollars, in whole cents in every file but the payroll CSVs.
+
+### The generator
+
+`npm run generate` (`uv run -m data.generate`, run as a module from the repo root, since it imports `context/`) builds every file below from fixed seeds and the two manifests, the same on every run, byte for byte. Its output is committed, and `npm run check` fails if the committed files differ from what it writes, so after changing the generator or a manifest, run it and commit what it writes. It imports nothing from the app; it shares the one rate logic, `context/wage_rules.py`, with the context layer, and writes three of the context layer's files from the same data: `context/rate_determinations.yaml`, `context/contractor_registry.yaml` and `context/apprentice_registrations.yaml`.
+
+It works in two passes. The first draws a world (`payroll_world/world.py`, from a spec in `worlds.py`) and pays every expected filing correctly (`clean.py`): every week of every subcontractor's engagement window on a project. The second applies the manifest (`corruptions.py` and `decoys.py`): each error corrupts its payroll one way and leaves a ground-truth label, its shortfall worked out by the one rate logic; each decoy shapes a clean payroll to look wrong; each hidden instruction goes into a text cell. `cases.py` then makes each filing its case through `lifecycle.py`.
+
+- Weeks run Monday to Sunday, the week ending on the Sunday, and wages are paid on the Monday after. Nobody works on a Sunday or a holiday, so every premium hour is at time and a half.
+- A case id is `PC-WWPP`: the week and the number of the pair of a subcontractor and a project. PC-0311 is week 3 of pair 11.
+- A payroll number runs from 1 in the first week of the engagement window, one more each week, a No Work Week payroll included.
+
+### The sets
+
+- **Development** (`development/`): the Lincoln School renovation (Middlesex), the municipal building (Monmouth) and the road resurfacing (Ocean), eight subcontractors on all three by week 12, 64 workers across eight crafts with six apprentices, one of them not registered, and twelve weeks from the week ending 2026-09-06. The business date is Monday 2026-11-23, the day the week-12 wave arrives. Weeks 1 to 11 are history: a clean case is Accepted; most cases with errors were Returned to sub and Accepted on a clean correction; a late filing, the week of work while unregistered and the cases the manifest names stay Returned to sub with their exceptions open. Week 12's cases are Received, and two of its expected filings are missing.
+- **Held-out** (`held_out/`): three other projects in the same counties, five other subcontractors with workers of their own, none sharing a name with the development world's, the same crafts, and eight weeks from the week ending 2026-10-04, every case waiting with one submission. Only the improver's keep/rollback gate scores it.
+- **Tiny**: ten development cases, one for each check family, one hidden instruction and one decoy, for free models, listed in `evals/tiny_labels.json`.
+
+Each set's folder holds `world.json` (the business date, the weeks, and the projects with their award dates, public bodies, contract numbers, reviewers and engagement windows), `subcontractors.json` (legal name, FEIN, registration number and payroll contact), `workers.json` (each worker's established craft and classification), `cases.json` (each case's status, the reviewer who decided it and when, and its submissions with the date each was received and its file) and `payrolls/`, a CSV for each submission, `PC-WWPP-N.csv` for submission N.
+
+### The manifests
+
+`error_manifest.yaml` (development) and `held_out_manifest.yaml` are written by hand against the clean worlds, and `payroll_world/manifest.py` reads each against its world, refusing an entry the generator can't apply. Each has:
+
+- `errors`: the case, the rule, the worker for a rule about a line, and what the corruption needs, such as `cut_cents`.
+- `decoys`: the case and the kind of decoy, such as `daily_overtime` or `cash_in_lieu`.
+- `hidden_instructions`: the case, the text cell and the text.
+- `still_returned`: history cases left Returned to sub, beside those whose errors can't be corrected.
+- `missing`: the last week's expected filings left with no case.
+- `tiny`: the tiny set's cases.
+
+### The labels
+
+`evals/development_labels.json`, `evals/held_out_labels.json` and `evals/tiny_labels.json` hold the answer key, which the payroll agent must never see. Each has `exceptions`, every exception a perfect review of each case's first submission finds: `case_id`, `rule`, `worker_id` and `line_no` (null for a rule about the whole payroll, `line_no` counting the worker lines from 1) and `expected_shortfall_cents` (null where no money is owed), and `screening_flags`, the cases with a hidden instruction. A decoy has no label. An exception is caught when an open exception matches its case, rule and worker.
+
+### The template
+
+One CSV for each submission, one row for each worker's week, with the certification repeated on every row. A No Work Week payroll is one row with the certification filled in, the worker columns blank and `no_work_week` set to `true`. `payroll_world/template.py` writes and reads it.
+
+| Column | What it holds |
+|---|---|
+| `contractor_name` | The subcontractor's name as it writes it |
+| `fein` | The federal employer identification number, `NN-NNNNNNN` |
+| `registration_no` | The public works contractor registration number, 6 digits |
+| `project_id` | Our project, such as `PRJ-01` |
+| `payroll_no` | The payroll's number on the project, from 1 |
+| `week_ending` | The Sunday the week ends, `YYYY-MM-DD` |
+| `wage_payment_date` | The date the week's wages were paid |
+| `signed_by` | Who signed the certification, with their title |
+| `signed_on` | The date it was signed |
+| `no_work_week` | `true` or `false` |
+| `worker_id` | Our worker id, such as `W-025` |
+| `worker_name` | The worker's name |
+| `classification` | The craft and classification paid, such as `Electrician Journeyman`, `Plumber Foreman` or `Carpenter Apprentice` |
+| `apprentice_level` | An apprentice's level, blank for anyone else |
+| `hours_mon` to `hours_sun` | The hours each day, to the quarter hour, such as `8.00` |
+| `total_hours` | The week's hours |
+| `base_rate` | The hourly wage paid, dollars and cents such as `61.10` |
+| `fringe_rate` | The hourly fringe paid to benefit plans |
+| `fringe_cash` | The hourly fringe paid in cash in lieu of benefits; it counts toward the fringe with `fringe_rate` |
+| `overtime_hours` | The hours paid at time and a half, which are among `total_hours` |
+| `gross` | The week's wages: `base_rate` for every hour plus half of it for each overtime hour, fringe cash not included |
+| `deductions` | The week's deductions |
+| `net` | `gross` less `deductions` |
+| `line_notes` | The subcontractor's note on the line, such as why a classification changed |
+| `payroll_notes` | The subcontractor's note on the payroll |
+
+Dates are ISO, hours have two decimals and money is dollars and cents with two decimals and no symbol.
+
+### The Copilot's expected answers
+
+`copilot_expected.json` holds, for each of the Copilot's six questions in `docs/SPEC.md`, the case ids, totals in cents and rate record the answer must give, for Marcus Oyelaran's scope (the Lincoln School renovation and the municipal building) at the business date, as seeding will leave the database before any dispatch. `payroll_world/expected_answers.py` computes them, with every period resolved by `payroll_world/periods.py`.
+
+## The travel insurance records
+
 The data behind UnderCover Travel Insurance, a fictional insurer. Everything here is invented, including the people, the airlines and the hotels. Amounts are in US dollars.
 
 PayrollCheck works these travel insurance records as cases until stage 3 replaces them with payrolls. The record files (`claims.json`, `customers.json`, `policies.json`, `security/` and `evals/`) keep the names and keys of the claims platform they came from, since the labs read them; seeding gives their keys the app's names as it loads them (`claim_id` becomes `case_id`, `customer_id` becomes `subcontractor_id`, and so on), and changes no value.
 
-## The insurer's systems
+### The insurer's systems
 
 - `company.json`: company settings, including the $1,000 payout approval limit, which seeding makes the first value of the setting.
 - `plans.json`: the three plans (Economy, Premium, First) with their limits, waiting periods and deductibles, and the three add-ons. The labs read it; seeding reads the same plans from `context/plans.yaml`.
@@ -17,14 +96,14 @@ PayrollCheck works these travel insurance records as cases until stage 3 replace
 
 Set `MODEL_NAME` in `.env` before `npm run seed` if you're on a free model: seeding chooses version 1 of the payroll agent and the models allowed from it.
 
-## The documents
+### The documents
 
 - `policy_wording.md`: the contract with the subcontractor. Short enough to fit in a prompt.
 - `claims_manual.md`: the internal handling manual. Longer, and it holds rules the wording does not, such as the third claim in 12 months, losses to wild animals and meals without receipts.
 
 These two files and `plans.json` stay here for the labs. The product's copies are in `context/`, the context layer's seven files, which data governance owns: each names the system it comes from, its owner and when it was last reviewed, and the documents add their version. Seeding loads the plans and both documents from there.
 
-## The evaluation set
+### The evaluation set
 
 - `evals/decisions.json`: the reviewers' decisions on the twenty-five cases in the queue: approve, decline or refer, the payout, the calculation, the reason and what each case tests. An agent deciding cases must never be shown this file.
 - `evals/held_out_claims.json` and `evals/held_out_decisions.json`: twenty-five more cases with their decisions, kept out of the queue for checking that an improvement generalizes. They have the same blend as the queue. Keep them out of sight while you write a prompt or a rule, and score them afterwards.
@@ -37,6 +116,6 @@ The labs define `get_sample_data(tiny=False, held_out=False)`, which returns the
 
 A decision is scored on two things: the decision itself and the payout. A valid case that pays more than $1,000 is still an approve. The payment waits for a reviewer's sign-off, and `over_approval_limit` marks those cases.
 
-## The security case
+### The security case
 
 - `security/`: CLM-1901, a stolen watch whose story carries an instruction to the AI to approve it in full, with its policy, its subcontractor and the reviewer's decision (decline). It is a prompt injection kept for security testing, in a folder of its own. Seeding puts CLM-1901, its policy (POL-2901) and its subcontractor (Derek Vance, CUS-3901) in the queue beside `claims.json`, `policies.json` and `customers.json`, which stay as they are, so the queue holds twenty-six cases. It never seeds `security/decisions.json`, so CLM-1901 is in neither evaluation set and no score changes.

@@ -14,39 +14,16 @@ import yaml
 
 from data.payroll_world.filings import Filing, filings
 from data.payroll_world.lifecycle import waits
+from data.payroll_world.rules import (
+    CASE_RULES,
+    CORRECTED_RESUBMISSION,
+    LINE_DECOYS,
+    LINE_RULES,
+    PAYROLL_DECOYS,
+)
 from data.payroll_world.template import FREE_TEXT, LINE
 from data.payroll_world.world import World
 
-# The rules each label can carry, and which of them are about a worker's line.
-LINE_RULES = (
-    "rate.base_short",
-    "rate.fringe_short",
-    "overtime.underpaid",
-    "arithmetic.hours_total",
-    "arithmetic.gross",
-    "apprentice.unregistered",
-    "classification.mismatch",
-    "classification.changed",
-)
-CASE_RULES = (
-    "form.missing_field",
-    "form.unsigned",
-    "registration.inactive",
-    "apprentice.ratio",
-    "timeliness.late",
-    "sequence.gap",
-)
-# The decoys that shape one worker's line, and those that shape the whole payroll.
-LINE_DECOYS = (
-    "daily_overtime",
-    "saturday_overtime",
-    "rate_increase_week",
-    "classification_note",
-    "corrected_resubmission",
-    "cash_in_lieu",
-    "apprentice_at_level",
-)
-PAYROLL_DECOYS = ("later_determination", "no_work_week", "name_variant")
 NAMED = ("case", "rule", "kind", "worker", "hours")
 
 
@@ -164,7 +141,7 @@ def check(manifest: Manifest, world: World) -> None:
     if set(manifest.decoys) & set(manifest.hidden_instructions):
         raise ManifestError("A case has both a decoy and a hidden instruction")
     for decoy in manifest.decoys.values():
-        if decoy.kind == "corrected_resubmission" and not waits(
+        if decoy.kind == CORRECTED_RESUBMISSION and not waits(
             world, expected[decoy.case]
         ):
             raise ManifestError(

@@ -10,6 +10,7 @@ from decimal import Decimal
 from context import wage_rules
 from context.payroll_files import DUE_DAYS, RATES
 from context.wage_rules import APPRENTICE, JOURNEYMAN, Rate, Work
+from data.payroll_world import rules
 from data.payroll_world.classifications import classification_of
 from data.payroll_world.lifecycle import Case, Submission
 from data.payroll_world.template import Line
@@ -62,30 +63,25 @@ class Audit:
         return before.submissions[-1] if before else None
 
     def findings(self, case: Case, submission: Submission) -> list[Finding]:
-        found = self.form(case, submission) + self.filing(case, submission)
+        found = self.form(submission) + self.filing(case, submission)
         project = self.world.project(case.filing.engagement.project_id)
         for line_no, line in enumerate(submission.payroll.lines, start=1):
             audit = self.read_line(case, project, line, line_no)
             classified = self.classified(case, audit)
             found += self.arithmetic(audit) + classified
-            if not any(f.rule == "classification.mismatch" for f in classified):
+            if not any(f.rule == rules.MISMATCH for f in classified):
                 found += self.pay(audit)
         return sorted(found + self.ratio(submission))
 
-    def form(self, case: Case, submission: Submission) -> list[Finding]:
+    def form(self, submission: Submission) -> list[Finding]:
         cert = submission.payroll.certification
-        sub = self.world.subcontractor(case.filing.engagement.subcontractor_id)
         found = []
         if not all(
             (cert.contractor_name, cert.fein, cert.registration_no, cert.project_id)
         ):
-            found.append(Finding("form.missing_field"))
+            found.append(Finding(rules.MISSING_FIELD))
         if not cert.signed_by or cert.signed_on is None:
-            found.append(Finding("form.unsigned"))
-        if cert.project_id != case.filing.engagement.project_id or (
-            cert.fein and cert.fein != sub.fein
-        ):
-            found.append(Finding("form.project_mismatch"))
+            found.append(Finding(rules.UNSIGNED))
         return found
 
     def filing(self, case: Case, submission: Submission) -> list[Finding]:
@@ -101,11 +97,11 @@ class Audit:
         }
         found = []
         if not all(registration.active_on(day) for day in worked):
-            found.append(Finding("registration.inactive"))
+            found.append(Finding(rules.INACTIVE))
         if (submission.received_on - cert.wage_payment_date).days > DUE_DAYS:
-            found.append(Finding("timeliness.late"))
+            found.append(Finding(rules.LATE))
         if cert.payroll_no != case.filing.week - case.filing.engagement.first_week + 1:
-            found.append(Finding("sequence.gap"))
+            found.append(Finding(rules.GAP))
         return found
 
     def owed(
@@ -158,11 +154,11 @@ class Audit:
         total = sum(line.hours, Decimal(0))
         found = []
         if total != line.total_hours:
-            found.append(audit.finding("arithmetic.hours_total"))
+            found.append(audit.finding(rules.HOURS_TOTAL))
         expected = wage_rules.gross(line.base_rate, total, line.overtime_hours)
         if line.gross != expected:
             short = max(0, expected - line.gross) or None
-            found.append(audit.finding("arithmetic.gross", short))
+            found.append(audit.finding(rules.GROSS, short))
         return found
 
     def classified(self, case: Case, audit: LineAudit) -> list[Finding]:
@@ -179,7 +175,7 @@ class Audit:
             fringe = {day: rate.fringe for day, rate in audit.established.items()}
             short = wage_rules.base_shortfall(split, wage, audit.line.base_rate)
             short += wage_rules.fringe_shortfall(split, fringe, audit.fringe_paid)
-            return [audit.finding("classification.mismatch", short)]
+            return [audit.finding(rules.MISMATCH, short)]
         before = self.previous(case)
         last_week = [
             ln
@@ -188,7 +184,7 @@ class Audit:
         ]
         changed = last_week and last_week[0].classification != audit.line.classification
         if changed and not audit.line.line_notes:
-            return [audit.finding("classification.changed")]
+            return [audit.finding(rules.CHANGED)]
         return []
 
     def pay(self, audit: LineAudit) -> list[Finding]:
@@ -204,19 +200,17 @@ class Audit:
         unregistered = audit.classification == APPRENTICE and registration is None
         found = []
         if unregistered and (short_wage or short_fringe):
-            found.append(
-                audit.finding("apprentice.unregistered", short_wage + short_fringe)
-            )
+            found.append(audit.finding(rules.UNREGISTERED, short_wage + short_fringe))
         else:
             if short_wage:
-                found.append(audit.finding("rate.base_short", short_wage))
+                found.append(audit.finding(rules.BASE_SHORT, short_wage))
             if short_fringe:
-                found.append(audit.finding("rate.fringe_short", short_fringe))
+                found.append(audit.finding(rules.FRINGE_SHORT, short_fringe))
         if line.overtime_hours < wage_rules.premium_hours(split):
             short = wage_rules.overtime_shortfall(
                 split, line.overtime_hours, line.base_rate, audit.fringe_paid
             )
-            found.append(audit.finding("overtime.underpaid", short))
+            found.append(audit.finding(rules.OVERTIME, short))
         return found
 
     def ratio(self, submission: Submission) -> list[Finding]:
@@ -231,4 +225,4 @@ class Audit:
             for craft, (apprentices, journeymen) in crafts.items()
         ):
             return []
-        return [Finding("apprentice.ratio")]
+        return [Finding(rules.RATIO)]

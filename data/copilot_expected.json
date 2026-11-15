@@ -120,7 +120,7 @@
         "source": {
           "file": "rate_determinations.yaml",
           "system": "NJDOL prevailing wage rate determinations, as we record them",
-          "owner": "Compliance",
+          "owner": "Compliance manager",
           "reviewed": "2026-11-02"
         }
       }

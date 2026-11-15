@@ -10,10 +10,8 @@ from data.payroll_world.decoys import shape_decoy
 from data.payroll_world.filings import Filing, filings
 from data.payroll_world.lifecycle import Case, Fate, make_case, waits
 from data.payroll_world.manifest import Manifest
+from data.payroll_world.rules import UNCORRECTABLE
 from data.payroll_world.world import World
-
-# Errors a correction can't undo: a payroll filed late, or work done unregistered.
-UNCORRECTABLE = ("timeliness.late", "registration.inactive")
 
 
 @dataclass(frozen=True)

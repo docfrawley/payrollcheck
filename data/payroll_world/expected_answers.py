@@ -7,8 +7,13 @@ periods module."""
 
 from typing import Any
 
-from context.payroll_files import DUE_DAYS, RATE_DETERMINATIONS
-from context.sources import SYNTHETIC, file_source
+from context.sources import (
+    FILING_RULES,
+    RATE_DETERMINATIONS,
+    SYNTHETIC,
+    file_source,
+    read_yaml,
+)
 from context.wage_rules import JOURNEYMAN, Work, required_rate
 from data.payroll_world import determinations, periods
 from data.payroll_world.cases import SeededSet
@@ -29,6 +34,9 @@ QUESTIONS = (
     "Draft a send-back notice for PC-0311 covering all three exceptions.",
 )
 LAST_WEEKS = 4
+# Read from the hand-written filing rules alone, so the generator runs before the
+# files it writes exist.
+DUE_DAYS: int = read_yaml(FILING_RULES)["due_days"]
 ELECTRICIAN = "electrician"
 
 

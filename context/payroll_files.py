@@ -8,13 +8,15 @@ from datetime import date
 from typing import Any
 
 from context import registrations, wage_rules
-from context.sources import Refused, read_yaml
-
-RATE_DETERMINATIONS = "rate_determinations.yaml"
-FILING_RULES = "filing_rules.yaml"
-PAYROLL_GLOSSARY = "payroll_glossary.yaml"
-CONTRACTOR_REGISTRY = "contractor_registry.yaml"
-APPRENTICE_REGISTRATIONS = "apprentice_registrations.yaml"
+from context.sources import (
+    APPRENTICE_REGISTRATIONS,
+    CONTRACTOR_REGISTRY,
+    FILING_RULES,
+    PAYROLL_GLOSSARY,
+    RATE_DETERMINATIONS,
+    Refused,
+    read_yaml,
+)
 
 FILES: dict[str, dict[str, Any]] = {
     file: read_yaml(file)
@@ -29,7 +31,9 @@ FILES: dict[str, dict[str, Any]] = {
 RATES = wage_rules.rate_table(FILES[RATE_DETERMINATIONS])
 # A payroll is due this many calendar days after its wages are paid.
 DUE_DAYS: int = FILES[FILING_RULES]["due_days"]
-CLASSIFICATIONS = (wage_rules.JOURNEYMAN, wage_rules.FOREMAN)
+CLASSIFICATIONS = tuple(
+    dict.fromkeys(key[1] for found in RATES.determinations for key in found.rows)
+)
 COUNTIES = sorted(
     {d.area for d in RATES.determinations if d.area != wage_rules.STATEWIDE}
 )
