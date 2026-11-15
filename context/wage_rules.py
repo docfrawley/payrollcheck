@@ -253,12 +253,14 @@ def required_rate(table: RateTable, work: Work, work_date: date) -> Rate:
     area = area_of(table, work.craft, work.county)
     found = determination_in_force(table, area, work.award_date)
     if found is None:
-        raise LookupError(f"No {work.craft} determination on {work.award_date}")
+        raise LookupError(f"No {area} determination was in force on {work.award_date}")
     apprentice = work.classification == APPRENTICE
     classification = JOURNEYMAN if apprentice else work.classification
     row = row_on(found.rows[work.craft, classification], work_date)
     if row is None:
-        raise LookupError(f"No {work.craft} {work.classification} rate on {work_date}")
+        raise LookupError(
+            f"{found.id} has no {work.craft} rate on or before {work_date}"
+        )
     if apprentice:
         if work.apprentice_level is None:
             raise LookupError(f"An {work.craft} apprentice needs a level")

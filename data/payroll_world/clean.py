@@ -51,14 +51,15 @@ def works_in(worker: Worker, week: int) -> bool:
 def owed_work(world: World, project: Project, worker: Worker, day: date) -> Work:
     """What a worker's day on a project is owed as: their established craft and
     classification, a registered apprentice at their level that day, and one who
-    isn't registered as a journeyman."""
+    isn't registered that day as a journeyman."""
     county, award = project.county, project.award_date
     if worker.classification != APPRENTICE:
         return Work(worker.craft, worker.classification, county, award)
     registration = world.apprentice(worker.id)
-    if registration is None:
+    level = registration.level_on(day) if registration else None
+    if level is None:
         return Work(worker.craft, JOURNEYMAN, county, award)
-    return Work(worker.craft, APPRENTICE, county, award, registration.level_on(day))
+    return Work(worker.craft, APPRENTICE, county, award, level)
 
 
 def with_pay(

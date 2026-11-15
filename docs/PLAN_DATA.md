@@ -241,16 +241,16 @@ Write `data/held_out_manifest.yaml` against a second world from its own seed, wi
 
 Add the five tools to `context/server.py`, on `payroll_files.py`'s lookups.
 
-- [ ] `uv run pytest context --no-cov` passes, with `context/tests/test_payroll_files.py` and `test_server.py` covering:
+- [x] `uv run pytest context --no-cov` passes, with `context/tests/test_payroll_files.py` and `test_server.py` covering:
   - `get_wage_rate` on a work date before and after the pre-listed increase; an award date before the later determination, which isn't returned; a statewide craft; an unknown craft, classification and county, each refused clearly
   - `check_registration` before and after the expiry, and after the renewal; an unknown number, refused
   - `check_apprentice` for a registered apprentice at their level on a date, and for the unregistered apprentice
   - `get_filing_rules`, and `lookup_payroll_term` for a known term, whatever its case, and an unknown one
   - every answer naming its file and source
-- [ ] Through the Lambda handler, `tools/list` names twelve tools, and every one is read-only and follows the API rules
-- [ ] `npm run check:context` exits 0
-- [ ] `npm run check` is green with no `.env`
-- [ ] Commit: "Add the compliance context server's new tools"
+- [x] Through the Lambda handler, `tools/list` names twelve tools, and every one is read-only and follows the API rules
+- [x] `npm run check:context` exits 0
+- [x] `npm run check` is green with no `.env`
+- [x] Commit: "Add the compliance context server's new tools"
 
 ## Phase 6: Through the running context layer, the docs, and the review of the branch
 

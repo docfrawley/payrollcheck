@@ -6,6 +6,7 @@ draw the same world."""
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from context import registrations
 from context.wage_rules import APPRENTICE, FOREMAN, JOURNEYMAN
 from data.payroll_world.draws import digits, draw
 
@@ -230,7 +231,7 @@ class Registration:
     periods: tuple[tuple[date, date], ...]
 
     def active_on(self, day: date) -> bool:
-        return any(start <= day <= end for start, end in self.periods)
+        return registrations.active_on(list(self.periods), day)
 
 
 @dataclass(frozen=True)
@@ -241,9 +242,9 @@ class ApprenticeRegistration:
     registered_on: date
     levels: tuple[tuple[int, date], ...]
 
-    def level_on(self, day: date) -> int:
-        reached = [level for level, start in self.levels if start <= day]
-        return reached[-1] if reached else self.levels[0][0]
+    def level_on(self, day: date) -> int | None:
+        """Their level on a date, or none before they were registered."""
+        return registrations.level_on(list(self.levels), day)
 
 
 @dataclass(frozen=True)

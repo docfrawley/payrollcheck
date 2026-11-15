@@ -121,8 +121,9 @@ class Audit:
         registered."""
         county, award = project.county, project.award_date
         registration = self.world.apprentice(worker_id)
-        if classification == APPRENTICE and registration:
-            work = Work(craft, APPRENTICE, county, award, registration.level_on(day))
+        level = registration.level_on(day) if registration else None
+        if classification == APPRENTICE and level is not None:
+            work = Work(craft, APPRENTICE, county, award, level)
         elif classification == APPRENTICE:
             work = Work(craft, JOURNEYMAN, county, award)
         else:
