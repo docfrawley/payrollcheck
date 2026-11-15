@@ -87,6 +87,7 @@ include = [
     "backend/**/*.py",
     "agent/**/*.py",
     "context/**/*.py",
+    "data/**/*.py",
     "runtime/**/*.py",
     "conftest.py",
     "api_rules.py",
@@ -104,21 +105,29 @@ max-complexity = 10
 "*/tests/*" = ["S101", "PLR2004"]
 
 [tool.pytest.ini_options]
-testpaths = ["backend", "agent", "context"]
+testpaths = ["backend", "agent", "context", "data"]
 pythonpath = ["."]
 addopts = "--import-mode=importlib --cov --cov-report=term-missing"
 
 [tool.coverage.run]
 # Python's own monitoring, far quicker than a trace function for line coverage.
 core = "sysmon"
-source = ["backend", "agent", "context"]
+source = ["backend", "agent", "context", "data"]
 omit = ["*/tests/*"]
 
 [tool.coverage.report]
 fail_under = 80
 
 [tool.pyright]
-include = ["backend", "agent", "context", "runtime", "conftest.py", "api_rules.py"]
+include = [
+    "backend",
+    "agent",
+    "context",
+    "data",
+    "runtime",
+    "conftest.py",
+    "api_rules.py",
+]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"

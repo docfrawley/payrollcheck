@@ -1,10 +1,19 @@
 # Status
 
-Stage 1, the rebrand, is built and its live checks on Supabase have run (`docs/PLAN_REBRAND.md`, and "Last live run" below). `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
+Stage 1, the rebrand, is built and its live checks on Supabase have run (`docs/PLAN_REBRAND.md`, and "Last live run" below). Stage 2, data and context (`docs/PLAN_DATA.md`), is being built: "Stage 2 so far" below says what's in. `docs/ROADMAP.md` lists the seven stages, and each stage updates this file as it's built.
 
 The code is Ed Donner's UnderCover `week3day5-end` (commit `ecca35dd`) under PayrollCheck's names. It still works UnderCover's travel insurance claims, now called cases, until stage 3 replaces them with payrolls, so everything below describes PayrollCheck working travel cases: its cases, reviewers, subcontractors and payouts, the payroll agent, and its `PAYROLLCHECK_*` settings. The words policy, plan, payout and payment keep their names until stage 3. The plans it names, such as `docs/PLAN_COPILOT.md`, are no longer in `docs/`; the import commit has them.
 
 Stage 1 deleted the course-only folders (`community_contributions/`, `guides/`, `setup/` and `assets/`), then renamed UnderCover to PayrollCheck, claim to case, the claim agent to the payroll agent, handler to reviewer, senior handler to compliance manager and customer to subcontractor, and applied the brand in `docs/BRAND.md`. Nothing the product does changed; the one test whose assertion changed is `e2e/settings.spec.ts`, whose page colours follow the brand's. What it left under the old words, and why, is in the plan's "What the rename leaves alone": the record files in `data/` and the files in `context/`, which keep their contents and keys (seeding gives the keys the app's names as it loads them), the travel insurer's name, UnderCover, where the prompts name it, the lab's screening prompt, the Lambda `handler` entry points and the libraries' handlers, the JWT's claims, and `labs/`, which stage 7 ports and deletes.
+
+## Stage 2 so far
+
+Stage 2 is additive: nothing in `backend/` or `agent/` reads what it adds, and the app still works travel cases.
+
+- `context/sources.py` holds what every context file's answer names (`file_source`, `read_yaml`, `Refused`), which `context/files.py` and `context/payroll_files.py` both use.
+- `context/wage_rules.py` is the one rate logic, standard library only, money in cents: the determination in force on a project's award date, its latest row on or before a work date, an apprentice's rate as a percentage of the journeyman row, a week's hours split into straight and premium time by the craft's overtime rules (daily, day of the week, holidays) with the 40-hour weekly floor, and a line's base, fringe and overtime shortfalls, rounded half up to the cent once.
+- `context/rate_determinations.yaml` is written by `npm run generate` (`data/generate.py`, from `data/payroll_world/determinations.py`); `context/filing_rules.yaml` and `context/payroll_glossary.yaml` are written by hand. Each names its system, owner and review date and says "Synthetic data — not real rates". `context/payroll_files.py` reads them once at start.
+- `data/` is now held to the Python checks: ruff, pyright, pytest and coverage include it, and the pre-commit hook runs on it. A test runs the generator twice into temporary folders and compares both with the committed files.
 
 ## Running it
 

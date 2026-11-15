@@ -1,0 +1,937 @@
+# The prevailing wage rate determinations the payroll checks read, with each craft's
+# overtime rules, apprentice schedule and ratio.
+# Written by data/generate.py (npm run generate). Don't edit it by hand.
+
+source:
+  system: NJDOL prevailing wage rate determinations, as we record them
+  owner: Compliance
+  reviewed: '2026-11-02'
+notice: Synthetic data — not real rates
+weekly_overtime_floor:
+  hours: 40
+  multiplier: 1.5
+  applies_to: wage
+holidays:
+- '2026-01-01'
+- '2026-05-25'
+- '2026-07-03'
+- '2026-09-07'
+- '2026-11-26'
+- '2026-12-25'
+crafts:
+- craft: electrician
+  name: Electrician
+  statewide: false
+  overtime_rules:
+  - when: daily_over
+    hours: 8
+    multiplier: 1.5
+    applies_to: wage_and_fringe
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage_and_fringe
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage_and_fringe
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage_and_fringe
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 40
+    fringe_percent: 40
+  - level: 2
+    wage_percent: 49
+    fringe_percent: 49
+  - level: 3
+    wage_percent: 58
+    fringe_percent: 58
+  - level: 4
+    wage_percent: 68
+    fringe_percent: 68
+  - level: 5
+    wage_percent: 80
+    fringe_percent: 80
+  apprentice_ratio:
+    apprentices: 2
+    journeymen: 3
+- craft: carpenter
+  name: Carpenter
+  statewide: false
+  overtime_rules:
+  - when: daily_over
+    hours: 8
+    multiplier: 1.5
+    applies_to: wage_and_fringe
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage_and_fringe
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage_and_fringe
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage_and_fringe
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 50
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 70
+    fringe_percent: 100
+  - level: 4
+    wage_percent: 80
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 2
+- craft: plumber
+  name: Plumber
+  statewide: false
+  overtime_rules:
+  - when: daily_over
+    hours: 8
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 40
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 50
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 4
+    wage_percent: 70
+    fringe_percent: 100
+  - level: 5
+    wage_percent: 80
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 2
+- craft: ironworker
+  name: Ironworker
+  statewide: false
+  overtime_rules:
+  - when: daily_over
+    hours: 8
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 70
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 80
+    fringe_percent: 100
+  - level: 4
+    wage_percent: 90
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 3
+- craft: painter
+  name: Painter
+  statewide: false
+  overtime_rules:
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 50
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 70
+    fringe_percent: 100
+  - level: 4
+    wage_percent: 85
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 2
+- craft: bricklayer
+  name: Bricklayer
+  statewide: false
+  overtime_rules:
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 50
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 75
+    fringe_percent: 100
+  - level: 4
+    wage_percent: 90
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 2
+- craft: laborer
+  name: Laborer
+  statewide: true
+  overtime_rules:
+  - when: daily_over
+    hours: 8
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 70
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 80
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 4
+- craft: operating_engineer
+  name: Operating Engineer
+  statewide: true
+  overtime_rules:
+  - when: daily_over
+    hours: 8
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SAT
+    multiplier: 1.5
+    applies_to: wage
+  - when: day_of_week
+    day: SUN
+    multiplier: 2.0
+    applies_to: wage
+  - when: holiday
+    multiplier: 2.0
+    applies_to: wage
+  apprentice_schedule:
+  - level: 1
+    wage_percent: 60
+    fringe_percent: 100
+  - level: 2
+    wage_percent: 70
+    fringe_percent: 100
+  - level: 3
+    wage_percent: 80
+    fringe_percent: 100
+  - level: 4
+    wage_percent: 90
+    fringe_percent: 100
+  apprentice_ratio:
+    apprentices: 1
+    journeymen: 3
+determinations:
+- id: MID-2024-11
+  area: Middlesex
+  issued: '2024-11-04'
+  rates:
+  - craft: electrician
+    classification: journeyman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5640
+      fringe: 3310
+      total: 8950
+  - craft: electrician
+    classification: foreman
+    rows:
+    - effective: '2024-11-04'
+      wage: 6090
+      fringe: 3310
+      total: 9400
+  - craft: carpenter
+    classification: journeyman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5320
+      fringe: 3290
+      total: 8610
+  - craft: carpenter
+    classification: foreman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5720
+      fringe: 3290
+      total: 9010
+  - craft: plumber
+    classification: journeyman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5710
+      fringe: 3420
+      total: 9130
+  - craft: plumber
+    classification: foreman
+    rows:
+    - effective: '2024-11-04'
+      wage: 6135
+      fringe: 3420
+      total: 9555
+  - craft: ironworker
+    classification: journeyman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5480
+      fringe: 4010
+      total: 9490
+  - craft: ironworker
+    classification: foreman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5980
+      fringe: 4010
+      total: 9990
+  - craft: painter
+    classification: journeyman
+    rows:
+    - effective: '2024-11-04'
+      wage: 4650
+      fringe: 2580
+      total: 7230
+  - craft: painter
+    classification: foreman
+    rows:
+    - effective: '2024-11-04'
+      wage: 4950
+      fringe: 2580
+      total: 7530
+  - craft: bricklayer
+    classification: journeyman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5190
+      fringe: 3050
+      total: 8240
+  - craft: bricklayer
+    classification: foreman
+    rows:
+    - effective: '2024-11-04'
+      wage: 5540
+      fringe: 3050
+      total: 8590
+- id: MID-2025-11
+  area: Middlesex
+  issued: '2025-11-03'
+  rates:
+  - craft: electrician
+    classification: journeyman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5885
+      fringe: 3465
+      total: 9350
+    - effective: '2026-10-01'
+      wage: 6110
+      fringe: 3540
+      total: 9650
+  - craft: electrician
+    classification: foreman
+    rows:
+    - effective: '2025-11-03'
+      wage: 6335
+      fringe: 3465
+      total: 9800
+    - effective: '2026-10-01'
+      wage: 6560
+      fringe: 3540
+      total: 10100
+  - craft: carpenter
+    classification: journeyman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5512
+      fringe: 3376
+      total: 8888
+  - craft: carpenter
+    classification: foreman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5912
+      fringe: 3376
+      total: 9288
+  - craft: plumber
+    classification: journeyman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5930
+      fringe: 3530
+      total: 9460
+    - effective: '2026-10-01'
+      wage: 6095
+      fringe: 3610
+      total: 9705
+  - craft: plumber
+    classification: foreman
+    rows:
+    - effective: '2025-11-03'
+      wage: 6355
+      fringe: 3530
+      total: 9885
+    - effective: '2026-10-01'
+      wage: 6520
+      fringe: 3610
+      total: 10130
+  - craft: ironworker
+    classification: journeyman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5655
+      fringe: 4120
+      total: 9775
+  - craft: ironworker
+    classification: foreman
+    rows:
+    - effective: '2025-11-03'
+      wage: 6155
+      fringe: 4120
+      total: 10275
+  - craft: painter
+    classification: journeyman
+    rows:
+    - effective: '2025-11-03'
+      wage: 4790
+      fringe: 2660
+      total: 7450
+  - craft: painter
+    classification: foreman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5090
+      fringe: 2660
+      total: 7750
+  - craft: bricklayer
+    classification: journeyman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5340
+      fringe: 3150
+      total: 8490
+    - effective: '2026-12-01'
+      wage: 5490
+      fringe: 3200
+      total: 8690
+  - craft: bricklayer
+    classification: foreman
+    rows:
+    - effective: '2025-11-03'
+      wage: 5690
+      fringe: 3150
+      total: 8840
+    - effective: '2026-12-01'
+      wage: 5840
+      fringe: 3200
+      total: 9040
+- id: MID-2026-07
+  area: Middlesex
+  issued: '2026-07-06'
+  rates:
+  - craft: electrician
+    classification: journeyman
+    rows:
+    - effective: '2026-07-06'
+      wage: 6240
+      fringe: 3610
+      total: 9850
+  - craft: electrician
+    classification: foreman
+    rows:
+    - effective: '2026-07-06'
+      wage: 6690
+      fringe: 3610
+      total: 10300
+  - craft: carpenter
+    classification: journeyman
+    rows:
+    - effective: '2026-07-06'
+      wage: 5705
+      fringe: 3450
+      total: 9155
+  - craft: carpenter
+    classification: foreman
+    rows:
+    - effective: '2026-07-06'
+      wage: 6105
+      fringe: 3450
+      total: 9555
+  - craft: plumber
+    classification: journeyman
+    rows:
+    - effective: '2026-07-06'
+      wage: 6180
+      fringe: 3655
+      total: 9835
+  - craft: plumber
+    classification: foreman
+    rows:
+    - effective: '2026-07-06'
+      wage: 6605
+      fringe: 3655
+      total: 10260
+  - craft: ironworker
+    classification: journeyman
+    rows:
+    - effective: '2026-07-06'
+      wage: 5820
+      fringe: 4205
+      total: 10025
+  - craft: ironworker
+    classification: foreman
+    rows:
+    - effective: '2026-07-06'
+      wage: 6320
+      fringe: 4205
+      total: 10525
+  - craft: painter
+    classification: journeyman
+    rows:
+    - effective: '2026-07-06'
+      wage: 4930
+      fringe: 2745
+      total: 7675
+  - craft: painter
+    classification: foreman
+    rows:
+    - effective: '2026-07-06'
+      wage: 5230
+      fringe: 2745
+      total: 7975
+  - craft: bricklayer
+    classification: journeyman
+    rows:
+    - effective: '2026-07-06'
+      wage: 5515
+      fringe: 3230
+      total: 8745
+  - craft: bricklayer
+    classification: foreman
+    rows:
+    - effective: '2026-07-06'
+      wage: 5865
+      fringe: 3230
+      total: 9095
+- id: MON-2024-12
+  area: Monmouth
+  issued: '2024-12-02'
+  rates:
+  - craft: electrician
+    classification: journeyman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5560
+      fringe: 3290
+      total: 8850
+  - craft: electrician
+    classification: foreman
+    rows:
+    - effective: '2024-12-02'
+      wage: 6010
+      fringe: 3290
+      total: 9300
+  - craft: carpenter
+    classification: journeyman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5250
+      fringe: 3240
+      total: 8490
+  - craft: carpenter
+    classification: foreman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5650
+      fringe: 3240
+      total: 8890
+  - craft: plumber
+    classification: journeyman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5690
+      fringe: 3400
+      total: 9090
+  - craft: plumber
+    classification: foreman
+    rows:
+    - effective: '2024-12-02'
+      wage: 6115
+      fringe: 3400
+      total: 9515
+  - craft: ironworker
+    classification: journeyman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5440
+      fringe: 3980
+      total: 9420
+  - craft: ironworker
+    classification: foreman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5940
+      fringe: 3980
+      total: 9920
+  - craft: painter
+    classification: journeyman
+    rows:
+    - effective: '2024-12-02'
+      wage: 4590
+      fringe: 2530
+      total: 7120
+  - craft: painter
+    classification: foreman
+    rows:
+    - effective: '2024-12-02'
+      wage: 4890
+      fringe: 2530
+      total: 7420
+  - craft: bricklayer
+    classification: journeyman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5120
+      fringe: 3010
+      total: 8130
+  - craft: bricklayer
+    classification: foreman
+    rows:
+    - effective: '2024-12-02'
+      wage: 5470
+      fringe: 3010
+      total: 8480
+- id: MON-2026-01
+  area: Monmouth
+  issued: '2026-01-05'
+  rates:
+  - craft: electrician
+    classification: journeyman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5790
+      fringe: 3420
+      total: 9210
+  - craft: electrician
+    classification: foreman
+    rows:
+    - effective: '2026-01-05'
+      wage: 6240
+      fringe: 3420
+      total: 9660
+  - craft: carpenter
+    classification: journeyman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5455
+      fringe: 3335
+      total: 8790
+    - effective: '2026-09-14'
+      wage: 5580
+      fringe: 3390
+      total: 8970
+  - craft: carpenter
+    classification: foreman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5855
+      fringe: 3335
+      total: 9190
+    - effective: '2026-09-14'
+      wage: 5980
+      fringe: 3390
+      total: 9370
+  - craft: plumber
+    classification: journeyman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5875
+      fringe: 3505
+      total: 9380
+  - craft: plumber
+    classification: foreman
+    rows:
+    - effective: '2026-01-05'
+      wage: 6300
+      fringe: 3505
+      total: 9805
+  - craft: ironworker
+    classification: journeyman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5610
+      fringe: 4090
+      total: 9700
+  - craft: ironworker
+    classification: foreman
+    rows:
+    - effective: '2026-01-05'
+      wage: 6110
+      fringe: 4090
+      total: 10200
+  - craft: painter
+    classification: journeyman
+    rows:
+    - effective: '2026-01-05'
+      wage: 4735
+      fringe: 2615
+      total: 7350
+  - craft: painter
+    classification: foreman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5035
+      fringe: 2615
+      total: 7650
+  - craft: bricklayer
+    classification: journeyman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5280
+      fringe: 3115
+      total: 8395
+  - craft: bricklayer
+    classification: foreman
+    rows:
+    - effective: '2026-01-05'
+      wage: 5630
+      fringe: 3115
+      total: 8745
+- id: OCE-2025-12
+  area: Ocean
+  issued: '2025-12-01'
+  rates:
+  - craft: electrician
+    classification: journeyman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5715
+      fringe: 3380
+      total: 9095
+  - craft: electrician
+    classification: foreman
+    rows:
+    - effective: '2025-12-01'
+      wage: 6165
+      fringe: 3380
+      total: 9545
+  - craft: carpenter
+    classification: journeyman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5390
+      fringe: 3310
+      total: 8700
+  - craft: carpenter
+    classification: foreman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5790
+      fringe: 3310
+      total: 9100
+  - craft: plumber
+    classification: journeyman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5805
+      fringe: 3470
+      total: 9275
+  - craft: plumber
+    classification: foreman
+    rows:
+    - effective: '2025-12-01'
+      wage: 6230
+      fringe: 3470
+      total: 9700
+  - craft: ironworker
+    classification: journeyman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5570
+      fringe: 4060
+      total: 9630
+  - craft: ironworker
+    classification: foreman
+    rows:
+    - effective: '2025-12-01'
+      wage: 6070
+      fringe: 4060
+      total: 10130
+  - craft: painter
+    classification: journeyman
+    rows:
+    - effective: '2025-12-01'
+      wage: 4680
+      fringe: 2590
+      total: 7270
+  - craft: painter
+    classification: foreman
+    rows:
+    - effective: '2025-12-01'
+      wage: 4980
+      fringe: 2590
+      total: 7570
+  - craft: bricklayer
+    classification: journeyman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5230
+      fringe: 3080
+      total: 8310
+  - craft: bricklayer
+    classification: foreman
+    rows:
+    - effective: '2025-12-01'
+      wage: 5580
+      fringe: 3080
+      total: 8660
+- id: STW-2025-01
+  area: STATEWIDE
+  issued: '2025-01-13'
+  rates:
+  - craft: laborer
+    classification: journeyman
+    rows:
+    - effective: '2025-01-13'
+      wage: 4210
+      fringe: 2840
+      total: 7050
+  - craft: laborer
+    classification: foreman
+    rows:
+    - effective: '2025-01-13'
+      wage: 4460
+      fringe: 2840
+      total: 7300
+  - craft: operating_engineer
+    classification: journeyman
+    rows:
+    - effective: '2025-01-13'
+      wage: 5735
+      fringe: 3850
+      total: 9585
+  - craft: operating_engineer
+    classification: foreman
+    rows:
+    - effective: '2025-01-13'
+      wage: 6210
+      fringe: 3850
+      total: 10060
+- id: STW-2026-01
+  area: STATEWIDE
+  issued: '2026-01-12'
+  rates:
+  - craft: laborer
+    classification: journeyman
+    rows:
+    - effective: '2026-01-12'
+      wage: 4380
+      fringe: 2915
+      total: 7295
+    - effective: '2026-07-01'
+      wage: 4495
+      fringe: 2990
+      total: 7485
+  - craft: laborer
+    classification: foreman
+    rows:
+    - effective: '2026-01-12'
+      wage: 4630
+      fringe: 2915
+      total: 7545
+    - effective: '2026-07-01'
+      wage: 4745
+      fringe: 2990
+      total: 7735
+  - craft: operating_engineer
+    classification: journeyman
+    rows:
+    - effective: '2026-01-12'
+      wage: 5888
+      fringe: 3915
+      total: 9803
+    - effective: '2026-07-01'
+      wage: 6050
+      fringe: 4003
+      total: 10053
+  - craft: operating_engineer
+    classification: foreman
+    rows:
+    - effective: '2026-01-12'
+      wage: 6363
+      fringe: 3915
+      total: 10278
+    - effective: '2026-07-01'
+      wage: 6525
+      fringe: 4003
+      total: 10528

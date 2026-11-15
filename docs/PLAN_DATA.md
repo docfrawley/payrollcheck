@@ -175,18 +175,18 @@ Each is read-only, follows the API rules (an operation id, a one-line descriptio
 
 Move `file_source`, `read_yaml`, `Refused` and the folder into `context/sources.py`, with `files.py`, the server and their tests importing from there. Write `context/wage_rules.py`, then `data/payroll_world/determinations.py`, `writing.py` and a first `data/generate.py` that writes `context/rate_determinations.yaml`. Write `context/filing_rules.yaml` and `context/payroll_glossary.yaml` by hand. Write `context/payroll_files.py`, which reads the three files once at start.
 
-- [ ] `uv run pytest context --no-cov` passes, with `context/tests/test_wage_rules.py` covering:
+- [x] `uv run pytest context --no-cov` passes, with `context/tests/test_wage_rules.py` covering:
   - the determination in force on an award date, and a later determination never chosen
   - the row before and after the pre-listed increase
   - daily overtime over 8 hours, Saturday at 1.5×, the 40-hour floor when the craft's rules don't apply
   - fringe multiplied only where the craft says so
   - the apprentice wage and fringe by level
   - base, fringe, overtime and unregistered-apprentice shortfalls to the cent, with the rounding rule (half up, to the cent) written once
-- [ ] `npm run generate` writes `context/rate_determinations.yaml`, and a second run changes nothing (`git status` clean)
-- [ ] Each new context file names its system, owner and review date and carries "Synthetic data — not real rates"
-- [ ] `npm run check:context` exits 0: `wage_rules.py` and `payroll_files.py` need only the `context` group
-- [ ] `npm run check` is green with no `.env`, with the baseline's counts plus the new tests
-- [ ] Commit: "Add the rate logic and the reference files"
+- [x] `npm run generate` writes `context/rate_determinations.yaml`, and a second run changes nothing (`git status` clean)
+- [x] Each new context file names its system, owner and review date and carries "Synthetic data — not real rates"
+- [x] `npm run check:context` exits 0: `wage_rules.py` and `payroll_files.py` need only the `context` group
+- [x] `npm run check` is green with no `.env`, with the baseline's counts plus the new tests
+- [x] Commit: "Add the rate logic and the reference files"
 
 ## Phase 2: The clean world and the CSV template
 

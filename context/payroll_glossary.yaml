@@ -1,0 +1,103 @@
+# The words of certified payroll review, as the compliance team uses them.
+
+source:
+  system: Compliance manual, glossary
+  owner: Compliance manager
+  reviewed: "2026-11-02"
+
+notice: Synthetic data — not real rates
+
+terms:
+  - term: Apprentice
+    definition: >-
+      A worker registered in an apprenticeship program the US Department of Labor
+      approves, paid a percentage of the journeyman rate by level. A worker paid an
+      apprentice rate who isn't registered is owed the journeyman wage and fringe.
+
+  - term: Apprentice ratio
+    definition: >-
+      How many apprentices of a craft a payroll may have for that craft's
+      journeymen and foremen, set in the craft's rate determination, 1 to 4 when it
+      says nothing.
+
+  - term: Award date
+    definition: >-
+      The date the public body awarded the contract. The rates for the project are
+      those of the rate determination in force on that date.
+
+  - term: Cash in lieu of fringe
+    definition: >-
+      Fringe paid to the worker in cash each payday instead of to a benefit plan,
+      the payroll's fringe cash. Plan fringe and cash together must meet the
+      required fringe.
+
+  - term: Certified payroll
+    definition: >-
+      The MW-562 payroll certification and the payroll register for one week on
+      one project, signed by the person who pays or supervises the payment of the
+      wages.
+
+  - term: Classification
+    definition: >-
+      The craft and level a worker is paid as, such as Electrician Journeyman,
+      Electrician Foreman or Electrician Apprentice.
+
+  - term: Determination
+    definition: >-
+      NJDOL's published prevailing wage rates for a county, or statewide for heavy
+      and highway crafts, with dated rows of wage, fringe and total for each craft
+      and classification, and the craft's overtime rules and apprentice schedule.
+
+  - term: Established craft
+    definition: >-
+      A worker's craft in the general contractor's records, from their first
+      payroll on the job or the apprentice registry. Paying them as a lower-paid
+      craft is a misclassification.
+
+  - term: Fringe
+    definition: >-
+      The benefits part of the prevailing rate, per hour, paid to approved plans or
+      in cash.
+
+  - term: Journeyman
+    definition: >-
+      A fully qualified worker in a craft, paid the craft's journeyman rate. A
+      foreman is paid the foreman rate, above it.
+
+  - term: MW-562
+    definition: >-
+      NJDOL's payroll certification for public works, filed with the payroll
+      register for every week of work on a project.
+
+  - term: No Work Week
+    definition: >-
+      A payroll filed for a week inside the engagement window with no work on the
+      project: the certification filled in and no workers. It keeps its place in the
+      sequence.
+
+  - term: Overtime
+    definition: >-
+      Hours paid at a premium, as the craft's rate determination says: often over 8
+      hours a day and any hour on a Saturday at time and a half, and Sundays and
+      holidays at double time. Under any craft's rules, straight hours over 40 in a
+      week are paid at time and a half.
+
+  - term: Payroll number
+    definition: >-
+      The number of a subcontractor's payroll on a project, from 1, one more each
+      week.
+
+  - term: Prevailing wage
+    definition: >-
+      The wage and fringe NJDOL sets for a craft and classification, which every
+      worker on a public works project must be paid at least.
+
+  - term: Registration
+    definition: >-
+      A contractor's public works contractor registration with NJDOL, valid for a
+      year from its date and needed on every date of work on a public works project.
+
+  - term: Wage payment date
+    definition: >-
+      The date the week's wages were paid, the MW-562's "Date Wages Due & Paid".
+      The payroll is due within 10 days of it.

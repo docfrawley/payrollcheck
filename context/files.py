@@ -5,12 +5,12 @@ nothing has none. It reads only from its own folder and writes nothing."""
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Literal
 
 import yaml
 
-FOLDER = Path(__file__).parent
+from context.sources import FOLDER, Refused, file_source, read_yaml
+
 DocumentName = Literal["policy_wording", "claims_manual"]
 RecordName = Literal["claim", "policy", "previous_claim"]
 PlanName = Literal["economy", "premium", "first"]
@@ -28,10 +28,6 @@ FRONT_MATTER = "---\n"
 HEADING = re.compile(r"^## (\d+)\. (.+)$", re.MULTILINE)
 PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
 UNKNOWN_TERM = 'The glossary doesn\'t define "{term}". These are the terms it does.'
-
-
-class Refused(Exception):
-    """A lookup the context layer refuses, with its reason."""
 
 
 @dataclass(frozen=True)
@@ -52,18 +48,6 @@ class Document:
     version: str
     source: dict[str, str]
     sections: dict[int, Section]
-
-
-def file_source(file: str, source: dict[str, str]) -> dict[str, str]:
-    """A file's source as an answer names it: the file, and its system, owner and
-    review date."""
-    return {"file": file} | source
-
-
-def read_yaml(file: str) -> dict[str, Any]:
-    """Read one of the YAML files, with its source."""
-    data = yaml.safe_load((FOLDER / file).read_text(encoding="utf-8"))
-    return data | {"source": file_source(file, data["source"])}
 
 
 def split_sections(name: DocumentName, body: str) -> dict[int, Section]:
