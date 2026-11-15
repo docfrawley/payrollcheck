@@ -1,5 +1,7 @@
 """The specs of the worlds the generator draws: the development world, Pinelands
-Builders' three projects and eight subcontractors over twelve weeks."""
+Builders' three projects and eight subcontractors over twelve weeks, and the
+held-out world, three other projects in the same counties with five other
+subcontractors over the last eight of those weeks, kept for evaluation."""
 
 from datetime import date
 
@@ -142,4 +144,104 @@ DEVELOPMENT = Spec(
         ApprenticeSpec(10, "carpenter", (), weeks=(12, 12), unregistered_level=1),
     ),
     lapse=("SUB-06", "2026-10-11", "2026-10-18"),
+)
+
+HELD_OUT = Spec(
+    name="held_out",
+    seed=20261004,
+    first_week_ending=date(2026, 10, 4),
+    weeks=8,
+    history=False,
+    case_week_offset=50,
+    first_worker=501,
+    business_date=date(2026, 11, 23),
+    compliance_manager=DANA,
+    registered_from=date(2026, 2, 2),
+    projects=(
+        Project(
+            "PRJ-51",
+            "Library expansion",
+            "Middlesex",
+            "Edison Public Library, Edison",
+            "Township of Edison",
+            "TE-2026-031",
+            date(2026, 5, 4),
+            MARCUS,
+        ),
+        Project(
+            "PRJ-52",
+            "Fire station",
+            "Monmouth",
+            "Fire Station 3, Long Branch",
+            "City of Long Branch",
+            "LB-2026-09",
+            date(2026, 4, 27),
+            MARCUS,
+        ),
+        Project(
+            "PRJ-53",
+            "Bridge deck repair",
+            "Ocean",
+            "Route 37 bridge over the Toms River, Toms River",
+            "County of Ocean",
+            "OC-2026-BR-047",
+            date(2026, 6, 1),
+            PRIYA,
+        ),
+    ),
+    subcontractors=(
+        SubcontractorSpec(
+            "SUB-51",
+            "Hudson Line Electric LLC",
+            ("electrician",),
+            "Oscar Lindqvist, Treasurer",
+            "Oscar Lindqvist",
+            "hudsonlineelectric.example",
+            (1, 1, 3),
+        ),
+        SubcontractorSpec(
+            "SUB-52",
+            "Palisades Building Trades Inc.",
+            ("carpenter", "ironworker"),
+            "Helen Romano, President",
+            "Helen Romano",
+            "palisadesbuilding.example",
+            (1, 2, 4),
+        ),
+        SubcontractorSpec(
+            "SUB-53",
+            "Barnegat Mechanical LLC",
+            ("plumber",),
+            "Desmond Walsh, Owner",
+            "Desmond Walsh",
+            "barnegatmechanical.example",
+            (2, 1, 5),
+        ),
+        SubcontractorSpec(
+            "SUB-54",
+            "Ironbound Finishes Co.",
+            ("painter", "bricklayer"),
+            "Ana Costa, Office Manager",
+            "Ana Costa",
+            "ironboundfinishes.example",
+            (1, 3, 2),
+        ),
+        SubcontractorSpec(
+            "SUB-55",
+            "Navesink Heavy Civil Inc.",
+            ("laborer", "operating_engineer"),
+            "Ray Sullivan, Controller",
+            "Ray Sullivan",
+            "navesinkheavycivil.example",
+            (4, 6, 1),
+        ),
+    ),
+    apprentices=(
+        ApprenticeSpec(1, "electrician", ((2, "2025-10-06"),)),
+        ApprenticeSpec(6, "electrician", ((4, "2023-09-05"),)),
+        ApprenticeSpec(3, "plumber", ((1, "2026-01-12"), (2, "2026-11-02"))),
+        ApprenticeSpec(11, "electrician", (), weeks=(8, 8), unregistered_level=2),
+    ),
+    lapse=("SUB-55", "2026-10-11", "2026-10-18"),
+    apart_from=(DEVELOPMENT,),
 )

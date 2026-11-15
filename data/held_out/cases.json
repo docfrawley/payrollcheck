@@ -1,0 +1,1766 @@
+[
+  {
+    "case_id": "PC-5101",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 1,
+    "week_ending": "2026-10-04",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5101-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5102",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 1,
+    "week_ending": "2026-10-04",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5102-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5104",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 1,
+    "week_ending": "2026-10-04",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5104-1.csv",
+        "received_on": "2026-10-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5106",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 1,
+    "week_ending": "2026-10-04",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5106-1.csv",
+        "received_on": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5108",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 1,
+    "week_ending": "2026-10-04",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5108-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5115",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 1,
+    "week_ending": "2026-10-04",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5115-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5201",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5201-1.csv",
+        "received_on": "2026-10-16"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5202",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5202-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5203",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5203-1.csv",
+        "received_on": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5204",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5204-1.csv",
+        "received_on": "2026-10-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5206",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5206-1.csv",
+        "received_on": "2026-10-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5207",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5207-1.csv",
+        "received_on": "2026-10-16"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5208",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5208-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5214",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5214-1.csv",
+        "received_on": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5215",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 2,
+    "week_ending": "2026-10-11",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5215-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5301",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5301-1.csv",
+        "received_on": "2026-10-21"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5302",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5302-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5303",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5303-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5304",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5304-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5306",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5306-1.csv",
+        "received_on": "2026-11-01"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5307",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5307-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5308",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5308-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5309",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-54",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5309-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5311",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-51",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5311-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5314",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5314-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5315",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 3,
+    "week_ending": "2026-10-18",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5315-1.csv",
+        "received_on": "2026-10-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5401",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5401-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5402",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5402-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5403",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5403-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5404",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5404-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5405",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-55",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5405-1.csv",
+        "received_on": "2026-10-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5406",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5406-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5407",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5407-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5408",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5408-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5409",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-54",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5409-1.csv",
+        "received_on": "2026-10-28"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5411",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-51",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5411-1.csv",
+        "received_on": "2026-10-28"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5412",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-52",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5412-1.csv",
+        "received_on": "2026-10-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5414",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5414-1.csv",
+        "received_on": "2026-10-28"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5415",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 4,
+    "week_ending": "2026-10-25",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5415-1.csv",
+        "received_on": "2026-10-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5501",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5501-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5502",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5502-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5503",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5503-1.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5504",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5504-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5505",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-55",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5505-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5506",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5506-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5507",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5507-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5508",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5508-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5509",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-54",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5509-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5511",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-51",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5511-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5512",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-52",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5512-1.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5513",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-53",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5513-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5514",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5514-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5515",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 5,
+    "week_ending": "2026-11-01",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5515-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5601",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5601-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5602",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5602-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5603",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5603-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5604",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5604-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5605",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-55",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5605-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5606",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5606-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5607",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5607-1.csv",
+        "received_on": "2026-11-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5608",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5608-1.csv",
+        "received_on": "2026-11-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5609",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-54",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5609-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5610",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-55",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5610-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5611",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-51",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5611-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5612",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-52",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5612-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5613",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-53",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5613-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5614",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5614-1.csv",
+        "received_on": "2026-11-25"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5615",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 6,
+    "week_ending": "2026-11-08",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5615-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5701",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5701-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5702",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5702-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5703",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5703-1.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5704",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5704-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5705",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-55",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5705-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5706",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5706-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5707",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5707-1.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5708",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5708-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5709",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-54",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5709-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5710",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-55",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5710-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5711",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-51",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5711-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5712",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-52",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5712-1.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5713",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-53",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5713-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5714",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5714-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5715",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 7,
+    "week_ending": "2026-11-15",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5715-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5801",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-51",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5801-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5802",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-52",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5802-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5803",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-53",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5803-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5804",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-54",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5804-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5805",
+    "project_id": "PRJ-51",
+    "subcontractor_id": "SUB-55",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5805-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5806",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-51",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5806-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5807",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-52",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5807-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5808",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-53",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5808-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5809",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-54",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5809-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5810",
+    "project_id": "PRJ-52",
+    "subcontractor_id": "SUB-55",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5810-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5811",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-51",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5811-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5812",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-52",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5812-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5813",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-53",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5813-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5814",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-54",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5814-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-5815",
+    "project_id": "PRJ-53",
+    "subcontractor_id": "SUB-55",
+    "week": 8,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-5815-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  }
+]

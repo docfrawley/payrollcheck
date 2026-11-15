@@ -5,11 +5,13 @@ from pathlib import Path
 
 from context import payroll_files
 from context.wage_rules import rate_table
-from data.generate import DATA, DEVELOPMENT_FOLDER, ROOT, generate
+from data.generate import DATA, DEVELOPMENT_FOLDER, HELD_OUT_FOLDER, ROOT, generate
 from data.payroll_world import determinations
 
 # The folders the generator writes in full.
-GENERATED_FOLDERS = [f"{DATA.name}/{DEVELOPMENT_FOLDER}"]
+GENERATED_FOLDERS = [
+    f"{DATA.name}/{folder}" for folder in (DEVELOPMENT_FOLDER, HELD_OUT_FOLDER)
+]
 
 
 def written(root: Path) -> dict[str, bytes]:

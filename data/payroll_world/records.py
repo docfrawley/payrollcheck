@@ -5,6 +5,7 @@ from typing import Any
 
 from context.sources import SYNTHETIC
 from data.payroll_world.cases import SeededSet
+from data.payroll_world.corruptions import Label
 from data.payroll_world.lifecycle import Case
 from data.payroll_world.reference import source
 from data.payroll_world.world import World
@@ -124,22 +125,33 @@ def cases_record(cases: tuple[Case, ...]) -> list[dict[str, Any]]:
     ]
 
 
+def label_record(label: Label) -> dict[str, Any]:
+    return {
+        "case_id": label.case_id,
+        "rule": label.rule,
+        "worker_id": label.worker_id,
+        "line_no": label.line_no,
+        "expected_shortfall_cents": label.expected_shortfall_cents,
+    }
+
+
 def labels_record(seeded: SeededSet) -> dict[str, Any]:
     """The ground-truth labels: every exception a perfect review finds, by case,
     and the cases it flags for a hidden instruction."""
     return {
         "notice": SYNTHETIC,
-        "exceptions": [
-            {
-                "case_id": label.case_id,
-                "rule": label.rule,
-                "worker_id": label.worker_id,
-                "line_no": label.line_no,
-                "expected_shortfall_cents": label.expected_shortfall_cents,
-            }
-            for label in seeded.labels
-        ],
+        "exceptions": [label_record(label) for label in seeded.labels],
         "screening_flags": list(seeded.screening_flags),
+    }
+
+
+def tiny_labels_record(seeded: SeededSet, tiny: tuple[str, ...]) -> dict[str, Any]:
+    """The tiny set's cases with their labels, as the development set has them."""
+    return {
+        "notice": SYNTHETIC,
+        "cases": list(tiny),
+        "exceptions": [label_record(x) for x in seeded.labels if x.case_id in tiny],
+        "screening_flags": [case for case in seeded.screening_flags if case in tiny],
     }
 
 

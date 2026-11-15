@@ -55,3 +55,32 @@ apprentices:
   levels:
   - level: 1
     from: '2026-02-02'
+- worker_id: W-534
+  name: Quinn Silva
+  craft: electrician
+  sponsor: Central Jersey Electrical JATC
+  program: Inside wireman apprenticeship, USDOL program NJ-2025-6903
+  registered_on: '2025-10-06'
+  levels:
+  - level: 2
+    from: '2025-10-06'
+- worker_id: W-535
+  name: Chen Mahoney
+  craft: electrician
+  sponsor: Central Jersey Electrical JATC
+  program: Inside wireman apprenticeship, USDOL program NJ-2023-2162
+  registered_on: '2023-09-05'
+  levels:
+  - level: 4
+    from: '2023-09-05'
+- worker_id: W-536
+  name: Teresa Brennan
+  craft: plumber
+  sponsor: Raritan Bay Plumbers JATC
+  program: Plumber and pipefitter apprenticeship, USDOL program NJ-2026-9549
+  registered_on: '2026-01-12'
+  levels:
+  - level: 1
+    from: '2026-01-12'
+  - level: 2
+    from: '2026-11-02'

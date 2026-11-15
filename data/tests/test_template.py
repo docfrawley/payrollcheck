@@ -7,6 +7,7 @@ import re
 
 import pytest
 
+from data.generate import PAYROLLS
 from data.payroll_world.template import (
     CERTIFICATION,
     COLUMNS,
@@ -14,7 +15,8 @@ from data.payroll_world.template import (
     read_payroll,
     write_payroll,
 )
-from data.tests.development_set import CASES, PAYROLL_FILES
+from data.tests.development_set import CASES
+from data.tests.sets import SETS, LabelledSet, each_set
 
 MONEY = ("base_rate", "fringe_rate", "fringe_cash", "gross", "deductions", "net")
 CERTIFIED = (*CERTIFICATION, "payroll_notes")
@@ -67,6 +69,11 @@ def test_money_is_refused_when_it_isnt_dollars_and_cents():
         cents("62.505")
 
 
+PAYROLL_FILES = sorted(
+    path for labelled in SETS for path in (labelled.folder / PAYROLLS).glob("*.csv")
+)
+
+
 @pytest.mark.parametrize("path", PAYROLL_FILES, ids=lambda path: path.stem)
 def test_every_payroll_is_in_the_template(path):
     text = path.read_text(encoding="utf-8")
@@ -79,8 +86,9 @@ def test_every_payroll_is_in_the_template(path):
     assert write_payroll(read_payroll(text)) == text
 
 
-def test_the_template_reads_back_every_payroll_it_writes():
-    for case in CASES:
+@each_set
+def test_the_template_reads_back_every_payroll_it_writes(labelled: LabelledSet):
+    for case in labelled.cases:
         for submission in case.submissions:
             payroll = submission.payroll
             assert read_payroll(write_payroll(payroll)) == payroll

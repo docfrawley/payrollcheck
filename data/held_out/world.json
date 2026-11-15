@@ -1,0 +1,181 @@
+{
+  "notice": "Synthetic data — not real rates",
+  "business_date": "2026-11-23",
+  "weeks": [
+    {
+      "week": 1,
+      "week_ending": "2026-10-04"
+    },
+    {
+      "week": 2,
+      "week_ending": "2026-10-11"
+    },
+    {
+      "week": 3,
+      "week_ending": "2026-10-18"
+    },
+    {
+      "week": 4,
+      "week_ending": "2026-10-25"
+    },
+    {
+      "week": 5,
+      "week_ending": "2026-11-01"
+    },
+    {
+      "week": 6,
+      "week_ending": "2026-11-08"
+    },
+    {
+      "week": 7,
+      "week_ending": "2026-11-15"
+    },
+    {
+      "week": 8,
+      "week_ending": "2026-11-22"
+    }
+  ],
+  "projects": [
+    {
+      "project_id": "PRJ-51",
+      "name": "Library expansion",
+      "county": "Middlesex",
+      "location": "Edison Public Library, Edison",
+      "public_body": "Township of Edison",
+      "contract_no": "TE-2026-031",
+      "award_date": "2026-05-04",
+      "reviewer": "marcus.oyelaran@payrollcheck.example",
+      "subcontractors": [
+        {
+          "subcontractor_id": "SUB-51",
+          "first_week": 1,
+          "last_week": 8,
+          "first_week_ending": "2026-10-04",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-52",
+          "first_week": 1,
+          "last_week": 8,
+          "first_week_ending": "2026-10-04",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-53",
+          "first_week": 2,
+          "last_week": 8,
+          "first_week_ending": "2026-10-11",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-54",
+          "first_week": 1,
+          "last_week": 8,
+          "first_week_ending": "2026-10-04",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-55",
+          "first_week": 4,
+          "last_week": 8,
+          "first_week_ending": "2026-10-25",
+          "last_week_ending": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "project_id": "PRJ-52",
+      "name": "Fire station",
+      "county": "Monmouth",
+      "location": "Fire Station 3, Long Branch",
+      "public_body": "City of Long Branch",
+      "contract_no": "LB-2026-09",
+      "award_date": "2026-04-27",
+      "reviewer": "marcus.oyelaran@payrollcheck.example",
+      "subcontractors": [
+        {
+          "subcontractor_id": "SUB-51",
+          "first_week": 1,
+          "last_week": 8,
+          "first_week_ending": "2026-10-04",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-52",
+          "first_week": 2,
+          "last_week": 8,
+          "first_week_ending": "2026-10-11",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-53",
+          "first_week": 1,
+          "last_week": 8,
+          "first_week_ending": "2026-10-04",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-54",
+          "first_week": 3,
+          "last_week": 8,
+          "first_week_ending": "2026-10-18",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-55",
+          "first_week": 6,
+          "last_week": 8,
+          "first_week_ending": "2026-11-08",
+          "last_week_ending": "2026-11-22"
+        }
+      ]
+    },
+    {
+      "project_id": "PRJ-53",
+      "name": "Bridge deck repair",
+      "county": "Ocean",
+      "location": "Route 37 bridge over the Toms River, Toms River",
+      "public_body": "County of Ocean",
+      "contract_no": "OC-2026-BR-047",
+      "award_date": "2026-06-01",
+      "reviewer": "priya.raman@payrollcheck.example",
+      "subcontractors": [
+        {
+          "subcontractor_id": "SUB-51",
+          "first_week": 3,
+          "last_week": 8,
+          "first_week_ending": "2026-10-18",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-52",
+          "first_week": 4,
+          "last_week": 8,
+          "first_week_ending": "2026-10-25",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-53",
+          "first_week": 5,
+          "last_week": 8,
+          "first_week_ending": "2026-11-01",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-54",
+          "first_week": 2,
+          "last_week": 8,
+          "first_week_ending": "2026-10-11",
+          "last_week_ending": "2026-11-22"
+        },
+        {
+          "subcontractor_id": "SUB-55",
+          "first_week": 1,
+          "last_week": 8,
+          "first_week_ending": "2026-10-04",
+          "last_week_ending": "2026-11-22"
+        }
+      ]
+    }
+  ]
+}

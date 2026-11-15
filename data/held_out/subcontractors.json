@@ -1,0 +1,52 @@
+[
+  {
+    "subcontractor_id": "SUB-51",
+    "legal_name": "Hudson Line Electric LLC",
+    "fein": "24-7152360",
+    "registration_no": "739259",
+    "payroll_contact": {
+      "name": "Oscar Lindqvist",
+      "email": "payroll@hudsonlineelectric.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-52",
+    "legal_name": "Palisades Building Trades Inc.",
+    "fein": "95-4525143",
+    "registration_no": "976668",
+    "payroll_contact": {
+      "name": "Helen Romano",
+      "email": "payroll@palisadesbuilding.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-53",
+    "legal_name": "Barnegat Mechanical LLC",
+    "fein": "98-3334360",
+    "registration_no": "842121",
+    "payroll_contact": {
+      "name": "Desmond Walsh",
+      "email": "payroll@barnegatmechanical.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-54",
+    "legal_name": "Ironbound Finishes Co.",
+    "fein": "31-4675125",
+    "registration_no": "408998",
+    "payroll_contact": {
+      "name": "Ana Costa",
+      "email": "payroll@ironboundfinishes.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-55",
+    "legal_name": "Navesink Heavy Civil Inc.",
+    "fein": "72-2970498",
+    "registration_no": "505210",
+    "payroll_contact": {
+      "name": "Ray Sullivan",
+      "email": "payroll@navesinkheavycivil.example"
+    }
+  }
+]

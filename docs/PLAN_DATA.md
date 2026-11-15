@@ -123,7 +123,7 @@ The manifest places errors so that, after seeding and before any dispatch, these
 
 ### The other sets
 
-- **Held-out**, from its own seed and manifest: three new projects in the same three counties, five new subcontractors with their own workers and apprentices, and eight weeks, about 100 payrolls, with no history: each case has one submission. Its manifest has the same mix at about half the size: 23 errors with every rule code at least once, 2 hidden instructions and 5 decoys. Its subcontractors and apprentices are in the same registry and apprentice files.
+- **Held-out**, from its own seed and manifest: three new projects in the same three counties, five new subcontractors with their own workers (none sharing a name with the development world's) and apprentices, and eight weeks, the development world's weeks 5 to 12, about 100 payrolls, with no history: each case has one submission and waits for review. Its manifest has the same mix at about half the size: 23 errors with every rule code at least once, 2 hidden instructions and 5 decoys. Its subcontractors and apprentices are in the same registry and apprentice files.
 - **Tiny:** 10 development cases, one for each of the eight check families, one hidden instruction and one decoy, listed in `tiny_labels.json` with their labels.
 
 ### The expected Copilot answers
@@ -227,15 +227,15 @@ Write `manifest.py` and `corruptions.py`. Write `data/error_manifest.yaml` by ha
 
 Write `data/held_out_manifest.yaml` against a second world from its own seed, with its files in `data/held_out/` and its labels in `data/evals/held_out_labels.json`. Choose the tiny set into `data/evals/tiny_labels.json`. Write `periods.py` and `expected_answers.py`, and generate `data/copilot_expected.json`.
 
-- [ ] `uv run pytest data --no-cov` passes, covering:
+- [x] `uv run pytest data --no-cov` passes, covering:
   - **Held-out:** about 100 payrolls, five subcontractors none of which is in the development set, its own workers, the same three counties and eight crafts, every rule code at least once, 2 screening flags, 5 decoys, and the same consistency checks as the development set
   - **Tiny:** 10 development cases, covering the eight check families, one hidden instruction and one decoy, with labels equal to the development labels for those cases
   - **Periods:** last week, this month and the last four weeks from the business date, on `week_ending`, including a business date that isn't a Monday
   - **Expected answers:** an answer for each of the six questions, every case in Marcus's scope; PC-0311's three exceptions; the Middlesex journeyman electrician's row and its effective date of 2026-10-01; recomputing the file gives the same answers
-- [ ] The registry and apprentice files hold both worlds' subcontractors and apprentices
-- [ ] Determinism holds across all three sets
-- [ ] `npm run check` is green with no `.env`
-- [ ] Commit: "Add the held-out and tiny sets and the Copilot's expected answers"
+- [x] The registry and apprentice files hold both worlds' subcontractors and apprentices
+- [x] Determinism holds across all three sets
+- [x] `npm run check` is green with no `.env`
+- [x] Commit: "Add the held-out and tiny sets and the Copilot's expected answers"
 
 ## Phase 5: The context server's new tools
 

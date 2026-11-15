@@ -176,6 +176,8 @@ class Spec:
     apprentices: tuple[ApprenticeSpec, ...]
     # The subcontractor whose registration lapses, and the dates it lapses between.
     lapse: tuple[str, str, str]
+    # The worlds whose workers' names this world's workers never share.
+    apart_from: tuple["Spec", ...] = ()
 
 
 @dataclass(frozen=True)
@@ -326,6 +328,18 @@ def crew_classifications(
     return [(crafts[i % len(crafts)], c) for i, c in enumerate(classifications)]
 
 
+def worker_names(spec: Spec, count: int) -> list[str]:
+    """The names of a world's workers, drawn once for the whole world from the
+    names no world it is kept apart from has drawn."""
+    taken = {
+        name
+        for other in spec.apart_from
+        for name in worker_names(other, len(build_world(other).workers))
+    }
+    names = [f"{first} {last}" for first in FIRST_NAMES for last in LAST_NAMES]
+    return draw(spec.seed, "names").sample([n for n in names if n not in taken], count)
+
+
 def workers(spec: Spec, pairs: list[Engagement]) -> list[Worker]:
     """Every crew's workers, then the apprentices in theirs, with names drawn once
     for the whole world."""
@@ -340,8 +354,7 @@ def workers(spec: Spec, pairs: list[Engagement]) -> list[Worker]:
         (a.pair, a.craft, APPRENTICE, a.weeks, a.unregistered_level)
         for a in spec.apprentices
     ]
-    names = [f"{first} {last}" for first in FIRST_NAMES for last in LAST_NAMES]
-    chosen = draw(spec.seed, "names").sample(names, len(places))
+    chosen = worker_names(spec, len(places))
     return [
         Worker(f"W-{spec.first_worker + i:03d}", name, *place)
         for i, (name, place) in enumerate(zip(chosen, places, strict=True))
