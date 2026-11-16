@@ -71,7 +71,14 @@ reviewers = Table(
     Column("name", Text, nullable=False),
     Column("role", Text, nullable=False),
     Column("email", Text, nullable=False, unique=True),
-    Column("can_approve_over_limit", Boolean, nullable=False),
+)
+# The projects each reviewer reviews, which make their scope: every project for the
+# compliance manager.
+project_reviewers = Table(
+    "project_reviewers",
+    metadata,
+    Column("reviewer_id", Text, ForeignKey("reviewers.reviewer_id"), primary_key=True),
+    Column("project_id", Text, ForeignKey("projects.project_id"), primary_key=True),
 )
 projects = Table(
     "projects",

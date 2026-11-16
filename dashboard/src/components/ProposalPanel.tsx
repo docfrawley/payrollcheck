@@ -9,12 +9,10 @@ import {
 } from "../api";
 import { stageLabels } from "../format";
 import { REQUEST_FAILED } from "../refusals";
-import { useReviewer } from "../reviewer";
 import { useAction } from "../useAction";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DiffView } from "./DiffView";
 import { ModelName } from "./ModelName";
-import { NotAllowed } from "./NotAllowed";
 import { ReasonForm } from "./ReasonForm";
 
 // The stage a round is at while each kind of proposal waits.
@@ -38,24 +36,19 @@ export function ProposalPanel({
   onReviewed: () => void;
   onRefused: (refusal: string) => void;
 }>) {
-  const reviewer = useReviewer();
   return (
     <section className="panel" aria-labelledby="proposal-title">
       <h2 id="proposal-title">{stageLabels[WAITING[proposal.kind]]}</h2>
       <p className="reason">{proposal.reason}</p>
       {proposal.kind === "change" && <ModelChange proposal={proposal} />}
       <DiffView diff={proposal.diff} />
-      {reviewer.can_approve_over_limit ? (
-        <Review
-          key={proposal.proposal_id}
-          round={round}
-          proposal={proposal}
-          onReviewed={onReviewed}
-          onRefused={onRefused}
-        />
-      ) : (
-        <NotAllowed action="approve or reject the improver's proposals" />
-      )}
+      <Review
+        key={proposal.proposal_id}
+        round={round}
+        proposal={proposal}
+        onReviewed={onReviewed}
+        onRefused={onRefused}
+      />
     </section>
   );
 }

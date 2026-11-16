@@ -79,7 +79,7 @@ Dates are ISO, hours have two decimals and money is dollars and cents with two d
 
 ## Our people and settings
 
-- `reviewers.json`: the reviewers, with the email each signs in with and their role: Dana Whitfield is the compliance manager, and Marcus Oyelaran and Priya Raman are reviewers. Until stage 4 makes it a role, Dana Whitfield alone (`can_approve_over_limit`) can start and stop rounds, review the improver's proposals and change the settings.
+- `reviewers.json`: the reviewers, with the email each signs in with, their role (`compliance_manager` or `reviewer`) and the projects they review, which seeding loads into `project_reviewers`: Dana Whitfield is the compliance manager, on every project (`"all"`); Marcus Oyelaran reviews PRJ-01 and PRJ-02, and Priya Raman PRJ-03. Only the compliance manager starts and stops rounds, reviews the improver's proposals and sees or changes the settings.
 - `improvement.json`: the improver's settings to start with: the objective on the held-out set's catch rate, the noise and the tolerance for the catch rate, cost per case and time per case, the spending limit for each round and the payroll agents at once in its evaluations.
 - `models.json`: the models the payroll agent may use, with their reasoning efforts and prices in US dollars per million tokens.
 

@@ -2,22 +2,22 @@
   {
     "reviewer_id": "HND-01",
     "name": "Dana Whitfield",
-    "role": "Compliance Manager",
+    "role": "compliance_manager",
     "email": "dana.whitfield@payrollcheck.example",
-    "can_approve_over_limit": true
+    "projects": "all"
   },
   {
     "reviewer_id": "HND-02",
     "name": "Marcus Oyelaran",
-    "role": "Reviewer",
+    "role": "reviewer",
     "email": "marcus.oyelaran@payrollcheck.example",
-    "can_approve_over_limit": false
+    "projects": ["PRJ-01", "PRJ-02"]
   },
   {
     "reviewer_id": "HND-03",
     "name": "Priya Raman",
-    "role": "Reviewer",
+    "role": "reviewer",
     "email": "priya.raman@payrollcheck.example",
-    "can_approve_over_limit": false
+    "projects": ["PRJ-03"]
   }
 ]

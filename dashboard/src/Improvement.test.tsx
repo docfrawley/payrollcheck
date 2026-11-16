@@ -16,7 +16,7 @@ import {
 } from "./improvementTesting";
 import {
   wholeText,
-  marcus,
+  priya,
   panel,
   Refusal,
   renderAt,
@@ -270,29 +270,22 @@ it("shows a recipe waiting in the same diff", async () => {
   expect(proposal.queryByText("Model before")).toBeNull();
 });
 
-it("shows Marcus what he can't do in place of the buttons", async () => {
-  showPage(improvement(open), { "GET /api/me": marcus });
-  const proposal = await panel("A change is waiting for approval");
-  expect(proposal.queryByRole("button", { name: "Approve" })).toBeNull();
-  expect(proposal.queryByRole("button", { name: "Reject" })).toBeNull();
-  expect(
-    await proposal.findByText(
-      wholeText(
-        "Only the compliance manager can approve or reject the improver's proposals. Marcus Oyelaran can't.",
+it.each(["/improvement", "/improvement/recipes/1"])(
+  "shows a reviewer that %s is the compliance manager's, asking nothing of the backend",
+  async (path) => {
+    const fetchMock = stubApi({ "GET /api/me": priya });
+    renderAt(path);
+    expect(
+      await screen.findByText(
+        wholeText(
+          "Only the compliance manager can see the improver's rounds and recipes. Priya Raman can't.",
+        ),
       ),
-    ),
-  ).toBeDefined();
-  cleanup();
-  showPage(empty, { "GET /api/me": marcus });
-  expect(
-    await screen.findByText(
-      wholeText(
-        "Only the compliance manager can start a round. Marcus Oyelaran can't.",
-      ),
-    ),
-  ).toBeDefined();
-  expect(screen.queryByRole("button", { name: "Start a round" })).toBeNull();
-});
+    ).toBeDefined();
+    expect(sent(fetchMock, "GET /api/improvement")).toHaveLength(0);
+    expect(sent(fetchMock, "GET /api/improvement/recipes/1")).toHaveLength(0);
+  },
+);
 
 it("lists the rounds with their scores, verdicts, reviews and cost", async () => {
   const finished: RoundView = {

@@ -49,6 +49,9 @@ Every phase ends with `npm run check` green and coverage of at least 80%. Tests 
 15. **The role is an enum, and its title comes from it.** `reviewers.role` is `reviewer` or `compliance_manager`. The header shows "Reviewer" or "Compliance Manager", from one map in the dashboard. The reviewers' ids stay `HND-01` to `HND-03`, since the brief doesn't ask to rename them.
 16. **Improvement and Settings are the compliance manager's.** That covers their reads (`get_improvement`, `get_recipe`, `get_settings`) as well as their actions. A reviewer opening either page sees the `NotAllowed` message, and neither page is in their navigation. The Configuration page stays every reviewer's, as the brief leaves it.
 
+17. **A reviewer keeps the appearance.** Made while building phase 1. The light or dark appearance is the browser's own, and it lived on the Settings page. So a reviewer's account menu has **Appearance** in place of Settings. It leads to `/settings`, where a reviewer sees only the appearance choice and "Only the compliance manager can see the settings", and nothing is read from the backend. The Improvement and recipe pages show a reviewer only their title and the not-allowed line.
+18. **The Copilot's starts default to 3 payroll agents.** Made while building phase 1. With `get_settings` now the compliance manager's, the Copilot can no longer read the settings' number for a start the reviewer didn't size. Its `start_dispatch` and `start_evaluation` now default in code to 3, the number the queue page first offers.
+
 ## Design
 
 ### The scope
@@ -176,17 +179,17 @@ No module borrows another's helpers, each literal (statuses, override kinds, mes
 - The leftovers: `resume_case` goes from `agent/tests/invoking.py`, and `test_boundaries.py` gains the three assertions above.
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_seeding.py backend/tests/test_roles.py --no-cov` passes:
+- [x] `uv run pytest backend/tests/test_seeding.py backend/tests/test_roles.py --no-cov` passes:
   - `project_reviewers` holds Dana on PRJ-01, PRJ-02 and PRJ-03, Marcus on PRJ-01 and PRJ-02, and Priya on PRJ-03
   - no `can_approve_over_limit` column
-- [ ] Marcus and Priya get a 403 naming the action on `start_round`, `stop_round`, `approve_proposal`, `reject_proposal`, `change_settings`, `get_improvement`, `get_recipe` and `get_settings`. Dana gets each one's success. All three read `list_evaluations`, `get_evaluation` and `get_configuration`.
-- [ ] `grep -rn can_approve_over_limit backend agent dashboard/src e2e data` finds nothing.
-- [ ] vitest:
+- [x] Marcus and Priya get a 403 naming the action on `start_round`, `stop_round`, `approve_proposal`, `reject_proposal`, `change_settings`, `get_improvement`, `get_recipe` and `get_settings`. Dana gets each one's success. All three read `list_evaluations`, `get_evaluation` and `get_configuration`.
+- [x] `grep -rn can_approve_over_limit backend agent dashboard/src e2e data` finds nothing.
+- [x] vitest:
   - Priya's navigation has no Improvement or Settings, and Dana's has both
   - Priya on `/improvement` and `/settings` sees the not-allowed message
   - the header shows "Reviewer" and "Compliance Manager"
-- [ ] `uv run pytest agent/tests/test_boundaries.py --no-cov` passes with the new assertions.
-- [ ] `npm run check` green. Reviewed by a fresh subagent, findings fixed, committed.
+- [x] `uv run pytest agent/tests/test_boundaries.py --no-cov` passes with the new assertions.
+- [x] `npm run check` green. Reviewed by a fresh subagent, findings fixed, committed.
 
 ### Phase 2: one scope, everywhere
 

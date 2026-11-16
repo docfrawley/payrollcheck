@@ -22,6 +22,14 @@ class Status(StrEnum):
     RETURNED_TO_SUB = "returned_to_sub"
 
 
+class Role(StrEnum):
+    """What a person may do: a reviewer works the cases on their own projects, and
+    the compliance manager every project, the improver's rounds and the settings."""
+
+    REVIEWER = "reviewer"
+    COMPLIANCE_MANAGER = "compliance_manager"
+
+
 class ExceptionSource(StrEnum):
     """What raised an exception: a check tool's finding, the payroll agent's own
     judgment with no check behind it, or a reviewer."""
@@ -329,9 +337,8 @@ class PayrollHistory(BaseModel):
 class Reviewer(BaseModel):
     reviewer_id: str
     name: str
-    role: str
+    role: Role
     email: str
-    can_approve_over_limit: bool
 
 
 class Source(BaseModel):

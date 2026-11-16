@@ -14,6 +14,7 @@ from backend.dependencies import API_KEY_HEADER
 SUPABASE_URL = "https://supabase.test"
 DANA = "dana.whitfield@payrollcheck.example"
 MARCUS = "marcus.oyelaran@payrollcheck.example"
+PRIYA = "priya.raman@payrollcheck.example"
 
 KEY_ID = "test-key"
 KEY = ec.generate_private_key(ec.SECP256R1())

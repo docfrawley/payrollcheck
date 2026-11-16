@@ -186,12 +186,13 @@ export interface ProjectInFull extends Project {
   subcontractors: Engagement[];
 }
 
+export type Role = "reviewer" | "compliance_manager";
+
 export interface Reviewer {
   reviewer_id: string;
   name: string;
-  role: string;
+  role: Role;
   email: string;
-  can_approve_over_limit: boolean;
 }
 
 export interface Step {

@@ -28,9 +28,8 @@ def test_the_signed_in_reviewer(client):
     assert response.json() == {
         "reviewer_id": "HND-01",
         "name": "Dana Whitfield",
-        "role": "Compliance Manager",
+        "role": "compliance_manager",
         "email": DANA,
-        "can_approve_over_limit": True,
     }
 
 
@@ -83,18 +82,18 @@ def test_every_reviewer_operation_needs_a_sign_in_and_the_key_wont_do(
     assert agent_calls == []
 
 
-def test_seeding_stores_each_reviewers_email_and_who_can_sign_off_over_the_limit():
+def test_seeding_stores_each_reviewers_email_and_role():
     with engine().connect() as db:
         rows = db.execute(select(reviewers).order_by(reviewers.c.reviewer_id))
-        seeded = [
-            (row["name"], row["email"], row["can_approve_over_limit"])
-            for row in rows.mappings()
-        ]
+        seeded = [(row["name"], row["email"], row["role"]) for row in rows.mappings()]
     assert seeded == [
-        (h["name"], h["email"], h["can_approve_over_limit"])
-        for h in load("reviewers.json")
+        (h["name"], h["email"], h["role"]) for h in load("reviewers.json")
     ]
-    assert [can for _, _, can in seeded] == [True, False, False]
+    assert [role for _, _, role in seeded] == [
+        "compliance_manager",
+        "reviewer",
+        "reviewer",
+    ]
 
 
 def test_the_public_keys_are_fetched_from_the_supabase_project():

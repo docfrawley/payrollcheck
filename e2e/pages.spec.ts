@@ -70,3 +70,30 @@ test("signing out from the account menu lands on the sign-in page", async ({
   await expect(page).toHaveURL("/sign-in");
   await context.close();
 });
+
+test("the compliance manager has Improvement and Settings, and a reviewer doesn't", async ({
+  browser,
+}) => {
+  const links = async (storageState: string) => {
+    const context = await browser.newContext({ storageState });
+    const page = await context.newPage();
+    await page.goto("/");
+    const who = page.getByLabel("Signed in");
+    await who.getByRole("button", { name: "Account" }).click();
+    const nav = await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link")
+      .allTextContents();
+    const menu = await who.getByRole("link").allTextContents();
+    await context.close();
+    return { nav, menu };
+  };
+  expect(await links(REVIEWERS.dana.storage)).toEqual({
+    nav: ["Queue", "Projects", "Scoreboard", "Improvement", "Configuration"],
+    menu: ["Settings"],
+  });
+  expect(await links(REVIEWERS.priya.storage)).toEqual({
+    nav: ["Queue", "Projects", "Scoreboard", "Configuration"],
+    menu: ["Appearance"],
+  });
+});

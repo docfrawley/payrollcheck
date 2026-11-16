@@ -1,7 +1,10 @@
 import { Navigate, Outlet, Route, Routes } from "react-router";
+import { AppearanceChoice } from "./components/AppearanceChoice";
+import { ComplianceManagerOnly } from "./components/ComplianceManagerOnly";
 import { PageFrame } from "./components/PageFrame";
 import { RequireReviewer } from "./components/RequireReviewer";
 import { StateMessage } from "./components/StateMessage";
+import { SEE_ROUNDS, SEE_SETTINGS } from "./reviewer";
 import { CasePage } from "./pages/CasePage";
 import { ConfigurationPage } from "./pages/ConfigurationPage";
 import { EvaluationPage } from "./pages/EvaluationPage";
@@ -49,11 +52,36 @@ export function App() {
         <Route path={PROJECT_PAGE} element={<ProjectPage />} />
         <Route path={SCOREBOARD} element={<ScoreboardPage />} />
         <Route path={EVALUATION_PAGE} element={<EvaluationPage />} />
-        <Route path={IMPROVEMENT} element={<ImprovementPage />} />
-        <Route path={RECIPE_PAGE} element={<RecipePage />} />
+        <Route
+          path={IMPROVEMENT}
+          element={
+            <ComplianceManagerOnly title="Improvement" action={SEE_ROUNDS}>
+              <ImprovementPage />
+            </ComplianceManagerOnly>
+          }
+        />
+        <Route
+          path={RECIPE_PAGE}
+          element={
+            <ComplianceManagerOnly title="Recipe" action={SEE_ROUNDS}>
+              <RecipePage />
+            </ComplianceManagerOnly>
+          }
+        />
         <Route path={CONFIGURATION} element={<ConfigurationPage />} />
         <Route path={VERSION_PAGE} element={<VersionPage />} />
-        <Route path={SETTINGS} element={<SettingsPage />} />
+        <Route
+          path={SETTINGS}
+          element={
+            <ComplianceManagerOnly
+              title="Appearance"
+              action={SEE_SETTINGS}
+              forOthers={<AppearanceChoice />}
+            >
+              <SettingsPage />
+            </ComplianceManagerOnly>
+          }
+        />
         <Route
           path={INSTRUCTIONS}
           element={<Navigate to={CONFIGURATION} replace />}

@@ -1,4 +1,4 @@
-import { Monitor, Moon, Save, Sun, type LucideIcon } from "lucide-react";
+import { Save } from "lucide-react";
 import { useId, useState } from "react";
 import {
   api,
@@ -8,11 +8,10 @@ import {
 } from "../api";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { FormError } from "../components/FormError";
-import { NotAllowed } from "../components/NotAllowed";
+import { AppearanceChoice } from "../components/AppearanceChoice";
 import { PageHeader } from "../components/PageHeader";
 import { StateMessage } from "../components/StateMessage";
 import { dateTime, label, money } from "../format";
-import { useReviewer } from "../reviewer";
 import {
   GROUPS,
   SETTING_FIELDS,
@@ -21,22 +20,10 @@ import {
   changesBetween,
   inputsOf,
   settingGroups,
-  shown,
   valuesOf,
 } from "../settingsFields";
-import { type Appearance, chooseAppearance, savedAppearance } from "../theme";
 import { useAction } from "../useAction";
 import { useLoad } from "../useLoad";
-
-const APPEARANCES: {
-  appearance: Appearance;
-  label: string;
-  icon: LucideIcon;
-}[] = [
-  { appearance: "light", label: "Light", icon: Sun },
-  { appearance: "dark", label: "Dark", icon: Moon },
-  { appearance: "system", label: "Same as this computer", icon: Monitor },
-];
 
 function lastChange(settings: Settings): string {
   return settings.changed_by
@@ -69,14 +56,9 @@ function SettingsPanels({
   page,
   onSaved,
 }: Readonly<{ page: SettingsData; onSaved: (page: SettingsData) => void }>) {
-  const reviewer = useReviewer();
   return (
     <div className="column">
-      {reviewer.can_approve_over_limit ? (
-        <SettingsForm current={page.current} onSaved={onSaved} />
-      ) : (
-        <ReadOnlySettings current={page.current} />
-      )}
+      <SettingsForm current={page.current} onSaved={onSaved} />
       <Changes changes={page.changes} />
       <ModelsAllowed models={page.models_allowed} />
       <AppearanceChoice />
@@ -198,38 +180,6 @@ function SettingInput({
   );
 }
 
-function ReadOnlySettings({ current }: Readonly<{ current: Settings }>) {
-  return (
-    <>
-      <div className="settings-bar">
-        <p className="muted small">{lastChange(current)}</p>
-      </div>
-      <NotAllowed action="change the settings" />
-      {settingGroups.map((group) => (
-        <section
-          className="panel"
-          key={group}
-          aria-labelledby={`${group}-title`}
-        >
-          <h2 id={`${group}-title`}>{GROUPS[group].title}</h2>
-          <dl className="facts">
-            {SETTING_FIELDS.filter((field) => field.group === group).map(
-              (field) => (
-                <div key={field.id}>
-                  <dt>{field.label}</dt>
-                  <dd className="mono">
-                    {shown(field.unit, field.get(current))}
-                  </dd>
-                </div>
-              ),
-            )}
-          </dl>
-        </section>
-      ))}
-    </>
-  );
-}
-
 function Changes({ changes }: Readonly<{ changes: Settings[] }>) {
   return (
     <section className="panel" aria-labelledby="changes-title">
@@ -295,32 +245,5 @@ function ModelsAllowed({ models }: Readonly<{ models: ModelAllowed[] }>) {
         </table>
       </div>
     </section>
-  );
-}
-
-function AppearanceChoice() {
-  const [appearance, setAppearance] = useState(savedAppearance);
-  return (
-    <fieldset className="panel">
-      <legend>Appearance</legend>
-      <p className="muted small">Saved in this browser only.</p>
-      <div className="appearances">
-        {APPEARANCES.map((choice) => (
-          <label key={choice.appearance} className="appearance">
-            <input
-              type="radio"
-              name="appearance"
-              checked={appearance === choice.appearance}
-              onChange={() => {
-                chooseAppearance(choice.appearance);
-                setAppearance(choice.appearance);
-              }}
-            />
-            <choice.icon />
-            {choice.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
   );
 }

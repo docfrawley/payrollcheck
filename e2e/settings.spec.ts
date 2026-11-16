@@ -51,16 +51,19 @@ test("the appearance is kept in the browser", async ({ page }) => {
   );
 });
 
-test.describe("signed in as Marcus Oyelaran", () => {
-  test.use({ storageState: REVIEWERS.marcus.storage });
+test.describe("signed in as Priya Raman", () => {
+  test.use({ storageState: REVIEWERS.priya.storage });
 
-  test("the settings are read only, and say why", async ({ page }) => {
+  test("the settings are the compliance manager's, and the appearance hers", async ({
+    page,
+  }) => {
     await page.goto("/settings");
     await expect(
       page.getByText(
-        "Only the compliance manager can change the settings. Marcus Oyelaran can't.",
+        "Only the compliance manager can see the settings. Priya Raman can't.",
       ),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Appearance" })).toBeVisible();
   });
 });

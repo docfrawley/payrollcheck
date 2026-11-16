@@ -12,7 +12,7 @@ from sqlalchemy import Connection, select
 
 from backend import api_key, auth
 from backend.database import engine, reviewers
-from backend.models import Reviewer
+from backend.models import Reviewer, Role
 
 SIGN_IN_OUT_OF_REACH = "Sign-in can't be checked: Supabase is out of reach"
 NOT_SIGNED_IN = "The sign-in isn't valid. Please sign in again."
@@ -126,24 +126,19 @@ SignedIn = Annotated[Reviewer, Depends(signed_in_reviewer)]
 SignIn = Annotated[str, Depends(sign_in_of)]
 
 
-def compliance_manager(action: str) -> Callable[[Reviewer, Connection], Reviewer]:
-    """Make the dependency for an action only the compliance manager may take: it
-    returns the signed-in reviewer, or raises a 403 that names the action and says
-    why."""
+ONLY_THE_COMPLIANCE_MANAGER = "Only the compliance manager can {action}. {name} can't."
 
-    def compliance_manager(reviewer: SignedIn, db: Database) -> Reviewer:
-        refuse_unless_compliance_manager(db, reviewer, action)
+
+def compliance_manager(action: str) -> Callable[[Reviewer], Reviewer]:
+    """Make the dependency for what only the compliance manager may do: it returns
+    the signed-in reviewer, or raises a 403 that names the action and says why."""
+
+    def compliance_manager(reviewer: SignedIn) -> Reviewer:
+        if reviewer.role != Role.COMPLIANCE_MANAGER:
+            message = ONLY_THE_COMPLIANCE_MANAGER.format(
+                action=action, name=reviewer.name
+            )
+            raise HTTPException(403, message)
         return reviewer
 
     return compliance_manager
-
-
-def refuse_unless_compliance_manager(
-    db: Connection, reviewer: Reviewer, action: str
-) -> None:
-    """Raise a 403 that names the action and says why, unless the reviewer is the
-    compliance manager, as can_approve_over_limit says until stage 4."""
-    if not reviewer.can_approve_over_limit:
-        raise HTTPException(
-            403, f"Only the compliance manager can {action}. {reviewer.name} can't."
-        )

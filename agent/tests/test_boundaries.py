@@ -7,6 +7,7 @@ import inspect
 from pathlib import Path
 
 from agent import api
+from backend.database import metadata
 from backend.main import app
 
 AGENT = Path(__file__).parent.parent
@@ -160,9 +161,27 @@ def test_nothing_in_the_payroll_agent_imports_the_copilot():
         assert {name for name in imported if name.startswith("copilot")} == set()
 
 
+# The improver pauses for a reviewer's approval of its proposals, which is its own
+# and stays; nothing else of the payroll agent's, the top-level modules of agent/,
+# waits for a person. The Copilot never pauses either, and the check tools are
+# pure functions.
+PAUSES = {"improver"}
+
+
 def test_the_payroll_agent_has_no_memory_and_no_pause():
-    assert {"memory", "reviewer_answer"} & agents_modules() == set()
-    assert "interrupt" not in (AGENT / "harness.py").read_text(encoding="utf-8")
+    assert {"memory", "reviewer_answer", "handler_answer"} & agents_modules() == set()
+    for module in agents_modules() - PAUSES:
+        source = (AGENT / f"{module}.py").read_text(encoding="utf-8")
+        assert "interrupt" not in source, module
+
+
+def test_nothing_sends_a_case_back_to_the_agent():
+    """Send back is a reviewer's answer to the subcontractor, never a request for the
+    agent to look again: one route sends a case back, and no table keeps a decision
+    sent back."""
+    sending_back = [path for path in app.openapi()["paths"] if "send-back" in path]
+    assert sending_back == ["/api/cases/{case_id}/send-back"]
+    assert [name for name in metadata.tables if "sent_back" in name] == []
 
 
 def test_the_heartbeat_uses_nothing_else_in_the_agent():

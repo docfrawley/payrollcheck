@@ -9,7 +9,6 @@ import {
 import { ActionForm } from "../components/ActionForm";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { FormError } from "../components/FormError";
-import { NotAllowed } from "../components/NotAllowed";
 import { PageHeader } from "../components/PageHeader";
 import { ProposalPanel } from "../components/ProposalPanel";
 import { Recipes } from "../components/Recipes";
@@ -17,7 +16,6 @@ import { RoundPanel } from "../components/RoundPanel";
 import { Rounds } from "../components/Rounds";
 import { StateMessage } from "../components/StateMessage";
 import { VersionChart } from "../components/VersionChart";
-import { useReviewer } from "../reviewer";
 import { useAction } from "../useAction";
 import { REFRESH_MS, useLoad } from "../useLoad";
 
@@ -84,15 +82,11 @@ export function ImprovementPage() {
   );
 }
 
-// Start a round, or Stop the round while one is open, for a reviewer who can
-// sign off over the limit; for anyone else, what they can't do and why.
+// Start a round, or Stop the round while one is open.
 function RoundAction({
   open,
   onDone,
 }: Readonly<{ open?: RoundView; onDone: () => void }>) {
-  const reviewer = useReviewer();
-  if (!reviewer.can_approve_over_limit)
-    return <NotAllowed action={open ? "stop a round" : "start a round"} />;
   if (open)
     return <StopRound key={open.round_id} round={open} onStopped={onDone} />;
   return (

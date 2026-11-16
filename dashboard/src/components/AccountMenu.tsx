@@ -1,14 +1,14 @@
-import { ChevronDown, Settings } from "lucide-react";
+import { ChevronDown, Palette, Settings } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { NavLink } from "react-router";
 import { initials } from "../format";
-import { useReviewer } from "../reviewer";
+import { ROLE_TITLES, isComplianceManager, useReviewer } from "../reviewer";
 import { SETTINGS } from "../paths";
 import { SignOutButton } from "./SignOutButton";
 
 // The signed-in reviewer's avatar, which opens a menu with who they are, the
-// Settings page and Sign out. A click outside, focus moving away or Escape
-// closes it.
+// Settings page (Appearance, for a reviewer, who sees only that of it) and Sign
+// out. A click outside, focus moving away or Escape closes it.
 export function AccountMenu() {
   const reviewer = useReviewer();
   const [open, setOpen] = useState(false);
@@ -66,7 +66,7 @@ export function AccountMenu() {
         <div id={menuId} className="account-menu" tabIndex={-1}>
           <p className="account-who">
             <span className="who-name">{reviewer.name}</span>
-            <span className="small">{reviewer.role}</span>
+            <span className="small">{ROLE_TITLES[reviewer.role]}</span>
             <span className="muted small">{reviewer.email}</span>
           </p>
           <NavLink
@@ -76,8 +76,17 @@ export function AccountMenu() {
               setOpen(false);
             }}
           >
-            <Settings />
-            Settings
+            {isComplianceManager(reviewer) ? (
+              <>
+                <Settings />
+                Settings
+              </>
+            ) : (
+              <>
+                <Palette />
+                Appearance
+              </>
+            )}
           </NavLink>
           <SignOutButton className="menu-item" />
         </div>
