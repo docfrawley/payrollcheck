@@ -5,7 +5,9 @@ import { VersionChip } from "../components/Chips";
 import { DiffView } from "../components/DiffView";
 import { Approval } from "../components/Approval";
 import { HeldOutCatchRate } from "../components/HeldOutCatchRate";
+import { MotivatingCases } from "../components/MotivatingCases";
 import { PageHeader } from "../components/PageHeader";
+import { ParameterValues } from "../components/ParameterValues";
 import { StateMessage } from "../components/StateMessage";
 import { VersionChanges } from "../components/VersionChanges";
 import { inWords, label } from "../format";
@@ -78,6 +80,7 @@ function VersionFacts({ version }: Readonly<{ version: VersionDetails }>) {
           <dt>Reasoning effort</dt>
           <dd>{label(version.reasoning_effort)}</dd>
         </div>
+        <ParameterValues parameters={version.parameters} />
         <div>
           <dt>What changed</dt>
           <dd>
@@ -104,6 +107,14 @@ function VersionFacts({ version }: Readonly<{ version: VersionDetails }>) {
           <dt>Reason</dt>
           <dd>{version.reason}</dd>
         </div>
+        {version.based_on !== null && (
+          <div className="fact-wide">
+            <dt>Motivating cases</dt>
+            <dd>
+              <MotivatingCases caseIds={version.motivating_cases} />
+            </dd>
+          </div>
+        )}
       </dl>
       {version.diff !== null && version.verdict_reason && (
         <p className="small muted">

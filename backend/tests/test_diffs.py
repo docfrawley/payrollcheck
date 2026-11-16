@@ -1,4 +1,4 @@
-from backend.diffs import diff
+from backend.diffs import diff, parameter_changes
 
 LINES = [f"Line {n}" for n in range(1, 21)]
 
@@ -43,3 +43,15 @@ def test_the_same_text_has_no_lines():
 def test_a_line_that_looks_like_a_header_is_still_a_line():
     result = diff("--- a rule\nkept", "kept")
     assert shown(result) == [[("removed", "--- a rule"), ("context", "kept")]]
+
+
+def test_only_the_parameters_that_changed_are_listed():
+    before = {"rounding_tolerance_cents": 0}
+    assert parameter_changes(before, before) == []
+    [change] = parameter_changes(before, {"rounding_tolerance_cents": 25})
+    assert (change.name, change.label, change.before, change.after) == (
+        "rounding_tolerance_cents",
+        "Rounding tolerance",
+        0,
+        25,
+    )

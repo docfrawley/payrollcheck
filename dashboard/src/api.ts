@@ -7,6 +7,7 @@ import type {
   RuleEntry,
   Severity,
 } from "./exceptions";
+import type { Diff, ParameterChange, ParameterValue } from "./changes";
 import type { Notice, OutboxRecord } from "./notices";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
@@ -304,19 +305,6 @@ export interface Accepted {
 
 export type VersionStatus = "current" | "kept" | "rolled_back" | "under_test";
 export type Verdict = "kept" | "rolled_back";
-export type DiffLineKind = "context" | "added" | "removed";
-
-export interface DiffLine {
-  kind: DiffLineKind;
-  text: string;
-}
-
-// The lines that differ between two texts, in hunks with their context.
-export interface Diff {
-  added: number;
-  removed: number;
-  hunks: DiffLine[][];
-}
 
 // A version's scores on each set, from the evaluations rounds ran on it.
 export interface VersionScores {
@@ -344,7 +332,10 @@ export interface VersionSummary {
   verdict: Verdict | null;
   verdict_reason: string | null;
   // The check tools' tunable parameters, such as the rounding tolerance.
-  parameters: Record<string, unknown>;
+  parameters: ParameterValue[];
+  parameter_changes: ParameterChange[];
+  // The cases the approved proposal cited, none for version 1.
+  motivating_cases: string[];
   scores: VersionScores;
 }
 

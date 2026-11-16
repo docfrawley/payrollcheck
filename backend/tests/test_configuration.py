@@ -72,6 +72,38 @@ def test_the_payroll_agent_reads_a_version_with_its_parameters(client):
     )
 
 
+TOLERANCE = {
+    "name": "rounding_tolerance_cents",
+    "label": "Rounding tolerance",
+    "unit": "cents",
+}
+
+
+def test_each_version_gives_its_parameters_and_what_it_changed_of_them(client):
+    add_version(
+        PAYROLL_MD,
+        parameters={"rounding_tolerance_cents": 50},
+        motivating_cases=["PC-0311", "PC-1210"],
+    )
+    two, one = configuration(client)["versions"]
+    assert one["parameters"] == [TOLERANCE | {"value": 0}]
+    assert (one["parameter_changes"], one["motivating_cases"]) == ([], [])
+    assert two["parameters"] == [TOLERANCE | {"value": 50}]
+    assert two["parameter_changes"] == [TOLERANCE | {"before": 0, "after": 50}]
+    assert two["motivating_cases"] == ["PC-0311", "PC-1210"]
+    details = version_details(client, 2)
+    assert details["parameter_changes"] == two["parameter_changes"]
+    assert details["motivating_cases"] == ["PC-0311", "PC-1210"]
+    assert version_details(client, 1)["parameter_changes"] == []
+
+
+def test_the_payroll_agent_reads_no_motivating_cases(client):
+    add_version(PAYROLL_MD, motivating_cases=["PC-0311"], verdict="kept")
+    version = client.get("/api/versions/2").json()
+    assert "motivating_cases" not in version
+    assert "scores" not in version
+
+
 def test_the_current_version_is_the_newest_kept(client):
     add_version(PAYROLL_MD + "\nA rule for baggage.\n", verdict="kept")
     add_version(PAYROLL_MD + "\nAnother rule.\n", based_on=2)

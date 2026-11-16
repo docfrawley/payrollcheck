@@ -122,13 +122,13 @@ After pulling this stage, reseed with `npm run seed`.
 
 `backend/parameters.py`, version 1's parameters from it, `parameter_changes` in `backend/diffs.py`, `VersionSummary`'s parameter changes, `versions.motivating_cases`, and the Configuration and version pages.
 
-- [ ] `uv run pytest backend/tests/test_configuration.py backend/tests/test_diffs.py --no-cov` passes, with tests that `get_configuration` and `get_version_details` give each version's parameters and its changes before and after, version 1 changing none.
-- [ ] A test plays a run on a version with `rounding_tolerance_cents` of 50, with a line 40 cents short of the base rate: the rates check's finding is gone on that version and present on version 1 (`agent/tests/test_check_node.py`).
-- [ ] A test of `refuse_out_of_bounds` refuses -1, 101, 2.5, an unknown name and a missing one, each with its reason, and takes 0 and 100.
-- [ ] `get_version`, which the payroll agent reads, still holds no scores and no motivating cases (`backend/tests/test_agent_routes.py`).
-- [ ] vitest: the Configuration page shows the current version's rounding tolerance beside its model and effort, and a version's page its changed parameter before and after and its motivating cases as links (`Configuration.test.tsx`).
-- [ ] `e2e/configuration.spec.ts` sees version 1's rounding tolerance, $0.00, on the page.
-- [ ] `npm run check` green.
+- [x] `uv run pytest backend/tests/test_configuration.py backend/tests/test_diffs.py --no-cov` passes, with tests that `get_configuration` and `get_version_details` give each version's parameters and its changes before and after, version 1 changing none.
+- [x] A test plays a run on a version with `rounding_tolerance_cents` of 50, with a line 40 cents short of the base rate: the rates check's finding is gone on that version and present on version 1 (`agent/tests/test_check_node.py`).
+- [x] A test of `refuse_out_of_bounds` refuses -1, 101, 2.5, an unknown name and a missing one, each with its reason, and takes 0 and 100.
+- [x] `get_version`, which the payroll agent reads, still holds no scores and no motivating cases (in `backend/tests/test_configuration.py`, beside the payroll agent's other reads of a version; `test_agent_routes.py` is about the backend's calls to the agent).
+- [x] vitest: the Configuration page shows the current version's rounding tolerance beside its model and effort, and a version's page its changed parameter before and after and its motivating cases as links (`Configuration.test.tsx`).
+- [x] `e2e/configuration.spec.ts` sees version 1's rounding tolerance, $0.00, on the page.
+- [x] `npm run check` green.
 
 ### Phase 2: the measures and the keep-or-roll-back rule
 

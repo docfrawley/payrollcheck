@@ -2,7 +2,7 @@
 payroll agent and for the Configuration page, and the platform's settings and the
 models allowed, for the Settings page."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import RowMapping, insert, select
@@ -14,7 +14,7 @@ from backend.dependencies import (
     SignedInReviewer,
     compliance_manager,
 )
-from backend.diffs import diff
+from backend.diffs import diff, parameter_changes
 from backend.free_models import model_or_free
 from backend.lookups import (
     allowed_models,
@@ -35,6 +35,7 @@ from backend.models import (
     VersionStatus,
     VersionSummary,
 )
+from backend.parameters import values_of
 from backend.scoreboard import expected_labels, scores_of_versions, version_scores
 
 router = APIRouter()
@@ -72,8 +73,12 @@ def summary_of(
     """A version with what it changed from the version it was based on, if any,
     where it stands and its scores."""
     changes = diff(before["instructions"], row["instructions"]) if before else None
+    fields: dict[str, Any] = dict(row) | {"parameters": values_of(row["parameters"])}
     return VersionSummary(
-        **row,
+        **fields,
+        parameter_changes=(
+            parameter_changes(before["parameters"], row["parameters"]) if before else []
+        ),
         status=status_of(row, current),
         model_before=before["model"] if before else None,
         reasoning_effort_before=before["reasoning_effort"] if before else None,

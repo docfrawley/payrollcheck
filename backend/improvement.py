@@ -721,9 +721,9 @@ def create_version(round_id: str, db: Database) -> NewNumber:
         insert(versions).values(
             number=number,
             **change.model_dump(),
-            # The improver can't propose the parameters until stage 5, so a change
-            # keeps its base's.
+            # A change keeps its base's parameters until the improver proposes them.
             parameters=base["parameters"],
+            motivating_cases=[],
             proposed_by=proposer(row),
             based_on=base["number"],
             round_id=round_id,

@@ -1,10 +1,13 @@
-"""The lines that differ between two texts, such as two versions of the case
-agent's instructions or of the improver's recipe, with two lines of context, as
-Python's difflib finds them."""
+"""What differs between two versions: the lines of two texts, such as two versions
+of the payroll agent's instructions or of the improver's recipe, with two lines of
+context, as Python's difflib finds them, and the check tools' parameters that
+changed."""
 
 import difflib
+from typing import Any
 
-from backend.models import Diff, DiffLine, DiffLineKind
+from backend.models import Diff, DiffLine, DiffLineKind, ParameterChange
+from backend.parameters import PARAMETERS
 
 CONTEXT = 2
 KINDS = {" ": DiffLineKind.CONTEXT, "+": DiffLineKind.ADDED, "-": DiffLineKind.REMOVED}
@@ -29,3 +32,19 @@ def diff(old: str, new: str) -> Diff:
         removed=changed.count(DiffLineKind.REMOVED),
         hunks=hunks,
     )
+
+
+def parameter_changes(
+    before: dict[str, Any], after: dict[str, Any]
+) -> list[ParameterChange]:
+    """Return each parameter in the catalogue whose value differs between two
+    versions, with its value before and after."""
+    return [
+        ParameterChange(
+            **allowed.labelled(),
+            before=before[allowed.name],
+            after=after[allowed.name],
+        )
+        for allowed in PARAMETERS
+        if before[allowed.name] != after[allowed.name]
+    ]

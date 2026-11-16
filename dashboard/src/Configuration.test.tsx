@@ -21,6 +21,8 @@ it("shows the current version and every version with its status", async () => {
   );
   expect(current.getByText("google/gemini-3.5-flash-lite")).toBeDefined();
   expect(current.getByText("Minimal")).toBeDefined();
+  expect(current.getByText("Rounding tolerance")).toBeDefined();
+  expect(current.getByText("$0.50")).toBeDefined();
   // No held-out catch rate until rounds score it.
   expect(current.getAllByText("Not scored yet")).toHaveLength(1);
 
@@ -31,7 +33,8 @@ it("shows the current version and every version with its status", async () => {
   expect(two.getByText("Current").className).toBe("chip version-current");
   expect(rows[1].textContent).toContain("+12 −3 lines");
   expect(rows[1].textContent).toContain(
-    "openai/gpt-6-luna at low to google/gemini-3.5-flash-lite at minimal",
+    "openai/gpt-6-luna at low to google/gemini-3.5-flash-lite at minimal, " +
+      "rounding tolerance $0.00 to $0.50",
   );
   expect(rows[1].textContent).toContain("Dana Whitfield, Oct 5");
   expect(within(rows[2]).getByText("Kept")).toBeDefined();
@@ -102,6 +105,15 @@ it("shows a version's diff and its instructions, read only", async () => {
   );
   expect(instructions.getByText(/## What you work from/)).toBeDefined();
   expect(within(screen.getByRole("main")).queryByRole("textbox")).toBeNull();
+  const facts = within(screen.getByRole("region", { name: "Details" }));
+  expect(facts.getAllByText("$0.50")).toHaveLength(2);
+  expect(facts.getByText(/rounding tolerance/).textContent).toBe(
+    "rounding tolerance $0.00 to $0.50",
+  );
+  expect(
+    facts.getByRole("link", { name: "PC-1210" }).getAttribute("href"),
+  ).toBe("/cases/PC-1210");
+  expect(facts.getByRole("link", { name: "PC-0311" })).toBeDefined();
 });
 
 it("says version 1 has nothing before it", async () => {

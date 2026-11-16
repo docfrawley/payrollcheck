@@ -193,7 +193,16 @@ export const firstVersion: VersionSummary = {
   created_at: "2026-10-04T09:00:00+00:00",
   verdict: "kept",
   verdict_reason: "the first version",
-  parameters: { rounding_tolerance_cents: 0 },
+  parameters: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      value: 0,
+    },
+  ],
+  parameter_changes: [],
+  motivating_cases: [],
   scores: { development: null, held_out: null },
 };
 
@@ -212,6 +221,24 @@ export const secondVersion: VersionSummary = {
   proposed_by: "Round 1",
   approved_by: "Dana Whitfield",
   approved_at: "2026-10-05T14:05:00+00:00",
+  parameters: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      value: 50,
+    },
+  ],
+  parameter_changes: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      before: 0,
+      after: 50,
+    },
+  ],
+  motivating_cases: ["PC-0311", "PC-1210"],
 };
 
 export const configuration: Configuration = {

@@ -719,6 +719,43 @@ class PayrollAgentVersion(BaseModel):
     )
 
 
+ParameterUnit = Literal["cents"]
+
+
+class ParameterLabel(BaseModel):
+    """One of the check tools' tunable parameters, as a page names it."""
+
+    name: str
+    label: str
+    unit: ParameterUnit
+
+
+class ParameterAllowed(ParameterLabel):
+    """A parameter in the catalogue, with its bounds."""
+
+    description: str
+    lowest: int
+    highest: int
+    first: int = Field(description="Its value in version 1")
+
+    def labelled(self) -> dict[str, Any]:
+        """Its name, label and unit, for a value or a change of it."""
+        return self.model_dump(include=set(ParameterLabel.model_fields))
+
+
+class ParameterValue(ParameterLabel):
+    """A version's value of a parameter."""
+
+    value: int
+
+
+class ParameterChange(ParameterLabel):
+    """A parameter a version changed from the one it was based on."""
+
+    before: int
+    after: int
+
+
 class DiffLine(BaseModel):
     kind: DiffLineKind
     text: str
@@ -755,7 +792,11 @@ class VersionSummary(BaseModel):
     created_at: str
     verdict: Verdict | None
     verdict_reason: str | None
-    parameters: dict[str, Any]
+    parameters: list[ParameterValue]
+    parameter_changes: list[ParameterChange]
+    motivating_cases: list[str] = Field(
+        description="The cases the approved proposal cited, none for version 1"
+    )
     scores: VersionScores
 
 

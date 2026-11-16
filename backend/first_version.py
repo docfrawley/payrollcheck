@@ -5,10 +5,9 @@ reads too."""
 from pathlib import Path
 
 from backend.models import Verdict
+from backend.parameters import FIRST_PARAMETERS
 
 INSTRUCTIONS = Path(__file__).resolve().parent / "instructions"
-# The check tools' tunable parameters in version 1.
-FIRST_PARAMETERS = {"rounding_tolerance_cents": 0}
 # Version 1 is kept from the start, so the current version is the newest kept.
 FIRST_VERSION = {
     "number": 1,
@@ -17,6 +16,7 @@ FIRST_VERSION = {
     "verdict": Verdict.KEPT,
     "verdict_reason": "the first version",
     "parameters": FIRST_PARAMETERS,
+    "motivating_cases": [],
 }
 # The model version 1 of the payroll agent is on, with no reasoning, so a higher
 # reasoning effort is an improvement to find, unless a student is on a free model.

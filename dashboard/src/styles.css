@@ -2434,3 +2434,12 @@ fieldset.panel legend + * {
   font-size: 0.95rem;
   margin: 0 0 8px;
 }
+
+.inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

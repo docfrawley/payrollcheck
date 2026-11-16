@@ -407,6 +407,8 @@ versions = Table(
     Column("verdict_reason", Text),
     # The check tools' tunable parameters, such as the rounding tolerance.
     Column("parameters", JSON, nullable=False),
+    # The case ids the approved proposal cited, none for version 1.
+    Column("motivating_cases", JSON, nullable=False),
 )
 runs = Table(
     "runs",
