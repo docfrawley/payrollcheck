@@ -8,17 +8,12 @@ import {
   stopTheWork,
 } from "./api";
 import { REVIEWERS, signedInAs } from "./reviewers";
+import type { CaseSummary } from "../dashboard/src/api";
 
 // Signed in as Marcus Oyelaran, who reviews the Lincoln School renovation and the
 // municipal building: the road resurfacing's cases don't exist for him, and a
 // dispatch he starts works the whole queue while showing him his own cases and
 // a count of the rest.
-
-interface Line {
-  case_id: string;
-  project_id: string;
-  status: string;
-}
 
 const ROAD = "PRJ-03";
 
@@ -53,7 +48,7 @@ test("Marcus's dispatch works the whole queue, and shows him his own cases", asy
   const everyone = (await listCases(
     request,
     await signedInAs(request, REVIEWERS.dana),
-  )) as Line[];
+  )) as CaseSummary[];
   const received = everyone.filter((line) => line.status === "received");
   const theirs = received.filter((line) => line.project_id === ROAD);
   expect(theirs.length).toBeGreaterThan(0);

@@ -40,6 +40,9 @@ UNSCOPED = {
     "step_id": "A Copilot card is found for its own reviewer only",
 }
 IDS = re.compile(r"{(\w+)}")
+# A well-formed value for each other id a scoped route takes, so the route is
+# refused for its scoped id alone.
+OTHER_IDS = {"exception_id": "1"}
 
 
 def operations_with_ids(application: FastAPI) -> dict[str, tuple[str, str]]:
@@ -75,7 +78,10 @@ def test_every_id_route_answers_an_id_outside_the_scope_as_not_found(client):
         _, _, body = REVIEWER_OPERATIONS.get(operation_id, (method, path, None))
         answer = client.request(
             method,
-            path.replace(f"{{{scoped_id}}}", outside),
+            IDS.sub(
+                lambda other: OTHER_IDS[other[1]],
+                path.replace(f"{{{scoped_id}}}", outside),
+            ),
             json=body,
             headers=signed_in(PRIYA),
         )

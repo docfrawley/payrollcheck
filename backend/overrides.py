@@ -56,6 +56,7 @@ MOVES = {
 def log(
     db: Connection, by: Overriding, exception_id: int, kind: OverrideKind, reason: str
 ) -> None:
+    """Log an override of an exception on the latest submission: who, when and why."""
     db.execute(
         insert(overrides).values(
             exception_id=exception_id,
@@ -148,7 +149,7 @@ def refuse_the_wrong_shortfall(request: NewException) -> None:
     shortfall = request.shortfall_cents
     if RULES[rule].money and (shortfall is None or shortfall <= 0):
         raise HTTPException(422, NEEDS_A_SHORTFALL.format(rule=rule))
-    if not RULES[rule].money and request.shortfall_cents is not None:
+    if not RULES[rule].money and shortfall is not None:
         raise HTTPException(422, NO_SHORTFALL.format(rule=rule))
 
 
@@ -177,6 +178,7 @@ def add(db: Connection, by: Overriding, request: NewException) -> None:
 
 
 def the_log() -> Select:
+    """The override log, each with its reviewer's name, oldest first."""
     return (
         select(overrides, reviewers.c.name.label("reviewer_name"))
         .join(reviewers, reviewers.c.reviewer_id == overrides.c.reviewer_id)

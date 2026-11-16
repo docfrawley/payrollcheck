@@ -306,8 +306,11 @@ def test_a_dispatch_marcus_starts_works_the_whole_queue_and_shows_him_his_own(
 ):
     """The week-12 wave's 22 Received cases are on all three projects; Marcus sees
     his two projects' cases, with their cost and time, and a count of the rest."""
-    received = [c["case_id"] for c in client.get("/api/cases").json()
-                if c["status"] == "received"]  # fmt: skip
+    received = [
+        line["case_id"]
+        for line in client.get("/api/cases").json()
+        if line["status"] == "received"
+    ]
     assert len(received) == 22
     lines = dispatch(swarm({case_id: work() for case_id in received}), email=MARCUS)
     assert len(lines) == 22

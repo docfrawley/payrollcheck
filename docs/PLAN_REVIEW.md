@@ -315,17 +315,17 @@ Success criteria:
 - After reseeding once, the live checks with `npm run dev` on the default model, through Playwright scripts with you signing Marcus and Priya in, in a visible window, as in stages 1 and 3.
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_runs.py agent/tests/test_dispatcher.py --no-cov`: a dispatch started by Marcus works all 22 Received week-12 cases. His `get_latest_dispatch` lists his own, with their cost and time, and `other_projects` counts the rest; Dana's lists all 22.
-- [ ] Playwright:
+- [x] `uv run pytest backend/tests/test_runs.py agent/tests/test_dispatcher.py --no-cov`: a dispatch started by Marcus works all 22 Received week-12 cases. His `get_latest_dispatch` lists his own, with their cost and time, and `other_projects` counts the rest; Dana's lists all 22.
+- [x] Playwright:
   - **scope:** Marcus doesn't see a road-resurfacing case in the queue, and its URL shows the not-found page (404 from the API)
   - **a dispatch:** Marcus's dispatch works the 22 against the agent's stand-in, and his panel shows his cases and "and N cases on other projects"
   - **sign-off:** Marcus dismisses an exception with a reason and signs off, Sign off disabled while one is open
   - **navigation:** Priya sees no Improvement or Settings in the navigation, and Dana does
   - **reopening:** passes, from phase 5
-- [ ] The live checks, after one `npm run seed`:
+- [x] The live checks, after one `npm run seed`:
   - **Marcus's review:** Marcus starts a dispatch of the week-12 wave. On one of his cases with exceptions he dismisses one with a reason, adds one, edits the notice and sends it back, and the email preview shows. On a clean case he signs off.
   - **A correction:** a corrected CSV for the case he signed off, uploaded on its project's page, reopens it. The next dispatch checks it again, and its earlier exceptions show as superseded.
   - **Priya's scope:** Priya's queue shows only the road resurfacing, and the URL of Marcus's case shows not found.
   - **Spend:** what the runs spent, from the backend's records and the OpenRouter key's usage.
-- [ ] The documents describe the product as it now is.
-- [ ] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green with `.env` moved out of the way.
+- [x] The documents describe the product as it now is.
+- [x] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green with `.env` moved out of the way.

@@ -219,3 +219,32 @@ it("groups the exceptions by submission, the earlier ones superseded with no ove
   expect(earlier.getByText("Dismissed, submission 1")).toBeDefined();
   expect(earlier.queryByRole("button")).toBeNull();
 });
+
+it("shows the latest submission with no exceptions above the earlier ones", async () => {
+  showWithRules({
+    ...awaiting,
+    latest_submission_no: 2,
+    open_exceptions: 0,
+    shortfall_cents: 0,
+    exceptions: [{ ...baseShort, status: "superseded" }],
+  });
+  const exceptions = await panel("Exceptions");
+  const groups = exceptions.getAllByRole("region");
+  expect(groups.map((group) => group.getAttribute("aria-label"))).toEqual([
+    "Submission 2",
+    "Submission 1",
+  ]);
+  const latest = within(
+    exceptions.getByRole("region", { name: "Submission 2" }),
+  );
+  expect(
+    latest.getByRole("heading", { name: "Submission 2, the latest" }),
+  ).toBeDefined();
+  expect(latest.getByText("No exceptions.")).toBeDefined();
+  expect(latest.queryByRole("listitem")).toBeNull();
+  expect(
+    within(exceptions.getByRole("region", { name: "Submission 1" })).getByText(
+      "Superseded, submission 1",
+    ),
+  ).toBeDefined();
+});

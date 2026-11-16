@@ -50,7 +50,7 @@ def save_notice(
 def notice_to_send(db: Connection, case: RowMapping) -> str:
     """The text Send back sends: the reviewer's edit, or the agent's draft, or a
     422 when there is neither."""
-    query = select(func.coalesce(notices.c.edited_text, notices.c.draft, ""))
+    query = select(func.coalesce(notices.c.edited_text, notices.c.draft))
     text = db.execute(query.where(*latest(case))).scalar_one_or_none() or ""
     if not text.strip():
         raise HTTPException(422, NOTHING_TO_SEND.format(case_id=case["case_id"]))

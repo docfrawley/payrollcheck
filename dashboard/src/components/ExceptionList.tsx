@@ -20,43 +20,59 @@ export function ExceptionList({
 }: Readonly<{ caseRecord: Case; onChanged: () => void }>) {
   const { exceptions, latest_submission_no: latestSubmission } = caseRecord;
   const mayOverride = reviewable(caseRecord);
-  // Each submission's exceptions under it, the latest first.
-  const submissionNos = [
-    ...new Set(exceptions.map((exception) => exception.submission_no)),
-  ].sort((a, b) => b - a);
+  // Each submission's exceptions under it, the latest first, and the latest
+  // even with none, once an earlier one has some.
+  const submissionNos =
+    exceptions.length === 0
+      ? []
+      : [
+          ...new Set([
+            latestSubmission,
+            ...exceptions.map((exception) => exception.submission_no),
+          ]),
+        ].sort((a, b) => b - a);
   return (
     <section className="panel" aria-labelledby="exceptions-title">
       <h2 id="exceptions-title">Exceptions</h2>
       {exceptions.length === 0 && <p className="muted">No exceptions.</p>}
-      {submissionNos.map((submissionNo) => (
-        <section
-          key={submissionNo}
-          className="exception-group"
-          aria-label={`Submission ${String(submissionNo)}`}
-        >
-          {(submissionNos.length > 1 || submissionNo !== latestSubmission) && (
-            <h3>
-              Submission {submissionNo}
-              {submissionNo === latestSubmission
-                ? ", the latest"
-                : ", before a correction"}
-            </h3>
-          )}
-          <ul className="exceptions">
-            {exceptions
-              .filter((exception) => exception.submission_no === submissionNo)
-              .map((exception) => (
-                <ExceptionItem
-                  key={exception.exception_id}
-                  caseRecord={caseRecord}
-                  exception={exception}
-                  mayOverride={mayOverride && submissionNo === latestSubmission}
-                  onChanged={onChanged}
-                />
-              ))}
-          </ul>
-        </section>
-      ))}
+      {submissionNos.map((submissionNo) => {
+        const theirs = exceptions.filter(
+          (exception) => exception.submission_no === submissionNo,
+        );
+        return (
+          <section
+            key={submissionNo}
+            className="exception-group"
+            aria-label={`Submission ${String(submissionNo)}`}
+          >
+            {submissionNos.length > 1 && (
+              <h3>
+                Submission {submissionNo}
+                {submissionNo === latestSubmission
+                  ? ", the latest"
+                  : ", before a correction"}
+              </h3>
+            )}
+            {theirs.length === 0 ? (
+              <p className="muted">No exceptions.</p>
+            ) : (
+              <ul className="exceptions">
+                {theirs.map((exception) => (
+                  <ExceptionItem
+                    key={exception.exception_id}
+                    caseRecord={caseRecord}
+                    exception={exception}
+                    mayOverride={
+                      mayOverride && submissionNo === latestSubmission
+                    }
+                    onChanged={onChanged}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
     </section>
   );
 }

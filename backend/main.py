@@ -147,9 +147,8 @@ def awaiting_review(
 def hold_for_review(db: Connection, case_id: str) -> None:
     """Hold a case awaiting review while a reviewer overrides its exceptions or
     edits its notice, by taking its row's lock with a conditional update, or raise
-    a 409. A sign-off
-    takes the same lock first, so the two never interleave: whichever comes second
-    finds what the first one did."""
+    a 409. A sign-off takes the same lock first, so the two never interleave:
+    whichever comes second finds what the first one did."""
     held = move_case(db, case_id, Status.AWAITING_REVIEW, Status.AWAITING_REVIEW)
     if not held:
         raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
