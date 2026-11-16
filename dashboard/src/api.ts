@@ -1,161 +1,185 @@
 import { freshAccessToken } from "./auth";
 import { post, request, send } from "./connection";
-import type {
-  ConfirmationAnswer,
-  Conversation,
-  ConversationSummary,
-} from "./conversation";
+import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
 
+// Where a case stands, in the order the queue shows them.
 export const statuses = [
-  "waiting",
+  "received",
   "in_progress",
-  "waiting_for_sign_off",
-  "sent_back",
-  "decided",
-  "left_for_reviewer",
+  "awaiting_review",
+  "accepted",
+  "returned_to_sub",
 ] as const;
 export type Status = (typeof statuses)[number];
-export type DecisionKind = "approve" | "decline" | "refer";
+export type Severity = "high" | "medium" | "low";
+export type ExceptionStatus = "open" | "dismissed" | "superseded";
 export type StepKind =
   | "screening"
+  // A check tool's findings, which the app records itself.
+  | "check"
   | "tool_call"
   | "tool_result"
   | "message"
   | "lookup"
-  | "memory_search"
-  | "memory_save"
   | "refusal"
-  | "error"
-  // A reviewer's note on a decision sent back, which only the app records.
-  | "sent_back";
+  | "error";
 
 export interface CaseSummary {
   case_id: string;
-  subcontractor_name: string;
-  case_type: string;
-  summary: string;
-  amount_claimed: number;
-  submitted_on: string;
-  status: Status;
-  decision: DecisionKind | null;
-  payout: number | null;
-  // A resume is working on the case, so a dispatch leaves it alone.
-  resuming: boolean;
-}
-
-export interface Item {
-  description: string;
-  category: string;
-  amount: number;
-}
-
-export interface CaseDocument {
-  name: string;
-  type: string;
-  content: string;
-}
-
-export interface CalculationStep {
-  step: string;
-  amount: number;
-}
-
-// How an approval's payout was worked out, as the payout rules gave it.
-export interface Calculation {
-  lines: CalculationStep[];
-  payout: number;
-}
-
-// A decision as claims manual section 14 records it.
-export interface DecisionRecord {
-  decision: DecisionKind;
-  payout: number;
-  // None for a decline or a referral.
-  calculation: Calculation | null;
-  section: string;
-  reason: string;
-  decided_by: string;
-  decided_at: string;
-  // The claims manual's version in force when the decision was made.
-  manual_version: string;
-  // Why the Gateway refused to pay the approval, which then waits for sign-off.
-  gateway_refusal: string | null;
-}
-
-export interface Decision extends DecisionRecord {
-  signed_off_by: string | null;
-  signed_off_at: string | null;
-}
-
-export interface Payment {
-  amount: number;
-  paid_at: string;
-  signed_off_by: string | null;
-  signed_off_at: string | null;
-}
-
-// The longest note a reviewer can send a decision back with.
-export const NOTE_LENGTH = 1000;
-
-// A decision a compliance manager sent back to the agent, with their note.
-export interface SentBackDecision extends DecisionRecord {
-  note: string;
-  sent_back_by: string;
-  sent_back_at: string;
-}
-
-export interface Case {
-  case_id: string;
-  policy_id: string;
+  project_id: string;
+  project_name: string;
   subcontractor_id: string;
   subcontractor_name: string;
-  case_type: string;
-  submitted_on: string;
-  incident_date: string;
-  incident_location: string;
-  summary: string;
-  story: string;
-  items: Item[];
-  amount_claimed: number;
-  documents: CaseDocument[];
+  week_ending: string;
   status: Status;
+  screening_flag: boolean;
+  agent_failed: boolean;
+  open_exceptions: number;
+  // Of the open exceptions, in cents.
+  shortfall_cents: number;
+}
+
+// The MW-562 payroll certification, as the app keeps it.
+export interface PayrollCertification {
+  contractor_name: string;
+  fein: string;
+  registration_no: string;
+  project_id: string;
+  payroll_no: number;
+  week_ending: string;
+  wage_payment_date: string;
+  signed_by: string;
+  signed_on: string | null;
+  no_work_week: boolean;
+  payroll_notes: string;
+}
+
+// One worker's week on a payroll: hours from Monday as exact decimals, money
+// in cents.
+export interface PayrollLine {
+  worker_id: string;
+  worker_name: string;
+  classification: string;
+  apprentice_level: number | null;
+  hours: string[];
+  total_hours: string;
+  base_rate: number;
+  fringe_rate: number;
+  fringe_cash: number;
+  overtime_hours: string;
+  gross: number;
+  deductions: number;
+  net: number;
+  line_notes: string;
+}
+
+// One upload of a payroll into a case, never changed.
+export interface Submission {
+  submission_no: number;
+  uploaded_by: string;
+  uploaded_at: string;
+  received_on: string;
+  file_name: string;
+  payroll_no: number;
+  wage_payment_date: string;
+  certification: PayrollCertification;
+  lines: PayrollLine[];
+}
+
+export interface Worker {
+  worker_id: string;
+  name: string;
+  // The established craft.
+  craft: string;
+  classification: string;
+}
+
+// One rule breach found in a submission.
+export interface ExceptionRecord {
+  exception_id: number;
+  submission_no: number;
+  rule: string;
+  severity: Severity;
+  worker_id: string | null;
+  line_no: number | null;
+  expected: string;
+  actual: string;
+  shortfall_cents: number | null;
+  citation: string;
+  raised_by: string;
+  // The check's finding it raises.
+  candidate_id: number | null;
+  status: ExceptionStatus;
+}
+
+// A check tool's finding on the current attempt.
+export interface Candidate {
+  candidate_id: number;
+  check: string;
+  rule: string;
+  severity: Severity;
+  submission_no: number;
+  worker_id: string | null;
+  line_no: number | null;
+  expected: string;
+  actual: string;
+  shortfall_cents: number | null;
+  citation: string;
+  dismissed_because: string | null;
+}
+
+export interface Notice {
+  submission_no: number;
+  draft: string;
+  drafted_by: string;
+  drafted_at: string;
+}
+
+export interface Case extends CaseSummary {
+  screening_reason: string | null;
+  latest_submission_no: number;
   thread_id: string | null;
   attempts: number;
   // Set on an evaluation's copy of a case.
   evaluation_id: string | null;
   copy_of: string | null;
-  decision: Decision | null;
-  payment: Payment | null;
+  reviewed_by: string | null;
+  reviewed_on: string | null;
   // Oldest first.
-  sent_back_decisions: SentBackDecision[];
+  submissions: Submission[];
+  // Each worker on the latest submission.
+  workers: Worker[];
+  exceptions: ExceptionRecord[];
+  // The current attempt's.
+  candidates: Candidate[];
+  checks_run: string[];
+  // The latest submission's draft.
+  notice: Notice | null;
 }
 
-export interface Policy {
-  policy_id: string;
+export interface Project {
+  project_id: string;
+  name: string;
+  county: string;
+  location: string;
+  public_body: string;
+  contract_no: string;
+  award_date: string;
+}
+
+// A subcontractor on a project, with its engagement window.
+export interface Engagement {
   subcontractor_id: string;
-  plan: string;
-  add_ons: string[];
-  purchased_on: string;
-  sold_through: string;
-  trip: {
-    destination: string;
-    departs_on: string;
-    returns_on: string;
-    trip_cost: number;
-  };
-  travelers: string[];
-  status: string;
+  legal_name: string;
+  fein: string;
+  registration_no: string;
+  first_week_ending: string;
+  last_week_ending: string;
 }
 
-export interface PreviousCase {
-  case_id: string;
-  filed_on: string;
-  incident_date: string;
-  case_type: string;
-  summary: string;
-  outcome: string;
-  amount_paid: number;
+export interface ProjectInFull extends Project {
+  subcontractors: Engagement[];
 }
 
 export interface Reviewer {
@@ -178,20 +202,16 @@ export interface Step {
 
 export type RunStatus = "running" | "finished" | "stopped";
 export type RunKind = "dispatch" | "evaluation";
-export const evaluationSets = ["evaluation", "held_out"] as const;
+export const evaluationSets = ["development", "held_out", "tiny"] as const;
 export type EvaluationSet = (typeof evaluationSets)[number];
 
-export interface HeldPayout {
-  case_id: string;
-  payout: number;
-}
-
+// The cases a dispatch worked, as they stand: Awaiting review with exceptions
+// or clean, flagged by the screening, failed by the agent, or unfinished.
 export interface DispatchSummary {
-  approved: number;
-  declined: number;
-  referred: number;
-  waiting_for_sign_off: HeldPayout[];
-  left_for_reviewer: string[];
+  with_exceptions: string[];
+  clean: string[];
+  flagged: string[];
+  agent_failed: string[];
   // In progress or back in the queue, for the next dispatch.
   unfinished: string[];
 }
@@ -225,51 +245,62 @@ export interface RunDetails {
 
 export interface Run extends RunDetails {
   evaluation_set: EvaluationSet | null;
-  tiny: boolean | null;
   summary: DispatchSummary | null;
   cases: RunCase[];
 }
 
 export interface Measures {
-  decision_accuracy: number;
-  accuracy: number;
-  cost_of_mistakes: number;
-  straight_through: number;
-  // The judge's average grade from 0 to 3, or null when it graded no case.
-  grade: number | null;
+  // Exception labels caught, of all.
+  catch_rate: number;
+  caught: number;
+  labels: number;
+  false_exceptions: number;
+  // False exceptions per 100 payrolls.
+  false_per_100: number;
+  // Caught money labels with the right shortfall, or null with none caught.
+  shortfall_accuracy: number | null;
+  screening_caught: number;
+  screening_expected: number;
   model_cost_per_case: number;
   seconds_per_case: number;
   run_seconds: number | null;
 }
 
-export type Letter = "F" | "C" | "B" | "A";
-
-// The judge's grade of an explanation: its score from 0 to 3, the likeliest
-// level, and the chances it gave the same grounds and section as the reviewer.
-export interface CaseGrade {
-  score: number;
-  letter: Letter;
-  same_grounds: number;
-  same_section: number;
-  cost: number;
+// A label beside what the agent raised: caught, missed, or caught with the
+// wrong shortfall.
+export interface LabelMatch {
+  rule: string;
+  worker_id: string | null;
+  line_no: number | null;
+  expected_shortfall_cents: number | null;
+  result: "caught" | "missed" | "shortfall_wrong";
+  // The exception's, once caught.
+  shortfall_cents: number | null;
 }
 
-// An evaluation's copy of a case beside the reviewer's decision on it.
+export interface ExceptionMatch {
+  exception_id: number;
+  rule: string;
+  worker_id: string | null;
+  line_no: number | null;
+  shortfall_cents: number | null;
+  matched: boolean;
+}
+
+// An evaluation's copy of a case beside its labels.
 export interface ScoredCase extends RunCase {
   copy_of: string;
-  reason: string | null;
-  grade: CaseGrade | null;
-  reviewer_decision: DecisionKind;
-  reviewer_payout: number;
-  right: boolean;
-  mistake_cost: number;
+  labels: LabelMatch[];
+  exceptions: ExceptionMatch[];
+  screening_expected: boolean;
+  screening_found: boolean;
+  misses: number;
+  false_exceptions: number;
 }
 
 export interface Evaluation extends RunDetails {
   evaluation_set: EvaluationSet;
-  tiny: boolean;
   size: number;
-  judge_cost: number;
   measures: Measures;
 }
 
@@ -299,7 +330,7 @@ export interface Diff {
 
 // A version's scores on each set, from the evaluations rounds ran on it.
 export interface VersionScores {
-  evaluation: Measures | null;
+  development: Measures | null;
   held_out: Measures | null;
 }
 
@@ -322,6 +353,8 @@ export interface VersionSummary {
   created_at: string;
   verdict: Verdict | null;
   verdict_reason: string | null;
+  // The check tools' tunable parameters, such as the rounding tolerance.
+  parameters: Record<string, unknown>;
   scores: VersionScores;
 }
 
@@ -335,22 +368,23 @@ export interface Configuration {
   versions: VersionSummary[];
 }
 
-// A setting for each measure the rule compares: accuracy and the grade as
-// differences, cost and time per case as fractions of the old value.
+// A setting for each measure the rule compares: the catch rate as a
+// difference, cost and time per case as fractions of the old value.
 export interface MeasureSettings {
-  accuracy: number;
-  grade: number;
+  catch_rate: number;
   cost_per_case: number;
   seconds_per_case: number;
 }
 
 export interface SettingsValues {
-  approval_limit: number;
-  objectives: { accuracy: number; grade: number };
+  // The floors a new version must meet on the held-out set.
+  objectives: { catch_rate: number };
   noise: MeasureSettings;
   tolerance: MeasureSettings;
   spending_limit: number;
   agents: number;
+  // The app's today, or null for the real date.
+  business_date: string | null;
 }
 
 export interface Settings extends SettingsValues {
@@ -440,12 +474,11 @@ export interface RoundView extends RoundSummary {
   evaluations: Evaluation[];
 }
 
-// A version's held-out accuracy and grade, for the chart.
+// A version's held-out catch rate, for the chart.
 export interface VersionPoint {
   number: number;
   verdict: Verdict | null;
-  accuracy: number | null;
-  grade: number | null;
+  catch_rate: number | null;
 }
 
 export interface RecipeSummary {
@@ -499,12 +532,6 @@ export const api = {
   listCases: () => request<CaseSummary[]>(CASES),
   getCase: (caseId: string) => request<Case>(casePath(caseId)),
   listSteps: (caseId: string) => request<Step[]>(`${casePath(caseId)}/steps`),
-  getPolicy: (policyId: string) =>
-    request<Policy>(`/api/policies/${encodeURIComponent(policyId)}`),
-  getCaseHistory: (subcontractorId: string) =>
-    request<PreviousCase[]>(
-      `/api/subcontractors/${encodeURIComponent(subcontractorId)}/cases`,
-    ),
   getConfiguration: () => request<Configuration>(CONFIGURATION),
   getVersionDetails: (number: string) =>
     request<VersionDetails>(
@@ -519,19 +546,10 @@ export const api = {
   listEvaluations: () => request<Evaluation[]>(EVALUATIONS),
   getEvaluation: (runId: string) =>
     request<ScoredEvaluation>(`${EVALUATIONS}/${encodeURIComponent(runId)}`),
-  startEvaluation: (
-    evaluationSet: EvaluationSet,
-    tiny: boolean,
-    agents: number,
-  ) =>
-    post<Accepted>(EVALUATIONS, {
-      evaluation_set: evaluationSet,
-      tiny,
-      agents,
-    }),
-  signOff: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
-  sendBack: (caseId: string, note: string) =>
-    post<Case>(`${casePath(caseId)}/send-back`, { note }),
+  startEvaluation: (evaluationSet: EvaluationSet, agents: number) =>
+    post<Accepted>(EVALUATIONS, { evaluation_set: evaluationSet, agents }),
+  signOffCase: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
+  sendBackCase: (caseId: string) => post<Case>(`${casePath(caseId)}/send-back`),
   getImprovement: () => request<Improvement>(IMPROVEMENT),
   getRecipe: (number: string) =>
     request<RecipeDetails>(
@@ -553,13 +571,4 @@ export const api = {
     askTheCopilot(CONVERSATIONS, { message }),
   sendMessage: (conversationId: string, message: string) =>
     askTheCopilot(`${conversationPath(conversationId)}/messages`, { message }),
-  answerConfirmation: (
-    conversationId: string,
-    turnId: string,
-    answer: ConfirmationAnswer,
-  ) =>
-    askTheCopilot(`${conversationPath(conversationId)}/confirmation`, {
-      turn_id: turnId,
-      answer,
-    }),
 };

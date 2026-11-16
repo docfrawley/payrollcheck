@@ -16,13 +16,16 @@ export const START = "POST /api/improvement/rounds";
 export const APPROVAL = `POST /api/improvement/rounds/${ROUND_ID}/proposals/${PROPOSAL_ID}/approval`;
 export const REJECTION = `POST /api/improvement/rounds/${ROUND_ID}/proposals/${PROPOSAL_ID}/rejection`;
 
-export function measures(accuracy: number, grade: number | null): Measures {
+export function measures(catchRate: number): Measures {
   return {
-    decision_accuracy: accuracy,
-    accuracy,
-    cost_of_mistakes: 0,
-    straight_through: 1,
-    grade,
+    catch_rate: catchRate,
+    caught: Math.round(catchRate * 45),
+    labels: 45,
+    false_exceptions: 2,
+    false_per_100: 2,
+    shortfall_accuracy: 1,
+    screening_caught: 1,
+    screening_expected: 1,
     model_cost_per_case: 0.002,
     seconds_per_case: 20,
     run_seconds: 60,
@@ -46,16 +49,14 @@ export const evaluation: Evaluation = {
   seconds: 120,
   model_cost: 0.05,
   evaluation_set: "held_out",
-  tiny: false,
-  size: 25,
-  judge_cost: 0.002,
-  measures: measures(0.6, 1.5),
+  size: 98,
+  measures: measures(0.6),
 };
 
 export const change: WaitingProposal = {
   proposal_id: PROPOSAL_ID,
   kind: "change",
-  reason: "Two stolen phones were approved without a police report",
+  reason: "Two weekend premiums were missed on the rates check",
   proposed_at: "2026-10-04T09:10:00+00:00",
   diff: {
     added: 1,
@@ -63,7 +64,10 @@ export const change: WaitingProposal = {
     hunks: [
       [
         { kind: "context", text: "# Working a case" },
-        { kind: "added", text: "A stolen phone needs a police report." },
+        {
+          kind: "added",
+          text: "A weekend premium is paid at time and a half.",
+        },
       ],
     ],
   },
@@ -104,14 +108,14 @@ export const open: RoundView = {
 export const empty: Improvement = {
   round: null,
   rounds: [],
-  first_version: { number: 1, verdict: null, accuracy: null, grade: null },
+  first_version: { number: 1, verdict: null, catch_rate: null },
   versions_tried: [],
   recipes: [
     {
       number: 1,
       current: true,
       reason: "The lab's recipe",
-      proposed_by: "The claims team",
+      proposed_by: "The compliance team",
       round_id: null,
       approved_by: null,
       approved_at: null,
@@ -157,9 +161,9 @@ export const finishedRound = {
   stage: null,
   waiting: null,
   version: 2,
-  reason: "Two stolen phones were approved",
+  reason: "Two weekend premiums were missed",
   verdict: "kept",
-  verdict_reason: "accuracy improved",
-  held_out_before: measures(0.6, 1.5),
-  held_out_after: measures(0.72, 1.9),
+  verdict_reason: "catch_rate improved",
+  held_out_before: measures(0.6),
+  held_out_after: measures(0.72),
 } as const;

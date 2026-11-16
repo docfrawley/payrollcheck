@@ -2,14 +2,12 @@
 
 import json
 
-import httpx
 import pytest
 from sqlalchemy import event, select
 
-from backend.database import engine, held_out_cases, reviewer_decisions
+from backend.database import engine, labelled_cases, labels
 from backend.tests.agent_answers import unreachable
 from backend.tests.dashboard_reads import read, recipe
-from backend.tests.judging import answer
 from backend.tests.round_requests import (
     ALL,
     approved_change,
@@ -20,7 +18,6 @@ from backend.tests.round_requests import (
     propose_change,
     propose_recipe,
     review,
-    reviewer_reasons,
     round_path,
     stop_round,
 )
@@ -47,12 +44,7 @@ def rejection(round_id, proposal_id):
 def test_with_no_rounds_the_page_has_version_1_and_the_first_recipe(client):
     page = improvement(client)
     assert (page["round"], page["rounds"], page["versions_tried"]) == (None, [], [])
-    assert page["first_version"] == {
-        "number": 1,
-        "verdict": None,
-        "accuracy": None,
-        "grade": None,
-    }
+    assert page["first_version"] == {"number": 1, "verdict": None, "catch_rate": None}
     assert [r["number"] for r in page["recipes"]] == [1]
     assert page["recipes"][0]["current"] is True
 
@@ -94,8 +86,7 @@ def test_a_reviewer_who_cant_sign_off_over_the_limit_cant_run_the_improver(
     refused = act(client, path, MARCUS, reason="Too broad")
     assert (refused.status_code, refused.json()["detail"]) == (
         403,
-        f"Only a reviewer who can sign off payouts over $1,000.00 can {action}. "
-        "Marcus Oyelaran can't.",
+        f"Only the compliance manager can {action}. Marcus Oyelaran can't.",
     )
     assert agent_calls == []
 
@@ -178,10 +169,10 @@ def stage(client):
     return open_round["stage"], open_round["progress"]
 
 
-def whole_round(client, right, improver_cost, rejected=False):
+def whole_round(client, caught, improver_cost, rejected=False):
     """Play out a round from start to finish: the improver's spending, the first
     evaluations the current version needs, a change rejected first if asked, an
-    approved change whose evaluations get `right` cases right, a verdict and an
+    approved change whose evaluations catch `caught` cases, a verdict and an
     approved recipe. Return the round's id."""
     round_ = create_round(client).json()
     round_id = round_["round_id"]
@@ -195,7 +186,7 @@ def whole_round(client, right, improver_cost, rejected=False):
     review(client, round_id, proposal["proposal_id"])
     client.post(f"{round_path(round_id)}/version")
     for _ in range(3):
-        play_out(client, round_id, right=right)
+        play_out(client, round_id, caught=caught)
     client.post(f"{round_path(round_id)}/verdict")
     recipe = propose_recipe(client, round_id).json()
     review(client, round_id, recipe["proposal_id"])
@@ -221,12 +212,12 @@ def queries_for_the_page(client):
 
 def test_each_round_on_the_page_is_its_own_in_as_many_queries_after_three(client):
     change_settings(client, spending_limit=10.0)
-    first = whole_round(client, right=ALL, improver_cost=0.01)
+    first = whole_round(client, caught=ALL, improver_cost=0.01)
     after_one = queries_for_the_page(client)
     change_settings(client, spending_limit=11.0)
-    second = whole_round(client, right=0, improver_cost=0.02, rejected=True)
+    second = whole_round(client, caught=0, improver_cost=0.02, rejected=True)
     change_settings(client, spending_limit=12.0)
-    third = whole_round(client, right=ALL, improver_cost=0.03)
+    third = whole_round(client, caught=ALL, improver_cost=0.03)
 
     assert queries_for_the_page(client) == after_one
     page = improvement(client)
@@ -249,7 +240,7 @@ def test_each_round_on_the_page_is_its_own_in_as_many_queries_after_three(client
         spent = client.get(f"{round_path(round_id)}/results").json()["spending"]
         assert one["cost"] == pytest.approx(spent["spent"])
     assert [
-        (v["number"], v["verdict"], v["accuracy"]) for v in page["versions_tried"]
+        (v["number"], v["verdict"], v["catch_rate"]) for v in page["versions_tried"]
     ] == [
         (2, "kept", 1.0),
         (3, "rolled_back", 0.0),
@@ -281,10 +272,10 @@ def test_the_page_follows_a_round_through_its_stages(client):
     review(client, round_id, proposal["proposal_id"])
     client.post(f"{round_path(round_id)}/version")
     assert stage(client) == ("evaluating", "0 of 3")
-    play_out(client, round_id, right=ALL)
+    play_out(client, round_id, caught=ALL)
     assert stage(client) == ("evaluating", "1 of 3")
-    play_out(client, round_id, right=ALL)
-    play_out(client, round_id, right=ALL)
+    play_out(client, round_id, caught=ALL)
+    play_out(client, round_id, caught=ALL)
     client.post(f"{round_path(round_id)}/verdict")
     assert stage(client) == ("verdict", None)
 
@@ -302,11 +293,11 @@ def test_the_page_follows_a_round_through_its_stages(client):
         None,
         "kept",
     )
-    assert finished["held_out_after"]["accuracy"] == 1.0
+    assert finished["held_out_after"]["catch_rate"] == 1.0
     assert [r["kind"] for r in finished["reviews"]] == ["change", "recipe"]
     assert len(finished["evaluations"]) == 6
     assert [v["number"] for v in page["versions_tried"]] == [2]
-    assert page["first_version"]["accuracy"] < 0.5
+    assert page["first_version"]["catch_rate"] == 0
     assert [(r["number"], r["current"]) for r in page["recipes"]] == [
         (2, True),
         (1, False),
@@ -318,43 +309,36 @@ def test_the_page_follows_a_round_through_its_stages(client):
 
 
 def held_out_texts():
-    """Every held-out case's id and summary, and the reviewers' reasons on them.
-    Their references, such as "Policy wording, section 5", are shared with the
-    evaluation set."""
+    """Every held-out case's id, and its labels' rules and shortfalls, as the
+    improver would see them."""
     with engine().connect() as db:
-        cases = db.execute(select(held_out_cases)).mappings().all()
-        reasons = db.execute(
-            select(reviewer_decisions.c.reason).where(
-                reviewer_decisions.c.evaluation_set == "held_out"
+        ids = db.execute(
+            select(labelled_cases.c.case_id).where(
+                labelled_cases.c.labelled_set == "held_out"
             )
         ).scalars()
-        return (
-            [c["case_id"] for c in cases]
-            + [c["record"]["summary"] for c in cases]
-            + list(reasons)
-        )
+        return list(ids)
 
 
 def test_the_improver_reads_nothing_from_the_held_out_set_but_scores(client):
     change_settings(client, spending_limit=10.0)
     round_id = create_round(client).json()["round_id"]
-    play_out(client, round_id)
-    play_out(client, round_id)
-    play_out(client, round_id)
+    play_out(client, round_id, caught=10)
+    play_out(client, round_id, caught=10)
+    play_out(client, round_id, caught=10)
     view = client.get(f"{round_path(round_id)}/results").json()
 
     assert view["current_version"]["number"] == 1
-    assert (
-        "## Contents of the claims manual"
-        not in view["current_version"]["instructions"]
-    )
-    assert view["scores"]["held_out"]["accuracy"] is not None
-    wrong = view["evaluation_set"]["wrong"]
-    assert wrong
-    assert set(wrong[0]) == {"case_id", "summary", "agent", "reviewer", "judge"}
-    assert wrong[0]["reviewer"]["reason"]
-    assert wrong[0]["judge"]["same_grounds"] in {"yes", "no"}
-    assert len(view["evaluation_set"]["explained_least_well"]) <= 5
+    assert view["scores"]["held_out"]["catch_rate"] is not None
+    development = view["development_set"]
+    assert development
+    assert set(development[0]) == {
+        "case_id",
+        "missed",
+        "false_exceptions",
+        "screening_expected",
+        "screening_found",
+    }
     assert view["rule"].startswith("A new version is kept when it meets")
     assert view["spending"]["limit"] == 10.0
     assert [m["model"] for m in view["models_allowed"]] == [
@@ -363,7 +347,7 @@ def test_the_improver_reads_nothing_from_the_held_out_set_but_scores(client):
         "deepseek/deepseek-v4.1-flash",
     ]
     seen = json.dumps(view)
-    assert not [text for text in held_out_texts() if text in seen]
+    assert not [case_id for case_id in held_out_texts() if case_id in seen]
 
 
 def test_the_improver_reads_the_earlier_rounds(client):
@@ -381,28 +365,20 @@ def test_the_improver_reads_the_earlier_rounds(client):
     assert earlier["why"] == "the round was stopped before its verdict"
 
 
-def test_the_improver_reads_the_five_right_cases_the_judge_graded_lowest(
-    client, judge_answers
-):
-    reasons = reviewer_reasons("evaluation")
-    rank = {reason: n for n, reason in enumerate(sorted(set(reasons.values())))}
-
-    def by_reason(request: httpx.Request) -> httpx.Response:
-        reason = json.loads(request.content)["state"]["reviewer"]["reason"]
-        return httpx.Response(200, json=answer(score=rank[reason] / 10))
-
-    judge_answers(by_reason)
+def test_the_improver_reads_the_development_sets_misses_by_case(client):
     change_settings(client, spending_limit=10.0)
     round_id = create_round(client).json()["round_id"]
-    evaluation = play_out(client, round_id, right=10)
+    evaluation = play_out(client, round_id, caught=10)
     play_out(client, round_id)
     play_out(client, round_id)
-
-    right = [c["copy_of"] for c in evaluation["cases"] if c["right"]]
-    assert len(right) == 10
-    lowest = sorted(right, key=lambda case_id: rank[reasons[case_id]])[:5]
     view = client.get(f"{round_path(round_id)}/results").json()
-    weakest = view["evaluation_set"]["explained_least_well"]
-    assert [c["case_id"] for c in weakest] == lowest
-    assert [c["reviewer"]["reason"] for c in weakest] == [reasons[c] for c in lowest]
-    assert len(view["evaluation_set"]["wrong"]) == 15
+    with_labels = [
+        c for c in evaluation["cases"] if c["labels"] or c["screening_expected"]
+    ]
+    caught = [c["copy_of"] for c in with_labels[:10]]
+    missed = {c["case_id"] for c in view["development_set"]}
+    assert missed == {c["copy_of"] for c in with_labels} - set(caught)
+    one = next(c for c in view["development_set"] if c["missed"])
+    assert {label["result"] for label in one["missed"]} == {"missed"}
+    with engine().connect() as db:
+        assert db.execute(select(labels)).first() is not None

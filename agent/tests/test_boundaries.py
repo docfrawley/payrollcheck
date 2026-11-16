@@ -79,9 +79,15 @@ def agents_modules() -> set[str]:
     return {path.stem for path in AGENT.glob("*.py")}
 
 
-def test_the_check_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
-    assert imports_of("screening") & agents_modules() == set()
+def test_the_screening_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
+    assert imports_of("screening") & agents_modules() == {"json_text"}
     assert "screening" in imports_of("harness")
+
+
+def test_the_check_inputs_are_fetched_on_the_route_and_the_harness_uses_them():
+    used = imports_of("check_inputs") & agents_modules()
+    assert used == {"app_operations", "context_tools", "routes"}
+    assert {"check_inputs", "checks"} <= imports_of("harness")
 
 
 ROUTE_MODULES = {"routes", "gateway", "direct", "mcp_tools"}
@@ -154,16 +160,9 @@ def test_nothing_in_the_payroll_agent_imports_the_copilot():
         assert {name for name in imported if name.startswith("copilot")} == set()
 
 
-def test_the_memory_uses_only_agentcore_memory_and_the_payroll_agent_uses_it():
-    assert imports_of("memory") & agents_modules() == {"agentcore_memory"}
-    assert "memory" in imports_of("tools") & imports_of("harness")
-    for module in ("improver", "improver_api", "dispatcher", "entrypoint"):
-        assert "memory" not in imports_of(module), module
-
-
-def test_a_reviewers_answer_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
-    assert imports_of("reviewer_answer") & agents_modules() == set()
-    assert "reviewer_answer" in imports_of("harness")
+def test_the_payroll_agent_has_no_memory_and_no_pause():
+    assert {"memory", "reviewer_answer"} & agents_modules() == set()
+    assert "interrupt" not in (AGENT / "harness.py").read_text(encoding="utf-8")
 
 
 def test_the_heartbeat_uses_nothing_else_in_the_agent():

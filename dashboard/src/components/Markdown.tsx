@@ -5,8 +5,8 @@ import { Link } from "react-router";
 import remarkGfm from "remark-gfm";
 import { casePage } from "../paths";
 
-// A case's id, or an evaluation's copy of one, such as CLM-1003 or CLM-1104-E7.
-const CASE_ID = /\bCLM-\d{4}(?:-E\d+)?\b/g;
+// A case's id, or an evaluation's copy of one, such as PC-1203 or PC-1104-E7.
+const CASE_ID = /\bPC-\d{4}(?:-E\d+)?\b/g;
 
 // Makes each case id in the text a link to the case's page, except in a link
 // already, which can't hold another.
@@ -27,7 +27,7 @@ function linkCases() {
   };
 }
 
-// A path on the dashboard, such as /cases/CLM-1003, rather than another site,
+// A path on the dashboard, such as /cases/PC-1203, rather than another site,
 // which //host also names.
 const ownPage = (href: string) =>
   href.startsWith("/") && !href.startsWith("//");

@@ -16,8 +16,8 @@ class Target(StrEnum):
 # validated when a tool reads it.
 @runtime_checkable
 class Route(Protocol):
-    """How the payroll agent's tools and its payment reach the app and the context
-    layer: through the Gateway, or directly."""
+    """How the payroll agent's tools reach the app and the context layer: through
+    the Gateway, or directly."""
 
     def call(self, target: Target, operation: str, inputs: dict[str, Any]) -> Any:
         """Call one operation and return its answer, parsed from its JSON."""
@@ -29,7 +29,7 @@ class Route(Protocol):
 
 
 class GatewayRefused(Exception):
-    """The Gateway refused a call, such as a payment its Policy forbids."""
+    """The Gateway refused a call its Policy forbids."""
 
     @property
     def answer(self) -> str:

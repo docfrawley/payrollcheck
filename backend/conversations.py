@@ -1,9 +1,7 @@
 """The Copilot's records in the app: each reviewer's conversations, their turns and
 each turn's cards. A conversation is found only for its own reviewer and takes one
 message at a time. A turn that has worked too long reads as stopped and stays
-stopped, refusing a late record. A sign-off's confirmation card is filled in from
-the case, and an answer of Sign off is taken as a Cancel when the case has
-changed since."""
+stopped, refusing a late record."""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -18,10 +16,8 @@ from backend.database import (
     copilot_turns,
     now_precisely,
 )
-from backend.lookups import A_COPY, NOT_WAITING_FOR_SIGN_OFF, find_case
 from backend.models import (
     CardStatus,
-    ConfirmationAnswer,
     Conversation,
     ConversationSummary,
     CopilotStep,
@@ -29,25 +25,19 @@ from backend.models import (
     CopilotStepResult,
     CopilotTurn,
     Reviewer,
-    Status,
     TurnFinishRequest,
     TurnStatus,
 )
 
 TITLE_LENGTH = 120
-# A turn still working this long after it started, or after the reviewer answered
-# its confirmation, reads as stopped.
+# A turn still working this long after it started reads as stopped.
 STOPPED_AFTER = timedelta(minutes=20)
 CONVERSATION_NOT_FOUND = "Conversation {conversation_id} not found"
 TURN_NOT_FOUND = "Turn {turn_id} not found"
 STEP_NOT_FOUND = "Step {step_id} not found"
 STILL_WORKING = "The Copilot is still working on your last message"
-ANSWER_FIRST = "Answer the confirmation first"
 NOT_WORKING = "Turn {number} isn't working"
-NOTHING_TO_CONFIRM = "Turn {number} isn't waiting for a confirmation"
-NO_SUCH_CONFIRMATION = "That confirmation isn't waiting for an answer"
 STEP_FINISHED = "Step {step_id} has finished"
-CASE_CHANGED = "The case changed since the card was shown"
 
 
 def new_conversation_id() -> str:
@@ -62,24 +52,19 @@ def seconds_from(start: str, end: str) -> float:
 
 def status_of(turn: RowMapping) -> TurnStatus:
     """Where a turn stands: stopped when it is still working STOPPED_AFTER its
-    start, or the answer to its confirmation, and otherwise as recorded."""
-    working_since = turn["answered_at"] or turn["started_at"]
+    start, and otherwise as recorded."""
     if turn["status"] == TurnStatus.WORKING:
-        since = datetime.now(UTC) - datetime.fromisoformat(working_since)
+        since = datetime.now(UTC) - datetime.fromisoformat(turn["started_at"])
         if since > STOPPED_AFTER:
             return TurnStatus.STOPPED
     return TurnStatus(turn["status"])
 
 
 def seconds_of(turn: RowMapping) -> float | None:
-    """How long a turn that has finished took, leaving out the wait for the
-    reviewer's confirmation."""
+    """How long a turn that has finished took."""
     if turn["finished_at"] is None:
         return None
-    worked = seconds_from(turn["started_at"], turn["finished_at"])
-    if turn["paused_at"] and turn["answered_at"]:
-        worked -= seconds_from(turn["paused_at"], turn["answered_at"])
-    return worked
+    return seconds_from(turn["started_at"], turn["finished_at"])
 
 
 def to_step(row: RowMapping) -> CopilotStep:
@@ -89,8 +74,7 @@ def to_step(row: RowMapping) -> CopilotStep:
 
 
 def to_turn(row: RowMapping, steps: list[CopilotStep]) -> CopilotTurn:
-    """A turn with its cards, as it stands. The card keeps the held decision's
-    decided_at to itself."""
+    """A turn with its cards, as it stands."""
     return CopilotTurn(
         **dict(row)
         | {"status": status_of(row), "seconds": seconds_of(row), "steps": steps}
@@ -197,12 +181,8 @@ def latest_turn(db: Connection, row: RowMapping) -> RowMapping:
 
 
 def refuse_while_busy(turn: RowMapping) -> None:
-    """Raise a 409 while a turn waits for a confirmation, or is still working and
-    hasn't stopped."""
-    status = status_of(turn)
-    if status == TurnStatus.WAITING_FOR_CONFIRMATION:
-        raise HTTPException(409, ANSWER_FIRST)
-    if status == TurnStatus.WORKING:
+    """Raise a 409 while a turn is still working and hasn't stopped."""
+    if status_of(turn) == TurnStatus.WORKING:
         raise HTTPException(409, STILL_WORKING)
 
 
@@ -357,107 +337,4 @@ def fail(db: Connection, turn: RowMapping, reason: str) -> None:
     """Record that a working turn failed, with why."""
     move(
         db, turn, status=TurnStatus.FAILED, failure=reason, finished_at=now_precisely()
-    )
-
-
-def card_of(db: Connection, case_id: str) -> dict[str, Any]:
-    """The confirmation card of a sign-off, from the case's record, with the held
-    decision's decided_at, or a 404, or a 409 for a case that isn't waiting for
-    sign-off or is an evaluation's copy."""
-    case = find_case(db, case_id)
-    if case["evaluation_id"] is not None:
-        raise HTTPException(409, A_COPY.format(case_id=case_id, answered="signed off"))
-    if case["status"] != Status.WAITING_FOR_SIGN_OFF:
-        raise HTTPException(409, NOT_WAITING_FOR_SIGN_OFF.format(case_id=case_id))
-    return {
-        "case_id": case_id,
-        "subcontractor_name": case["subcontractor_name"],
-        "payout": case["payout"],
-        "reason": case["reason"],
-        "decided_at": case["decided_at"],
-    }
-
-
-def pause(db: Connection, turn: RowMapping, case_id: str) -> None:
-    """Record that a working turn waits for the reviewer to confirm a sign-off, with
-    its card filled in from the case."""
-    move(
-        db,
-        turn,
-        status=TurnStatus.WAITING_FOR_CONFIRMATION,
-        paused_at=now_precisely(),
-        confirmation=card_of(db, case_id),
-    )
-
-
-# The reviewer's answer to a confirmation.
-
-
-def waiting_turn(
-    db: Connection, conversation_id: str, turn_id: str, reviewer: Reviewer
-) -> RowMapping:
-    """Return the turn of one of the reviewer's conversations whose card was shown,
-    if it is the one waiting for a confirmation, or raise a 404 or a 409, as for an
-    older card or one answered already."""
-    turn = latest_turn(db, owned(db, conversation_id, reviewer))
-    if turn["turn_id"] != turn_id:
-        raise HTTPException(409, NO_SUCH_CONFIRMATION)
-    if turn["status"] != TurnStatus.WAITING_FOR_CONFIRMATION:
-        raise HTTPException(409, NOTHING_TO_CONFIRM.format(number=turn["number"]))
-    return turn
-
-
-def why_not_sign_off(db: Connection, turn: RowMapping) -> str | None:
-    """Say why a sign-off can't go ahead as the card showed it: the case is no
-    longer waiting for sign-off, or its held decision isn't the card's, as after a
-    send back and a new decision, even with the same payout."""
-    card = turn["confirmation"]
-    case = find_case(db, card["case_id"])
-    held = case["status"] == Status.WAITING_FOR_SIGN_OFF
-    shown = (card["decided_at"], card["payout"], card["reason"])
-    if not held or (case["decided_at"], case["payout"], case["reason"]) != shown:
-        return CASE_CHANGED
-    return None
-
-
-def record_answer(db: Connection, turn: RowMapping, answer: ConfirmationAnswer) -> None:
-    """Record the reviewer's answer to a turn's confirmation and when it came, and
-    move the turn back to working. A Sign off for a case that changed since the
-    card was shown is recorded as a Cancel, with why."""
-    canceled_because = None
-    if answer == ConfirmationAnswer.SIGN_OFF:
-        canceled_because = why_not_sign_off(db, turn)
-    if canceled_because:
-        answer = ConfirmationAnswer.CANCEL
-    answered = db.execute(
-        update(copilot_turns)
-        .where(
-            copilot_turns.c.turn_id == turn["turn_id"],
-            copilot_turns.c.status == TurnStatus.WAITING_FOR_CONFIRMATION,
-        )
-        .values(
-            status=TurnStatus.WORKING,
-            confirmation_answer=answer,
-            canceled_because=canceled_because,
-            answered_at=now_precisely(),
-        )
-    )
-    if answered.rowcount != 1:
-        raise HTTPException(409, NOTHING_TO_CONFIRM.format(number=turn["number"]))
-
-
-def undo_answer(db: Connection, turn_id: str) -> None:
-    """Undo an answer the Copilot didn't take, so the card waits again."""
-    db.execute(
-        update(copilot_turns)
-        .where(
-            copilot_turns.c.turn_id == turn_id,
-            copilot_turns.c.status == TurnStatus.WORKING,
-        )
-        .values(
-            status=TurnStatus.WAITING_FOR_CONFIRMATION,
-            confirmation_answer=None,
-            canceled_because=None,
-            answered_at=None,
-        )
     )

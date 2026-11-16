@@ -1,17 +1,14 @@
 {
   "objectives": {
-    "accuracy": 0.6,
-    "grade": 1.0
+    "catch_rate": 0.92
   },
   "noise": {
-    "accuracy": 0.1,
-    "grade": 0.15,
+    "catch_rate": 0.05,
     "cost_per_case": 0.15,
     "seconds_per_case": 0.15
   },
   "tolerance": {
-    "accuracy": 0.1,
-    "grade": 0.15,
+    "catch_rate": 0.05,
     "cost_per_case": 1.0,
     "seconds_per_case": 0.25
   },

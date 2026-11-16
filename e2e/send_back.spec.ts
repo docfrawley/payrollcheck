@@ -1,59 +1,66 @@
 import { expect, test } from "@playwright/test";
-import { decide, payCase, resumes, startCase, takeCase } from "./api";
+import { recordCheckFindings, recordExceptionReport, startCase } from "./api";
+import { AGENT_KEY_HEADERS } from "./servers";
 
-// A compliance manager sends a held decision back with a note on the case page,
-// and the test, standing in for the agent, takes the case and decides again.
+// A reviewer sends a case with an open exception back to its subcontractor on
+// the case page, which returns it to the sub with its exception still open and
+// its notice drafted.
 
-const NOTE =
-  "Meridian Air has already paid 350 dollars for the lost bag, so take it off.";
+const NOTICE = "Please pay Kim Dimitrov the base rate in the determination.";
 
-test("a held case sent back with a note is decided again", async ({
+test("a case with an exception is sent back to the subcontractor", async ({
   page,
   request,
 }) => {
-  await startCase(request, "CLM-1022", "e2e-8");
-  await decide(request, "CLM-1022", {
-    decision: "approve",
-    payout: 1350,
-    section: "Section 5, Baggage and Personal Effects",
-    reason: "The loss is covered.",
-  });
-  const resumed = await resumes(request);
-
-  await page.goto("/cases/CLM-1022");
-  const heading = page.locator(".page-header");
-  await expect(heading.getByText("Waiting for sign-off")).toBeVisible();
-  await page.getByRole("button", { name: "Send back", exact: true }).click();
-  await page.getByLabel("What should the agent look at again?").fill(NOTE);
-  await page.getByRole("button", { name: "Send back to the agent" }).click();
-
-  await expect(heading.getByText("Sent back")).toBeVisible();
-  const sentBack = page.getByRole("region", { name: "Decisions sent back" });
-  await expect(sentBack.getByText(NOTE)).toBeVisible();
-  await expect(sentBack.locator(".payout")).toHaveText("$1,350.00");
-  await expect(
-    sentBack.getByText(/^Sent back by Dana Whitfield at /),
-  ).toBeVisible();
-  await expect(page.locator(".steps > li").last()).toContainText(
-    `Reviewer's note Sent back by Dana Whitfield: ${NOTE}`,
+  await startCase(request, "PC-1224", "e2e-8");
+  const [candidate] = await recordCheckFindings(
+    request,
+    "PC-1224",
+    "check_rates",
+    [
+      {
+        rule: "rate.base_short",
+        worker_id: "W-001",
+        line_no: 1,
+        expected: "$60.85 an hour",
+        actual: "$58.85 an hour",
+        shortfall_cents: 6400,
+        citation: "The rate determination in force on the project's award date",
+      },
+    ],
   );
-  expect(await resumes(request)).toEqual([...resumed, "CLM-1022"]);
-
-  await takeCase(request, "CLM-1022", null);
-  await decide(request, "CLM-1022", {
-    decision: "approve",
-    payout: 900,
-    section: "Section 5, Baggage and Personal Effects",
-    reason: "The loss is covered, less what the airline paid.",
+  await recordExceptionReport(request, "PC-1224", {
+    raised: [candidate.candidate_id],
+    notice: NOTICE,
   });
-  await payCase(request, "CLM-1022", 900);
-  const decision = page.getByRole("region", { name: "Decision", exact: true });
-  await expect(decision.getByText("Paid $900.00")).toBeVisible();
-  await expect(heading.getByText("Decided")).toBeVisible();
-  const column = page.locator(".case-layout .column").last();
-  await expect(column.getByRole("heading", { level: 2 })).toHaveText([
-    "Decision",
-    "Decisions sent back",
-    "Agent at work",
-  ]);
+  // The agent's key never takes a reviewer's actions.
+  const byTheAgent = await request.post("/api/cases/PC-1224/send-back", {
+    headers: AGENT_KEY_HEADERS,
+  });
+  expect(byTheAgent.ok()).toBe(false);
+
+  await page.goto("/cases/PC-1224");
+  const heading = page.locator(".page-header");
+  await expect(heading.getByText("Awaiting review")).toBeVisible();
+  const review = page.getByRole("region", { name: "Review" });
+  await review.getByRole("button", { name: "Send back" }).click();
+
+  await expect(heading.getByText("Returned to sub")).toBeVisible();
+  await expect(
+    review.getByText(/^Sent back to the subcontractor on /),
+  ).toBeVisible();
+  await expect(review.getByRole("button")).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("region", { name: "Exceptions" })
+      .getByText("Open, submission 1"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Send-back notice" }).getByText(NOTICE),
+  ).toBeVisible();
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("row", { name: /PC-1224/ }).getByText("Returned to sub"),
+  ).toBeVisible();
 });

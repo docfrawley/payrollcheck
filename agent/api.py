@@ -1,12 +1,9 @@
 """The PayrollCheck backend's API for the payroll agent and the agent's entry point: one
 function for each operation they use. It has no way to the scores, the settings,
-the rounds or the reviewers' decisions."""
+the rounds or the labels."""
 
 from typing import Any, Literal, TypedDict, Unpack
 
-from pydantic import BaseModel, Field
-
-from agent.app_terms import DecisionKind
 from agent.connection import call
 
 StepKind = Literal[
@@ -15,58 +12,10 @@ StepKind = Literal[
     "tool_result",
     "message",
     "lookup",
-    "memory_search",
-    "memory_save",
     "refusal",
 ]
 # The context files a lookup came from, each with its system, owner and review date.
 Sources = list[dict[str, str]]
-Benefit = Literal[
-    "trip_cancellation",
-    "trip_interruption",
-    "trip_delay",
-    "baggage_delay",
-    "baggage",
-    "passport",
-    "emergency_medical",
-]
-
-
-LineKind = Literal[
-    "item", "electronics", "cash", "expense", "hotel", "meals_without_receipts"
-]
-
-
-class Line(BaseModel):
-    """One covered item or expense on a case."""
-
-    description: str = Field(description="What the item or expense is")
-    amount: float = Field(
-        description="The total claimed for the line in US dollars, before any limits. "
-        "For several items, the total for all of them"
-    )
-    quantity: int = Field(
-        ge=1,
-        description="How many separate items the line holds, such as 3 for three "
-        "shirts. A pair or a set is one item, and an expense is 1",
-    )
-    kind: LineKind = Field(
-        description="item: a belonging, or a pair or set that counts as one item. "
-        "electronics: only a phone, tablet, laptop, camera or its lens, e-reader or "
-        "smartwatch; any other device is an item. "
-        "cash: cash that was lost or stolen. "
-        "expense: any other cost with a receipt, such as a medical bill, a meal, a "
-        "taxi, a fee or a prepaid trip cost. "
-        "hotel: a hotel during a trip delay. "
-        "meals_without_receipts: meals during a trip delay with no receipts."
-    )
-    nights: int = Field(
-        description="For a hotel, the number of nights, and 0 otherwise"
-    )
-    hours: float = Field(
-        description="For meals without receipts, the length of the delay in hours, "
-        "and 0 otherwise"
-    )
 
 
 def list_cases() -> list[dict[str, Any]]:
@@ -77,12 +26,16 @@ def get_case(case_id: str) -> dict[str, Any]:
     return call("GET", f"/cases/{case_id}")
 
 
-def get_policy(policy_id: str) -> dict[str, Any]:
-    return call("GET", f"/policies/{policy_id}")
+def get_project(project_id: str) -> dict[str, Any]:
+    return call("GET", f"/projects/{project_id}")
 
 
-def get_case_history(subcontractor_id: str) -> list[dict[str, Any]]:
-    return call("GET", f"/subcontractors/{subcontractor_id}/cases")
+def list_subcontractors(project_id: str) -> list[dict[str, Any]]:
+    return call("GET", f"/projects/{project_id}/subcontractors")
+
+
+def get_payroll_history(case_id: str) -> dict[str, Any]:
+    return call("GET", f"/cases/{case_id}/history")
 
 
 def get_version(number: int) -> dict[str, Any]:
@@ -97,13 +50,6 @@ def get_screening() -> dict[str, Any]:
     return call("GET", "/screening")
 
 
-def calculate_payout(
-    case_id: str, benefit: Benefit, lines: list[dict[str, Any]], paid_by_others: float
-) -> dict[str, Any]:
-    body = {"benefit": benefit, "lines": lines, "paid_by_others": paid_by_others}
-    return call("POST", f"/cases/{case_id}/payout", json=body)
-
-
 def start_case(case_id: str, thread_id: str) -> dict[str, Any]:
     return call("POST", f"/cases/{case_id}/start", json={"thread_id": thread_id})
 
@@ -115,39 +61,36 @@ def record_step(
     return call("POST", f"/cases/{case_id}/steps", json=body)
 
 
-class DecisionRequest(TypedDict):
-    """A decision to record, with who or what made it."""
+def record_check_findings(
+    case_id: str, check: str, findings: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    body = {"check": check, "findings": findings}
+    return call("POST", f"/cases/{case_id}/candidates", json=body)
 
-    decision: DecisionKind
-    payout: float
-    section: str
-    reason: str
-    decided_by: str
+
+def record_screening_flag(case_id: str, reason: str) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/screening-flag", json={"reason": reason})
+
+
+class ExceptionReport(TypedDict):
+    """An exception report to record, with who raises its exceptions."""
+
+    raised: list[int]
+    dismissed: list[dict[str, Any]]
+    added: list[dict[str, Any]]
+    notice: str
+    raised_by: str
 
 
 # The body's fields as keywords, as the direct route passes a tool's inputs.
-def record_decision(case_id: str, **request: Unpack[DecisionRequest]) -> dict[str, Any]:
-    return call("POST", f"/cases/{case_id}/decision", json=request)
-
-
-def pay_case(case_id: str, amount: float) -> dict[str, Any]:
-    return call("POST", f"/cases/{case_id}/payment", json={"amount": amount})
-
-
-def hold_payment(case_id: str, reason: str) -> dict[str, Any]:
-    return call("POST", f"/cases/{case_id}/hold", json={"reason": reason})
+def record_exception_report(
+    case_id: str, **report: Unpack[ExceptionReport]
+) -> dict[str, Any]:
+    return call("POST", f"/cases/{case_id}/report", json=report)
 
 
 def fail_case(case_id: str, reason: str) -> dict[str, Any]:
     return call("POST", f"/cases/{case_id}/failure", json={"reason": reason})
-
-
-def take_case(case_id: str, run_id: str | None) -> dict[str, Any]:
-    return call("POST", f"/cases/{case_id}/take", json={"run_id": run_id})
-
-
-def record_case_heartbeat(case_id: str) -> dict[str, Any]:
-    return call("POST", f"/cases/{case_id}/heartbeat")
 
 
 def record_model_call(

@@ -1,53 +1,45 @@
 """Rounds of the improver the tests work through the agent's service: a stub
-improver that follows a script of tool calls, and stub payroll agents that decide
-better once their instructions hold the improver's rule."""
+improver that follows a script of tool calls, and stub payroll agents that raise
+the check tools' findings once their instructions hold the improver's rule."""
 
-from agent.tests.stubs import StubModel, calculate, call, stub
-from backend.database import INSTRUCTIONS
-from backend.tests.round_requests import reviewer_answers
+from agent.tests.stubs import (
+    NOTICE,
+    StubModel,
+    call,
+    candidates_in,
+    report,
+    stub,
+)
+from backend.first_version import INSTRUCTIONS
 
 # What the improver adds to the payroll agent's instructions in the tests, and what
-# makes the stub payroll agents decide as the reviewers did.
-RULE = "\nA general rule: decide each case as a careful reviewer would.\n"
+# makes the stub payroll agents raise what the checks found.
+RULE = "\nA general rule: raise every finding the check tools make.\n"
 VERSION_1 = (INSTRUCTIONS / "payroll.md").read_text(encoding="utf-8")
 LUNA = {"model": "openai/gpt-6-luna", "reasoning_effort": "low"}
 
 
 class RuleFollowingModel(StubModel):
-    """A stub payroll agent that reads its case, then refers it, or once its
-    instructions hold the rule, decides it as the reviewer did, working out an
-    approval's payout first."""
-
-    answers: dict[str, tuple[str, float]] = {}
+    """A stub payroll agent that dismisses every finding of the check tools, or once
+    its instructions hold the rule, raises them all."""
 
     def next_reply(self, messages):
-        if len(messages) == 2:
-            return call("get_case")
-        copy_id = messages[1].content.removeprefix("Case ")
-        decision, payout = ("refer", 0)
+        ids = [c["candidate_id"] for c in candidates_in(messages)]
         if RULE.strip() in messages[0].content:
-            decision, payout = self.answers[copy_id.rsplit("-E", 1)[0]]
-        if decision == "approve" and messages[-1].name != "calculate_payout":
-            return calculate(copy_id, payout)
-        return call(
-            "record_decision",
-            decision=decision,
-            payout=payout,
-            section="Section 3",
-            reason="The reason.",
-        )
+            return report(raised=ids, notice=NOTICE if ids else "")
+        reason = "It doesn't look like a breach."
+        return report(dismissed=[{"candidate_id": i, "reason": reason} for i in ids])
 
 
 def payroll_agents_model():
-    answers = reviewer_answers("evaluation") | reviewer_answers("held_out")
-    return RuleFollowingModel(messages=iter(()), answers=answers)
+    return RuleFollowingModel(messages=iter(()))
 
 
 def propose(instructions=VERSION_1 + RULE, **model):
     return call(
         "propose_change",
         instructions=instructions,
-        reason="It approved cases the reviewers declined.",
+        reason="It dismissed findings that were breaches.",
         **(LUNA | model),
     )
 
@@ -63,7 +55,7 @@ def whole_round():
     proposes a recipe and ends."""
     return improver(
         call("read_results"),
-        propose(VERSION_1 + "\nA rule for CLM-1003.\n"),
+        propose(VERSION_1 + "\nA rule for PC-0311.\n"),
         propose(),
         call("run_evaluation"),
         call("propose_recipe", recipe="1. Read the results.\n", reason="Shorter"),

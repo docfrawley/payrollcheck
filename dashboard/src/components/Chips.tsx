@@ -1,16 +1,16 @@
+import { Bot, ShieldAlert } from "lucide-react";
 import type {
-  DecisionKind,
   RoundStatus,
   RunStatus,
+  Severity,
   Status,
   Verdict,
   VersionStatus,
 } from "../api";
 import {
-  decisionLabels,
-  money,
   roundLabels,
   runLabels,
+  severityLabels,
   statusLabels,
   verdictLabels,
   versionLabels,
@@ -22,13 +22,36 @@ export function StatusChip({ status }: Readonly<{ status: Status }>) {
   );
 }
 
-export function DecisionChip({
-  decision,
-}: Readonly<{ decision: DecisionKind }>) {
+export function SeverityChip({ severity }: Readonly<{ severity: Severity }>) {
   return (
-    <span className={`chip decision-${decision}`}>
-      {decisionLabels[decision]}
+    <span className={`chip severity-${severity}`}>
+      {severityLabels[severity]}
     </span>
+  );
+}
+
+// The flags that leave a case for a reviewer to work by hand: an instruction
+// the screening found, or two attempts the agent failed.
+export function CaseFlags({
+  screeningFlag,
+  agentFailed,
+}: Readonly<{ screeningFlag: boolean; agentFailed: boolean }>) {
+  return (
+    <>
+      {screeningFlag && (
+        <span className="chip flag">
+          <ShieldAlert aria-hidden />
+          Screening flag
+        </span>
+      )}
+      {screeningFlag && agentFailed && " "}
+      {agentFailed && (
+        <span className="chip flag">
+          <Bot aria-hidden />
+          Agent failed
+        </span>
+      )}
+    </>
   );
 }
 
@@ -49,26 +72,5 @@ export function RoundChip({ status }: Readonly<{ status: RoundStatus }>) {
 export function VerdictChip({ verdict }: Readonly<{ verdict: Verdict }>) {
   return (
     <span className={`chip verdict-${verdict}`}>{verdictLabels[verdict]}</span>
-  );
-}
-
-// Whether the agent's decision and payout match the reviewer's.
-export function RightChip({ right }: Readonly<{ right: boolean }>) {
-  return right ? (
-    <span className="chip score-right">Right</span>
-  ) : (
-    <span className="chip score-miss">Miss</span>
-  );
-}
-
-export function DecisionPayout({
-  decision,
-  payout,
-}: Readonly<{ decision: DecisionKind; payout: number }>) {
-  return (
-    <>
-      <DecisionChip decision={decision} />{" "}
-      <span className="mono">{money(payout)}</span>
-    </>
   );
 }

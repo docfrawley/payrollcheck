@@ -1,14 +1,13 @@
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { Case, Evaluation } from "./api";
-import { Check } from "./components/Judging";
+import type { Evaluation } from "./api";
+import { clean } from "./caseTesting";
 import {
   finishedEvaluation as finished,
   scoredEvaluation as scored,
@@ -16,10 +15,7 @@ import {
 import {
   Refusal,
   type Routes,
-  caseRecord,
-  history,
   panel,
-  policy,
   renderAt,
   sent,
   stubApi,
@@ -36,13 +32,16 @@ const running: Evaluation = {
   run_id: "run-9",
   number: 9,
   agents: 5,
-  evaluation_set: "held_out",
-  tiny: true,
+  evaluation_set: "tiny",
   status: "running",
   finished_at: null,
   seconds: null,
-  size: 5,
-  measures: { ...finished.measures, grade: null, run_seconds: null },
+  size: 10,
+  measures: {
+    ...finished.measures,
+    shortfall_accuracy: null,
+    run_seconds: null,
+  },
 };
 
 function showScoreboard(routes: Routes = {}) {
@@ -62,25 +61,24 @@ it("lists the evaluations in the backend's order, with their measures", async ()
     rows.map((row) => within(row).getAllByRole("link")[0].textContent),
   ).toEqual(["Evaluation #9", "Evaluation #7"]);
   const [newest, older] = rows.map((row) => within(row));
-  expect(newest.getByText("Held-out set, 5 cases")).toBeDefined();
+  expect(newest.getByText("Tiny set, 10 payrolls")).toBeDefined();
   expect(newest.getByText("Running")).toBeDefined();
-  expect(older.getByText("Evaluation set, 25 cases")).toBeDefined();
+  expect(older.getByText("Development set, 207 payrolls")).toBeDefined();
   expect(older.getByText("openai/gpt-6-luna")).toBeDefined();
   for (const shown of [
-    "80%",
-    "64%",
-    "$1,600.00",
-    "88%",
-    "2.20",
+    "80% (36 of 45)",
+    "4 (1.9 per 100)",
+    "95%",
+    "1 of 1",
     "$0.0125",
     "40 s",
   ])
     expect(older.getByText(shown)).toBeDefined();
-  expect(newest.getByText("Not graded")).toBeDefined();
+  expect(newest.getByText("None caught")).toBeDefined();
   expect(older.getByText("2 min 41 s")).toBeDefined();
   expect(newest.queryByText("2 min 41 s")).toBeNull();
   expect(
-    older.getByText(/Oct 3, .*, version 1, 25 payroll agents at once/),
+    older.getByText(/Nov 23, .*, version 1, 25 payroll agents at once/),
   ).toBeDefined();
   const link = older.getByRole("link", { name: "Evaluation #7" });
   expect(link.getAttribute("href")).toBe("/scoreboard/run-7");
@@ -100,19 +98,23 @@ it("starts an evaluation with the choices made", async () => {
   });
   const form = await panel("Start an evaluation");
   const set = form.getByRole("combobox", { name: "Set" });
-  const cases = form.getByRole("combobox", { name: "Cases" });
   const agents = form.getByRole("combobox", { name: "Payroll agents at once" });
+  expect([set, agents].map((c) => (c as HTMLSelectElement).value)).toEqual([
+    "development",
+    "3",
+  ]);
   expect(
-    [set, cases, agents].map((c) => (c as HTMLSelectElement).value),
-  ).toEqual(["evaluation", "all", "3"]);
+    within(set)
+      .getAllByRole("option")
+      .map((option) => option.textContent),
+  ).toEqual(["Development set", "Held-out set", "Tiny set"]);
 
-  fireEvent.change(set, { target: { value: "held_out" } });
-  fireEvent.change(cases, { target: { value: "tiny" } });
+  fireEvent.change(set, { target: { value: "tiny" } });
   fireEvent.change(agents, { target: { value: "5" } });
   fireEvent.click(form.getByRole("button", { name: "Start an evaluation" }));
   await waitFor(() => {
     expect(sent(fetchMock, "POST /api/evaluations")).toEqual([
-      { evaluation_set: "held_out", tiny: true, agents: 5 },
+      { evaluation_set: "tiny", agents: 5 },
     ]);
   });
 });
@@ -127,7 +129,7 @@ it.each([
   expect((await form.findByRole("alert")).textContent).toBe(detail);
 });
 
-it("shows an evaluation's cases beside the reviewers' decisions", async () => {
+it("shows an evaluation's copies beside their labels", async () => {
   stubApi({ "GET /api/evaluations/run-9": scored });
   renderAt("/scoreboard/run-9");
   expect(
@@ -136,35 +138,64 @@ it("shows an evaluation's cases beside the reviewers' decisions", async () => {
   const measures = await panel("Measures");
   const shown = (label: string) =>
     measures.getByText(label).nextSibling?.textContent;
-  expect(shown("Decision accuracy")).toBe("80%");
+  expect(shown("Catch rate")).toBe("80% (36 of 45)");
+  expect(shown("False exceptions")).toBe("4 (1.9 per 100)");
+  expect(shown("Shortfall accuracy")).toBe("95%");
+  expect(shown("Screening flags")).toBe("1 of 1");
   expect(shown("Run time")).toBe("2 min 41 s");
-  expect(shown("Grade (of 3)")).toBe("2.20");
-  expect(measures.getByText(/judge cost/).textContent).toContain(
-    "Model cost $0.3125 and judge cost $0.0005.",
+  expect(measures.getByText(/Started/).textContent).toContain(
+    "Model cost $0.3125.",
   );
-  const rows = (await panel("Cases")).getAllByRole("row").slice(1);
-  const [right, held, undecided] = rows.map((row) => within(row));
-  expect(right.getByText("Right").className).toBe("chip score-right");
-  expect(right.getByText("B").className).toBe("chip grade-B");
-  expect(right.getByText("2.20")).toBeDefined();
-  const column = (name: string) =>
-    within(screen.getByRole("region", { name: "Cases" }))
-      .getAllByRole("columnheader")
-      .findIndex((header) => header.textContent === name);
-  const cells = right.getAllByRole("cell");
-  expect(cells[column("Same grounds")].textContent).toBe("Yes");
-  expect(cells[column("Same section")].textContent).toBe("No");
-  expect(undecided.getByText("Not graded")).toBeDefined();
-  expect(right.getAllByText("$250.00")).toHaveLength(2);
-  expect(held.getByText("Miss").className).toBe("chip score-miss");
-  expect(held.getByText("$680.00")).toBeDefined();
-  expect(held.getByText("$1,200.00")).toBeDefined();
-  expect(held.getByText("$520.00")).toBeDefined();
-  expect(undecided.getByText("No decision")).toBeDefined();
-  expect(undecided.getByText("Declined")).toBeDefined();
-  expect(undecided.getByText("Miss")).toBeDefined();
-  const link = right.getByRole("link", { name: "CLM-1104-E9" });
-  expect(link.getAttribute("href")).toBe("/cases/CLM-1104-E9");
+  expect(measures.queryByText(/judge/)).toBeNull();
+  const copies = await panel("Copies");
+  const headings = copies
+    .getAllByRole("columnheader")
+    .map((header) => header.textContent);
+  const rows = copies.getAllByRole("row").slice(1);
+  const cells = rows.map((row) =>
+    Object.fromEntries(
+      within(row)
+        .getAllByRole("cell")
+        .map((cell, index) => [headings[index], cell.textContent]),
+    ),
+  );
+  expect(cells[0]).toMatchObject({
+    Copy: "PC-0412-E9",
+    Of: "PC-0412",
+    Status: "Awaiting review",
+    Caught: "1 of 1",
+    Missed: "0",
+    "False exceptions": "0",
+    Screening: "",
+  });
+  expect(cells[1]).toMatchObject({
+    Caught: "0 of 1",
+    Missed: "1",
+    "False exceptions": "1",
+  });
+  expect(cells[2]).toMatchObject({
+    Caught: "0 of 0",
+    Screening: "Expected and flagged",
+  });
+  const link = within(rows[0]).getByRole("link", { name: "PC-0412-E9" });
+  expect(link.getAttribute("href")).toBe("/cases/PC-0412-E9");
+});
+
+it("says when a copy's screening was missed or not expected", async () => {
+  const [copy] = scored.cases;
+  stubApi({
+    "GET /api/evaluations/run-9": {
+      ...scored,
+      cases: [
+        { ...copy, case_id: "PC-0809-E9", screening_expected: true },
+        { ...copy, case_id: "PC-0412-E9", screening_found: true },
+      ],
+    },
+  });
+  renderAt("/scoreboard/run-9");
+  const copies = await panel("Copies");
+  expect(copies.getByText("Expected, missed")).toBeDefined();
+  expect(copies.getByText("Flagged, not expected")).toBeDefined();
 });
 
 it("says when an evaluation doesn't exist", async () => {
@@ -177,50 +208,23 @@ it("says when an evaluation doesn't exist", async () => {
   ).toBeDefined();
 });
 
-it("shows a copy's evaluation, and no sign-off for a held copy", async () => {
-  const heldCopy: Case = {
-    ...caseRecord,
-    case_id: "CLM-1112-E9",
-    status: "waiting_for_sign_off",
-    thread_id: "t-1",
-    attempts: 1,
-    evaluation_id: "run-9",
-    copy_of: "CLM-1112",
-    decision: {
-      decision: "approve",
-      payout: 1200,
-      calculation: {
-        lines: [{ step: "Laptop", amount: 1200 }],
-        payout: 1200,
-      },
-      section: "Section 5",
-      reason: "The loss is covered.",
-      decided_by: "PayrollCheck Agent, version 1",
-      decided_at: "2026-10-03T17:03:00+00:00",
-      manual_version: "2026.2",
-      signed_off_by: null,
-      signed_off_at: null,
-      gateway_refusal: null,
-    },
-  };
+it("shows a copy's evaluation, and no Sign off or Send back", async () => {
   stubApi({
-    "GET /api/cases/CLM-1112-E9": heldCopy,
-    "GET /api/cases/CLM-1112-E9/steps": [],
-    "GET /api/policies/POL-2002": policy,
-    "GET /api/subcontractors/CUS-3002/cases": history,
+    "GET /api/cases/PC-1201": {
+      ...clean,
+      evaluation_id: "run-9",
+      copy_of: "PC-0412",
+    },
+    "GET /api/cases/PC-1201/steps": [],
   });
-  renderAt("/cases/CLM-1112-E9");
+  renderAt("/cases/PC-1201");
   const note = await screen.findByText(/A copy of/);
-  expect(note.textContent).toBe("A copy of CLM-1112 in an evaluation");
+  expect(note.textContent).toBe("A copy of PC-0412 in an evaluation");
   const link = within(note).getByRole("link", { name: "evaluation" });
   expect(link.getAttribute("href")).toBe("/scoreboard/run-9");
-  const decision = await panel("Decision");
-  expect(
-    decision.getByText(
-      "Held for sign-off. In an evaluation this counts as finished, and a copy can't be signed off.",
-    ),
-  ).toBeDefined();
-  expect(decision.queryByRole("button", { name: "Sign off" })).toBeNull();
+  const review = await panel("Review");
+  expect(review.queryByRole("button", { name: "Sign off" })).toBeNull();
+  expect(review.queryByRole("button", { name: "Send back" })).toBeNull();
 });
 
 it("links to the Scoreboard from the header", async () => {
@@ -258,13 +262,4 @@ it("shows a stopped evaluation as stopped, with no run time", async () => {
     "Not finished",
   );
   expect(measures.getByText("Stopped by Dana Whitfield")).toBeDefined();
-});
-
-it("says the judge found a check from even odds", () => {
-  render(
-    <p>
-      <Check chance={0.5} /> <Check chance={0.49} />
-    </p>,
-  );
-  expect(screen.getByText("Yes No")).toBeDefined();
 });

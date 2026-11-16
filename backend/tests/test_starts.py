@@ -37,7 +37,7 @@ def test_a_dispatch_has_1_to_25_payroll_agents(client, agent_calls, agents):
 
 
 def test_start_an_evaluation(client, agent_calls):
-    response = start_evaluation(client, "evaluation", False, 25)
+    response = start_evaluation(client, "development", 25)
     assert response.status_code == 202
     run_id = newest_run()
     assert response.json() == {"status": "accepted", "run_id": run_id, "number": 1}
@@ -48,7 +48,7 @@ def test_start_an_evaluation(client, agent_calls):
         "running",
         25,
     )
-    assert len(evaluation["cases"]) == 25
+    assert len(evaluation["cases"]) == 207
 
 
 @pytest.mark.parametrize(

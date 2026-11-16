@@ -17,12 +17,12 @@ def run_id(client):
 @pytest.mark.parametrize("in_run", [True, False])
 def test_record_a_model_call(client, monkeypatch, run_id, in_run):
     monkeypatch.setattr(main, "now", lambda: RECORDED_AT)
-    start(client, "CLM-1004")
+    start(client, "PC-1204")
     named = run_id if in_run else None
-    response = record_call(client, "CLM-1004", named)
+    response = record_call(client, "PC-1204", named)
     assert response.status_code == 200
     assert response.json() == {
-        "case_id": "CLM-1004",
+        "case_id": "PC-1204",
         "thread_id": "t-1",
         "run_id": named,
         "input_tokens": 1200,
@@ -39,15 +39,15 @@ def second(moment):
 
 @pytest.mark.parametrize("in_run", [True, False])
 def test_record_a_spell_of_work(client, run_id, in_run):
-    start(client, "CLM-1004")
+    start(client, "PC-1204")
     named = run_id if in_run else None
     before = datetime.now(UTC)
-    response = record_time(client, "CLM-1004", named)
+    response = record_time(client, "PC-1204", named)
     after = datetime.now(UTC)
     assert response.status_code == 200
     spell = response.json()
     assert (spell["case_id"], spell["thread_id"], spell["run_id"]) == (
-        "CLM-1004",
+        "PC-1204",
         "t-1",
         named,
     )
@@ -59,12 +59,12 @@ def test_record_a_spell_of_work(client, run_id, in_run):
 
 @pytest.mark.parametrize("record", [record_call, record_time])
 def test_recording_needs_a_started_case_and_a_known_run(client, record):
-    not_started = record(client, "CLM-1004", None)
+    not_started = record(client, "PC-1204", None)
     assert not_started.status_code == 409
-    assert not_started.json()["detail"] == "Case CLM-1004 has not been started"
-    assert record(client, "CLM-9999", None).status_code == 404
-    start(client, "CLM-1004")
-    unknown = record(client, "CLM-1004", "run-9")
+    assert not_started.json()["detail"] == "Case PC-1204 has not been started"
+    assert record(client, "PC-9999", None).status_code == 404
+    start(client, "PC-1204")
+    unknown = record(client, "PC-1204", "run-9")
     assert unknown.status_code == 404
     assert unknown.json()["detail"] == "Run run-9 not found"
 
@@ -73,10 +73,10 @@ def test_recording_needs_a_started_case_and_a_known_run(client, record):
     "usage", [{"input_tokens": -1}, {"output_tokens": -1}, {"cost": -0.01}]
 )
 def test_a_model_call_cant_be_negative(client, usage):
-    start(client, "CLM-1004")
-    assert record_call(client, "CLM-1004", None, **usage).status_code == 422
+    start(client, "PC-1204")
+    assert record_call(client, "PC-1204", None, **usage).status_code == 422
 
 
 def test_a_spell_of_work_cant_be_negative(client):
-    start(client, "CLM-1004")
-    assert record_time(client, "CLM-1004", None, seconds=-1).status_code == 422
+    start(client, "PC-1204")
+    assert record_time(client, "PC-1204", None, seconds=-1).status_code == 422

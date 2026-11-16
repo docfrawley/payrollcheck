@@ -22,6 +22,23 @@ LATE = "timeliness.late"
 GAP = "sequence.gap"
 CHANGED = "classification.changed"
 MISMATCH = "classification.mismatch"
+RULES = (
+    MISSING_FIELD,
+    UNSIGNED,
+    PROJECT_MISMATCH,
+    INACTIVE,
+    BASE_SHORT,
+    FRINGE_SHORT,
+    OVERTIME,
+    HOURS_TOTAL,
+    GROSS,
+    UNREGISTERED,
+    RATIO,
+    LATE,
+    GAP,
+    CHANGED,
+    MISMATCH,
+)
 
 
 @dataclass(frozen=True)

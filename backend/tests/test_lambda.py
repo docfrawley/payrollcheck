@@ -77,7 +77,7 @@ def test_the_handler_answers_without_the_startup_hook(agent_key):
     assert (health["statusCode"], json.loads(health["body"])) == (200, {"status": "ok"})
     cases = through_the_handler("/api/cases", {API_KEY_HEADER.lower(): agent_key})
     assert cases["statusCode"] == 200
-    assert len(json.loads(cases["body"])) == 26
+    assert len(json.loads(cases["body"])) == 207
     assert through_the_handler("/api/cases")["statusCode"] == 401
 
 

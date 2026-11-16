@@ -65,21 +65,19 @@ def latest_dispatch(client):
     return read(client, "/api/dispatches/latest").json()
 
 
-def start_evaluation(
-    client, evaluation_set="held_out", tiny=True, agents=5, email=MARCUS
-):
+def start_evaluation(client, evaluation_set="tiny", agents=5, email=MARCUS):
     """Start an evaluation as a reviewer does, and return the start's answer."""
     return client.post(
         "/api/evaluations",
-        json={"evaluation_set": evaluation_set, "tiny": tiny, "agents": agents},
+        json={"evaluation_set": evaluation_set, "agents": agents},
         headers=signed_in(email),
     )
 
 
-def create_evaluation(client, evaluation_set="held_out", tiny=True, agents=5):
+def create_evaluation(client, evaluation_set="tiny", agents=5):
     """Start an evaluation as a reviewer does, which the app creates with its
     copies, and return it."""
-    started = start_evaluation(client, evaluation_set, tiny, agents, DANA)
+    started = start_evaluation(client, evaluation_set, agents, DANA)
     return started_run(client, started)
 
 

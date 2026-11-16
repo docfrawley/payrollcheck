@@ -1,4 +1,4 @@
-"""Work one case with the PayrollCheck Agent: uv run -m agent CLM-1001"""
+"""Work one case with the PayrollCheck Agent: uv run -m agent PC-1201"""
 
 import argparse
 import sys
@@ -14,7 +14,7 @@ from agent.harness import payroll_graphs, work_case
 
 def main(args: list[str]) -> None:
     """Work the case named on the command line on the current version, with no
-    run, which counts as no evaluation."""
+    run."""
     parser = argparse.ArgumentParser(
         prog="uv run -m agent", description="Work one case in the queue."
     )
@@ -22,7 +22,7 @@ def main(args: list[str]) -> None:
     options = parser.parse_args(args)
     with checkpoint_pool() as pool:
         try:
-            agent = payroll_graphs(api.get_current_version(), None, pool)()
+            agent = payroll_graphs(api.get_current_version(), pool)()
             work_case(options.case_id, None, agent)
         except (Refused, ConnectionError) as refusal:
             parser.exit(1, f"{options.case_id}  not started: {refusal}\n")

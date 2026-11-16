@@ -1,9 +1,8 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router";
 import { api, type ScoredCase, type ScoredEvaluation } from "../api";
-import { DecisionPayout, RightChip, RunChip } from "../components/Chips";
+import { RunChip, StatusChip } from "../components/Chips";
 import { CaseLink } from "../components/CaseLink";
-import { Check, GradeChip } from "../components/Judging";
 import { StateMessage } from "../components/StateMessage";
 import { ModelName } from "../components/ModelName";
 import { PageHeader } from "../components/PageHeader";
@@ -13,7 +12,6 @@ import {
   duration,
   evaluationSetName,
   modelCost,
-  money,
 } from "../format";
 import { MEASURES } from "../measures";
 import { SCOREBOARD } from "../paths";
@@ -68,9 +66,7 @@ function MeasuresPanel({
         />
         , version {evaluation.version}. Started{" "}
         {dateTime(evaluation.started_at)}. Model cost{" "}
-        <span className="mono">{modelCost(evaluation.model_cost)}</span> and
-        judge cost{" "}
-        <span className="mono">{modelCost(evaluation.judge_cost)}</span>.
+        <span className="mono">{modelCost(evaluation.model_cost)}</span>.
       </p>
       {evaluation.stopped_because && (
         <p className="stopped">{evaluation.stopped_because}</p>
@@ -87,96 +83,66 @@ function MeasuresPanel({
   );
 }
 
+// Whether a copy was expected to be flagged by the screening, and was.
+function screening(copy: ScoredCase): string {
+  if (copy.screening_expected)
+    return copy.screening_found ? "Expected and flagged" : "Expected, missed";
+  return copy.screening_found ? "Flagged, not expected" : "";
+}
+
 function ScoredCases({ cases }: Readonly<{ cases: ScoredCase[] }>) {
   return (
     <section className="panel" aria-labelledby="cases-title">
-      <h2 id="cases-title">Cases</h2>
+      <h2 id="cases-title">Copies</h2>
       <p className="muted small">
-        A case the agent didn't decide counts as a referral and gets an F from
-        the judge.
+        Each copy of a labeled payroll beside its labels: how many the agent
+        caught, how many it missed, and the exceptions it raised that match no
+        label.
       </p>
       <div className="table-scroll">
-        <table className="table steady scored-cases">
+        <table className="table steady">
           <colgroup>
             <col className="col-case" />
             <col className="col-id" />
-            <col className="col-decision" />
-            <col className="col-decision" />
+            <col className="col-status" />
             <col className="col-chip" />
             <col className="col-chip" />
             <col className="col-chip" />
-            <col className="col-chip" />
-            <col className="col-money" />
+            <col className="col-status" />
             <col className="col-money" />
             <col className="col-time" />
-            <col className="col-reason" />
           </colgroup>
           <thead>
             <tr>
               <th>Copy</th>
               <th>Of</th>
-              <th>Reviewer</th>
-              <th>Agent</th>
-              <th>Score</th>
-              <th>Grade</th>
-              <th>Same grounds</th>
-              <th>Same section</th>
-              <th className="num">Mistake cost</th>
+              <th>Status</th>
+              <th className="num">Caught</th>
+              <th className="num">Missed</th>
+              <th className="num">False exceptions</th>
+              <th>Screening</th>
               <th className="num">Model cost</th>
               <th className="num">Time</th>
-              <th>The agent's reason</th>
             </tr>
           </thead>
           <tbody>
-            {cases.map((caseRecord) => (
-              <tr key={caseRecord.case_id}>
-                <td className="nowrap">
-                  <CaseLink caseId={caseRecord.case_id} />
-                </td>
-                <td className="mono nowrap">{caseRecord.copy_of}</td>
-                <td className="nowrap">
-                  <DecisionPayout
-                    decision={caseRecord.reviewer_decision}
-                    payout={caseRecord.reviewer_payout}
-                  />
-                </td>
-                <td className="nowrap">
-                  {caseRecord.decision && caseRecord.payout !== null ? (
-                    <DecisionPayout
-                      decision={caseRecord.decision}
-                      payout={caseRecord.payout}
-                    />
-                  ) : (
-                    <span className="muted">No decision</span>
-                  )}
-                </td>
+            {cases.map((copy) => (
+              <tr key={copy.case_id}>
                 <td>
-                  <RightChip right={caseRecord.right} />
+                  <CaseLink caseId={copy.case_id} />
                 </td>
+                <td className="mono">{copy.copy_of}</td>
                 <td>
-                  <GradeChip grade={caseRecord.grade} />
+                  <StatusChip status={copy.status} />
                 </td>
-                <td>
-                  {caseRecord.grade && (
-                    <Check chance={caseRecord.grade.same_grounds} />
-                  )}
+                <td className="num mono">
+                  {copy.labels.length - copy.misses} of {copy.labels.length}
                 </td>
-                <td>
-                  {caseRecord.grade && (
-                    <Check chance={caseRecord.grade.same_section} />
-                  )}
-                </td>
-                <td className="num mono">{money(caseRecord.mistake_cost)}</td>
-                <td className="num mono">{modelCost(caseRecord.model_cost)}</td>
-                <td className="num mono">{duration(caseRecord.seconds)}</td>
-                <td className="small">
-                  <span
-                    className="two-lines"
-                    title={caseRecord.reason ?? undefined}
-                  >
-                    {caseRecord.reason}
-                  </span>
-                </td>
+                <td className="num mono">{copy.misses}</td>
+                <td className="num mono">{copy.false_exceptions}</td>
+                <td>{screening(copy)}</td>
+                <td className="num mono">{modelCost(copy.model_cost)}</td>
+                <td className="num mono">{duration(copy.seconds)}</td>
               </tr>
             ))}
           </tbody>

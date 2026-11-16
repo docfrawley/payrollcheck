@@ -1,5 +1,5 @@
 """The backend's operations on the Copilot's conversations: the dashboard's, which
-start a conversation, send a message or answer a confirmation, each passing the
+start a conversation or send a message, each passing the
 reviewer's sign-in on to the Copilot, and read the conversations; and the Copilot's
 records of each turn, which it makes with the same sign-in."""
 
@@ -13,7 +13,6 @@ from backend.asking import commit_and_ask
 from backend.dependencies import Database, SignedIn, SignedInReviewer, SignIn
 from backend.free_models import model_or_free
 from backend.models import (
-    ConfirmationRequest,
     Conversation,
     ConversationSummary,
     CopilotModel,
@@ -22,7 +21,6 @@ from backend.models import (
     CopilotStepResult,
     CopilotTurn,
     MessageRequest,
-    PauseRequest,
     TurnFailureRequest,
     TurnFinishRequest,
 )
@@ -87,32 +85,6 @@ def send_message(
     return conversations.conversation(db, conversation_id, reviewer)
 
 
-@router.post(
-    CONVERSATION + "/confirmation", operation_id="answer_confirmation", status_code=202
-)
-def answer_confirmation(
-    conversation_id: str,
-    request: ConfirmationRequest,
-    reviewer: SignedIn,
-    sign_in: SignIn,
-    db: Database,
-) -> Conversation:
-    """Answer the confirmation card a turn shows, which the Copilot carries on from."""
-    turn = conversations.waiting_turn(db, conversation_id, request.turn_id, reviewer)
-    conversations.record_answer(db, turn, request.answer)
-    commit_and_ask(
-        db,
-        partial(
-            copilot_service.answer_confirmation,
-            conversation_id,
-            request.turn_id,
-            sign_in,
-        ),
-        lambda reason: conversations.undo_answer(db, request.turn_id),
-    )
-    return conversations.conversation(db, conversation_id, reviewer)
-
-
 @router.get(
     "/api/copilot/model",
     operation_id="get_copilot_model",
@@ -153,16 +125,6 @@ def finish_turn(
 ) -> CopilotTurn:
     """Record the answer to a working turn, with its model calls and their cost."""
     conversations.finish(db, conversations.working_turn(db, turn_id, reviewer), request)
-    return conversations.turn_view(db, turn_id)
-
-
-@router.post(TURN + "/pause", operation_id="pause_turn")
-def pause_turn(
-    turn_id: str, request: PauseRequest, reviewer: SignedIn, db: Database
-) -> CopilotTurn:
-    """Record that a working turn waits for the reviewer to confirm a sign-off."""
-    turn = conversations.working_turn(db, turn_id, reviewer)
-    conversations.pause(db, turn, request.case_id)
     return conversations.turn_view(db, turn_id)
 
 

@@ -1,6 +1,7 @@
-"""Rebuild the database from data/ and context/, with: uv run -m backend.seed"""
+"""Rebuild the database from data/, with: uv run -m backend.seed"""
 
-from backend.database import engine, location, seed
+from backend.database import engine, location
+from backend.seeding import seed
 
 
 def main() -> None:
@@ -8,12 +9,12 @@ def main() -> None:
     db = engine()
     counts = seed(db)
     print(
-        f"Seeded {counts['cases']} cases, {counts['policies']} policies, "
-        f"{counts['subcontractors']} subcontractors and "
-        f"{counts['reviewers']} reviewers "
-        f"into {location(db)}, with {counts['held_out_cases']} held-out cases "
-        f"and {counts['reviewer_decisions']} reviewers' decisions for evaluations, "
-        "and version 1 of the configuration and of the recipe"
+        f"Seeded {counts['cases']} cases on {counts['projects']} projects, "
+        f"{counts['subcontractors']} subcontractors, {counts['workers']} workers "
+        f"and {counts['reviewers']} reviewers into {location(db)}, with "
+        f"{counts['development_cases']} development and {counts['held_out_cases']} "
+        f"held-out labelled cases and their {counts['labels']} labels, and version 1 "
+        "of the configuration and of the recipe"
     )
 
 

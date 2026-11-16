@@ -1,5 +1,6 @@
-"""The harness: it builds the payroll agent's graph, with the check for hidden
-instructions as its first step, and works a case with it."""
+"""The harness: it builds the payroll agent's graph, with the screening for hidden
+instructions first and the check tools after it, before the model, and works a
+case with it."""
 
 import logging
 import time
@@ -30,11 +31,13 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.runtime import Runtime
-from langgraph.store.base import BaseStore
-from langgraph.types import Command, Overwrite, RetryPolicy, interrupt
+from langgraph.types import Command, RetryPolicy
 
-from agent import api, app_terms, memory, reviewer_answer, tool_route
+from agent import api, app_terms, check_inputs, tool_route
+from agent.app_operations import RECORD_CHECK_FINDINGS, RECORD_SCREENING_FLAG
 from agent.checkpoints import Pool
+from agent.checks import CHECKS
+from agent.checks.findings import Parameters
 from agent.connection import Refused
 from agent.console import describe
 from agent.json_text import as_json
@@ -42,20 +45,14 @@ from agent.openrouter import chat_model, usage_of
 from agent.refusals import REFUSED
 from agent.root_run import as_root_run
 from agent.routes import GatewayRefused, Route, Target
-from agent.screening import screen
-from agent.tools import (
-    TARGETS,
-    PayrollContext,
-    PayrollState,
-    case_as_read,
-    payroll_tools,
-)
+from agent.screening import screen, text_cells
+from agent.tools import PAYROLL_TOOLS, TARGETS, PayrollContext, PayrollState
 
 log = logging.getLogger(__name__)
 
 PayrollGraph = CompiledStateGraph[PayrollState, PayrollContext, Any, Any]
 Messages = dict[str, list[BaseMessage]]
-Start = Messages | Command | None
+Start = Messages | None
 # Tags for a case's trace beside its run's, such as the round it works in.
 Tags = tuple[str, ...]
 
@@ -64,32 +61,33 @@ Tags = tuple[str, ...]
 TRANSIENT = (ModelRateLimitError, ModelTimeoutError)
 
 CASE_MODEL_CALLS = 30
-NO_DECISION = "The agent finished without recording a decision"
+NO_REPORT = "The agent finished without recording an exception report"
 WORK_CASE = "Work case"
 CARRY_ON = "Carry on"
-RESUME = "Resume"
 SCREEN = "screen"
-REFER = "refer"
+FLAG = "flag"
+CHECK = "check"
 AGENT = "agent"
 TOOLS = "tools"
-PAY = "pay"
-REMEMBER = "remember"
-WAIT_FOR_REVIEWER = "wait_for_reviewer"
-# Where a decision goes when its payout is held for a reviewer's sign-off.
-HELD = "held"
-PAY_CASE = "pay_case"
 REFUSAL = "refusal"
 
 
-# The check's result as the case's first step, and the section and the maker of
-# the referral it makes when it finds an instruction, which sits outside the
-# versions of the payroll agent.
+# The screening's result as the case's first step.
 FOUND = "Instructions found. {reason}"
 NONE_FOUND = "No instructions found. {reason}"
-SECURITY_CHECK = "Security check: no section of the wording or the manual applies"
-CHECK_DECIDES = "Security check"
-# Who makes the payroll agent's decisions: the version of its configuration.
-AGENT_DECIDES = "PayrollCheck Agent, version {number}"
+# Who raises the payroll agent's exceptions: the version of its configuration.
+AGENT_RAISES = "PayrollCheck Agent, version {number}"
+# What the model is told the check tools found, which code writes.
+CANDIDATES = "Their candidate findings:\n"
+CHECKED = (
+    "The check tools ran on the case's latest submission, in order: {checks}. "
+    + CANDIDATES
+    + "{candidates}"
+)
+NOTHING_FOUND = (
+    "The check tools ran on the case's latest submission, in order: {checks}. "
+    "They found nothing."
+)
 
 
 class TooManyModelCalls(Exception):
@@ -170,12 +168,12 @@ def record_call(context: PayrollContext, reply: BaseMessage) -> None:
 def screen_case(
     state: PayrollState, runtime: Runtime[PayrollContext], screener: BaseChatModel
 ) -> dict[str, Any]:
-    """Have the check read the case as the payroll agent's get_case tool gives it,
+    """Have the screening read every text cell of the case's latest submission,
     before the payroll agent's model sees it, and record its call and its result as
     the case's first step. Raise UnreadableScreening, after recording the call,
     when its answer can't be read."""
     context = runtime.context
-    reply, screening = screen(screener, case_as_read(api.get_case(context.case_id)))
+    reply, screening = screen(screener, text_cells(api.get_case(context.case_id)))
     record_call(context, reply)
     if screening is None:
         raise UnreadableScreening("The security check's answer couldn't be read")
@@ -185,18 +183,37 @@ def screen_case(
     return {"screening": screening.model_dump()}
 
 
-def refer(state: PayrollState, runtime: Runtime[PayrollContext]) -> dict[str, Any]:
-    """Refer a case the check flagged to a reviewer, with the check's reason."""
-    reason = state["screening"]["reason"]
-    case = api.record_decision(
-        runtime.context.case_id,
-        decision=app_terms.REFER,
-        payout=0,
-        section=SECURITY_CHECK,
-        reason=reason,
-        decided_by=CHECK_DECIDES,
+def flag(state: PayrollState, runtime: Runtime[PayrollContext]) -> dict[str, Any]:
+    """Flag a case the screening found an instruction in, for a reviewer to work by
+    hand, with the screening's reason."""
+    context = runtime.context
+    reason = {"case_id": context.case_id, "reason": state["screening"]["reason"]}
+    case = context.route.call(Target.APP, RECORD_SCREENING_FLAG, reason)
+    return {"status": case["status"]}
+
+
+def check_case(state: PayrollState, runtime: Runtime[PayrollContext]) -> dict[str, Any]:
+    """Run the eight check tools in order on the case's latest submission, record
+    each one's findings with the app, which keeps them as the attempt's candidates,
+    and tell the model what they found."""
+    context = runtime.context
+    inputs = check_inputs.fetch_inputs(context.route, context.case_id)
+    parameters = Parameters.read(context.parameters)
+    candidates = []
+    for name, check in CHECKS:
+        findings = [found.record() for found in check(inputs, parameters)]
+        candidates += context.route.call(
+            Target.APP,
+            RECORD_CHECK_FINDINGS,
+            {"case_id": context.case_id, "check": name, "findings": findings},
+        )
+    checks = ", ".join(name for name, _ in CHECKS)
+    told = (
+        CHECKED.format(checks=checks, candidates=as_json(candidates))
+        if candidates
+        else NOTHING_FOUND.format(checks=checks)
     )
-    return {"decision": case["decision"], "status": case["status"]}
+    return {"messages": [HumanMessage(told)]}
 
 
 def call_model(
@@ -217,113 +234,20 @@ def call_model(
     return {"messages": [reply], "model_calls": 1}
 
 
-def pay(state: PayrollState, runtime: Runtime[PayrollContext]) -> dict[str, Any]:
-    """Pay the approved payout on the payroll agent's route, which the app refuses
-    unless it may be paid, and hold a payment the Gateway refuses."""
-    context = runtime.context
-    payment = {"case_id": context.case_id, "amount": state["decision"]["payout"]}
-    try:
-        case = context.route.call(Target.APP, PAY_CASE, payment)
-    except GatewayRefused as refused:
-        case = hold(context, refused)
-    return {"status": case["status"]}
-
-
-def hold(context: PayrollContext, refused: GatewayRefused) -> dict[str, Any]:
-    """Record the Gateway's refusal of a payment on the case, and hold the payment
-    for a reviewer's sign-off with the Gateway's reason."""
-    name = context.route.name(Target.APP, PAY_CASE)
-    api.record_step(context.case_id, REFUSAL, f"{name}: {refused.answer}", [])
-    return api.hold_payment(context.case_id, str(refused))
-
-
 def after_screen(state: PayrollState) -> str:
-    """Refer a case the check found an instruction in, or hand it to the model."""
-    return REFER if state["screening"]["instructions_found"] else AGENT
+    """Flag a case the screening found an instruction in, or check it."""
+    return FLAG if state["screening"]["instructions_found"] else CHECK
 
 
 def after_agent(state: PayrollState) -> str:
-    """Run the tools the model asked for, or stop: it finished without a decision."""
+    """Run the tools the model asked for, or stop: it finished without a report."""
     reply = state["messages"][-1]
     return TOOLS if isinstance(reply, AIMessage) and reply.tool_calls else END
 
 
 def after_tools(state: PayrollState) -> str:
-    """Go back to the model until a decision is recorded, then pay an approval the
-    backend can pay at once, hold one it holds for a reviewer's sign-off, or end the
-    payroll agent's work. The graph maps a held payout to the pause, or to the end
-    for a graph that doesn't pause, and the end to `remember` when it has a
-    memory."""
-    decision, status = state["decision"], state["status"]
-    if not decision:
-        return AGENT
-    if status == app_terms.Status.WAITING_FOR_SIGN_OFF:
-        return HELD
-    if (
-        decision["decision"] == app_terms.APPROVE
-        and status == app_terms.Status.IN_PROGRESS
-    ):
-        return PAY
-    return END
-
-
-def after_pay(state: PayrollState) -> str:
-    """Hold a payment the Gateway refused for a reviewer's sign-off, or end the case
-    agent's work on a case that is paid."""
-    return HELD if state["status"] == app_terms.Status.WAITING_FOR_SIGN_OFF else END
-
-
-def wait_for_reviewer(
-    state: PayrollState, runtime: Runtime[PayrollContext]
-) -> dict[str, Any]:
-    """Pause the case's work until a reviewer answers its held approval. A resume
-    runs this node again from the top, so nothing goes before the interrupt. A
-    sign-off has already paid the case, so the work then ends. A send back forgets
-    the decision, so nothing can pay it, gives the payroll agent its full allowance
-    of model calls again and hands the model the note."""
-    answer = interrupt({"case_id": runtime.context.case_id})
-    if answer["answer"] != reviewer_answer.SENT_BACK:
-        return {}
-    return {
-        "decision": {},
-        "status": "",
-        "model_calls": Overwrite(0),
-        "messages": [reviewer_answer.note_message(answer)],
-    }
-
-
-def after_reviewer(state: PayrollState) -> str:
-    """Hand a decision sent back to the model, or end the work after a sign-off."""
-    return END if state["decision"] else AGENT
-
-
-def remember(state: PayrollState, runtime: Runtime[PayrollContext]) -> None:
-    """Save the case the payroll agent decided to its subcontractor's memory, and record
-    what was saved on the case. When the memory can't be reached, the case keeps
-    its decision and the error is logged as a warning, as any error after the
-    decision is."""
-    case = api.get_case(runtime.context.case_id)
-    saved = memory.remember(cast(BaseStore, runtime.store), case)
-    api.record_step(case["case_id"], "memory_save", saved, [])
-
-
-@dataclass(frozen=True)
-class RunTraits:
-    """What the kind of run a payroll graph works in gives it: a memory of each
-    subcontractor, or none, and whether a payout held for sign-off pauses for a
-    reviewer's answer."""
-
-    store: BaseStore | None
-    pauses: bool
-
-
-def traits_of(kind: app_terms.RunKind | None) -> RunTraits:
-    """An evaluation's payroll graphs have no memory, so its scores don't depend on
-    it, and don't pause, since nobody signs off a copy. Any other's have the memory
-    the environment names, read now, and pause."""
-    if kind == app_terms.EVALUATION:
-        return RunTraits(store=None, pauses=False)
-    return RunTraits(store=memory.memory_store(), pauses=True)
+    """Go back to the model until its report is recorded, which ends its work."""
+    return END if state["status"] else AGENT
 
 
 def payroll_graph(
@@ -331,89 +255,73 @@ def payroll_graph(
     screener: BaseChatModel,
     saver: BaseCheckpointSaver[Any],
     instructions: str,
-    traits: RunTraits,
 ) -> PayrollGraph:
-    """Build the payroll agent's graph, which saves its progress after every step: the
-    check for hidden instructions on its own model, then the payroll agent on its
-    model, with its instructions. With a memory, it can search the subcontractor's, and
-    a case it decides is remembered once its work ends. A graph that pauses waits
-    for a reviewer's answer to a payout held for sign-off; any other ends its work
-    there."""
-    remembers = traits.store is not None
-    tools = payroll_tools(remembers)
-    decided = REMEMBER if remembers else END
-    held = WAIT_FOR_REVIEWER if traits.pauses else decided
+    """Build the payroll agent's graph, which saves its progress after every step:
+    the screening on its own model, then the check tools, then the payroll agent
+    on its model, with its instructions, until it records its report."""
     builder = StateGraph(PayrollState, context_schema=PayrollContext)
     builder.add_node(
         SCREEN, partial(screen_case, screener=screener), retry_policy=SCREEN_RETRY
     )
-    builder.add_node(REFER, refer)
+    builder.add_node(FLAG, flag)
+    builder.add_node(CHECK, check_case)
     builder.add_node(
         AGENT,
         partial(
             call_model,
-            llm=llm.bind_tools(tools),
+            llm=llm.bind_tools(PAYROLL_TOOLS),
             instructions=SystemMessage(instructions),
         ),
     )
     builder.add_node(
         TOOLS,
-        ToolNode(tools, handle_tool_errors=refusal, wrap_tool_call=record_result),
+        ToolNode(
+            PAYROLL_TOOLS, handle_tool_errors=refusal, wrap_tool_call=record_result
+        ),
     )
-    builder.add_node(PAY, pay)
     builder.add_edge(START, SCREEN)
-    builder.add_conditional_edges(SCREEN, after_screen, [REFER, AGENT])
-    builder.add_edge(REFER, END)
+    builder.add_conditional_edges(SCREEN, after_screen, [FLAG, CHECK])
+    builder.add_edge(FLAG, END)
+    builder.add_edge(CHECK, AGENT)
     builder.add_conditional_edges(AGENT, after_agent, [TOOLS, END])
-    builder.add_conditional_edges(
-        TOOLS, after_tools, {AGENT: AGENT, PAY: PAY, HELD: held, END: decided}
-    )
-    builder.add_conditional_edges(PAY, after_pay, {HELD: held, END: decided})
-    if traits.pauses:
-        builder.add_node(WAIT_FOR_REVIEWER, wait_for_reviewer)
-        builder.add_conditional_edges(
-            WAIT_FOR_REVIEWER, after_reviewer, {AGENT: AGENT, END: decided}
-        )
-    if remembers:
-        builder.add_node(REMEMBER, remember)
-        builder.add_edge(REMEMBER, END)
-    return builder.compile(checkpointer=saver, store=traits.store)
+    builder.add_conditional_edges(TOOLS, after_tools, [AGENT, END])
+    return builder.compile(checkpointer=saver)
 
 
 @dataclass
 class PayrollAgent:
     """A payroll graph with a saver of its own, and what its cases' contexts need:
-    the route its tools and payment take, and who its decisions are made by."""
+    the route its tools take, who its exceptions are raised by and its version's
+    parameters for the check tools."""
 
     graph: PayrollGraph
     route: Route
-    decided_by: str
+    raised_by: str
+    parameters: dict[str, Any]
 
 
 NewAgent = Callable[[], PayrollAgent]
 
 
 def maker_of(version: dict[str, Any]) -> str:
-    """Say who makes the decisions of a version of the payroll agent."""
-    return AGENT_DECIDES.format(number=version["number"])
+    """Say who raises the exceptions of a version of the payroll agent."""
+    return AGENT_RAISES.format(number=version["number"])
 
 
-def payroll_graphs(
-    version: dict[str, Any], kind: app_terms.RunKind | None, pool: Pool
-) -> NewAgent:
-    """Return how to build a version's payroll agent for a kind of run, or none: a
-    payroll graph with a saver of its own on the pool, since a saver lets one case
-    at a time read or write, on the route and with the memory read when the run's
-    agents are built. The check runs on the model the backend names for it."""
+def payroll_graphs(version: dict[str, Any], pool: Pool) -> NewAgent:
+    """Return how to build a version's payroll agent: a payroll graph with a saver
+    of its own on the pool, since a saver lets one case at a time read or write, on
+    the route read when the run's agents are built. The screening runs on the
+    model the backend names for it."""
     llm, screener = model(version), model(api.get_screening())
     route = tool_route.from_environment()
-    traits = traits_of(kind)
-    decided_by = maker_of(version)
+    raised_by = maker_of(version)
 
     def new_agent() -> PayrollAgent:
-        saver = PostgresSaver(pool)
-        graph = payroll_graph(llm, screener, saver, version["instructions"], traits)
-        return PayrollAgent(graph, route, decided_by)
+        graph = payroll_graph(
+            llm, screener, PostgresSaver(pool), version["instructions"]
+        )
+        return PayrollAgent(graph, route, raised_by, version["parameters"])
 
     return new_agent
 
@@ -438,7 +346,7 @@ def case_config(
     return thread_of(case) | {
         "callbacks": [CallbackHandler()],
         "metadata": metadata,
-        # One tool call at a time, so two decisions in one reply can't race.
+        # One tool call at a time, so two reports in one reply can't race.
         "max_concurrency": 1,
     }
 
@@ -451,10 +359,11 @@ def context_of(
     return PayrollContext(
         case["case_id"],
         run_id,
-        case["policy_id"],
+        case["project_id"],
         case["subcontractor_id"],
         agent.route,
-        agent.decided_by,
+        agent.raised_by,
+        agent.parameters,
     )
 
 
@@ -464,18 +373,20 @@ def begin(case_id: str) -> Messages:
 
 
 def report(case: dict[str, Any], reason: str) -> str:
-    """Say in one line how a case ended: its decision and payout, or why it failed."""
-    case_id, status, decision = case["case_id"], case["status"], case["decision"]
-    if status == app_terms.Status.WAITING:
+    """Say in one line how a case ended: its exceptions and shortfall, clean,
+    flagged by the screening, or why it failed."""
+    case_id, status = case["case_id"], case["status"]
+    if status == app_terms.Status.RECEIVED:
         return f"{case_id}  failed: {reason}, back in the queue"
-    if status == app_terms.Status.LEFT_FOR_REVIEWER:
+    if case["agent_failed"]:
         return f"{case_id}  failed: {reason}, left for a reviewer"
-    line = f"{case_id}  {decision['decision']}  ${decision['payout']:,.2f}"
-    if status == app_terms.Status.WAITING_FOR_SIGN_OFF:
-        return f"{line}, waiting for sign-off"
-    if decision["decision"] == app_terms.APPROVE and case["payment"] is None:
-        return f"{line}, not paid yet"
-    return line
+    if case["screening_flag"]:
+        return f"{case_id}  flagged by the screening"
+    if not case["open_exceptions"]:
+        return f"{case_id}  clean, awaiting review"
+    count, short = case["open_exceptions"], case["shortfall_cents"] / 100
+    exceptions = "exception" if count == 1 else "exceptions"
+    return f"{case_id}  {count} {exceptions}, ${short:,.2f} short, awaiting review"
 
 
 def run_payroll_graph(
@@ -504,11 +415,11 @@ def spell(case_id: str, run_id: str | None) -> Iterator[None]:
 
 
 def settle(case_id: str, error: str | None) -> str:
-    """Fail a case the agent left undecided, and report how the case ended. An
-    error after the decision is logged, and the case keeps its decision."""
+    """Fail a case the agent left in progress, and report how the case ended. An
+    error after the report is logged, and the case keeps its report."""
     case = api.get_case(case_id)
-    reason = error or NO_DECISION
-    if case["status"] == app_terms.Status.IN_PROGRESS and case["decision"] is None:
+    reason = error or NO_REPORT
+    if case["status"] == app_terms.Status.IN_PROGRESS:
         case = api.fail_case(case_id, reason)
     elif error:
         log.warning("%s  %s", case_id, error)
@@ -548,46 +459,20 @@ def carry_on(
     case_id: str, run_id: str | None, agent: PayrollAgent, tags: Tags = ()
 ) -> str:
     """Carry a case in progress on from its saved progress, as the same attempt, and
-    report how it ended. One whose next step is the pause resumes with its
-    reviewer's answer, whether the pause has run or not: LangGraph keeps an answer
-    given before the pause for the pause to return at once. One with nothing
-    saved, stopped before its first step, starts on its own thread; any other
-    carries on, finishing a step whose writes were saved. A case whose work has
-    ended has nothing left to run."""
+    report how it ended. One with nothing saved, stopped before its first step,
+    starts on its own thread; any other carries on, finishing a step whose writes
+    were saved."""
     case = api.get_case(case_id)
     saved = agent.graph.get_state(thread_of(case))
-    answer = reviewer_answer.answer_of(case)
-    start: Start = None
-    if saved.next == (WAIT_FOR_REVIEWER,) and answer:
-        start = Command(resume=answer)
-    elif saved.created_at is None and case["decision"] is None:
-        start = begin(case_id)
+    start: Start = begin(case_id) if saved.created_at is None else None
     config = case_config(case, CARRY_ON, run_id, tags)
     return work_on(case, start, config, run_id, agent)
 
 
-def paused(case: dict[str, Any], agent: PayrollAgent) -> bool:
-    """Say whether the case's work is paused for a reviewer's answer: an interrupt
-    waits on its thread. The next step names the pause as soon as the step before
-    it is saved, before the pause has run, so it isn't enough."""
-    if case["thread_id"] is None:
-        return False
-    return bool(agent.graph.get_state(thread_of(case)).interrupts)
-
-
-def resume(case_id: str, agent: PayrollAgent) -> str:
-    """Resume a paused case with the reviewer's answer from the app's record, with
-    no run, and report how it ended."""
-    case = api.get_case(case_id)
-    start = Command(resume=reviewer_answer.answer_of(case))
-    return work_on(case, start, case_config(case, RESUME, None, ()), None, agent)
-
-
 def work_in_run(case_id: str, run_id: str, new_agent: NewAgent, tags: Tags = ()) -> str:
     """Work one case in a run with a payroll agent of its own, carrying it on if it
-    is in progress, as a sent-back case the run took is, or starting it if it is
-    waiting, and report how it ended, with any tags for its trace beside the
-    run's."""
+    is in progress, as one a stopped run left is, or starting it if it is Received,
+    and report how it ended, with any tags for its trace beside the run's."""
     agent = new_agent()
     if api.get_case(case_id)["status"] == app_terms.Status.IN_PROGRESS:
         return carry_on(case_id, run_id, agent, tags)

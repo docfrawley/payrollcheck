@@ -32,11 +32,11 @@ def new_dispatch(agents=3):
         return create_dispatch(caller, agents).json()
 
 
-def new_evaluation(evaluation_set="held_out", tiny=True, agents=5):
+def new_evaluation(evaluation_set="tiny", agents=5):
     """Start an evaluation as a reviewer does, which the app creates with its copies,
     and return it as the agent reads it."""
     with the_app() as caller:
-        return create_evaluation(caller, evaluation_set, tiny, agents).json()
+        return create_evaluation(caller, evaluation_set, agents).json()
 
 
 def dispatch(model, saver=None, agents=3):

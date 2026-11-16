@@ -1,10 +1,7 @@
 """The Copilot's graph, written by hand: a node that asks the model, LangGraph's
-ToolNode, and the loop between them. A sign-off is checked in code, paused for the
-reviewer's confirmation in a node of its own, and signed off or canceled in code;
-the success criteria's answer is written in code; and with a memory, the
-reviewer's memories are searched as a turn starts and its message and answer saved
-as it ends. The graph saves its state after every step on the conversation's
-thread."""
+ToolNode, and the loop between them, and with a memory, the reviewer's memories
+searched as a turn starts and its message and answer saved as it ends. The graph
+saves its state after every step on the conversation's thread."""
 
 import logging
 import operator
@@ -21,7 +18,6 @@ from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
     SystemMessage,
-    ToolCall,
     ToolMessage,
 )
 from langchain_core.runnables import Runnable
@@ -33,11 +29,9 @@ from langgraph.prebuilt import ToolNode
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.runtime import Runtime
 from langgraph.store.base import BaseStore
-from langgraph.types import Command, Overwrite, interrupt
-from pydantic import ValidationError
+from langgraph.types import Command, Overwrite
 
 from agent.agentcore_memory import UNREACHABLE
-from agent.app_terms import Status
 from agent.console import describe
 from agent.context_tools import Sources
 from agent.copilot import app_api, cards, memory
@@ -46,11 +40,8 @@ from agent.copilot.tools import (
     COPILOT_TOOLS,
     KINDS,
     SEARCH_MEMORY,
-    SIGN_OFF,
     CopilotContext,
-    SignOffCase,
 )
-from agent.json_text import as_json
 from agent.openrouter import usage_of
 from agent.refusals import REFUSED
 from agent.routes import GatewayRefused
@@ -61,27 +52,8 @@ TURN_MODEL_CALLS = 25
 BEGIN = "begin"
 RECALL = "recall"
 REMEMBER = "remember"
-REPORT_CRITERIA = "report_criteria"
 AGENT = "agent"
 TOOLS = "tools"
-CHECK_SIGN_OFF = "check_sign_off"
-CONFIRM = "confirm"
-SIGN_OFF_NODE = "sign_off"
-CANCELLED = "cancelled"
-# What the model is told of a call it can't make.
-ONE_STEP = REFUSED.format(reason="one step at a time")
-ONE_A_TURN = "One sign-off a turn. Please ask me again for the next one."
-CANT_SIGN_OFF = "{name} can't sign off payouts over the approval limit of {limit}"
-NOT_HELD = "Case {case_id} isn't waiting for sign-off"
-A_COPY = "Case {case_id} is a copy in an evaluation, which nobody signs off"
-# How a sign-off the reviewer didn't confirm ends the turn, written in code.
-CANCELED = "Canceled. Nothing was signed off or paid."
-NOT_SIGNED_OFF = "I haven't signed off {case_id}. What would you like to do instead?"
-CASE_CHANGED = (
-    "The case changed since the card was shown, so I canceled this sign-off "
-    "without making a payment. Please ask again."
-)
-SIGN_OFF_ANSWER = "sign_off"
 FOUND_NOTHING = "Nothing remembered that bears on this"
 MEMORY_UNREACHABLE = "The memory can't be reached. {error}"
 # The app's, the Gateway's and a tool's own refusals, which go back to the model.
@@ -97,29 +69,20 @@ class TooManyModelCalls(Exception):
 
 class CopilotState(TypedDict):
     """What the graph keeps for a conversation, saved after every step: its
-    messages, the turn's model calls and their cost, the case a sign-off asks
-    about this turn, the reviewer's answer to its confirmation, what the memory
-    found, and the success criteria's answer once a tool has written it."""
+    messages, the turn's model calls and their cost, and what the memory found."""
 
     messages: Annotated[list[AnyMessage], add_messages]
     model_calls: Annotated[int, operator.add]
     cost: Annotated[float, operator.add]
-    confirming: str
-    confirmation: dict[str, Any]
     remembered: list[str]
-    criteria: str
 
 
 def begin(state: CopilotState) -> dict[str, Any]:
-    """Start a turn's counts again from zero, with no sign-off asked about, nothing
-    remembered and no answer on the success criteria."""
+    """Start a turn's counts again from zero, with nothing remembered."""
     return {
         "model_calls": Overwrite(0),
         "cost": Overwrite(0.0),
-        "confirming": "",
-        "confirmation": {},
         "remembered": [],
-        "criteria": "",
     }
 
 
@@ -168,18 +131,6 @@ def remember(state: CopilotState, runtime: Runtime[CopilotContext]) -> None:
         log.warning("The Copilot's memory wasn't saved: %s", describe(error))
 
 
-def report_criteria(state: CopilotState) -> dict[str, Any]:
-    """End the turn with the success criteria's answer as it was written in code,
-    with no model call."""
-    return {"messages": [AIMessage(state["criteria"])]}
-
-
-def after_tools(state: CopilotState) -> str:
-    """End the turn with the success criteria's answer once a tool has written it,
-    or go back to the model."""
-    return REPORT_CRITERIA if state["criteria"] else AGENT
-
-
 def call_model(
     state: CopilotState,
     runtime: Runtime[CopilotContext],
@@ -200,14 +151,9 @@ def call_model(
 
 
 def after_agent(state: CopilotState) -> str:
-    """Check a sign-off the model asks for, run the tools it asks for, or end the
-    turn with its answer."""
+    """Run the tools the model asks for, or end the turn with its answer."""
     reply = state["messages"][-1]
-    if not isinstance(reply, AIMessage) or not reply.tool_calls:
-        return END
-    if any(call["name"] == SIGN_OFF for call in reply.tool_calls):
-        return CHECK_SIGN_OFF
-    return TOOLS
+    return TOOLS if isinstance(reply, AIMessage) and reply.tool_calls else END
 
 
 def refusal_answer(refusal: Exception) -> str:
@@ -263,10 +209,8 @@ def with_card(
     except Exception as error:
         cards.failed(context, card, describe(error))
         raise
-    if isinstance(result, ToolMessage):
-        message = result
-    else:
-        message = cast(dict[str, Any], result.update)["messages"][0]
+    # No Copilot tool answers with a Command, so every result is a message.
+    message = cast(ToolMessage, result)
     cards.done(context, card, message.text, sources_of(message))
     return result
 
@@ -275,135 +219,6 @@ def sources_of(message: ToolMessage) -> Sources:
     """The files a context layer answer came from, in the step it gives as its
     artifact."""
     return message.artifact[2] if message.artifact else []
-
-
-def why_not(context: CopilotContext, case_id: str) -> str | None:
-    """Say why the reviewer may not sign the case off, if they may not: they can't
-    sign off over the limit, or the case isn't waiting for sign-off or is an
-    evaluation's copy."""
-    reviewer = context.reviewer
-    if not reviewer["can_approve_over_limit"]:
-        limit = app_api.get_settings(context.sign_in)["current"]["approval_limit"]
-        return CANT_SIGN_OFF.format(name=reviewer["name"], limit=f"${limit:,.2f}")
-    try:
-        case = app_api.get_case(context.sign_in, case_id)
-    except app_api.Refused as refused:
-        return str(refused.detail)
-    if case["evaluation_id"] is not None:
-        return A_COPY.format(case_id=case_id)
-    if case["status"] != Status.WAITING_FOR_SIGN_OFF:
-        return NOT_HELD.format(case_id=case_id)
-    return None
-
-
-def inputs_wrong(error: ValidationError) -> str:
-    """Say what's wrong with the inputs of a call the model made."""
-    return "; ".join(
-        f"{'.'.join(map(str, problem['loc']))}: {problem['msg']}"
-        for problem in error.errors()
-    )
-
-
-def refuse_sign_off(
-    context: CopilotContext,
-    asked: ToolCall,
-    answers: list[AnyMessage],
-    reason: str,
-) -> Command:
-    """Refuse the sign-off the model asked for, with a card and the reason, which
-    goes back to the model."""
-    cards.refused(context, cards.start(context, SIGN_OFF, asked["args"]), reason)
-    refused = ToolMessage(
-        REFUSED.format(reason=reason),
-        tool_call_id=asked["id"],
-        status="error",
-    )
-    return Command(update={"messages": [*answers, refused]}, goto=AGENT)
-
-
-def check_sign_off(state: CopilotState, runtime: Runtime[CopilotContext]) -> Command:
-    """Check in code that the reviewer may sign off the case the model asks about,
-    once a turn, before the pause, so the card never shows for a reviewer who
-    can't. Any other call in the same reply is refused, one step at a time. A
-    refusal goes back to the model with its card; otherwise the case is kept for
-    the confirmation."""
-    context = runtime.context
-    reply = cast(AIMessage, state["messages"][-1])
-    asked = next(call for call in reply.tool_calls if call["name"] == SIGN_OFF)
-    answers: list[AnyMessage] = [
-        ToolMessage(ONE_STEP, tool_call_id=call["id"], status="error")
-        for call in reply.tool_calls
-        if call is not asked
-    ]
-    try:
-        case_id = SignOffCase.model_validate(asked["args"]).case_id
-    except ValidationError as error:
-        return refuse_sign_off(context, asked, answers, inputs_wrong(error))
-    reason = ONE_A_TURN if state["confirming"] else why_not(context, case_id)
-    if reason:
-        return refuse_sign_off(context, asked, answers, reason)
-    return Command(update={"messages": answers, "confirming": case_id}, goto=CONFIRM)
-
-
-def confirm(state: CopilotState) -> Command:
-    """Pause until the reviewer answers the confirmation card. A resume runs this
-    node again from the top, so nothing goes before the interrupt."""
-    answer = interrupt({"case_id": state["confirming"]})
-    goto = SIGN_OFF_NODE if answer["answer"] == SIGN_OFF_ANSWER else CANCELLED
-    return Command(update={"confirmation": answer}, goto=goto)
-
-
-def sign_off_asked(state: CopilotState) -> ToolCall:
-    """The model's call for the sign-off the reviewer answered."""
-    reply = next(m for m in reversed(state["messages"]) if isinstance(m, AIMessage))
-    return next(call for call in reply.tool_calls if call["name"] == SIGN_OFF)
-
-
-def signed_off(context: CopilotContext, case_id: str) -> dict[str, Any]:
-    """Sign the case off through the app as the reviewer, which pays it and asks
-    the payroll agent to finish its work, and return it. A case this reviewer has
-    already signed off, as a sign-off run again after a restart finds it, counts
-    as done; any other refusal is raised."""
-    try:
-        return app_api.sign_off_case(context.sign_in, case_id)
-    except app_api.Refused:
-        case = app_api.get_case(context.sign_in, case_id)
-        decision = case["decision"]
-        if decision and decision["signed_off_by"] == context.reviewer["name"]:
-            return case
-        raise
-
-
-def sign_off(state: CopilotState, runtime: Runtime[CopilotContext]) -> dict[str, Any]:
-    """Sign the case off as the reviewer, with an action card, and answer the
-    model's call with the app's answer, or its refusal."""
-    context, case_id = runtime.context, state["confirming"]
-    asked = sign_off_asked(state)
-    card = cards.start(context, SIGN_OFF, asked["args"])
-    try:
-        case = signed_off(context, case_id)
-    except app_api.Refused as refused:
-        cards.refused(context, card, refusal_reason(refused))
-        answer = ToolMessage(refused.answer, tool_call_id=asked["id"], status="error")
-        return {"messages": [answer]}
-    except Exception as error:
-        cards.failed(context, card, describe(error))
-        raise
-    cards.done(context, card, as_json(case))
-    return {"messages": [ToolMessage(as_json(case), tool_call_id=asked["id"])]}
-
-
-def cancelled(state: CopilotState) -> dict[str, Any]:
-    """Answer the sign-off the reviewer didn't confirm, and end the turn with a reply
-    written in code, with no model call: after the reviewer's Cancel, or a Sign off
-    the app took as a Cancel because the case changed."""
-    asked = sign_off_asked(state)
-    if state["confirmation"].get("changed"):
-        line = CASE_CHANGED
-    else:
-        line = NOT_SIGNED_OFF.format(case_id=state["confirming"])
-    answer = ToolMessage(CANCELED, tool_call_id=asked["id"])
-    return {"messages": [answer, AIMessage(line)]}
 
 
 def copilot_graph(
@@ -415,16 +230,11 @@ def copilot_graph(
     remembers = store is not None
     answered = REMEMBER if remembers else END
     tools = ToolNode(COPILOT_TOOLS, handle_tool_errors=False, wrap_tool_call=with_card)
-    bound = llm.bind_tools([*COPILOT_TOOLS, SignOffCase], parallel_tool_calls=False)
+    bound = llm.bind_tools(COPILOT_TOOLS, parallel_tool_calls=False)
     builder = StateGraph(CopilotState, context_schema=CopilotContext)
     builder.add_node(BEGIN, begin)
     builder.add_node(AGENT, partial(call_model, llm=bound))
     builder.add_node(TOOLS, tools)
-    builder.add_node(CHECK_SIGN_OFF, check_sign_off, destinations=(AGENT, CONFIRM))
-    builder.add_node(CONFIRM, confirm, destinations=(SIGN_OFF_NODE, CANCELLED))
-    builder.add_node(SIGN_OFF_NODE, sign_off)
-    builder.add_node(CANCELLED, cancelled)
-    builder.add_node(REPORT_CRITERIA, report_criteria)
     builder.add_edge(START, BEGIN)
     if remembers:
         builder.add_node(RECALL, recall)
@@ -434,13 +244,6 @@ def copilot_graph(
         builder.add_edge(REMEMBER, END)
     else:
         builder.add_edge(BEGIN, AGENT)
-    builder.add_conditional_edges(
-        AGENT,
-        after_agent,
-        {TOOLS: TOOLS, CHECK_SIGN_OFF: CHECK_SIGN_OFF, END: answered},
-    )
-    builder.add_conditional_edges(TOOLS, after_tools, [AGENT, REPORT_CRITERIA])
-    builder.add_edge(SIGN_OFF_NODE, AGENT)
-    builder.add_edge(CANCELLED, answered)
-    builder.add_edge(REPORT_CRITERIA, answered)
+    builder.add_conditional_edges(AGENT, after_agent, {TOOLS: TOOLS, END: answered})
+    builder.add_edge(TOOLS, AGENT)
     return builder.compile(checkpointer=saver, store=store)

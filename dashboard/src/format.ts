@@ -1,10 +1,10 @@
 import type {
-  DecisionKind,
   EvaluationSet,
   RoundStage,
   RoundStatus,
   RoundSummary,
   RunStatus,
+  Severity,
   Status,
   Verdict,
   VersionStatus,
@@ -44,8 +44,8 @@ const modelDollars = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 4,
 });
 
-// A context file's source as a reviewer reads it, such as "Claims operations,
-// owned by the Head of claims operations, reviewed Sep 1, 2026". An owner that
+// A context file's source as a reviewer reads it, such as "Compliance manual,
+// certified payrolls, owned by Compliance manager, reviewed Sep 1, 2026". An owner that
 // is a role, a head of something, is "the" head.
 export function sourceOf(source: Source): string {
   const owner = source.owner.startsWith("Head of ")
@@ -58,14 +58,14 @@ export function money(amount: number): string {
   return dollars.format(amount);
 }
 
+// An amount the app keeps in cents, in dollars: 128460 is $1,284.60.
+export function cents(amount: number): string {
+  return dollars.format(amount / 100);
+}
+
 // A share, such as 0.8, as a whole percentage: 80%.
 export function percent(share: number): string {
   return `${String(Math.round(share * 100))}%`;
-}
-
-// The judge's grade, from 0 to 3, to two places: 2.20.
-export function grade(score: number): string {
-  return score.toFixed(2);
 }
 
 export function modelCost(amount: number): string {
@@ -119,12 +119,17 @@ export function label(code: string): string {
 }
 
 export const statusLabels: Record<Status, string> = {
-  waiting: "Waiting",
+  received: "Received",
   in_progress: "In progress",
-  waiting_for_sign_off: "Waiting for sign-off",
-  sent_back: "Sent back",
-  decided: "Decided",
-  left_for_reviewer: "Left for a reviewer",
+  awaiting_review: "Awaiting review",
+  accepted: "Accepted",
+  returned_to_sub: "Returned to sub",
+};
+
+export const severityLabels: Record<Severity, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
 };
 
 export const runLabels: Record<RunStatus, string> = {
@@ -178,7 +183,7 @@ export function stoppedBecause(reason: string): string {
 }
 
 // Where an open round has got to, such as "First evaluations, 2 of 3", or
-// "Kept: accuracy improved" once its verdict is in.
+// "Kept: catch rate improved" once its verdict is in.
 export function whereRoundIs(round: RoundSummary): string {
   if (round.stage === null) return "";
   if (round.stage === "verdict" && round.verdict)
@@ -188,26 +193,11 @@ export function whereRoundIs(round: RoundSummary): string {
 }
 
 export const evaluationSetLabels: Record<EvaluationSet, string> = {
-  evaluation: "Evaluation set",
+  development: "Development set",
   held_out: "Held-out set",
+  tiny: "Tiny set",
 };
 
 export function evaluationSetName(set: EvaluationSet, size: number): string {
-  return `${evaluationSetLabels[set]}, ${String(size)} cases`;
-}
-
-export const decisionLabels: Record<DecisionKind, string> = {
-  approve: "Approved",
-  decline: "Declined",
-  refer: "Referred",
-};
-
-const addOnNames: Record<string, string> = {
-  adventure_sports: "Adventure Sports",
-  pre_existing_waiver: "Pre-Existing Condition Waiver",
-  electronics_plus: "Electronics Plus",
-};
-
-export function addOnName(code: string): string {
-  return addOnNames[code] ?? label(code);
+  return `${evaluationSetLabels[set]}, ${String(size)} ${size === 1 ? "payroll" : "payrolls"}`;
 }

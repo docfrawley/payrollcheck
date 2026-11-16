@@ -1,6 +1,6 @@
-"""The agent's work, which the entry point hands on: a run through the dispatcher, a
-round through the improver, and a resume through the harness, each telling the app
-every minute while it goes on, and the app why it stopped when it fails."""
+"""The agent's work, which the entry point hands on: a run through the dispatcher and
+a round through the improver, each telling the app every minute while it goes on,
+and the app why it stopped when it fails."""
 
 import logging
 from collections.abc import Callable, Iterator
@@ -12,18 +12,18 @@ from typing import Any
 from langchain_core.language_models import BaseChatModel
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
-from agent import api, app_terms, improver, improver_api
+from agent import api, improver, improver_api
 from agent.connection import Refused
 from agent.console import describe
 from agent.dispatcher import WorkInRun, work_run
-from agent.harness import NewAgent, PayrollAgent, resume, work_in_run
+from agent.harness import NewAgent, work_in_run
 from agent.heartbeat import beating
 
 log = logging.getLogger(__name__)
 
-# How to build the payroll agents of a version of the payroll agent for a kind of run,
-# or for no run, each with a saver of its own.
-PayrollAgents = Callable[[dict[str, Any], app_terms.RunKind | None], NewAgent]
+# How to build the payroll agents of a version of the payroll agent, each with a
+# saver of its own.
+PayrollAgents = Callable[[dict[str, Any]], NewAgent]
 
 
 @dataclass
@@ -39,7 +39,7 @@ class Workers:
 def case_work(run: dict[str, Any], payroll_agents: PayrollAgents) -> WorkInRun:
     """How to work one of a run's cases, on the payroll agents of the run's own
     version, tagged with its round when it has one."""
-    new_agent = payroll_agents(api.get_version(run["version"]), run["kind"])
+    new_agent = payroll_agents(api.get_version(run["version"]))
     tags = (run["round_id"],) if run["round_id"] else ()
     return partial(work_in_run, new_agent=new_agent, tags=tags)
 
@@ -129,15 +129,3 @@ def carry_the_round_on(
     """Carry the improver on after a reviewer's review."""
     with working_on(round):
         stretch(round, start, workers)
-
-
-def resume_telling_the_app(case_id: str, agent: PayrollAgent) -> None:
-    """Resume a paused case, telling the app every minute that the resume is still
-    working on it. A resume that fails, such as on a rate limit, is logged, and
-    once it has been quiet for five minutes the next dispatch carries the case
-    on."""
-    try:
-        with beating(partial(api.record_case_heartbeat, case_id)):
-            resume(case_id, agent)
-    except Exception:  # the resume stops, and nothing else
-        log.exception("The resume of %s stopped", case_id)

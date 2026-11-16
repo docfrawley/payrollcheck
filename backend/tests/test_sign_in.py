@@ -6,8 +6,9 @@ import pytest
 from sqlalchemy import select
 
 from backend import auth
-from backend.database import engine, load, reviewers
-from backend.tests.case_requests import decide, start
+from backend.database import engine, reviewers
+from backend.seeding import load
+from backend.tests.case_requests import awaiting_review
 from backend.tests.gates import REVIEWER_OPERATIONS
 from backend.tests.rows import everything_recorded
 from backend.tests.sign_in import DANA, OTHER_KEY, SUPABASE_URL, signed_in, token
@@ -73,8 +74,7 @@ def test_every_reviewer_operation_needs_a_sign_in_and_the_key_wont_do(
 ):
     """The client sends the agent's key with every request, which never stands in
     for a reviewer."""
-    start(client, "CLM-1002")
-    decide(client, "CLM-1002", "approve", 1350.0)
+    awaiting_review(client, "PC-1202")
     before = everything_recorded()
     for headers in NOT_SIGNED_IN.values():
         response = client.request(method, path, json=body, headers=headers)

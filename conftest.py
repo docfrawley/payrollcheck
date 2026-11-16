@@ -14,13 +14,13 @@ from agent import identity
 from agent.copilot.memory import MEMORY_ID as COPILOT_MEMORY_ID
 from agent.direct import CONTEXT_URL
 from agent.gateway import GATEWAY_URL
-from agent.memory import MEMORY_ID
 from backend import agent_service, auth, copilot_service, judge
 from backend.dashboard import DashboardFiles
 from backend.dashboard import mount as dashboard_mount
-from backend.database import engine, seed
+from backend.database import engine
 from backend.dependencies import API_KEY_HEADER
 from backend.main import app
+from backend.seeding import seed
 from backend.tests.dashboard_build import stand_in_build
 from backend.tests.judging import JUDGE_URL, answer
 from backend.tests.sign_in import PUBLIC_KEYS, SUPABASE_URL
@@ -59,13 +59,12 @@ def database(seeded, tmp_path, monkeypatch):
 @pytest.fixture(autouse=True)
 def no_aws(tmp_path, monkeypatch):
     """Keep every test away from AWS, a Gateway and the servers running on the
-    laptop: no Gateway, context layer, memory, Copilot or runtime from the
+    laptop: no Gateway, context layer, Copilot memory, Copilot or runtime from the
     environment, never as if on AgentCore Runtime, and stand-in AWS credentials and
     a region in place of the AWS CLI's."""
     ours = (
         GATEWAY_URL,
         CONTEXT_URL,
-        MEMORY_ID,
         COPILOT_MEMORY_ID,
         agent_service.AGENT,
         agent_service.RUNTIME,

@@ -15,13 +15,15 @@ afterEach(() => {
 });
 
 it("reads the backend's JSON", async () => {
-  stubApi({ "GET /api/cases/CLM-1002": caseRecord });
-  expect((await api.getCase("CLM-1002")).summary).toBe(caseRecord.summary);
+  stubApi({ "GET /api/cases/PC-1201": caseRecord });
+  expect((await api.getCase("PC-1201")).project_name).toBe(
+    caseRecord.project_name,
+  );
 });
 
 it("raises the backend's reason for refusing", async () => {
-  stubApi({ "GET /api/cases/CLM-1002": new Refusal(409, "Not now") });
-  await expect(api.getCase("CLM-1002")).rejects.toEqual(
+  stubApi({ "GET /api/cases/PC-1201": new Refusal(409, "Not now") });
+  await expect(api.getCase("PC-1201")).rejects.toEqual(
     new ApiError(409, "Not now"),
   );
 });
@@ -45,40 +47,43 @@ it("falls back to a general message when the body isn't JSON", async () => {
 
 it("sends the session's access token with every request", async () => {
   const fetchMock = stubApi({
-    "GET /api/cases/CLM-1002": caseRecord,
-    "POST /api/cases/CLM-1002/sign-off": caseRecord,
+    "GET /api/cases/PC-1201": caseRecord,
+    "POST /api/cases/PC-1201/sign-off": caseRecord,
+    "POST /api/cases/PC-1201/send-back": caseRecord,
   });
-  await api.getCase("CLM-1002");
-  await api.signOff("CLM-1002");
+  await api.getCase("PC-1201");
+  await api.signOffCase("PC-1201");
+  await api.sendBackCase("PC-1201");
   const headers = fetchMock.mock.calls.map(([, init]) =>
     new Headers(init?.headers).get("Authorization"),
   );
-  expect(headers).toEqual([`Bearer ${TOKEN}`, `Bearer ${TOKEN}`]);
+  expect(headers).toEqual([
+    `Bearer ${TOKEN}`,
+    `Bearer ${TOKEN}`,
+    `Bearer ${TOKEN}`,
+  ]);
 });
 
 it("sends no token when no one is signed in", async () => {
   endSession();
-  const fetchMock = stubApi({ "GET /api/cases/CLM-1002": caseRecord });
-  await api.getCase("CLM-1002");
+  const fetchMock = stubApi({ "GET /api/cases/PC-1201": caseRecord });
+  await api.getCase("PC-1201");
   const [[, init]] = fetchMock.mock.calls;
   expect(new Headers(init?.headers).has("Authorization")).toBe(false);
 });
 
-it("sends the Copilot a message or an answer with a renewed sign-in, and reads with the session's", async () => {
+it("sends the Copilot a message with a renewed sign-in, and reads with the session's", async () => {
   freshAccessToken
     .mockResolvedValueOnce("renewed-1")
-    .mockResolvedValueOnce("renewed-2")
-    .mockResolvedValueOnce("renewed-3");
+    .mockResolvedValueOnce("renewed-2");
   const fetchMock = stubApi({
     [`POST ${CONVERSATIONS}`]: conversation(),
     [`POST ${CONVERSATION_PATH}/messages`]: conversation(),
-    [`POST ${CONVERSATION_PATH}/confirmation`]: conversation(),
     [`GET ${CONVERSATION_PATH}`]: conversation(),
     [`GET ${CONVERSATIONS}`]: [],
   });
   await api.startConversation("What needs me today?");
   await api.sendMessage(CONVERSATION_ID, "And tomorrow?");
-  await api.answerConfirmation(CONVERSATION_ID, "turn-1", "sign_off");
   await api.getConversation(CONVERSATION_ID);
   await api.listConversations();
   const headers = fetchMock.mock.calls.map(([, init]) =>
@@ -87,7 +92,6 @@ it("sends the Copilot a message or an answer with a renewed sign-in, and reads w
   expect(headers).toEqual([
     "Bearer renewed-1",
     "Bearer renewed-2",
-    "Bearer renewed-3",
     `Bearer ${TOKEN}`,
     `Bearer ${TOKEN}`,
   ]);

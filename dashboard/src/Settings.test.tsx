@@ -65,11 +65,17 @@ it("shows each setting with its unit and when it last changed", async () => {
       ?.textContent,
   ).toBe("$");
   expect(screen.getByText(/Last changed by Dana Whitfield on/)).toBeDefined();
-  const accuracy = group("Objectives on the held-out set").getByLabelText(
-    "Accuracy at least",
+  const catchRate = group("Objectives on the held-out set").getByLabelText(
+    "Catch rate at least",
   );
-  expect(accuracy).toHaveProperty("value", "60");
-  expect(accuracy.getAttribute("max")).toBe("100");
+  expect(catchRate).toHaveProperty("value", "60");
+  expect(catchRate.getAttribute("max")).toBe("100");
+  expect(group("Noise").getByLabelText("Catch rate")).toHaveProperty(
+    "value",
+    "10",
+  );
+  expect(screen.queryByText(/Approval limit/)).toBeNull();
+  expect(screen.queryByText("2026-11-23")).toBeNull();
   const history = await panel("Changes");
   expect(
     history.getByText("Spending limit for each round: $0.50 to $0.75"),
@@ -101,12 +107,12 @@ it("asks before saving, listing each change, and sends every setting", async () 
   const { current } = settings;
   expect(sent(fetchMock, "PUT /api/settings")).toEqual([
     {
-      approval_limit: current.approval_limit,
       objectives: current.objectives,
       noise: current.noise,
       tolerance: current.tolerance,
       spending_limit: 0.75,
       agents: current.agents,
+      business_date: "2026-11-23",
     },
   ]);
   expect(
@@ -155,7 +161,7 @@ it("shows the settings read only to a reviewer who can't change them", async () 
   expect(
     await screen.findByText(
       wholeText(
-        "Only a reviewer who can sign off payouts over $1,000.00 can change the settings. Marcus Oyelaran can't.",
+        "Only the compliance manager can change the settings. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();

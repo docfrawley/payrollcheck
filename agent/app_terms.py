@@ -1,29 +1,24 @@
 """The app's words for its records, as the payroll agent and the Copilot both read
-them: where a case stands, the kinds of decision and run, where a run stands, and
-the labeled sets an evaluation works."""
+them: where a case stands, the kinds of run, where a run stands, and the sets an
+evaluation works."""
 
 from enum import StrEnum
 from typing import Literal
 
-DecisionKind = Literal["approve", "decline", "refer"]
-APPROVE: DecisionKind = "approve"
-REFER: DecisionKind = "refer"
 RunKind = Literal["dispatch", "evaluation"]
 DISPATCH: RunKind = "dispatch"
 EVALUATION: RunKind = "evaluation"
 RunStatus = Literal["running", "finished", "stopped"]
 RUNNING: RunStatus = "running"
 STOPPED: RunStatus = "stopped"
-EvaluationSet = Literal["evaluation", "held_out"]
-HELD_OUT: EvaluationSet = "held_out"
+EvaluationSet = Literal["development", "held_out", "tiny"]
 
 
 class Status(StrEnum):
     """Where a case stands."""
 
-    WAITING = "waiting"
+    RECEIVED = "received"
     IN_PROGRESS = "in_progress"
-    WAITING_FOR_SIGN_OFF = "waiting_for_sign_off"
-    SENT_BACK = "sent_back"
-    DECIDED = "decided"
-    LEFT_FOR_REVIEWER = "left_for_reviewer"
+    AWAITING_REVIEW = "awaiting_review"
+    ACCEPTED = "accepted"
+    RETURNED_TO_SUB = "returned_to_sub"

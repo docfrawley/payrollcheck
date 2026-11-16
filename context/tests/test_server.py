@@ -4,20 +4,11 @@ handler answers a Function URL's requests, one after another in one process."""
 import json
 from typing import Any
 
-import pytest
-
 from api_rules import rule_breaks
 from context.server import handler
 from context.tests.function_url import Context, mcp_request
 
 TOOLS = {
-    "lookup_term",
-    "describe_fields",
-    "get_plan",
-    "get_case_rules",
-    "search_reference_data",
-    "search_documents",
-    "read_section",
     "get_wage_rate",
     "check_registration",
     "check_apprentice",
@@ -55,10 +46,11 @@ def test_the_handler_lists_the_tools_then_calls_one():
     tools = through_the_handler("tools/list", {})["tools"]
     assert {tool["name"] for tool in tools} == TOOLS
     found = through_the_handler(
-        "tools/call", {"name": "lookup_term", "arguments": {"term": "unattended"}}
+        "tools/call",
+        {"name": "lookup_payroll_term", "arguments": {"term": "No Work Week"}},
     )
     assert not found["isError"]
-    assert json.loads(found["content"][0]["text"])["sections"] == [5]
+    assert json.loads(found["content"][0]["text"])["term"] == "No Work Week"
 
 
 def test_every_tool_is_read_only_and_follows_the_api_rules():
@@ -67,29 +59,15 @@ def test_every_tool_is_read_only_and_follows_the_api_rules():
     assert rule_breaks(as_operations(tools)) == []
 
 
-def test_a_section_that_doesnt_exist_is_refused_with_its_reason():
-    arguments = {"document": "claims_manual", "number": 99}
+def test_an_unknown_registration_is_refused_with_its_reason():
+    arguments = {"registration_no": "000000", "date": "2026-11-23"}
     refused = through_the_handler(
-        "tools/call", {"name": "read_section", "arguments": arguments}
+        "tools/call", {"name": "check_registration", "arguments": arguments}
     )
     assert refused["isError"]
     assert refused["content"][0]["text"].endswith(
-        "Section 99 of the claims manual not found"
+        "No registration 000000 in the registry"
     )
-    outside = through_the_handler(
-        "tools/call", {"name": "get_plan", "arguments": {"plan": "platinum"}}
-    )
-    assert outside["isError"]
-
-
-@pytest.mark.parametrize("tool", ["search_documents", "search_reference_data"])
-@pytest.mark.parametrize("query", ["", "   "])
-def test_a_search_with_nothing_to_look_for_is_refused(tool, query):
-    refused = through_the_handler(
-        "tools/call", {"name": tool, "arguments": {"query": query}}
-    )
-    assert refused["isError"]
-    assert "at least 1 character" in refused["content"][0]["text"]
 
 
 def test_a_payroll_tool_answers_through_the_handler_and_refuses_clearly():

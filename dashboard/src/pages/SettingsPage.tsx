@@ -54,7 +54,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        lead="The approval limit and the rules for improving the payroll agent."
+        lead="The rules for improving the payroll agent."
       />
       {page ? (
         <SettingsPanels page={page} onSaved={setSaved} />

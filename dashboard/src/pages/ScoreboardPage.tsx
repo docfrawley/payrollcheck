@@ -28,7 +28,7 @@ export function ScoreboardPage() {
     <>
       <PageHeader
         title="Scoreboard"
-        lead="How the payroll agent scores against our reviewers' decisions."
+        lead="How the payroll agent scores against the labeled payrolls."
       />
       <div className="column">
         <StartEvaluation />
@@ -42,7 +42,6 @@ function StartEvaluation() {
   const [evaluationSet, setEvaluationSet] = useState<EvaluationSet>(
     evaluationSets[0],
   );
-  const [tiny, setTiny] = useState(false);
   const [agents, setAgents] = useState(FIRST_CHOICE);
 
   return (
@@ -51,7 +50,7 @@ function StartEvaluation() {
       <ActionForm
         label="Start an evaluation"
         icon={<Play />}
-        action={() => api.startEvaluation(evaluationSet, tiny, agents)}
+        action={() => api.startEvaluation(evaluationSet, agents)}
       >
         <label>
           Set
@@ -69,18 +68,6 @@ function StartEvaluation() {
                 {evaluationSetLabels[set]}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Cases
-          <select
-            value={tiny ? "tiny" : "all"}
-            onChange={(event) => {
-              setTiny(event.target.value === "tiny");
-            }}
-          >
-            <option value="all">All 25</option>
-            <option value="tiny">The five tiny cases</option>
           </select>
         </label>
         <AgentsChoice agents={agents} onChange={setAgents} />

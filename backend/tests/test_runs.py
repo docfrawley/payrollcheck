@@ -2,12 +2,14 @@ import pytest
 
 from backend import runs
 from backend.tests.case_requests import (
-    decide,
+    NOTICE,
     fail,
-    pay,
+    finding,
+    flag,
     record_call,
+    record_findings,
     record_time,
-    sign_off,
+    report,
     start,
 )
 from backend.tests.dashboard_reads import read
@@ -38,7 +40,7 @@ def test_create_a_dispatch(client):
         "openai/gpt-6-luna",
         "none",
     )
-    assert (dispatch["evaluation_set"], dispatch["tiny"]) == (None, None)
+    assert dispatch["evaluation_set"] is None
     assert dispatch["number"] == 1
     assert dispatch["started_at"]
     assert (dispatch["finished_at"], dispatch["seconds"], dispatch["summary"]) == (
@@ -58,90 +60,82 @@ def test_a_dispatch_has_1_to_25_payroll_agents(client, agents):
 
 def test_record_the_cases_of_a_dispatch_in_order(client):
     run_id = create_dispatch(client).json()["run_id"]
-    record_cases(client, run_id, "CLM-1008", "CLM-1001")
-    dispatch = record_cases(client, run_id, "CLM-1011", "CLM-1001", "CLM-1008").json()
+    record_cases(client, run_id, "PC-1208", "PC-1201")
+    dispatch = record_cases(client, run_id, "PC-1211", "PC-1201", "PC-1208").json()
     assert [c["case_id"] for c in dispatch["cases"]] == [
-        "CLM-1011",
-        "CLM-1001",
-        "CLM-1008",
+        "PC-1211",
+        "PC-1201",
+        "PC-1208",
     ]
     assert latest_dispatch(client)["cases"] == dispatch["cases"]
 
 
 def test_recording_cases_needs_a_running_dispatch_and_known_cases(client):
-    unknown = record_cases(client, "run-9", "CLM-1001")
+    unknown = record_cases(client, "run-9", "PC-1201")
     assert unknown.status_code == 404
     assert unknown.json()["detail"] == "Run run-9 not found"
     run_id = create_dispatch(client).json()["run_id"]
-    missing = record_cases(client, run_id, "CLM-1001", "CLM-9999")
+    missing = record_cases(client, run_id, "PC-1201", "PC-9999")
     assert missing.status_code == 404
-    assert missing.json()["detail"] == "Case CLM-9999 not found"
+    assert missing.json()["detail"] == "Case PC-9999 not found"
     finish(client, run_id)
-    finished = record_cases(client, run_id, "CLM-1001")
+    finished = record_cases(client, run_id, "PC-1201")
     assert finished.status_code == 409
     assert finished.json()["detail"] == f"Run {run_id} is not running"
 
 
 def test_each_case_shows_where_it_stands_with_its_cost_and_time(client):
-    run_id = dispatch_of(client, "CLM-1001", "CLM-1003")
-    start(client, "CLM-1001")
-    record_call(client, "CLM-1001", run_id, cost=0.004)
-    record_call(client, "CLM-1001", run_id, cost=0.006)
-    record_call(client, "CLM-1001", None, cost=0.5)
-    record_time(client, "CLM-1001", run_id, seconds=20)
-    record_time(client, "CLM-1001", run_id, seconds=21.5)
-    decide(client, "CLM-1001", "approve", 420.0)
-    pay(client, "CLM-1001", 420.0)
+    run_id = dispatch_of(client, "PC-1201", "PC-1203")
+    start(client, "PC-1201")
+    record_call(client, "PC-1201", run_id, cost=0.004)
+    record_call(client, "PC-1201", run_id, cost=0.006)
+    record_call(client, "PC-1201", None, cost=0.5)
+    record_time(client, "PC-1201", run_id, seconds=20)
+    record_time(client, "PC-1201", run_id, seconds=21.5)
+    report(client, "PC-1201")
 
     dispatch = latest_dispatch(client)
     first, second = dispatch["cases"]
     assert (first["case_id"], first["subcontractor_name"], first["status"]) == (
-        "CLM-1001",
-        "Maya Patel",
-        "decided",
+        "PC-1201",
+        "Garden State Electric LLC",
+        "awaiting_review",
     )
-    assert (first["decision"], first["payout"]) == ("approve", 420.0)
     assert (first["seconds"], first["model_cost"]) == (41.5, pytest.approx(0.01))
     assert first["started_at"]
-    assert (second["status"], second["decision"], second["started_at"]) == (
-        "waiting",
-        None,
-        None,
-    )
+    assert (second["status"], second["started_at"]) == ("received", None)
     assert (second["seconds"], second["model_cost"]) == (0, 0)
     assert dispatch["model_cost"] == pytest.approx(0.01)
 
 
+def raise_one(client, case_id):
+    """Report one finding on a started case, raised."""
+    [candidate] = record_findings(client, case_id, findings=[finding()]).json()
+    report(client, case_id, raised=[candidate["candidate_id"]], notice=NOTICE)
+
+
 def test_finishing_a_dispatch_sums_up_its_cases(client):
-    started = ["CLM-1001", "CLM-1003", "CLM-1004", "CLM-1008", "CLM-1016"]
-    started += ["CLM-1012", "CLM-1002", "CLM-1006"]
-    run_id = dispatch_of(client, *started, "CLM-1005")
+    started = ["PC-1201", "PC-1202", "PC-1203", "PC-1204", "PC-1205"]
+    run_id = dispatch_of(client, *started, "PC-1206")
     for case_id in started:
         start(client, case_id)
-    decide(client, "CLM-1001", "approve", 420.0)
-    pay(client, "CLM-1001", 420.0)
-    decide(client, "CLM-1003", "decline", 0)
-    decide(client, "CLM-1004", "refer", 0)
-    decide(client, "CLM-1008", "approve", 2240.0)
-    fail(client, "CLM-1016")
-    start(client, "CLM-1016")
-    fail(client, "CLM-1016")
-    decide(client, "CLM-1002", "approve", 1350.0)
-    sign_off(client, "CLM-1002")
-    decide(client, "CLM-1006", "approve", 300.0)
+    raise_one(client, "PC-1201")
+    report(client, "PC-1202")
+    flag(client, "PC-1203")
+    fail(client, "PC-1204")
+    start(client, "PC-1204")
+    fail(client, "PC-1204")
 
     dispatch = finish(client, run_id).json()
     assert dispatch["status"] == "finished"
     assert dispatch["finished_at"]
     assert dispatch["seconds"] >= 0
-    # CLM-1002's sign-off paid it; CLM-1006's approval isn't paid yet.
     assert dispatch["summary"] == {
-        "approved": 3,
-        "declined": 1,
-        "referred": 1,
-        "waiting_for_sign_off": [{"case_id": "CLM-1008", "payout": 2240.0}],
-        "left_for_reviewer": ["CLM-1016"],
-        "unfinished": ["CLM-1012", "CLM-1006", "CLM-1005"],
+        "with_exceptions": ["PC-1201"],
+        "clean": ["PC-1202"],
+        "flagged": ["PC-1203"],
+        "agent_failed": ["PC-1204"],
+        "unfinished": ["PC-1205", "PC-1206"],
     }
     assert latest_dispatch(client) == dispatch
     again = finish(client, run_id)

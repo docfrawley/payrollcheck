@@ -6,32 +6,32 @@ import pytest
 from agent import api, harness
 from agent.tests.dispatching import dispatch, new_dispatch
 from agent.tests.failures import fail_once
-from agent.tests.queue_setup import leave_waiting
+from agent.tests.queue_setup import leave_received
 from agent.tests.records import case_of, model_calls_of, work_times_of
-from agent.tests.stubs import USAGE, agent_on, approve, call, decide, stub, swarm
+from agent.tests.stubs import USAGE, agent_on, call, stub, swarm, work
 from backend.tests.case_requests import sign_off
 from backend.tests.dashboard_reads import steps_of
 from backend.tests.run_requests import latest_dispatch
 
 
 def test_each_model_call_and_spell_of_work_is_recorded(client):
-    harness.work_case("CLM-1001", None, agent_on(stub(*approve("CLM-1001", 420.0))))
-    thread_id = case_of(client, "CLM-1001")["thread_id"]
-    calls = model_calls_of("CLM-1001")
+    harness.work_case("PC-1205", None, agent_on(stub(*work())))
+    thread_id = case_of(client, "PC-1205")["thread_id"]
+    calls = model_calls_of("PC-1205")
     assert [
         (c["input_tokens"], c["output_tokens"], c["cost"], c["run_id"]) for c in calls
-    ] == [(USAGE["prompt_tokens"], USAGE["completion_tokens"], USAGE["cost"], None)] * 4
+    ] == [(USAGE["prompt_tokens"], USAGE["completion_tokens"], USAGE["cost"], None)] * 3
     assert {c["thread_id"] for c in calls} == {thread_id}
-    [spell] = work_times_of("CLM-1001")
+    [spell] = work_times_of("PC-1205")
     assert (spell["thread_id"], spell["run_id"]) == (thread_id, None)
 
 
 def test_a_run_records_its_calls_and_spells_and_tags_its_traces(client, traces):
-    leave_waiting("CLM-1001", "CLM-1003")
-    dispatch(swarm({"CLM-1001": decide("decline", 0), "CLM-1003": decide("refer", 0)}))
+    leave_received("PC-1205", "PC-1206")
+    dispatch(swarm({"PC-1205": work(), "PC-1206": work()}))
 
     run_id = latest_dispatch(client)["run_id"]
-    for case_id in ("CLM-1001", "CLM-1003"):
+    for case_id in ("PC-1205", "PC-1206"):
         # The check's call, then the payroll agent's two.
         assert [c["run_id"] for c in model_calls_of(case_id)] == [run_id] * 3
         assert [w["run_id"] for w in work_times_of(case_id)] == [run_id]
@@ -39,18 +39,18 @@ def test_a_run_records_its_calls_and_spells_and_tags_its_traces(client, traces):
 
 
 def test_a_case_worked_alone_has_no_tags(traces):
-    harness.work_case("CLM-1001", None, agent_on(stub(*decide("refer", 0))))
+    harness.work_case("PC-1205", None, agent_on(stub(*work())))
     [trace] = traces
     assert "langfuse_tags" not in trace
 
 
 def test_both_attempts_of_a_case_are_under_the_run(client):
-    leave_waiting("CLM-1004")
+    leave_received("PC-1207")
     outage = RuntimeError("503: The model is unavailable")
-    dispatch(swarm({"CLM-1004": [call("get_case"), outage, *decide("refer", 0)]}))
+    dispatch(swarm({"PC-1207": [call("get_case"), outage, *work()]}))
 
     run_id = latest_dispatch(client)["run_id"]
-    calls, spells = model_calls_of("CLM-1004"), work_times_of("CLM-1004")
+    calls, spells = model_calls_of("PC-1207"), work_times_of("PC-1207")
     assert [c["run_id"] for c in calls] == [run_id] * 5
     assert [s["run_id"] for s in spells] == [run_id] * 2
     first, second = (s["thread_id"] for s in spells)
@@ -59,13 +59,13 @@ def test_both_attempts_of_a_case_are_under_the_run(client):
     assert [c["thread_id"] for c in calls] == [first, first, second, second, second]
 
 
-def test_a_held_case_has_one_spell_and_its_sign_off_adds_none(client):
+def test_a_sign_off_adds_no_spell_of_work(client):
     run_id = new_dispatch()["run_id"]
-    harness.work_case("CLM-1002", run_id, agent_on(stub(*approve("CLM-1002", 1350.0))))
-    sign_off(client, "CLM-1002")
+    harness.work_case("PC-1224", run_id, agent_on(stub(*work())))
+    sign_off(client, "PC-1224")
 
-    assert case_of(client, "CLM-1002")["status"] == "decided"
-    [spell] = work_times_of("CLM-1002")
+    assert case_of(client, "PC-1224")["status"] == "accepted"
+    [spell] = work_times_of("PC-1224")
     assert spell["run_id"] == run_id
 
 
@@ -74,10 +74,10 @@ def test_a_failed_recording_still_settles_the_case(client, monkeypatch):
     fail_once(monkeypatch, api, "record_work_time", lost)
     outage = RuntimeError("503: The model is unavailable")
     with pytest.raises(httpx.ConnectError):
-        harness.work_case("CLM-1004", None, agent_on(stub(outage)))
-    case = case_of(client, "CLM-1004")
-    assert (case["status"], case["attempts"]) == ("waiting", 1)
-    last = steps_of(client, "CLM-1004")[-1]
+        harness.work_case("PC-1207", None, agent_on(stub(outage)))
+    case = case_of(client, "PC-1207")
+    assert (case["status"], case["attempts"]) == ("received", 1)
+    last = steps_of(client, "PC-1207")[-1]
     assert (last["kind"], last["content"]) == (
         "error",
         "RuntimeError: 503: The model is unavailable",

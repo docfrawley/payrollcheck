@@ -1,11 +1,6 @@
 import { CircleAlert, Clock } from "lucide-react";
 import { STOPPED, smallPrint } from "../copilot";
-import type {
-  ConfirmationAnswer,
-  CopilotStep,
-  CopilotTurn as Turn,
-} from "../conversation";
-import { ConfirmationCard } from "./ConfirmationCard";
+import type { CopilotStep, CopilotTurn as Turn } from "../conversation";
 import { Markdown } from "./Markdown";
 import { StepCard } from "./StepCard";
 
@@ -36,41 +31,14 @@ function Cards({ steps }: Readonly<{ steps: CopilotStep[] }>) {
 }
 
 // One turn of a conversation: the reviewer's message, the Copilot's cards as it
-// takes each step, a confirmation card when a sign-off waits, and its answer,
-// or what went wrong.
-export function CopilotTurn({
-  turn,
-  onAnswer,
-  answering,
-  answerError,
-}: Readonly<{
-  turn: Turn;
-  onAnswer: (turnId: string, answer: ConfirmationAnswer) => void;
-  answering: boolean;
-  answerError?: string;
-}>) {
+// takes each step, and its answer, or what went wrong.
+export function CopilotTurn({ turn }: Readonly<{ turn: Turn }>) {
   const working = turn.status === "working";
   const stepWorking = turn.steps.some((step) => step.status === "working");
-  // The cards from before a pause, then its confirmation, then the cards after.
-  const pausedAt = turn.paused_at;
-  const before = turn.steps.filter(
-    (step) => pausedAt === null || step.started_at < pausedAt,
-  );
-  const after = turn.steps.filter((step) => !before.includes(step));
   return (
     <li className={working ? "turn turn-working" : "turn"}>
       <p className="from-reviewer">{turn.message}</p>
-      <Cards steps={before} />
-      {turn.confirmation && (
-        <ConfirmationCard
-          turn={turn}
-          confirmation={turn.confirmation}
-          onAnswer={onAnswer}
-          answering={answering}
-          error={answerError}
-        />
-      )}
-      <Cards steps={after} />
+      <Cards steps={turn.steps} />
       {working && !stepWorking && <Working />}
       {turn.answer && (
         <div className="from-copilot">

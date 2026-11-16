@@ -95,12 +95,6 @@ def no_waits(monkeypatch):
     return real
 
 
-def pauses_in(kind):
-    """Whether a kind of run's payroll agents pause for a reviewer, as the harness
-    builds them."""
-    return harness.traits_of(kind).pauses
-
-
 @pytest.fixture
 def fresh_agent():
     """Make the agent's AgentCore app, not yet ready, each with a client that stays
@@ -116,10 +110,8 @@ def workers_from(monkeypatch):
     version's instructions. The agent gets ready again in each test."""
 
     def given(payroll_model, saver, improver_model):
-        def payroll_agents(version, kind):
-            return partial(
-                agent_on, payroll_model, saver, version, pauses=pauses_in(kind)
-            )
+        def payroll_agents(version):
+            return partial(agent_on, payroll_model, saver, version)
 
         workers = work.Workers(payroll_agents, lambda round: improver_model, saver)
         monkeypatch.setattr(entrypoint, "open_checkpoint_pool", object)

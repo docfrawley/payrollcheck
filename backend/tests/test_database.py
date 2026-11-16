@@ -5,8 +5,9 @@ from sqlalchemy import Column, MetaData, Table, Text, inspect, select, update
 from sqlalchemy.pool import QueuePool
 
 from backend import dependencies
-from backend.database import RETIRED, cases, engine, location, seed
+from backend.database import cases, engine, location
 from backend.main import app
+from backend.seeding import RETIRED, seed
 from backend.tests.dashboard_reads import read
 
 SUPABASE = "postgresql://postgres.ref:secret@pooler.example.com:5432/db"
@@ -45,7 +46,7 @@ def test_startup_seeds_a_missing_or_empty_database(database, empty):
     if empty:
         database.touch()
     with TestClient(app) as client:
-        assert len(read(client, "/api/cases").json()) == 26
+        assert len(read(client, "/api/cases").json()) == 207
 
 
 def test_seeding_drops_the_tables_of_earlier_versions():
@@ -65,26 +66,28 @@ def status_of(case_id):
         return db.execute(query).scalar_one()
 
 
-def decide_in(db, case_id):
-    db.execute(update(cases).where(cases.c.case_id == case_id).values(status="decided"))
+def accept_in(db, case_id):
+    db.execute(
+        update(cases).where(cases.c.case_id == case_id).values(status="accepted")
+    )
 
 
 def test_a_request_commits_at_its_end(database):
     request = dependencies.database()
-    decide_in(next(request), "CLM-1001")
-    assert status_of("CLM-1001") == "waiting"
+    accept_in(next(request), "PC-1201")
+    assert status_of("PC-1201") == "received"
     with pytest.raises(StopIteration):
         next(request)
-    assert status_of("CLM-1001") == "decided"
+    assert status_of("PC-1201") == "accepted"
 
 
 def test_a_route_can_commit_sooner_and_a_failure_keeps_only_that(database):
     request = dependencies.database()
     db = next(request)
-    decide_in(db, "CLM-1001")
+    accept_in(db, "PC-1201")
     db.commit()
-    assert status_of("CLM-1001") == "decided"
-    decide_in(db, "CLM-1003")
+    assert status_of("PC-1201") == "accepted"
+    accept_in(db, "PC-1203")
     with pytest.raises(HTTPException):
         request.throw(HTTPException(409, "Refused"))
-    assert (status_of("CLM-1001"), status_of("CLM-1003")) == ("decided", "waiting")
+    assert (status_of("PC-1201"), status_of("PC-1203")) == ("accepted", "received")

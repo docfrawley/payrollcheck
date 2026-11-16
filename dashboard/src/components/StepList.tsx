@@ -1,10 +1,8 @@
 import {
   Ban,
   BookOpen,
-  History,
-  NotebookPen,
+  ListChecks,
   Shield,
-  Undo2,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -62,8 +60,14 @@ function Marked({
 function StepBody({ step }: Readonly<{ step: Step }>) {
   if (step.kind === "screening")
     return (
-      <Marked icon={Shield} label="Security check">
+      <Marked icon={Shield} label="Screening">
         {step.content}
+      </Marked>
+    );
+  if (step.kind === "check")
+    return (
+      <Marked icon={ListChecks} label="Checked">
+        <span className="step-text">{step.content}</span>
       </Marked>
     );
   if (step.kind === "tool_call")
@@ -103,24 +107,6 @@ function StepBody({ step }: Readonly<{ step: Step }>) {
             ))}
           </ul>
         )}
-      </Marked>
-    );
-  if (step.kind === "memory_search")
-    return (
-      <Marked icon={History} label="Searched memory">
-        <span className="step-text">{step.content}</span>
-      </Marked>
-    );
-  if (step.kind === "memory_save")
-    return (
-      <Marked icon={NotebookPen} label="Saved to memory">
-        <span className="step-text">{step.content}</span>
-      </Marked>
-    );
-  if (step.kind === "sent_back")
-    return (
-      <Marked icon={Undo2} label="Reviewer's note">
-        <span className="step-text">{step.content}</span>
       </Marked>
     );
   if (step.kind === "refusal")

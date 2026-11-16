@@ -4,6 +4,7 @@ backend's table, as a round does once a reviewer approves a change."""
 from sqlalchemy import func, insert, select
 
 from backend.database import engine, now, versions
+from backend.first_version import FIRST_PARAMETERS
 
 
 def add_version(
@@ -31,6 +32,7 @@ def add_version(
                 created_at=now(),
                 verdict=verdict,
                 verdict_reason=verdict and f"version {number} was {verdict}",
+                parameters=FIRST_PARAMETERS,
             )
         )
     return number

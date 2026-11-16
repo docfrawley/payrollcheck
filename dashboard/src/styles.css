@@ -35,7 +35,7 @@
      Steel Navy, lifted off the black panel in dark mode. */
   --copilot: light-dark(var(--steel-navy), #1a3550);
   --on-copilot: #ffffff;
-  /* What waits on a reviewer: a held payout, and a note sent back. */
+  /* What stands out for a reviewer: a card for an action. */
   --held: color-mix(in srgb, var(--hi-vis-amber) 22%, var(--panel));
   --sans: "Instrument Sans", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
@@ -473,7 +473,7 @@ p {
   margin-bottom: 20px;
 }
 
-/* Too narrow for the six side by side, the tiles sit in even rows. */
+/* Too narrow for the five side by side, the tiles sit in even rows. */
 @container page (max-width: 980px) {
   .tiles {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -532,26 +532,21 @@ p {
   color: var(--steel-navy);
 }
 
-.status-decided,
-.decision-approve,
+.status-accepted,
 .run-finished,
-.score-right,
 .version-kept,
 .round-finished,
-.verdict-kept,
-.grade-A {
+.verdict-kept {
   background: var(--permit-green);
 }
 
-.status-waiting_for_sign_off,
-.decision-refer,
-.version-under_test,
-.grade-C {
+.status-awaiting_review,
+.version-under_test {
   background: var(--hi-vis-amber);
 }
 
-.status-sent_back,
-.decision-decline,
+.status-returned_to_sub,
+.severity-medium,
 .run-stopped,
 .version-rolled_back,
 .round-stopped,
@@ -563,24 +558,30 @@ p {
 .status-in_progress,
 .run-running,
 .round-open,
-.version-current,
-.grade-B {
+.version-current {
   background: var(--survey-blue);
   color: #ffffff;
 }
 
-.status-waiting {
+.status-received,
+.severity-low {
   background: var(--slate);
   color: #ffffff;
 }
 
-.status-left_for_reviewer,
+.severity-high,
+.flag,
 .step-failed,
-.step-refused,
-.score-miss,
-.grade-F {
+.step-refused {
   background: var(--stop-red);
   color: #ffffff;
+}
+
+/* A flag's chip, with its icon at the chip's text size. */
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .table-scroll {
@@ -669,10 +670,6 @@ p {
   white-space: nowrap;
 }
 
-.table.steady td:has(.two-lines) {
-  white-space: normal;
-}
-
 .col-case {
   width: 8.5rem;
 }
@@ -681,8 +678,8 @@ p {
   width: 6rem;
 }
 
-.col-decision {
-  width: 12.5rem;
+.col-status {
+  width: 10rem;
 }
 
 .col-chip {
@@ -697,24 +694,9 @@ p {
   width: 6rem;
 }
 
-.col-reason {
-  width: 22rem;
-}
-
 /* Headings wrap rather than run into the next column. */
 .table.steady thead th {
   white-space: normal;
-}
-
-/* A long text shown in two lines, with room kept for both, so a row keeps
-   its height when the text arrives. */
-.two-lines {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  min-height: 3em;
 }
 
 .table th,
@@ -812,39 +794,6 @@ p {
   margin: 0;
 }
 
-.story {
-  margin-top: 6px;
-  max-width: 75ch;
-}
-
-.document {
-  background: var(--inset);
-  border-radius: 12px;
-  padding: 14px 16px;
-}
-
-.document + .document {
-  margin-top: 12px;
-}
-
-.document p:last-child {
-  margin-top: 6px;
-}
-
-.history {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.history li {
-  background: var(--inset);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
 .instructions {
   margin: 12px 0 0;
   padding: 16px 20px;
@@ -857,42 +806,8 @@ p {
   line-height: 1.6;
 }
 
-.decision-line {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.payout {
-  font-size: 1.4rem;
-  font-weight: 500;
-}
-
-.section-ref {
-  margin-top: 10px;
-  font-weight: 600;
-}
-
-.reason {
-  margin-top: 4px;
-}
-
-.payment {
-  margin-top: 12px;
-  font-weight: 600;
-}
-
-/* A payout waiting for a sign-off, tinted Hi-Vis Amber as a state that needs
-   someone to act. */
-.sign-off {
-  margin-top: 16px;
-  background: var(--held);
-  border-radius: 12px;
-  padding: 14px 16px;
-}
-
-/* Sign off and Send back side by side, with the note opening below them. */
-.held-answers {
+/* Sign off and Send back side by side. */
+.review-answers {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -900,29 +815,53 @@ p {
   margin-top: 12px;
 }
 
-.held-answers .action-form {
+.review-answers .action-form {
   margin: 0;
 }
 
-.held-answers .reason-form {
-  flex-basis: 100%;
-}
-
-/* The decisions sent back, each with the reviewer's note set apart. */
-.sent-back {
+/* A case's exceptions, each on an inset of its own; one no longer open is
+   muted. */
+.exceptions {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
-.note {
-  margin: 10px 0 4px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--held);
+.exception {
+  background: var(--inset);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.exception-head {
+  margin-bottom: 8px;
+}
+
+.exception:not(.exception-open) .exception-head .mono {
+  color: var(--muted);
+}
+
+.notice {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--inset);
   white-space: pre-wrap;
+  max-width: 75ch;
+}
+
+/* What the screening found, marked in Stop Red. */
+.screening {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.screening svg.lucide {
+  margin-top: 0.15em;
+  color: var(--red-text);
 }
 
 .action-form {
@@ -1103,10 +1042,6 @@ p {
   padding-left: 18px;
   display: grid;
   gap: 4px;
-}
-
-.calculation {
-  margin: 12px 0;
 }
 
 .step code {
@@ -1993,105 +1928,6 @@ fieldset.panel legend + * {
     opacity: 1;
     transform: scale(1);
   }
-}
-
-/* The card a sign-off waits on, which stands out until it's answered. */
-.confirmation {
-  padding: 14px 16px 16px;
-  border-radius: 16px;
-  background: var(--inset);
-}
-
-.confirmation.waiting {
-  background: color-mix(in srgb, var(--hi-vis-amber) 14%, var(--panel));
-  box-shadow: 0 8px 24px var(--shadow);
-}
-
-.confirmation-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.confirmation-title svg.lucide {
-  color: var(--green-text);
-}
-
-.confirmation-facts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px 12px;
-  margin: 12px 0;
-}
-
-.confirmation-facts dt {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.confirmation-facts dd {
-  margin: 0;
-  font-weight: 500;
-}
-
-.confirmation-amount {
-  grid-column: 1 / -1;
-}
-
-.confirmation-amount dd {
-  font-size: 1.6rem;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.confirmation-reason {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--inset);
-  color: var(--muted);
-  font-size: 0.86rem;
-}
-
-/* On an answered card, which has the inset's fill, the reason takes the
-   panel's. */
-.confirmation:not(.waiting) .confirmation-reason {
-  background: var(--panel);
-}
-
-.confirmation-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.confirmation-outcome {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 0.9rem;
-}
-
-.confirmation-outcome svg.lucide {
-  margin-top: 0.15em;
-}
-
-.confirmation-outcome.paid svg.lucide {
-  color: var(--green-text);
-}
-
-.confirmation-outcome.refused svg.lucide {
-  color: var(--red-text);
-}
-
-.confirmation-outcome.unknown svg.lucide {
-  color: var(--amber-text);
-}
-
-.confirmation-outcome.canceled svg.lucide,
-.confirmation-outcome.pending svg.lucide {
-  color: var(--muted);
 }
 
 /* The Copilot's answer, formatted, and its small print. */

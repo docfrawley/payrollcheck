@@ -15,7 +15,7 @@ def operations_in(document):
     }
 
 
-def test_the_document_holds_the_payroll_agents_six_operations(client):
+def test_the_document_holds_the_payroll_agents_seven_operations(client):
     document = client.get(PATH).json()
     operations = operations_in(document)
     assert (
@@ -23,11 +23,12 @@ def test_the_document_holds_the_payroll_agents_six_operations(client):
         == OPERATIONS
         == {
             "get_case",
-            "get_policy",
-            "get_case_history",
-            "calculate_payout",
-            "record_decision",
-            "pay_case",
+            "get_project",
+            "list_subcontractors",
+            "get_payroll_history",
+            "record_check_findings",
+            "record_screening_flag",
+            "record_exception_report",
         }
     )
     app_operations = operations_in(client.get("/openapi.json").json())
@@ -45,28 +46,26 @@ def test_the_document_has_no_servers_and_nothing_about_the_key(client):
         assert not [p for p in operation.get("parameters", []) if p["in"] == "header"]
 
 
-def test_the_payment_keeps_its_amount_for_the_gateways_policy(client):
-    document = client.get(PATH).json()
-    pay_case = operations_in(document)["pay_case"]
-    body = pay_case["requestBody"]["content"]["application/json"]["schema"]
-    model = document["components"]["schemas"][body["$ref"].split("/")[-1]]
-    assert model["required"] == ["amount"]
-
-
 def test_the_document_needs_the_key_or_a_sign_in(dashboard):
     assert read(dashboard, PATH).status_code == 200
     assert dashboard.get(PATH).status_code == 401
 
 
-def test_the_app_no_longer_serves_the_documents(client):
+def test_the_app_no_longer_serves_the_travel_operations(client):
     operations = operations_in(client.get("/openapi.json").json())
-    assert {"search_documents", "read_section"} & set(operations) == set()
-    assert client.get("/api/documents/search", params={"query": "x"}).status_code == 404
+    travel = {"get_policy", "get_case_history", "pay_case", "hold_payment"}
+    assert travel & set(operations) == set()
 
 
-def test_the_decision_body_requires_its_maker(client):
+def test_the_report_body_requires_who_raises_it(client):
     document = client.get(PATH).json()
-    operation = operations_in(document)["record_decision"]
+    operation = operations_in(document)["record_exception_report"]
     body = operation["requestBody"]["content"]["application/json"]["schema"]
     model = document["components"]["schemas"][body["$ref"].split("/")[-1]]
-    assert "decided_by" in model["required"]
+    assert set(model["required"]) == {
+        "raised",
+        "dismissed",
+        "added",
+        "notice",
+        "raised_by",
+    }

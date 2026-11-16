@@ -116,12 +116,12 @@ it("asks again only while keepAsking says so of the data", async () => {
 });
 
 it("starts afresh for a different load, rather than showing the last one's data", async () => {
-  const first = vi.fn(() => Promise.resolve("CLM-1001"));
+  const first = vi.fn(() => Promise.resolve("PC-1201"));
   const second = vi.fn(
     () =>
       new Promise<string>((resolve) =>
         setTimeout(() => {
-          resolve("CLM-1002");
+          resolve("PC-1202");
         }, 100),
       ),
   );
@@ -129,11 +129,11 @@ it("starts afresh for a different load, rather than showing the last one's data"
     initialProps: { load: first },
   });
   await wait(0);
-  expect(result.current.data).toBe("CLM-1001");
+  expect(result.current.data).toBe("PC-1201");
   rerender({ load: second });
   expect(result.current.data).toBeUndefined();
   await wait(100);
-  expect(result.current.data).toBe("CLM-1002");
+  expect(result.current.data).toBe("PC-1202");
 });
 
 it("shows what a change gave back at once, then asks again from there", async () => {

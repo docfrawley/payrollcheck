@@ -12,6 +12,7 @@ from agent import entrypoint, work
 from agent.improver import improver_model
 from agent.tests.dispatching import new_dispatch, the_app
 from agent.tests.invoking import ACCEPTED, HEALTH, carry_round_on, work_round
+from agent.tests.queue_setup import fewer_labelled_cases
 from agent.tests.rounds import (
     RULE,
     VERSION_1,
@@ -22,7 +23,7 @@ from agent.tests.rounds import (
     whole_round,
 )
 from agent.tests.stubs import StubModel, call
-from backend.database import engine, grades, improver_calls, model_calls, runs
+from backend.database import engine, improver_calls, model_calls, runs
 from backend.tests.dashboard_reads import configuration, version_details
 from backend.tests.round_requests import create_round, improvement, stop_round
 from backend.tests.round_requests import review as review_as_a_reviewer
@@ -43,9 +44,14 @@ ROOM: dict[str, Any] = {
 AGENTS = 5
 
 
+# Labelled cases kept in each set, so a round's evaluations work a few copies.
+PER_SET = 3
+
+
 @pytest.fixture(autouse=True)
 def room_to_run(client):
     change_settings(client, agents=AGENTS, **ROOM)
+    fewer_labelled_cases(PER_SET)
 
 
 def start_round(agent, wait=True):
@@ -91,7 +97,7 @@ def test_a_round_runs_its_first_evaluations_then_waits_for_a_change(
     )
     evaluations = [(e["evaluation_set"], e["status"]) for e in round_["evaluations"]]
     assert evaluations == [
-        ("evaluation", "finished"),
+        ("development", "finished"),
         ("held_out", "finished"),
         ("held_out", "finished"),
     ]
@@ -101,7 +107,7 @@ def test_a_round_runs_its_first_evaluations_then_waits_for_a_change(
     assert len(model.prompts) == 2
     read = model.prompts[1][-1]
     assert read.name == "read_results"
-    assert '"wrong"' in read.content
+    assert '"development_set"' in read.content
     # The round waits for a reviewer, so a dispatch can start.
     assert new_dispatch()["status"] == "running"
 
@@ -124,11 +130,11 @@ def test_a_whole_round_with_a_rejection(client, serve_rounds):
     review(agent, round_, second["proposal_id"])
     after = the_round(client)
     assert (after["version"], after["verdict"]) == (2, "kept")
-    assert after["verdict_reason"] == "accuracy improved"
+    assert after["verdict_reason"] == "catch_rate improved"
     assert client.get("/api/versions/current").json()["number"] == 2
     tested = [e for e in after["evaluations"] if e["version"] == 2]
     assert [(e["evaluation_set"], e["agents"]) for e in tested] == [
-        ("evaluation", AGENTS),
+        ("development", AGENTS),
         ("held_out", AGENTS),
         ("held_out", AGENTS),
     ]
@@ -146,13 +152,9 @@ def test_a_whole_round_with_a_rejection(client, serve_rounds):
     ]
     round_id = round_["round_id"]
     in_round = select(runs.c.run_id).where(runs.c.round_id == round_id)
-    cost = (
-        total(
-            improver_calls, improver_calls.c.cost, improver_calls.c.round_id == round_id
-        )
-        + total(model_calls, model_calls.c.cost, model_calls.c.run_id.in_(in_round))
-        + total(grades, grades.c.cost, grades.c.run_id.in_(in_round))
-    )
+    cost = total(
+        improver_calls, improver_calls.c.cost, improver_calls.c.round_id == round_id
+    ) + total(model_calls, model_calls.c.cost, model_calls.c.run_id.in_(in_round))
     assert finished["cost"] == pytest.approx(cost)
     assert total(improver_calls, improver_calls.c.cost, True) == pytest.approx(
         6 * 0.0042
@@ -207,7 +209,8 @@ def test_the_rounds_work_is_traced_in_its_own_session(client, serve_rounds, trac
     improver_traces = [t for t in traces if t.get("langfuse_trace_name") == "Improver"]
     assert [t["langfuse_session_id"] for t in improver_traces] == [session]
     cases = [t for t in traces if t.get("langfuse_trace_name") == "Work case"]
-    assert len(cases) == 75
+    # The first evaluations' copies, three on each of three sets.
+    assert len(cases) == 3 * PER_SET
     run_ids = {e["run_id"] for e in round_["evaluations"]}
     for trace in cases:
         run_id, round_id = trace["langfuse_tags"]
@@ -262,8 +265,7 @@ def test_stopping_a_round_during_its_evaluations(client, serve_rounds):
     model = improver(
         call("read_results"), propose(), call("run_evaluation"), "Never reached"
     )
-    cases = payroll_agents_model()
-    stopping = StoppingModel(messages=iter(()), answers=cases.answers)
+    stopping = StoppingModel(messages=iter(()))
     agent = serve_rounds(model, stopping)
     start_round(agent)
     round_ = the_round(client)
@@ -277,7 +279,10 @@ def test_stopping_a_round_during_its_evaluations(client, serve_rounds):
     # The case in hand when the round stopped finished; no other started.
     copies = get_evaluation(client, tested["run_id"])["cases"]
     statuses = [copy["status"] for copy in copies]
-    assert (statuses.count("decided"), statuses.count("waiting")) == (1, 24)
+    assert (statuses.count("awaiting_review"), statuses.count("received")) == (
+        1,
+        PER_SET - 1,
+    )
     assert len(model.prompts) == 3
     assert total(improver_calls, improver_calls.c.cost, True) == pytest.approx(
         3 * 0.0042

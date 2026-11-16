@@ -4,14 +4,14 @@ rules the backend keeps whatever the improver does."""
 import pytest
 from sqlalchemy import select
 
-from backend.database import INSTRUCTIONS, engine, recipes
+from backend.database import engine, recipes
+from backend.first_version import INSTRUCTIONS
 from backend.tests.dashboard_reads import configuration, version_details
 from backend.tests.round_requests import (
     ALL,
     CHANGE,
     approved_change,
     create_round,
-    decide_copies,
     fail_round,
     improvement,
     improver_call,
@@ -22,6 +22,7 @@ from backend.tests.round_requests import (
     round_evaluation,
     round_path,
     stop_round,
+    work_copies,
 )
 from backend.tests.run_requests import create_evaluation, finish, get_evaluation
 from backend.tests.settings_requests import change_settings
@@ -46,7 +47,7 @@ def test_a_round_is_recorded_to_what_is_in_force(client):
         "openai/gpt-6.1-sol",
         "medium",
     )
-    assert round_["first_evaluations"] == ["evaluation", "held_out", "held_out"]
+    assert round_["first_evaluations"] == ["development", "held_out", "held_out"]
     assert round_["instructions"] == f"{IMPROVER_MD}\n{RECIPE_MD}"
     assert [m["model"] for m in round_["models_allowed"]][0] == "openai/gpt-6-luna"
     assert client.get(round_path(round_["round_id"])).json() == round_
@@ -131,7 +132,7 @@ def test_a_round_chooses_each_evaluations_set(client):
     first = [play_out(client, round_id)["evaluation_set"] for _ in range(3)]
     approved_change(client, round_id)
     tried = [play_out(client, round_id)["evaluation_set"] for _ in range(3)]
-    assert first == tried == ["evaluation", "held_out", "held_out"]
+    assert first == tried == ["development", "held_out", "held_out"]
 
 
 def test_only_a_compliance_manager_reviews_a_proposal(client):
@@ -140,7 +141,7 @@ def test_only_a_compliance_manager_reviews_a_proposal(client):
     refused = review(client, round_id, proposal["proposal_id"], reviewer_id="HND-02")
     assert (refused.status_code, refused.json()["detail"]) == (
         403,
-        "Only a reviewer who can sign off payouts over $1,000.00 can approve or "
+        "Only the compliance manager can approve or "
         "reject the improver's proposals. Marcus Oyelaran can't.",
     )
 
@@ -205,12 +206,12 @@ def test_a_round_stopped_before_its_verdict_leaves_the_current_version(client):
 
 def kept_version_2(client, round_id):
     """Play a round out to a verdict that keeps version 2: version 1 gets every
-    held-out case wrong, and version 2 decides each as the reviewers did."""
+    held-out label, and version 2 catches each to the cent."""
     for _ in range(3):
         play_out(client, round_id)
     approved_change(client, round_id)
     for _ in range(3):
-        play_out(client, round_id, right=ALL)
+        play_out(client, round_id, caught=ALL)
     return client.post(f"{round_path(round_id)}/verdict")
 
 
@@ -220,12 +221,12 @@ def test_a_kept_version_becomes_the_current_version(client):
     verdict = kept_version_2(client, round_id)
     assert verdict.status_code == 200
     result = verdict.json()
-    assert (result["verdict"], result["reason"]) == ("kept", "accuracy improved")
+    assert (result["verdict"], result["reason"]) == ("kept", "catch_rate improved")
     assert result["summary"] == (
-        "Kept version 2: accuracy improved. Version 2 is now the current version."
+        "Kept version 2: catch_rate improved. Version 2 is now the current version."
     )
-    assert result["scores"]["held_out_after"]["accuracy"] == 1.0
-    assert result["scores"]["held_out_before"]["accuracy"] < 0.5
+    assert result["scores"]["held_out_after"]["catch_rate"] == 1.0
+    assert result["scores"]["held_out_before"]["catch_rate"] == 0
     assert client.get("/api/versions/current").json()["number"] == 2
 
     stop_round(client, round_id)
@@ -286,25 +287,27 @@ def test_a_versions_held_out_scores_average_only_its_rounds_finished_evaluations
     change_settings(client, spending_limit=10.0)
     first = create_round(client).json()["round_id"]
     play_out(client, first)
-    at_60 = play_out(client, first, right=15)
+    some = play_out(client, first, caught=5)
     stopped = play_out(client, first, finish=False)
     stop_round(client, first)
     assert finish(client, stopped["run_id"]).json()["status"] == "stopped"
-    scoreboard = create_evaluation(client, tiny=False).json()
-    decide_copies(client, scoreboard, 5)
+    scoreboard = create_evaluation(client, "held_out").json()
+    work_copies(client, scoreboard, 1)
     finish(client, scoreboard["run_id"])
 
     second = create_round(client).json()
     assert second["first_evaluations"] == ["held_out"]
-    at_72 = play_out(client, second["round_id"], right=18)
+    more = play_out(client, second["round_id"], caught=10)
 
-    accuracies = [
-        get_evaluation(client, run["run_id"])["measures"]["accuracy"]
-        for run in (at_60, at_72, scoreboard)
+    rates = [
+        get_evaluation(client, run["run_id"])["measures"]["catch_rate"]
+        for run in (some, more, scoreboard)
     ]
-    assert accuracies == [0.6, 0.72, 0.2]
+    assert rates[2] < rates[0] < rates[1]
     [version_1] = configuration(client)["versions"]
-    assert version_1["scores"]["held_out"]["accuracy"] == pytest.approx(0.66)
+    assert version_1["scores"]["held_out"]["catch_rate"] == pytest.approx(
+        (rates[0] + rates[1]) / 2
+    )
 
 
 def test_a_round_runs_only_the_evaluations_its_versions_need(client):
@@ -320,7 +323,7 @@ def test_a_round_runs_only_the_evaluations_its_versions_need(client):
 
     approved_change(client, round_id)
     for _ in range(3):
-        play_out(client, round_id, right=ALL)
+        play_out(client, round_id, caught=ALL)
     refused = round_evaluation(client, round_id)
     assert refused.json()["detail"] == (
         "Round 1 has run every evaluation version 2 needs"

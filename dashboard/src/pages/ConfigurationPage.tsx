@@ -1,7 +1,7 @@
 import { api, type VersionSummary } from "../api";
 import { VersionChip } from "../components/Chips";
 import { Approval } from "../components/Approval";
-import { HeldOutAccuracy, HeldOutGrade } from "../components/HeldOutAccuracy";
+import { HeldOutCatchRate } from "../components/HeldOutCatchRate";
 import { PageHeader } from "../components/PageHeader";
 import { StateMessage } from "../components/StateMessage";
 import { VersionChanges } from "../components/VersionChanges";
@@ -62,15 +62,9 @@ function CurrentVersion({ version }: Readonly<{ version: VersionSummary }>) {
           <dd>{label(version.reasoning_effort)}</dd>
         </div>
         <div>
-          <dt>Held-out accuracy</dt>
+          <dt>Held-out catch rate</dt>
           <dd>
-            <HeldOutAccuracy scores={version.scores} />
-          </dd>
-        </div>
-        <div>
-          <dt>Held-out grade</dt>
-          <dd>
-            <HeldOutGrade scores={version.scores} />
+            <HeldOutCatchRate scores={version.scores} />
           </dd>
         </div>
       </dl>
@@ -92,8 +86,7 @@ function Versions({ versions }: Readonly<{ versions: VersionSummary[] }>) {
               <th>Reason</th>
               <th>Proposed by</th>
               <th>Approved</th>
-              <th className="num">Held-out accuracy</th>
-              <th className="num">Held-out grade</th>
+              <th className="num">Held-out catch rate</th>
             </tr>
           </thead>
           <tbody>
@@ -114,10 +107,7 @@ function Versions({ versions }: Readonly<{ versions: VersionSummary[] }>) {
                   <Approval by={version.approved_by} at={version.approved_at} />
                 </td>
                 <td className="num">
-                  <HeldOutAccuracy scores={version.scores} />
-                </td>
-                <td className="num">
-                  <HeldOutGrade scores={version.scores} />
+                  <HeldOutCatchRate scores={version.scores} />
                 </td>
               </tr>
             ))}

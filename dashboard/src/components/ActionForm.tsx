@@ -2,7 +2,7 @@ import type { ReactNode, SyntheticEvent } from "react";
 import { useAction } from "../useAction";
 import { FormError } from "./FormError";
 
-// A form that asks the backend to do one thing, such as signing off a payout
+// A form that asks the backend to do one thing, such as signing off a case
 // or starting a dispatch, and shows the backend's reason if it refuses. The
 // button stays focusable while the request is sent, so a keyboard user can
 // try again after a refusal. An icon, when given, goes before the label.

@@ -10,15 +10,14 @@ from typing import Any
 
 import yaml
 
-from agent.check_inputs import (
+from agent.check_inputs import LookupRefused, read_inputs
+from agent.checks.inputs import CheckInputs
+from agent.context_tools import (
     CHECK_APPRENTICE,
     CHECK_REGISTRATION,
     GET_FILING_RULES,
     GET_WAGE_RATE,
-    LookupRefused,
-    read_inputs,
 )
-from agent.checks.inputs import CheckInputs
 from context import payroll_files
 from context.sources import Refused
 from data.payroll_world.template import payroll_record, read_payroll

@@ -5,8 +5,8 @@ import { ApiError, reasonFor } from "./refusals";
 // answer or its refusal. Only api.ts uses it.
 
 // Sends a request with the signed-in reviewer's access token, if any. A message to
-// the Copilot, or an answer to its confirmation, goes with a sign-in renewed
-// first when it has little time left, since the Copilot works with it.
+// the Copilot goes with a sign-in renewed first when it has little time left,
+// since the Copilot works with it.
 export async function request<T>(
   path: string,
   init: RequestInit = {},

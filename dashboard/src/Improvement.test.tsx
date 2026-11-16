@@ -84,12 +84,12 @@ it.each([
   ],
   ["Evaluations, 1 of 3", { stage: "evaluating", progress: "1 of 3" }],
   [
-    "Kept: accuracy improved",
+    "Kept: catch rate improved",
     {
       stage: "verdict",
       progress: null,
       verdict: "kept",
-      verdict_reason: "accuracy improved",
+      verdict_reason: "catch_rate improved",
     },
   ],
   [
@@ -155,7 +155,7 @@ it("shows a change waiting and approves that proposal", async () => {
   const proposal = await panel("A change is waiting for approval");
   expect(proposal.getByText(change.reason)).toBeDefined();
   expect(
-    proposal.getByText("A stolen phone needs a police report."),
+    proposal.getByText("A weekend premium is paid at time and a half."),
   ).toBeDefined();
   expect(proposal.getByText("openai/gpt-6-luna")).toBeDefined();
   expect(proposal.getByText("google/gemini-3.5-flash-lite")).toBeDefined();
@@ -278,7 +278,7 @@ it("shows Marcus what he can't do in place of the buttons", async () => {
   expect(
     await proposal.findByText(
       wholeText(
-        "Only a reviewer who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
+        "Only the compliance manager can approve or reject the improver's proposals. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();
@@ -287,7 +287,7 @@ it("shows Marcus what he can't do in place of the buttons", async () => {
   expect(
     await screen.findByText(
       wholeText(
-        "Only a reviewer who can sign off payouts over $1,000.00 can start a round. Marcus Oyelaran can't.",
+        "Only the compliance manager can start a round. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();
@@ -301,11 +301,11 @@ it("lists the rounds with their scores, verdicts, reviews and cost", async () =>
     stage: null,
     waiting: null,
     version: 2,
-    reason: "Two stolen phones were approved",
+    reason: "Two weekend premiums were missed",
     verdict: "kept",
-    verdict_reason: "accuracy improved",
-    held_out_before: measures(0.6, 1.5),
-    held_out_after: measures(0.72, null),
+    verdict_reason: "catch_rate improved",
+    held_out_before: measures(0.6),
+    held_out_after: null,
     reviews: [
       {
         kind: "change",
@@ -330,17 +330,13 @@ it("lists the rounds with their scores, verdicts, reviews and cost", async () =>
   const cells = within(row).getAllByRole("cell");
   const column = (name: string) =>
     headings.findIndex((heading) => heading.textContent === name);
-  const accuracy = cells[column("Held-out accuracy")];
-  expect(accuracy.textContent).toBe("60% to 72%");
-  expect(accuracy.className).toContain("num");
-  expect(cells[column("Held-out grade")].textContent).toBe(
-    "1.50 to Not graded",
-  );
-  expect(cells[column("Held-out grade")].className).toContain("num");
-  expect(cells[column("Verdict")].textContent).toBe("Kept accuracy improved");
+  const catchRate = cells[column("Held-out catch rate")];
+  expect(catchRate.textContent).toBe("60% to None");
+  expect(catchRate.className).toContain("num");
+  expect(cells[column("Verdict")].textContent).toBe("Kept catch rate improved");
   const reviews = details.textContent;
   expect(reviews).toContain(
-    "The improver's reason: Two stolen phones were approved",
+    "The improver's reason: Two weekend premiums were missed",
   );
   expect(reviews).toContain("Dana Whitfield rejected the change");
   expect(reviews).toContain("Keep each rule general");
@@ -352,10 +348,10 @@ it("lists the rounds with their scores, verdicts, reviews and cost", async () =>
 it("charts each version tried against version 1", async () => {
   showPage(
     improvement(null, {
-      first_version: { number: 1, verdict: null, accuracy: 0.6, grade: 1.5 },
+      first_version: { number: 1, verdict: null, catch_rate: 0.6 },
       versions_tried: [
-        { number: 2, verdict: "rolled_back", accuracy: 0.56, grade: 1.2 },
-        { number: 3, verdict: "kept", accuracy: 0.72, grade: 1.9 },
+        { number: 2, verdict: "rolled_back", catch_rate: 0.56 },
+        { number: 3, verdict: "kept", catch_rate: 0.72 },
       ],
     }),
   );
@@ -363,7 +359,7 @@ it("charts each version tried against version 1", async () => {
   const charts = tried.getAllByRole("figure");
   expect(
     charts.map((chart) => chart.querySelector("figcaption")?.textContent),
-  ).toEqual(["Held-out accuracy", "Held-out grade"]);
+  ).toEqual(["Held-out catch rate"]);
   for (const chart of charts) {
     const points = [...chart.querySelectorAll("circle")];
     expect(points.map((point) => point.getAttribute("class"))).toEqual([
@@ -387,16 +383,8 @@ it("charts each version tried against version 1", async () => {
     "90%",
     "100%",
   ]);
-  expect(ticks(charts[1])).toEqual([
-    "0.50",
-    "1.00",
-    "1.50",
-    "2.00",
-    "2.50",
-    "3.00",
-  ]);
   expect(within(charts[0]).getByRole("img").getAttribute("aria-label")).toBe(
-    "Held-out accuracy. Version 1 60%, version 2 56%, rolled back, version 3 72%, kept.",
+    "Held-out catch rate. Version 1 60%, version 2 56%, rolled back, version 3 72%, kept.",
   );
 });
 
@@ -422,7 +410,7 @@ it("shows a recipe with its diff", async () => {
   ).toBeDefined();
   const changes = await panel("What changed from recipe 1");
   expect(
-    changes.getByText("A stolen phone needs a police report."),
+    changes.getByText("A weekend premium is paid at time and a half."),
   ).toBeDefined();
   expect(
     (await panel("Recipe")).getByText("1. Read the results."),

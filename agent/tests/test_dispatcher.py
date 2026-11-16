@@ -15,9 +15,9 @@ from langgraph.types import Command, Send
 from agent import api, dispatcher, harness
 from agent.tests.dispatching import dispatch
 from agent.tests.failures import fail_once
-from agent.tests.queue_setup import leave_waiting
+from agent.tests.queue_setup import leave_received
 from agent.tests.records import case_of, work_times_of
-from agent.tests.stubs import agent_on, approve, call, decide, record, stub, swarm
+from agent.tests.stubs import agent_on, call, report_all, stub, swarm, work
 from backend.tests.case_requests import sign_off
 from backend.tests.dashboard_reads import steps_of
 from backend.tests.rows import run_heard
@@ -60,52 +60,48 @@ def test_the_tests_retry_without_waiting():
 
 
 def test_never_more_than_n_payroll_agents_at_once(client):
-    ids = ["CLM-1001", "CLM-1003", "CLM-1004", "CLM-1005", "CLM-1006", "CLM-1007"]
-    leave_waiting(*ids)
-    scripts = {case_id: decide("refer", 0) for case_id in ids}
+    ids = ["PC-1205", "PC-1206", "PC-1207", "PC-1212", "PC-1217", "PC-1218"]
+    leave_received(*ids)
+    scripts = {case_id: work() for case_id in ids}
     model = swarm(scripts, pause=0.05, fill=3)
     reports = dispatch(model, agents=3)
 
     assert model.most_at_once == 3
-    assert sorted(reports) == [f"{case_id}  refer  $0.00" for case_id in ids]
+    assert sorted(reports) == [f"{case_id}  clean, awaiting review" for case_id in ids]
     cases = [case_of(client, case_id) for case_id in ids]
-    assert {c["status"] for c in cases} == {"decided"}
+    assert {c["status"] for c in cases} == {"awaiting_review"}
     assert len({c["thread_id"] for c in cases}) == len(ids)
     finished = latest_dispatch(client)
     assert (finished["status"], finished["agents"]) == ("finished", 3)
 
 
-def test_a_dispatch_works_the_cases_in_progress_and_waiting_oldest_first(client):
-    leave_waiting(
-        "CLM-1001", "CLM-1003", "CLM-1004", "CLM-1008", "CLM-1010", "CLM-1011"
-    )
-    harness.work_case("CLM-1003", None, agent_on(stub(*decide("refer", 0))))
-    harness.work_case("CLM-1008", None, agent_on(stub(*approve("CLM-1008", 2240.0))))
-    client.post("/api/cases/CLM-1010/start", json={"thread_id": "t-1010"})
+def test_a_dispatch_works_the_received_and_in_progress_cases_oldest_first(client):
+    leave_received("PC-1205", "PC-1206", "PC-1207", "PC-1219", "PC-1220", "PC-1221")
+    harness.work_case("PC-1206", None, agent_on(stub(*work())))
+    client.post("/api/cases/PC-1220/start", json={"thread_id": "t-1220"})
 
-    worked = ["CLM-1001", "CLM-1011", "CLM-1010", "CLM-1004"]
-    dispatch(swarm({case_id: decide("refer", 0) for case_id in worked}))
+    worked = ["PC-1205", "PC-1207", "PC-1219", "PC-1220", "PC-1221"]
+    dispatch(swarm({case_id: work() for case_id in worked}))
 
     assert [c["case_id"] for c in latest_dispatch(client)["cases"]] == worked
-    assert case_of(client, "CLM-1010")["thread_id"] == "t-1010"
-    assert case_of(client, "CLM-1003")["attempts"] == 1
-    assert case_of(client, "CLM-1008")["status"] == "waiting_for_sign_off"
-    assert case_of(client, "CLM-1002")["status"] == "left_for_reviewer"
+    assert case_of(client, "PC-1220")["thread_id"] == "t-1220"
+    assert case_of(client, "PC-1206")["attempts"] == 1
+    assert case_of(client, "PC-1224")["status"] == "awaiting_review"
 
 
 def test_a_rate_limit_waits_and_carries_the_case_on(client):
-    leave_waiting("CLM-1001")
+    leave_received("PC-1205")
     limited = ModelRateLimitError("429 Too Many Requests")
-    model = swarm({"CLM-1001": [call("get_case"), limited, record("refer", 0)]})
-    assert dispatch(model) == ["CLM-1001  refer  $0.00"]
+    model = swarm({"PC-1205": [call("get_case"), limited, report_all()]})
+    assert dispatch(model) == ["PC-1205  clean, awaiting review"]
 
-    case = case_of(client, "CLM-1001")
-    assert (case["status"], case["attempts"]) == ("decided", 1)
-    steps = steps_of(client, "CLM-1001")
+    case = case_of(client, "PC-1205")
+    assert (case["status"], case["attempts"]) == ("awaiting_review", 1)
+    steps = steps_of(client, "PC-1205")
     assert {s["thread_id"] for s in steps} == {case["thread_id"]}
     assert "error" not in {s["kind"] for s in steps}
     run_id = latest_dispatch(client)["run_id"]
-    assert [w["run_id"] for w in work_times_of("CLM-1001")] == [run_id, run_id]
+    assert [w["run_id"] for w in work_times_of("PC-1205")] == [run_id, run_id]
 
 
 @pytest.mark.parametrize(
@@ -113,64 +109,68 @@ def test_a_rate_limit_waits_and_carries_the_case_on(client):
     [ModelRateLimitError("429 Too Many Requests"), ModelTimeoutError("Timed out")],
 )
 def test_a_case_still_failing_after_its_tries_is_left_in_progress(client, error):
-    leave_waiting("CLM-1001", "CLM-1003")
-    model = swarm({"CLM-1001": [error] * 3, "CLM-1003": decide("decline", 0)})
+    leave_received("PC-1205", "PC-1206")
+    model = swarm({"PC-1205": [error] * 3, "PC-1206": work()})
     began = time.monotonic()
     reports = dispatch(model)
     assert time.monotonic() - began < 5
 
-    left = f"CLM-1001  left for the next dispatch: {type(error).__name__}: {error}"
-    assert sorted(reports) == [left, "CLM-1003  decline  $0.00"]
-    assert tries_on(model, "CLM-1001") == 3
-    case = case_of(client, "CLM-1001")
+    left = f"PC-1205  left for the next dispatch: {type(error).__name__}: {error}"
+    assert sorted(reports) == [left, "PC-1206  clean, awaiting review"]
+    assert tries_on(model, "PC-1205") == 3
+    case = case_of(client, "PC-1205")
     assert (case["status"], case["attempts"]) == ("in_progress", 1)
-    assert "error" not in {s["kind"] for s in steps_of(client, "CLM-1001")}
-    assert case_of(client, "CLM-1003")["status"] == "decided"
+    assert "error" not in {s["kind"] for s in steps_of(client, "PC-1205")}
+    assert case_of(client, "PC-1206")["status"] == "awaiting_review"
     assert latest_dispatch(client)["status"] == "finished"
 
 
 def test_a_case_that_fails_is_tried_once_more_in_the_same_dispatch(client):
-    leave_waiting("CLM-1001", "CLM-1004")
+    leave_received("PC-1205", "PC-1207")
     outage = RuntimeError("503: The model is unavailable")
-    model = swarm(
-        {"CLM-1001": [outage, *decide("refer", 0)], "CLM-1004": [outage, outage]}
-    )
+    model = swarm({"PC-1205": [outage, *work()], "PC-1207": [outage, outage]})
     reports = dispatch(model)
 
     assert sorted(reports) == [
-        "CLM-1001  refer  $0.00",
-        "CLM-1004  failed: RuntimeError: 503: The model is unavailable,"
+        "PC-1205  clean, awaiting review",
+        "PC-1207  failed: RuntimeError: 503: The model is unavailable,"
         " left for a reviewer",
     ]
-    again = case_of(client, "CLM-1001")
-    assert (again["status"], again["attempts"]) == ("decided", 2)
-    steps = steps_of(client, "CLM-1001")
-    # Each attempt starts with the check.
-    assert [s["kind"] for s in steps[:3]] == ["screening", "error", "screening"]
+    again = case_of(client, "PC-1205")
+    assert (again["status"], again["attempts"]) == ("awaiting_review", 2)
+    steps = steps_of(client, "PC-1205")
+    # Each attempt starts with the screening.
+    kinds = [s["kind"] for s in steps]
+    assert kinds[:9] == ["screening"] + ["check"] * 8
+    assert kinds[9:11] == ["error", "screening"]
     assert steps[-1]["thread_id"] == again["thread_id"] != steps[0]["thread_id"]
-    left = case_of(client, "CLM-1004")
-    assert (left["status"], left["attempts"]) == ("left_for_reviewer", 2)
-    assert tries_on(model, "CLM-1004") == 2
+    left = case_of(client, "PC-1207")
+    assert (left["status"], left["agent_failed"], left["attempts"]) == (
+        "awaiting_review",
+        True,
+        2,
+    )
+    assert tries_on(model, "PC-1207") == 2
 
 
 def test_a_case_started_elsewhere_is_reported_and_the_rest_worked(client, monkeypatch):
-    leave_waiting("CLM-1001", "CLM-1003")
+    leave_received("PC-1205", "PC-1206")
     start_case = api.start_case
 
     def started_elsewhere(case_id, thread_id):
-        if case_id == "CLM-1003":
+        if case_id == "PC-1206":
             start_case(case_id, "another-process")
         return start_case(case_id, thread_id)
 
     monkeypatch.setattr(api, "start_case", started_elsewhere)
-    reports = dispatch(swarm({"CLM-1001": decide("refer", 0)}))
+    reports = dispatch(swarm({"PC-1205": work()}))
 
     assert sorted(reports) == [
-        "CLM-1001  refer  $0.00",
-        "CLM-1003  left for the next dispatch: Refused: 409: Case CLM-1003 is not"
-        " waiting",
+        "PC-1205  clean, awaiting review",
+        "PC-1206  left for the next dispatch: Refused: 409: Case PC-1206 is not"
+        " Received",
     ]
-    assert case_of(client, "CLM-1003")["thread_id"] == "another-process"
+    assert case_of(client, "PC-1206")["thread_id"] == "another-process"
     assert latest_dispatch(client)["status"] == "finished"
 
 
@@ -216,59 +216,59 @@ def test_langgraph_raises_an_error_its_handler_took_beside_another_worker():
 
 
 def test_a_dispatch_stopped_partway_is_finished_by_the_next(client):
-    leave_waiting("CLM-1001", "CLM-1002", "CLM-1003")
+    leave_received("PC-1205", "PC-1224", "PC-1206")
     saver = InMemorySaver()
-    harness.work_case(
-        "CLM-1002", None, agent_on(stub(*approve("CLM-1002", 1350.0)), saver)
-    )
+    harness.work_case("PC-1224", None, agent_on(stub(*work()), saver))
     model = swarm(
         {
-            "CLM-1001": [call("get_case"), KeyboardInterrupt(), record("refer", 0)],
-            "CLM-1003": [call("get_case"), KeyboardInterrupt(), record("decline", 0)],
+            "PC-1205": [call("get_case"), KeyboardInterrupt(), report_all()],
+            "PC-1206": [call("get_case"), KeyboardInterrupt(), report_all()],
         },
         pause=0.05,
     )
     with pytest.raises(KeyboardInterrupt):
         dispatch(model, saver, agents=2)
-    stopped = {i: case_of(client, i) for i in ("CLM-1001", "CLM-1003")}
+    stopped = {i: case_of(client, i) for i in ("PC-1205", "PC-1206")}
     assert {c["status"] for c in stopped.values()} == {"in_progress"}
-    sign_off(client, "CLM-1002")
+    sign_off(client, "PC-1224")
+    assert case_of(client, "PC-1224")["status"] == "accepted"
     # The agent stopped answering, so the next start marks the dispatch stopped.
     first = latest_dispatch(client)["run_id"]
     run_heard(first, timedelta(minutes=6))
 
-    # The sign-off paid CLM-1002, so the next dispatch leaves it alone.
+    # The sign-off accepted PC-1224, so the next dispatch leaves it alone.
     reports = dispatch(model, saver, agents=2)
     assert client.get(f"/api/runs/{first}").json()["stopped_because"] == (
         "The agent stopped answering"
     )
-    assert sorted(reports) == ["CLM-1001  refer  $0.00", "CLM-1003  decline  $0.00"]
+    assert sorted(reports) == [
+        "PC-1205  clean, awaiting review",
+        "PC-1206  clean, awaiting review",
+    ]
     for case_id, before in stopped.items():
         case = case_of(client, case_id)
-        assert (case["status"], case["attempts"]) == ("decided", 1)
+        assert (case["status"], case["attempts"]) == ("awaiting_review", 1)
         assert case["thread_id"] == before["thread_id"]
-    paid = case_of(client, "CLM-1002")["payment"]
-    assert (paid["amount"], paid["signed_off_by"]) == (1350.0, "Dana Whitfield")
+    assert case_of(client, "PC-1224")["reviewed_by"] == "HND-01"
 
 
-def test_an_approval_whose_payment_failed_is_paid_by_the_next_dispatch(
+def test_a_report_the_app_never_got_is_made_again_by_the_next_dispatch(
     client, monkeypatch
 ):
-    leave_waiting("CLM-1001")
-    saver = InMemorySaver()
-    fail_once(monkeypatch, api, "pay_case", RuntimeError("The connection was lost"))
-    harness.work_case(
-        "CLM-1001", None, agent_on(stub(*approve("CLM-1001", 420.0)), saver)
+    leave_received("PC-1205")
+    lost = RuntimeError("The connection was lost")
+    fail_once(monkeypatch, api, "record_exception_report", lost)
+    first = harness.work_case("PC-1205", None, agent_on(stub(*work())))
+    assert first == (
+        "PC-1205  failed: RuntimeError: The connection was lost, back in the queue"
     )
-    assert case_of(client, "CLM-1001")["status"] == "in_progress"
-
-    assert dispatch(stub(), saver) == ["CLM-1001  approve  $420.00"]
-    assert case_of(client, "CLM-1001")["payment"]["amount"] == 420.0
+    assert dispatch(stub(*work())) == ["PC-1205  clean, awaiting review"]
+    assert case_of(client, "PC-1205")["attempts"] == 2
 
 
 def test_a_dispatch_with_nothing_to_work_finishes(client):
-    leave_waiting()
+    leave_received()
     assert dispatch(stub()) == []
     finished = latest_dispatch(client)
     assert (finished["status"], finished["cases"]) == ("finished", [])
-    assert finished["summary"]["approved"] == 0
+    assert finished["summary"]["unfinished"] == []

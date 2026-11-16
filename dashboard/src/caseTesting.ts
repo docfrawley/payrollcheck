@@ -1,19 +1,11 @@
-// A case as the backend gives it to the case page, with its decision and
-// the agent's steps, for the page's tests.
+// A case as the backend gives it to the case page, with its exceptions, its
+// notice and the agent's steps, for the page's tests.
 
-import type { Case, Decision, Step } from "./api";
+import type { Case, ExceptionRecord, Step } from "./api";
 import type { Source } from "./sources";
-import {
-  caseRecord,
-  history,
-  panel,
-  policy,
-  renderAt,
-  type Routes,
-  stubApi,
-} from "./testing";
+import { caseRecord, panel, renderAt, type Routes, stubApi } from "./testing";
 
-export const decidedAt = "2026-09-27T17:06:16+00:00";
+export const checkedAt = "2026-11-23T14:06:16+00:00";
 
 // A step of the agent's work, from no context file unless it's a lookup.
 export const step = (
@@ -27,60 +19,80 @@ export const step = (
   kind,
   content,
   sources,
-  created_at: decidedAt,
+  created_at: checkedAt,
 });
 
 export function showCase(shown: Case, stepsShown: Step[] = []) {
   const routes: Routes = {
-    "GET /api/cases/CLM-1002": shown,
-    "GET /api/cases/CLM-1002/steps": stepsShown,
-    "GET /api/policies/POL-2002": policy,
-    "GET /api/subcontractors/CUS-3002/cases": history,
+    "GET /api/cases/PC-1201": shown,
+    "GET /api/cases/PC-1201/steps": stepsShown,
   };
   const fetchMock = stubApi(routes);
-  renderAt("/cases/CLM-1002");
+  renderAt("/cases/PC-1201");
   return { routes, fetchMock };
 }
 
-export const decisionPanel = () => panel("Decision");
+export const reviewPanel = () => panel("Review");
 
-export const approval: Decision = {
-  decision: "approve",
-  payout: 420,
-  calculation: {
-    lines: [
-      { step: "Suitcase, limited to $300.00", amount: 300 },
-      { step: "Clothes", amount: 170 },
-      { step: "Less the deductible", amount: -50 },
-    ],
-    payout: 420,
-  },
-  section: "Section 5, Baggage and Personal Effects",
-  reason: "The suitcase was lost by the carrier.",
-  decided_by: "PayrollCheck Agent, version 1",
-  decided_at: decidedAt,
-  manual_version: "2026.2",
-  signed_off_by: null,
-  signed_off_at: null,
-  gateway_refusal: null,
+export const baseShort: ExceptionRecord = {
+  exception_id: 7,
+  submission_no: 1,
+  rule: "rate.base_short",
+  severity: "high",
+  worker_id: "W-001",
+  line_no: 1,
+  expected: "$60.85 an hour",
+  actual: "$58.85 an hour",
+  shortfall_cents: 6400,
+  citation: "RD-MIDDLESEX-2026 row 3, Electrician Journeyman",
+  raised_by: "PayrollCheck Agent, version 1",
+  candidate_id: 3,
+  status: "open",
 };
 
-export const approved: Case = {
+export const unsigned: ExceptionRecord = {
+  ...baseShort,
+  exception_id: 8,
+  rule: "form.unsigned",
+  worker_id: null,
+  line_no: null,
+  expected: "",
+  actual: "",
+  shortfall_cents: null,
+  citation: "MW-562 payroll certification",
+  candidate_id: 4,
+};
+
+// A case the agent checked, with two open exceptions and its draft notice.
+export const awaiting: Case = {
   ...caseRecord,
-  status: "decided",
+  status: "awaiting_review",
   thread_id: "t-1",
-  decision: approval,
-  payment: {
-    amount: 420,
-    paid_at: decidedAt,
-    signed_off_by: null,
-    signed_off_at: null,
+  attempts: 1,
+  open_exceptions: 2,
+  shortfall_cents: 6400,
+  exceptions: [baseShort, unsigned],
+  checks_run: ["check_form", "check_rates"],
+  notice: {
+    submission_no: 1,
+    draft: "Please correct Kim Dimitrov's base rate and sign the payroll.",
+    drafted_by: "PayrollCheck Agent, version 1",
+    drafted_at: checkedAt,
   },
 };
 
-export const held: Case = {
-  ...approved,
-  status: "waiting_for_sign_off",
-  decision: { ...approval, payout: 1350 },
-  payment: null,
+const cleanNotice = {
+  submission_no: 1,
+  draft: "",
+  drafted_by: "PayrollCheck Agent, version 1",
+  drafted_at: checkedAt,
+};
+
+// A case the agent checked and found clean.
+export const clean: Case = {
+  ...awaiting,
+  open_exceptions: 0,
+  shortfall_cents: 0,
+  exceptions: [],
+  notice: cleanNotice,
 };

@@ -4,8 +4,6 @@ import { TRY_AGAIN } from "./components/StateMessage";
 import {
   Refusal,
   caseRecord,
-  history,
-  policy,
   renderAt,
   sent,
   stubApi,
@@ -17,40 +15,60 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("shows the queue with counts by state", async () => {
+it("shows the queue with a tile for each status, in order", async () => {
   stubApi({
     "GET /api/cases": [
       summary,
       {
         ...summary,
-        case_id: "CLM-1003",
-        status: "decided",
-        decision: "approve",
-        payout: 420,
+        case_id: "PC-1102",
+        status: "accepted",
       },
-      { ...summary, case_id: "CLM-1004", status: "left_for_reviewer" },
-      { ...summary, case_id: "CLM-1005", status: "sent_back" },
+      {
+        ...summary,
+        case_id: "PC-1103",
+        status: "awaiting_review",
+        open_exceptions: 3,
+        shortfall_cents: 128460,
+      },
+      {
+        ...summary,
+        case_id: "PC-1104",
+        status: "awaiting_review",
+        screening_flag: true,
+        agent_failed: true,
+      },
+      { ...summary, case_id: "PC-0311", status: "returned_to_sub" },
     ],
     "GET /api/dispatches/latest": null,
   });
   renderAt("/");
-  const link = await screen.findByRole("link", { name: "CLM-1002" });
-  expect(link.getAttribute("href")).toBe("/cases/CLM-1002");
-  expect(screen.getByLabelText("Waiting: 1")).toBeDefined();
-  expect(screen.getByLabelText("Decided: 1")).toBeDefined();
-  expect(screen.getByLabelText("In progress: 0")).toBeDefined();
-  expect(screen.getByLabelText("Left for a reviewer: 1")).toBeDefined();
-  const sentBack = screen.getByLabelText("Sent back: 1");
-  expect(sentBack.className).toBe("tile status-sent_back");
-  expect(sentBack.querySelector("svg.lucide-undo-2")).not.toBeNull();
-  const left = screen.getByRole("row", { name: /CLM-1004/ });
-  const chip = within(left).getByText("Left for a reviewer");
-  expect(chip.className).toBe("chip status-left_for_reviewer");
-  const row = screen.getByRole("row", { name: /CLM-1003/ });
-  expect(within(row).getByText("Approved")).toBeDefined();
-  expect(within(row).getByText("$420.00")).toBeDefined();
-  expect(screen.getAllByText("$1,150.00")).toHaveLength(4);
-  expect(screen.getAllByText("Jul 20, 2026")).toHaveLength(4);
+  const link = await screen.findByRole("link", { name: "PC-1201" });
+  expect(link.getAttribute("href")).toBe("/cases/PC-1201");
+  const tiles = within(screen.getByRole("region", { name: "Cases by status" }))
+    .getAllByRole("group")
+    .map((tile) => tile.getAttribute("aria-label"));
+  expect(tiles).toEqual([
+    "Received: 1",
+    "In progress: 0",
+    "Awaiting review: 2",
+    "Accepted: 1",
+    "Returned to sub: 1",
+  ]);
+  const returned = screen.getByLabelText("Returned to sub: 1");
+  expect(returned.className).toBe("tile status-returned_to_sub");
+  expect(returned.querySelector("svg.lucide-undo-2")).not.toBeNull();
+  const short = screen.getByRole("row", { name: /PC-1103/ });
+  const chip = within(short).getByText("Awaiting review");
+  expect(chip.className).toBe("chip status-awaiting_review");
+  expect(within(short).getByText("3")).toBeDefined();
+  expect(within(short).getByText("$1,284.60")).toBeDefined();
+  const flagged = within(screen.getByRole("row", { name: /PC-1104/ }));
+  expect(flagged.getByText("Screening flag")).toBeDefined();
+  expect(flagged.getByText("Agent failed")).toBeDefined();
+  expect(screen.getAllByText("Garden State Electric LLC")).toHaveLength(5);
+  expect(screen.getAllByText("Lincoln School renovation")).toHaveLength(5);
+  expect(screen.getAllByText("Nov 22, 2026")).toHaveLength(5);
 });
 
 it("shows an error when the queue can't load", async () => {
@@ -62,62 +80,34 @@ it("shows an error when the queue can't load", async () => {
 });
 
 it("shows a case in full", async () => {
-  stubApi({
-    "GET /api/cases/CLM-1002": caseRecord,
-    "GET /api/policies/POL-2002": policy,
-    "GET /api/subcontractors/CUS-3002/cases": history,
-  });
-  renderAt("/cases/CLM-1002");
-  expect(await screen.findByText(caseRecord.story)).toBeDefined();
+  stubApi({ "GET /api/cases/PC-1201": caseRecord });
+  renderAt("/cases/PC-1201");
   expect(
-    screen.getByRole("heading", { name: caseRecord.summary, level: 1 }),
+    await screen.findByRole("heading", {
+      name: "Garden State Electric LLC",
+      level: 1,
+    }),
   ).toBeDefined();
-  expect(screen.getByText("Wool suit")).toBeDefined();
-  const total = screen.getByRole("rowheader", { name: "Total" }).closest("tr");
-  expect(total?.textContent).toContain("$1,150.00");
-  expect(screen.getByText("One checked bag not delivered.")).toBeDefined();
-  expect(screen.getByText("Carrier report")).toBeDefined();
-  expect(await screen.findByText("Premium")).toBeDefined();
-  expect(screen.getByText("Electronics Plus")).toBeDefined();
-  expect(
-    screen.getByText("Prague, Czech Republic, Jun 20, 2026 to Jun 30, 2026"),
-  ).toBeDefined();
-  expect(
-    await screen.findByText("Checked bag arrived 30 hours late in Lisbon"),
-  ).toBeDefined();
-  expect(screen.getByText("Waiting")).toBeDefined();
-});
-
-it("shows a policy without add-ons and a subcontractor with no earlier cases", async () => {
-  stubApi({
-    "GET /api/cases/CLM-1002": caseRecord,
-    "GET /api/policies/POL-2002": { ...policy, add_ons: [] },
-    "GET /api/subcontractors/CUS-3002/cases": [],
-  });
-  renderAt("/cases/CLM-1002");
-  expect(await screen.findByText("None")).toBeDefined();
-  expect(
-    await screen.findByText(
-      /^No earlier cases: this is the subcontractor's first case/,
-    ),
-  ).toBeDefined();
+  expect(screen.getByText("Kim Dimitrov")).toBeDefined();
+  expect(screen.getByText("PC-1201-1.csv")).toBeDefined();
+  expect(screen.getAllByText("Received").length).toBeGreaterThan(0);
 });
 
 it("says when a case doesn't exist, and stops asking for it", async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   const fetchMock = stubApi({});
-  renderAt("/cases/CLM-9999");
+  renderAt("/cases/PC-9999");
   expect(
     await screen.findByText("Case not found. Choose one from the queue."),
   ).toBeDefined();
   await vi.advanceTimersByTimeAsync(5000);
-  expect(sent(fetchMock, "GET /api/cases/CLM-9999")).toHaveLength(1);
+  expect(sent(fetchMock, "GET /api/cases/PC-9999")).toHaveLength(1);
   vi.useRealTimers();
 });
 
 it("shows other errors loading a case", async () => {
-  stubApi({ "GET /api/cases/CLM-1002": new Refusal(500, "Server error") });
-  renderAt("/cases/CLM-1002");
+  stubApi({ "GET /api/cases/PC-1201": new Refusal(500, "Server error") });
+  renderAt("/cases/PC-1201");
   expect((await screen.findByRole("alert")).textContent).toBe(
     `Server error ${TRY_AGAIN}`,
   );

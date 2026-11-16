@@ -296,7 +296,7 @@ The seed replaces the records that every part of the app reads, so the backend, 
 The components and tests of the travel pieces go with them (`Approval`, `DecisionDetails`, `DecisionPanel`, `PolicyPanels`, `SendBackForm`, `SentBackDecisions`, `SignOffForm`, `ConfirmationCard`, `Judging`, `SendBack.test.tsx` among them). The Playwright specs for the changed pages are rewritten: `agent.spec.ts`, `send_back.spec.ts`, `run.spec.ts`, `pages.spec.ts`, `scoreboard.spec.ts`, `starts.spec.ts`, `improvement.spec.ts`, `settings.spec.ts` and `copilot.spec.ts`'s sign-off tests.
 
 Success criteria:
-- [ ] **The seed** (`backend/tests/test_seeding.py`):
+- [x] **The seed** (`backend/tests/test_seeding.py`):
   - 22 Received week-12 cases
   - the history's statuses: 175 Accepted, 20 of them with two submissions and their first submission's exceptions superseded, and 10 Returned to sub with their exceptions open, PC-0311 with exactly three
   - PC-1206 Received with two submissions
@@ -304,27 +304,27 @@ Success criteria:
   - the business date 2026-11-23
   - 207 development and 98 held-out labelled cases, 10 of them tiny, with their labels
   - no held-out project, subcontractor or worker in any list
-- [ ] **The guarantee** (`backend/tests/test_reports.py`): a money exception with no matching candidate refused with a 422, and the same with the shortfall a cent out or the wrong worker. A candidate neither raised nor dismissed, a dismissal with no reason, and exceptions with a blank notice are each refused. A report matching its candidates is recorded and moves the case to Awaiting review.
-- [ ] **The lifecycle** (`backend/tests/test_lifecycle.py` and `agent/tests/test_payroll_agent.py`, on a stub model):
+- [x] **The guarantee** (`backend/tests/test_reports.py`): a money exception with no matching candidate refused with a 422, and the same with the shortfall a cent out or the wrong worker. A candidate neither raised nor dismissed, a dismissal with no reason, and exceptions with a blank notice are each refused. A report matching its candidates is recorded and moves the case to Awaiting review.
+- [x] **The lifecycle** (`backend/tests/test_lifecycle.py` and `agent/tests/test_payroll_agent.py`, on a stub model):
   - a clean case reaching Awaiting review, its report listing the eight checks it ran
   - a case failed twice reaching Awaiting review with `agent_failed`
   - Sign off refused while an exception is open, and accepted once none is
   - Send back to Returned to sub
   - two Sign offs at once accepting the case once
   - Sign off and Send back refused with the agent's key
-- [ ] **Screening** (`agent/tests/test_screening.py`): a flagged case reaches Awaiting review with its reason and no exceptions, and the agent's stub model is never called. The screening reads a hidden instruction in each of `payroll_notes`, `line_notes` and `signed_by`.
-- [ ] **The checks on the route:** `agent/tests/test_check_node.py` works a labelled case through the graph on the direct route, with the real context layer on a local port, and its recorded candidates equal phase 1's findings.
-- [ ] **Scoring** (`backend/tests/test_scoring.py`), on hand-made exceptions, with measures matching ones worked out by hand:
+- [x] **Screening** (`agent/tests/test_screening.py`): a flagged case reaches Awaiting review with its reason and no exceptions, and the agent's stub model is never called. The screening reads a hidden instruction in each of `payroll_notes`, `line_notes` and `signed_by`.
+- [x] **The checks on the route:** `agent/tests/test_check_node.py` works a labelled case through the graph on the direct route, with the real context layer on a local port, and its recorded candidates equal phase 1's findings.
+- [x] **Scoring** (`backend/tests/test_scoring.py`), on hand-made exceptions, with measures matching ones worked out by hand:
   - a wrong rule code in the same family not caught
   - a shortfall a cent out caught but not correct
   - a flagged decoy false
   - an exception on a flagged copy false
-- [ ] **The answer key** (`backend/tests/test_copies.py`): every response the agent's key can read for a copy holds nothing from `labels`, and its history comes from its own set.
-- [ ] **The API document** (`backend/tests/test_agent_api.py`): `get_agent_api` lists exactly the seven operations, with no `servers`. `backend/tests/test_openapi.py` still checks every operation's `operation_id`, docstring and required inputs.
-- [ ] **Rounds** (`backend/tests/test_verdict.py`, `test_rounds.py` and `agent/tests/test_improver.py`): a version kept on a catch rate improved by more than its noise, and rolled back on one that fell by more than its tolerance, with no grade.
-- [ ] **Nothing of the travel domain left:** `git grep -n -i -E "payout|policy_id|calculate_payout|record_decision|sent_back|approval_limit|wait_for_reviewer|PAYROLLCHECK_MEMORY_ID"` outside `docs/`, `labs/` and `CONTEXT.md` finds nothing. The payroll graph has no `interrupt()`.
-- [ ] With `npm run dev` on SQLite and the agent's stand-in, `curl -H "X-API-Key: ..." http://127.0.0.1:8000/api/cases/PC-0311` returns Returned to sub with three open exceptions, and `/api/agent/openapi.json` lists the seven operations.
-- [ ] `npm run check` is green, the Playwright specs rewritten as listed.
+- [x] **The answer key** (`backend/tests/test_copies.py`): every response the agent's key can read for a copy holds nothing from `labels`, and its history comes from its own set.
+- [x] **The API document** (`backend/tests/test_agent_api.py`): `get_agent_api` lists exactly the seven operations, with no `servers`. `backend/tests/test_openapi.py` still checks every operation's `operation_id`, docstring and required inputs.
+- [x] **Rounds** (`backend/tests/test_verdict.py`, `test_rounds.py` and `agent/tests/test_improver.py`): a version kept on a catch rate improved by more than its noise, and rolled back on one that fell by more than its tolerance, with no grade.
+- [x] **Nothing of the travel domain left:** `git grep -n -i -E "payout|policy_id|calculate_payout|record_decision|sent_back|approval_limit|wait_for_reviewer|PAYROLLCHECK_MEMORY_ID"` outside `docs/`, `labs/` and `CONTEXT.md` finds nothing. The payroll graph has no `interrupt()`.
+- [x] With the backend on SQLite (uvicorn, since `npm run dev` reads `.env`), `curl -H "X-API-Key: ..." http://127.0.0.1:8000/api/cases/PC-0311` returns Returned to sub with three open exceptions, and `/api/agent/openapi.json` lists the seven operations.
+- [x] `npm run check` is green, the Playwright specs rewritten as listed.
 
 ### Phase 3: intake and the project pages
 

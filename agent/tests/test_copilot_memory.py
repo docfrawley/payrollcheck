@@ -3,20 +3,79 @@ what it found, which goes into the instructions, and the reviewer's message and 
 answer saved as the turn ends, and nothing else."""
 
 import logging
+from collections.abc import Iterable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
-from langchain_core.messages import AIMessage, HumanMessage
+from botocore.exceptions import EndpointConnectionError
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langgraph.store.base import BaseStore, Op, PutOp, Result, SearchItem, SearchOp
 
 from agent import agentcore_memory
 from agent.copilot.memory import MEMORY_ID, memory_store
 from agent.tests.copilot_driver import Copilot
-from agent.tests.memory_stand_in import MemoryStandIn
 from agent.tests.stubs import call, stub
-from backend.tests.case_requests import held
+from backend.tests.case_requests import awaiting_review, finding
 from backend.tests.sign_in import MARCUS
 
 PREFERENCE = "Dana likes amounts first, in short bullet points"
 QUESTION = "What needs me today?"
-ANSWER = "- $3,750.00 on CLM-1003, held for your sign-off"
+ANSWER = "- $0.32 short on PC-1201, awaiting your review"
+ENDPOINT = "https://bedrock-agentcore.us-east-1.amazonaws.com"
+
+
+@dataclass
+class Event:
+    """An event a put wrote: its actor, its session and its message."""
+
+    actor: str
+    session: str
+    message: BaseMessage
+
+
+@dataclass
+class MemoryStandIn(BaseStore):
+    """A stand-in for AgentCore Memory in place of AgentCoreMemoryStore: the
+    memories AgentCore would have made, each a namespace and a text, the events
+    written and the namespaces searched. It answers a search in
+    AgentCoreMemoryStore's shape, every result's namespace the prefix searched, and
+    one that can't be reached raises what botocore raises then."""
+
+    memories: list[tuple[str, str]] = field(default_factory=list)
+    events: list[Event] = field(default_factory=list)
+    searched: list[str] = field(default_factory=list)
+    reachable: bool = True
+
+    def batch(self, ops: Iterable[Op]) -> list[Result]:
+        if not self.reachable:
+            raise EndpointConnectionError(endpoint_url=ENDPOINT)
+        return [self.handle(op) for op in ops]
+
+    async def abatch(self, ops: Iterable[Op]) -> list[Result]:
+        return self.batch(ops)
+
+    def handle(self, op: Op) -> Result:
+        if isinstance(op, PutOp):
+            actor, session = op.namespace
+            assert op.value is not None
+            self.events.append(Event(actor, session, op.value["message"]))
+            return None
+        assert isinstance(op, SearchOp)
+        path = "/" + "/".join(op.namespace_prefix)
+        self.searched.append(path)
+        now = datetime.now(UTC)
+        found = [
+            SearchItem(
+                namespace=op.namespace_prefix,
+                key=f"record-{n}",
+                value={"content": text, "namespaces": [namespace]},
+                created_at=now,
+                updated_at=now,
+            )
+            for n, (namespace, text) in enumerate(self.memories)
+            if namespace.startswith(f"{path}/")
+        ]
+        return found[: op.limit]
 
 
 def remembering() -> MemoryStandIn:
@@ -45,9 +104,9 @@ def test_a_turn_starts_with_what_the_copilot_remembers(copilot: Copilot):
 def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
     client, copilot: Copilot
 ):
-    held(client, "CLM-1003", 3750.0)
+    awaiting_review(client, "PC-1201", finding())
     copilot.store = remembering()
-    copilot.model = stub(call("get_case", case_id="CLM-1003"), ANSWER)
+    copilot.model = stub(call("get_case", case_id="PC-1201"), ANSWER)
     conversation_id = copilot.ask(QUESTION)["conversation_id"]
     message, answer = copilot.store.events
     assert (message.actor, message.session) == ("HND-01", conversation_id)
@@ -67,34 +126,6 @@ def test_each_reviewer_is_searched_alone(copilot: Copilot):
     assert turn["steps"][0]["answer"] == "Nothing remembered that bears on this"
     assert PREFERENCE not in copilot.model.prompts[0][0].text
     assert [event.actor for event in copilot.store.events] == ["HND-02", "HND-02"]
-
-
-def test_a_paused_turn_saves_once_after_its_answer(client, copilot: Copilot):
-    held(client, "CLM-1003", 3750.0)
-    copilot.store = remembering()
-    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
-    conversation_id = copilot.ask("Sign off CLM-1003")["conversation_id"]
-    assert copilot.store.events == []
-    copilot.answer(conversation_id, "cancel")
-    message, answer = copilot.store.events
-    assert (message.message.text, answer.message.text) == (
-        "Sign off CLM-1003",
-        "I haven't signed off CLM-1003. What would you like to do instead?",
-    )
-
-
-def test_a_signed_off_turn_saves_once_after_the_models_answer(client, copilot: Copilot):
-    held(client, "CLM-1003", 3750.0)
-    copilot.store = remembering()
-    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
-    conversation_id = copilot.ask("Sign off CLM-1003")["conversation_id"]
-    copilot.model = stub("Signed off and paid.")
-    copilot.answer(conversation_id, "sign_off")
-    message, answer = copilot.store.events
-    assert (message.message.text, answer.message.text) == (
-        "Sign off CLM-1003",
-        "Signed off and paid.",
-    )
 
 
 def test_with_memory_off_nothing_is_searched_or_saved(copilot: Copilot):

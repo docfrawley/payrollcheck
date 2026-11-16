@@ -35,16 +35,6 @@ def send_message(
     )
 
 
-def answer(client, conversation_id, turn_id, answer="sign_off", headers=None):
-    """Answer a turn's confirmation card, as Dana Whitfield unless the headers say
-    otherwise."""
-    return client.post(
-        f"{CONVERSATIONS}/{conversation_id}/confirmation",
-        json={"turn_id": turn_id, "answer": answer},
-        headers=headers or signed_in(),
-    )
-
-
 def list_conversations(client, email=DANA):
     return client.get(CONVERSATIONS, headers=signed_in(email))
 
@@ -59,7 +49,7 @@ def latest(conversation):
     return conversation["turns"][-1]
 
 
-def start_step(client, turn_id, tool="get_case", input="CLM-1012", email=DANA):
+def start_step(client, turn_id, tool="get_case", input="PC-1201", email=DANA):
     body = {"tool": tool, "kind": "cases", "input": input, "asked": '{"case_id": 1}'}
     return client.post(f"{TURNS}/{turn_id}/steps", json=body, headers=signed_in(email))
 
@@ -76,14 +66,6 @@ def finish_step(client, turn_id, step_id, status="done", email=DANA, **result):
 def finish_turn(client, turn_id, email=DANA, answer="Nothing needs you today."):
     body = {"answer": answer, "model_calls": 4, "cost": 0.0021}
     return client.post(f"{TURNS}/{turn_id}/finish", json=body, headers=signed_in(email))
-
-
-def pause_turn(client, turn_id, case_id="CLM-1003", email=DANA):
-    return client.post(
-        f"{TURNS}/{turn_id}/pause",
-        json={"case_id": case_id},
-        headers=signed_in(email),
-    )
 
 
 def fail_turn(client, turn_id, reason="RuntimeError: It broke", email=DANA):

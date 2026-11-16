@@ -1,11 +1,11 @@
 import type { VersionPoint } from "../api";
-import { grade, percent, verdictLabels, versionLabels } from "../format";
+import { percent, verdictLabels, versionLabels } from "../format";
 
 const FIRST = "Version 1";
 
-// The held-out accuracy and grade of each version the rounds tried, in two
-// small charts side by side: one point per version, colored by its verdict,
-// with version 1's score as a line to compare against.
+// The held-out catch rate of each version the rounds tried, in a small chart:
+// one point per version, colored by its verdict, with version 1's score as a
+// line to compare against.
 export function VersionChart({
   first,
   tried,
@@ -14,20 +14,12 @@ export function VersionChart({
     <>
       <div className="version-charts">
         <Chart
-          title="Held-out accuracy"
+          title="Held-out catch rate"
           top={1}
           step={0.1}
           show={percent}
-          first={first.accuracy}
-          points={tried.map((point) => ({ ...point, value: point.accuracy }))}
-        />
-        <Chart
-          title="Held-out grade"
-          top={3}
-          step={0.5}
-          show={grade}
-          first={first.grade}
-          points={tried.map((point) => ({ ...point, value: point.grade }))}
+          first={first.catch_rate}
+          points={tried.map((point) => ({ ...point, value: point.catch_rate }))}
         />
       </div>
       <ul className="chart-key" aria-label="Key">

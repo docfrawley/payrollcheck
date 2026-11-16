@@ -2,16 +2,8 @@
 
 import pytest
 
-from backend.database import (
-    engine,
-    load,
-    models_allowed,
-    payments,
-    payout_rules,
-    seed,
-    settings,
-)
-from backend.tests.case_requests import decide, pay, sign_off, start
+from backend.database import engine, models_allowed, settings
+from backend.seeding import load, seed
 from backend.tests.dashboard_reads import settings_page
 from backend.tests.rows import count
 from backend.tests.settings_requests import STARTING, change_settings
@@ -25,7 +17,7 @@ def test_seeding_makes_the_first_settings_and_the_models_allowed(client):
     assert (current["number"], current["changed_by"]) == (1, None)
     assert [c["number"] for c in page["changes"]] == [1]
     assert page["models_allowed"] == load("models.json")
-    assert (count(payout_rules), count(models_allowed)) == (1, 3)
+    assert count(models_allowed) == 3
 
 
 def test_a_student_on_a_free_model_has_only_that_model(client, monkeypatch):
@@ -53,12 +45,11 @@ def test_a_compliance_manager_changes_the_settings(client):
     assert page["changes"][1]["spending_limit"] == 0.5
 
 
-def test_a_reviewer_who_cant_sign_off_over_the_limit_cant_change_them(client):
+def test_a_reviewer_who_isnt_the_compliance_manager_cant_change_them(client):
     response = change_settings(client, MARCUS, spending_limit=0.75)
     assert response.status_code == 403
     assert response.json()["detail"] == (
-        "Only a reviewer who can sign off payouts over $1,000.00 can change the "
-        "settings. Marcus Oyelaran can't."
+        "Only the compliance manager can change the settings. Marcus Oyelaran can't."
     )
     assert count(settings) == 1
     unsigned = client.put("/api/settings", json=STARTING)
@@ -68,10 +59,8 @@ def test_a_reviewer_who_cant_sign_off_over_the_limit_cant_change_them(client):
 @pytest.mark.parametrize(
     "values",
     [
-        {"approval_limit": 0},
-        {"objectives": {"accuracy": 1.5, "grade": 1.0}},
-        {"objectives": {"accuracy": 0.6, "grade": 4}},
-        {"noise": STARTING["noise"] | {"grade": -0.1}},
+        {"objectives": {"catch_rate": 1.5}},
+        {"noise": STARTING["noise"] | {"catch_rate": -0.1}},
         {"spending_limit": 0},
         {"agents": 26},
     ],
@@ -81,54 +70,8 @@ def test_settings_out_of_range_are_refused(client, values):
     assert count(settings) == 1
 
 
-def test_a_new_approval_limit_applies_to_the_decisions_after_it(client):
-    start(client, "CLM-1002")
-    held = decide(client, "CLM-1002", "approve", 1350.0).json()
-    assert held["status"] == "waiting_for_sign_off"
-    change_settings(client, approval_limit=1500.0)
-
-    start(client, "CLM-1003")
-    assert decide(client, "CLM-1003", "approve", 1350.0).json()["status"] == (
-        "in_progress"
-    )
-    assert pay(client, "CLM-1003", 1350.0).json()["status"] == "decided"
-    assert client.get("/api/cases/CLM-1002").json()["status"] == (
-        "waiting_for_sign_off"
-    )
-
-
-def test_a_lower_approval_limit_holds_smaller_payouts(client):
-    change_settings(client, approval_limit=500.0)
-    start(client, "CLM-1001")
-    held = decide(client, "CLM-1001", "approve", 600.0).json()
-    assert held["status"] == "waiting_for_sign_off"
-    refused = pay(client, "CLM-1001", 600.0)
-    assert refused.status_code == 403
-    assert refused.json()["detail"] == (
-        "A payout over $500.00 needs a reviewer's sign-off"
-    )
-
-
-def test_a_payout_held_names_the_limit_it_was_held_under(client):
-    start(client, "CLM-1002")
-    decide(client, "CLM-1002", "approve", 1350.0)
-    change_settings(client, approval_limit=1500.0)
-    refused = pay(client, "CLM-1002", 1350.0)
-    assert refused.json()["detail"] == (
-        "A payout over $1,000.00 needs a reviewer's sign-off"
-    )
-    paid = sign_off(client, "CLM-1002").json()
-    assert (paid["status"], paid["payment"]["amount"]) == ("decided", 1350.0)
-    assert count(payments) == 1
-
-
-def test_a_lower_limit_holds_an_approval_not_yet_paid(client):
-    """A known gap: the payment checks the limit in force before it reads the
-    case, and only a payout held when it was decided can be signed off, so an
-    approval left unpaid when the limit drops below it waits for a reviewer."""
-    start(client, "CLM-1001")
-    decide(client, "CLM-1001", "approve", 420.0)
-    change_settings(client, approval_limit=300.0)
-    assert pay(client, "CLM-1001", 420.0).status_code == 403
-    assert sign_off(client, "CLM-1001").status_code == 409
-    assert client.get("/api/cases/CLM-1001").json()["status"] == "in_progress"
+def test_the_business_date_is_carried_through_a_change(client):
+    change_settings(client, spending_limit=0.75)
+    assert settings_page(client)["current"]["business_date"] == "2026-11-23"
+    change_settings(client, business_date=None)
+    assert settings_page(client)["current"]["business_date"] is None

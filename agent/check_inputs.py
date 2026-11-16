@@ -1,13 +1,21 @@
 """What the check tools read for a case, from the app's records and the context
 layer's lookups: the app's JSON read into the checks' plain data, and each lookup
-asked once. The lookups are a function given to it, the payroll agent's route in
-the harness and the context layer in process in the tests."""
+asked once. It fetches them on the payroll agent's route; the tests give it the
+records and the lookups in process."""
 
 from collections.abc import Callable
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
+from langchain_core.tools import ToolException
+
+from agent.app_operations import (
+    GET_CASE,
+    GET_PAYROLL_HISTORY,
+    GET_PROJECT,
+    LIST_SUBCONTRACTORS,
+)
 from agent.checks.inputs import (
     Certification,
     CheckInputs,
@@ -19,15 +27,18 @@ from agent.checks.inputs import (
     Requirement,
     week_days,
 )
+from agent.context_tools import (
+    CHECK_APPRENTICE,
+    CHECK_REGISTRATION,
+    GET_FILING_RULES,
+    GET_WAGE_RATE,
+)
+from agent.routes import Route, Target
 from context import wage_rules
 from context.wage_rules import APPRENTICE, JOURNEYMAN, Row
 
 # A lookup on the context layer: a tool's name and its arguments, and its answer.
 Lookup = Callable[[str, dict[str, Any]], dict[str, Any]]
-GET_WAGE_RATE = "get_wage_rate"
-CHECK_APPRENTICE = "check_apprentice"
-CHECK_REGISTRATION = "check_registration"
-GET_FILING_RULES = "get_filing_rules"
 
 
 class LookupRefused(Exception):
@@ -278,4 +289,32 @@ def read_inputs(
         {day: reader.registration(registration_no, day) for day in worked},
         due_days,
         filing_rules,
+    )
+
+
+def on_route(route: Route) -> Lookup:
+    """The context layer's lookups on the payroll agent's route, a refusal raised
+    as LookupRefused."""
+
+    def lookup(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return route.call(Target.CONTEXT, tool, arguments)
+        except ToolException as refused:
+            raise LookupRefused(str(refused)) from refused
+
+    return lookup
+
+
+def fetch_inputs(route: Route, case_id: str) -> CheckInputs:
+    """What the checks read for a case, from the app and the context layer on the
+    payroll agent's route."""
+    case = route.call(Target.APP, GET_CASE, {"case_id": case_id})
+    project = {"project_id": case["project_id"]}
+    history = route.call(Target.APP, GET_PAYROLL_HISTORY, {"case_id": case_id})
+    return read_inputs(
+        case,
+        route.call(Target.APP, GET_PROJECT, project),
+        route.call(Target.APP, LIST_SUBCONTRACTORS, project),
+        history["payrolls"],
+        on_route(route),
     )

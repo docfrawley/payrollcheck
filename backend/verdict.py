@@ -6,21 +6,21 @@ from typing import NamedTuple
 
 from backend.models import Measures, Settings, Verdict
 
-# Compared as differences: accuracy from 0 to 1, the grade from 0 to 3.
-DIFFERENCES = ("accuracy", "grade")
+# Compared as a difference: the catch rate, from 0 to 1. The judge's notice score
+# joins it in stage 5.
+DIFFERENCES = ("catch_rate",)
 # Compared as fractions of the old value, so 0.15 means 15% and 1.0 double.
 FRACTIONS = ("cost_per_case", "seconds_per_case")
 # Where each measure is in the scores.
 SCORES = {
-    "accuracy": "accuracy",
-    "grade": "grade",
+    "catch_rate": "catch_rate",
     "cost_per_case": "model_cost_per_case",
     "seconds_per_case": "seconds_per_case",
 }
 RULE = (
     "A new version is kept when it meets the objectives on the held-out set, at "
     "least one measure improves by more than its noise and none gets worse by more "
-    "than its tolerance. Accuracy and the grade are compared as differences, and "
+    "than its tolerance. The catch rate is compared as a difference, and "
     "cost and time per case as fractions of the old value."
 )
 
@@ -40,7 +40,7 @@ class Decided(NamedTuple):
 
 
 def value(scores: Measures, measure: str) -> float | None:
-    """One measure of a version's scores, or nothing for a missing grade."""
+    """One measure of a version's scores."""
     return getattr(scores, SCORES[measure])
 
 
@@ -48,8 +48,7 @@ def compare(
     new: Measures, old: Measures, settings: Settings
 ) -> tuple[list[str], list[str]]:
     """Return the measures that got better by more than the noise, and those that
-    got worse by more than the tolerance. The grade counts only when both versions
-    have one."""
+    got worse by more than the tolerance."""
     better, worse = [], []
     for measure in (*DIFFERENCES, *FRACTIONS):
         after, before = value(new, measure), value(old, measure)
@@ -74,12 +73,9 @@ def keep_or_roll_back(
 ) -> Decided:
     """Keep a version that meets the objectives, improves at least one measure by
     more than its noise and worsens none by more than its tolerance."""
-    if new is None or new.grade is None:
-        return Decided(Verdict.ROLLED_BACK, "it has no grade")
-    floors = {
-        "accuracy": settings.objectives.accuracy,
-        "grade": settings.objectives.grade,
-    }
+    if new is None:
+        return Decided(Verdict.ROLLED_BACK, "it has no scores")
+    floors = {"catch_rate": settings.objectives.catch_rate}
     missed = [m for m, floor in floors.items() if (value(new, m) or 0) < floor]
     if missed:
         return Decided(

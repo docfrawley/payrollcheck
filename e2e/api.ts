@@ -1,6 +1,6 @@
 import { type APIRequestContext, expect } from "@playwright/test";
 import type {
-  DecisionKind,
+  Candidate,
   EvaluationSet,
   RoundStatus,
   Run,
@@ -56,89 +56,71 @@ export const recordStep = (
     sources,
   });
 
-// Who makes the decisions the tests record, as the payroll agent says it.
+// Who raises the exceptions the tests record, as the payroll agent says it.
 const MAKER = "PayrollCheck Agent, version 1";
 
-interface DecisionRequest {
-  decision: DecisionKind;
-  payout: number;
-  section: string;
-  reason: string;
-  decided_by: string;
+// A check tool's finding, as the payroll agent's checks give it.
+export interface Finding {
+  rule: string;
+  worker_id: string | null;
+  line_no: number | null;
+  expected: string;
+  actual: string;
+  shortfall_cents: number | null;
+  citation: string;
 }
 
-const recordDecision = (
+// Records one check's findings, which the backend keeps as the attempt's
+// candidates, and returns them with their ids.
+export async function recordCheckFindings(
   request: Request,
   caseId: string,
-  decision: DecisionRequest,
-) => send(request, "POST", `${casePath(caseId)}/decision`, decision);
+  check: string,
+  findings: Finding[] = [],
+): Promise<Candidate[]> {
+  const response = await send(
+    request,
+    "POST",
+    `${casePath(caseId)}/candidates`,
+    {
+      check,
+      findings,
+    },
+  );
+  return (await response.json()) as Candidate[];
+}
 
-const calculatePayout = (
+export interface ExceptionReport {
+  raised: number[];
+  dismissed: { candidate_id: number; reason: string }[];
+  added: Finding[];
+  notice: string;
+}
+
+// Records the payroll agent's exception report, with its maker, which moves
+// the case to Awaiting review.
+export const recordExceptionReport = (
   request: Request,
   caseId: string,
-  payout: { benefit: string; lines: object[]; paid_by_others: number },
-) => send(request, "POST", `${casePath(caseId)}/payout`, payout);
-
-// Works out the payout on one emergency medical bill, which the backend keeps
-// for the case's attempt, and returns what it pays.
-async function payoutOnABill(request: Request, caseId: string, bill: number) {
-  const response = await calculatePayout(request, caseId, {
-    benefit: "emergency_medical",
-    lines: [
-      {
-        description: "The covered costs",
-        amount: bill,
-        quantity: 1,
-        kind: "expense",
-        nights: 0,
-        hours: 0,
-      },
-    ],
-    paid_by_others: 0,
+  report: Partial<ExceptionReport> = {},
+) =>
+  send(request, "POST", `${casePath(caseId)}/report`, {
+    raised: [],
+    dismissed: [],
+    added: [],
+    notice: "",
+    ...report,
+    raised_by: MAKER,
   });
-  const { payout } = (await response.json()) as { payout: number };
-  return payout;
-}
 
-// Records a decision as the payroll agent does, with its maker. An approval's
-// payout is worked out first: a bill for the payout alone shows the plan's
-// deductible, and a bill for the payout and the deductible leaves exactly the
-// payout on file.
-export async function decide(
+export const recordScreeningFlag = (
   request: Request,
   caseId: string,
-  decision: Omit<DecisionRequest, "decided_by">,
-) {
-  if (decision.decision === "approve") {
-    const deductible =
-      decision.payout - (await payoutOnABill(request, caseId, decision.payout));
-    await payoutOnABill(request, caseId, decision.payout + deductible);
-  }
-  return recordDecision(request, caseId, { ...decision, decided_by: MAKER });
-}
-
-// Asks to pay a case and returns the backend's answer, which may be a refusal.
-export const askToPay = (request: Request, caseId: string, amount: number) =>
-  asTheAgent(request, "POST", `${casePath(caseId)}/payment`, { amount });
-
-export async function payCase(
-  request: Request,
-  caseId: string,
-  amount: number,
-) {
-  await expect(await askToPay(request, caseId, amount)).toBeOK();
-}
+  reason: string,
+) => send(request, "POST", `${casePath(caseId)}/screening-flag`, { reason });
 
 export const failCase = (request: Request, caseId: string, reason: string) =>
   send(request, "POST", `${casePath(caseId)}/failure`, { reason });
-
-// Takes a sent-back case back into work, for a dispatch's run or, with none,
-// for a resume.
-export const takeCase = (
-  request: Request,
-  caseId: string,
-  runId: string | null,
-) => send(request, "POST", `${casePath(caseId)}/take`, { run_id: runId });
 
 export const recordModelCall = (
   request: Request,
@@ -195,12 +177,10 @@ export const startDispatch = (request: Request, agents: number) =>
 export const startEvaluation = (
   request: Request,
   evaluationSet: EvaluationSet,
-  tiny: boolean,
   agents: number,
 ) =>
   startRun(request, "/api/evaluations", {
     evaluation_set: evaluationSet,
-    tiny,
     agents,
   });
 
@@ -253,7 +233,7 @@ export async function recordChangeProposal(
       instructions,
       model: "openai/gpt-6-luna",
       reasoning_effort: "low",
-      reason: "Two stolen phones were approved without a police report",
+      reason: "Two weekend premiums were missed on the rates check",
     },
   );
   return ((await response.json()) as { proposal_id: string }).proposal_id;
@@ -325,11 +305,4 @@ export async function nextStarted(
   const next = payloads.at(before);
   if (!next) throw new Error("The stand-in for the agent took nothing");
   return next;
-}
-
-// The cases the backend has asked the agent to resume, oldest first.
-export async function resumes(request: Request): Promise<unknown[]> {
-  return (await started(request))
-    .filter((payload) => payload.operation === "resume_case")
-    .map((payload) => payload.case_id);
 }

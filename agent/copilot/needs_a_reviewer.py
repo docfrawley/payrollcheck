@@ -1,29 +1,25 @@
-"""What needs a reviewer, worked out in code from the queue: the payouts held for
-sign-off with their amounts, the cases referred, the cases left for a reviewer,
-and any case sent back that the agent hasn't taken up."""
+"""What needs a reviewer, worked out in code from the queue: the cases awaiting
+review, with those the screening flagged and those the agent failed apart, each
+with its open exceptions and shortfall."""
 
 from typing import Any
 
-from agent.app_terms import REFER, Status
+from agent.app_terms import Status
 
 
 def needs_a_reviewer(queue: list[dict[str, Any]]) -> dict[str, Any]:
     """What in the queue needs a reviewer."""
+    waiting = [c for c in queue if c["status"] == Status.AWAITING_REVIEW]
     return {
-        "held_for_sign_off": [
-            {"case_id": c["case_id"], "payout": c["payout"]}
-            for c in queue
-            if c["status"] == Status.WAITING_FOR_SIGN_OFF
+        "awaiting_review": [
+            {
+                "case_id": c["case_id"],
+                "open_exceptions": c["open_exceptions"],
+                "shortfall_cents": c["shortfall_cents"],
+            }
+            for c in waiting
+            if not (c["screening_flag"] or c["agent_failed"])
         ],
-        "referred": [
-            c["case_id"]
-            for c in queue
-            if c["status"] == Status.DECIDED and c["decision"] == REFER
-        ],
-        "left_for_a_reviewer": [
-            c["case_id"] for c in queue if c["status"] == Status.LEFT_FOR_REVIEWER
-        ],
-        "sent_back_not_taken_up": [
-            c["case_id"] for c in queue if c["status"] == Status.SENT_BACK
-        ],
+        "screening_flagged": [c["case_id"] for c in waiting if c["screening_flag"]],
+        "agent_failed": [c["case_id"] for c in waiting if c["agent_failed"]],
     }
