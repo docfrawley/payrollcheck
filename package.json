@@ -15,6 +15,7 @@
     "dev:dashboard": "vite dashboard",
     "build": "vite build dashboard",
     "seed": "uv run --env-file .env -m backend.seed",
+    "generate": "uv run -m data.generate",
     "format": "uv run ruff format && prettier --write -u dashboard e2e *.config.*",
     "check": "concurrently -g \"npm:check:*\" && npm run e2e",
     "check:python": "uv run ruff format --check && uv run ruff check && pyright --threads && uv run pytest -q -n auto --dist worksteal",

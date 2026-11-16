@@ -1,0 +1,207 @@
+{
+  "notice": "Synthetic data — not real rates",
+  "business_date": "2026-11-23",
+  "reviewer": "marcus.oyelaran@payrollcheck.example",
+  "projects": [
+    "PRJ-01",
+    "PRJ-02"
+  ],
+  "answers": [
+    {
+      "question": "Which subs on the Lincoln School renovation have open exceptions?",
+      "answer": {
+        "project_id": "PRJ-01",
+        "subcontractors": [
+          {
+            "subcontractor_id": "SUB-02",
+            "name": "Raritan Valley Carpentry Inc.",
+            "case_ids": [
+              "PC-0302"
+            ],
+            "open_exceptions": 1
+          },
+          {
+            "subcontractor_id": "SUB-01",
+            "name": "Garden State Electric LLC",
+            "case_ids": [
+              "PC-0601"
+            ],
+            "open_exceptions": 1
+          },
+          {
+            "subcontractor_id": "SUB-06",
+            "name": "Delaware Valley Masonry LLC",
+            "case_ids": [
+              "PC-0706",
+              "PC-1106"
+            ],
+            "open_exceptions": 2
+          },
+          {
+            "subcontractor_id": "SUB-05",
+            "name": "Pine Barrens Painting Co.",
+            "case_ids": [
+              "PC-1005"
+            ],
+            "open_exceptions": 1
+          }
+        ]
+      }
+    },
+    {
+      "question": "How much underpayment have we flagged for Garden State Electric this month?",
+      "answer": {
+        "subcontractor_id": "SUB-01",
+        "period": {
+          "first_week_ending": "2026-11-01",
+          "last_week_ending": "2026-11-29"
+        },
+        "case_ids": [
+          "PC-1009"
+        ],
+        "flagged_cents": 19875,
+        "outstanding_cents": 19875,
+        "exceptions": [
+          {
+            "case_id": "PC-1009",
+            "rule": "rate.base_short",
+            "worker_id": "W-021",
+            "line_no": 2,
+            "expected_shortfall_cents": 10000
+          },
+          {
+            "case_id": "PC-1009",
+            "rule": "rate.fringe_short",
+            "worker_id": "W-020",
+            "line_no": 1,
+            "expected_shortfall_cents": 9875
+          }
+        ]
+      }
+    },
+    {
+      "question": "Which payrolls are late or missing for last week?",
+      "answer": {
+        "period": {
+          "first_week_ending": "2026-11-22",
+          "last_week_ending": "2026-11-22"
+        },
+        "late": [
+          {
+            "case_id": "PC-1208",
+            "subcontractor_id": "SUB-08",
+            "project_id": "PRJ-01",
+            "wage_payment_date": "2026-11-11",
+            "received_on": "2026-11-23"
+          }
+        ],
+        "missing": [
+          {
+            "subcontractor_id": "SUB-06",
+            "project_id": "PRJ-02",
+            "week_ending": "2026-11-22"
+          }
+        ]
+      }
+    },
+    {
+      "question": "What's the journeyman electrician rate in Middlesex County in our rate table, and since when?",
+      "answer": {
+        "craft": "electrician",
+        "classification": "journeyman",
+        "county": "Middlesex",
+        "project_id": "PRJ-01",
+        "award_date": "2026-04-15",
+        "determination_id": "MID-2025-11",
+        "effective": "2026-10-01",
+        "wage_cents": 6110,
+        "fringe_cents": 3540,
+        "total_cents": 9650,
+        "source": {
+          "file": "rate_determinations.yaml",
+          "system": "NJDOL prevailing wage rate determinations, as we record them",
+          "owner": "Compliance manager",
+          "reviewed": "2026-11-02"
+        }
+      }
+    },
+    {
+      "question": "Show me every worker whose classification changed in the last four weeks.",
+      "answer": {
+        "period": {
+          "first_week_ending": "2026-11-01",
+          "last_week_ending": "2026-11-22"
+        },
+        "changes": [
+          {
+            "case_id": "PC-1202",
+            "worker_id": "W-004",
+            "worker_name": "Tariq Fitzgerald",
+            "week_ending": "2026-11-22",
+            "from": "Carpenter Journeyman",
+            "to": "Carpenter Foreman",
+            "line_notes": "Acting foreman this week while T. Brennan is out on leave."
+          },
+          {
+            "case_id": "PC-1204",
+            "worker_id": "W-008",
+            "worker_name": "Jamal Fernandes",
+            "week_ending": "2026-11-22",
+            "from": "Ironworker Journeyman",
+            "to": "Laborer Journeyman",
+            "line_notes": ""
+          },
+          {
+            "case_id": "PC-1209",
+            "worker_id": "W-021",
+            "worker_name": "Alex Lindqvist",
+            "week_ending": "2026-11-22",
+            "from": "Electrician Journeyman",
+            "to": "Electrician Foreman",
+            "line_notes": ""
+          },
+          {
+            "case_id": "PC-1213",
+            "worker_id": "W-030",
+            "worker_name": "Luis Jablonski",
+            "week_ending": "2026-11-22",
+            "from": "Painter Journeyman",
+            "to": "Painter Foreman",
+            "line_notes": ""
+          }
+        ]
+      }
+    },
+    {
+      "question": "Draft a send-back notice for PC-0311 covering all three exceptions.",
+      "answer": {
+        "case_id": "PC-0311",
+        "status": "Returned to sub",
+        "exceptions": [
+          {
+            "case_id": "PC-0311",
+            "rule": "rate.base_short",
+            "worker_id": "W-026",
+            "line_no": 2,
+            "expected_shortfall_cents": 6000
+          },
+          {
+            "case_id": "PC-0311",
+            "rule": "rate.fringe_short",
+            "worker_id": "W-025",
+            "line_no": 1,
+            "expected_shortfall_cents": 15000
+          },
+          {
+            "case_id": "PC-0311",
+            "rule": "overtime.underpaid",
+            "worker_id": "W-025",
+            "line_no": 1,
+            "expected_shortfall_cents": 29375
+          }
+        ],
+        "shortfall_cents": 50375
+      }
+    }
+  ]
+}

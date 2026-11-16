@@ -1,0 +1,82 @@
+[
+  {
+    "subcontractor_id": "SUB-01",
+    "legal_name": "Garden State Electric LLC",
+    "fein": "62-9917837",
+    "registration_no": "177511",
+    "payroll_contact": {
+      "name": "Rosa Medina",
+      "email": "payroll@gardenstateelectric.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-02",
+    "legal_name": "Raritan Valley Carpentry Inc.",
+    "fein": "89-0103318",
+    "registration_no": "326067",
+    "payroll_contact": {
+      "name": "Kelly Brennan",
+      "email": "payroll@raritanvalleycarpentry.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-03",
+    "legal_name": "Shore Point Plumbing & Heating LLC",
+    "fein": "85-2568354",
+    "registration_no": "524983",
+    "payroll_contact": {
+      "name": "Anil Sharma",
+      "email": "payroll@shorepointplumbing.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-04",
+    "legal_name": "Liberty Steel Erectors Inc.",
+    "fein": "67-6143729",
+    "registration_no": "525568",
+    "payroll_contact": {
+      "name": "Grace Okafor",
+      "email": "payroll@libertysteelerectors.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-05",
+    "legal_name": "Pine Barrens Painting Co.",
+    "fein": "79-2279772",
+    "registration_no": "903287",
+    "payroll_contact": {
+      "name": "Marta Quintero",
+      "email": "payroll@pinebarrenspainting.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-06",
+    "legal_name": "Delaware Valley Masonry LLC",
+    "fein": "98-5117616",
+    "registration_no": "941034",
+    "payroll_contact": {
+      "name": "Frank Esposito",
+      "email": "payroll@delawarevalleymasonry.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-07",
+    "legal_name": "Meadowlands Site Services LLC",
+    "fein": "52-2954586",
+    "registration_no": "915253",
+    "payroll_contact": {
+      "name": "Imani Washington",
+      "email": "payroll@meadowlandssite.example"
+    }
+  },
+  {
+    "subcontractor_id": "SUB-08",
+    "legal_name": "Turnpike Paving & Equipment Inc.",
+    "fein": "64-8850614",
+    "registration_no": "248242",
+    "payroll_contact": {
+      "name": "Dana Kowalski",
+      "email": "payroll@turnpikepaving.example"
+    }
+  }
+]

@@ -1,0 +1,4 @@
+contractor_name,fein,registration_no,project_id,payroll_no,week_ending,wage_payment_date,signed_by,signed_on,no_work_week,worker_id,worker_name,classification,apprentice_level,hours_mon,hours_tue,hours_wed,hours_thu,hours_fri,hours_sat,hours_sun,total_hours,base_rate,fringe_rate,fringe_cash,overtime_hours,gross,deductions,net,line_notes,payroll_notes
+Ironbound Finishes Co.,31-4675125,408998,PRJ-51,7,2026-11-15,2026-11-16,,,false,W-507,Yusuf Bianchi,Painter Foreman,,8.00,8.00,8.00,8.00,8.00,0.00,0.00,40.00,50.90,26.60,0.00,0.00,2036.00,490.68,1545.32,,
+Ironbound Finishes Co.,31-4675125,408998,PRJ-51,7,2026-11-15,2026-11-16,,,false,W-508,Yusuf Hoang,Bricklayer Journeyman,,8.00,8.00,8.00,8.00,8.00,0.00,0.00,40.00,53.40,31.50,0.00,0.00,2136.00,459.24,1676.76,,
+Ironbound Finishes Co.,31-4675125,408998,PRJ-51,7,2026-11-15,2026-11-16,,,false,W-509,Rosa Esposito,Painter Journeyman,,8.00,8.00,8.00,8.00,8.00,0.00,0.00,40.00,47.90,26.60,0.00,0.00,1916.00,536.48,1379.52,,

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from context import files
+from context import files, sources
 
 GLOSSARY_SOURCE = {
     "file": "glossary.yaml",
@@ -128,7 +128,7 @@ def test_reading_a_section():
     ],
 )
 def test_a_section_that_doesnt_exist_is_refused(document, number, reason):
-    with pytest.raises(files.Refused, match=f"^{reason}$"):
+    with pytest.raises(sources.Refused, match=f"^{reason}$"):
         files.read_section(document, number)
 
 

@@ -24,7 +24,8 @@ def test_the_app_tools_are_named_after_backend_operations(client):
 
 def test_the_context_tools_are_the_context_layers_with_its_inputs(context_at):
     served = McpTools(CONTEXT_LAYER, context_at).tools
-    assert {t.name for t in CONTEXT_TOOLS} == set(served)
+    # The payroll lookups are served too; the agents get them in stages 3 and 6.
+    assert {t.name for t in CONTEXT_TOOLS} < set(served)
     for tool in CONTEXT_TOOLS:
         inputs = served[tool.name].args
         assert set(tool.args) == set(inputs), tool.name

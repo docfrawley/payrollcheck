@@ -1,0 +1,325 @@
+{
+  "notice": "Synthetic data — not real rates",
+  "exceptions": [
+    {
+      "case_id": "PC-0212",
+      "rule": "rate.base_short",
+      "worker_id": "W-028",
+      "line_no": 2,
+      "expected_shortfall_cents": 6400
+    },
+    {
+      "case_id": "PC-0302",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0311",
+      "rule": "rate.base_short",
+      "worker_id": "W-026",
+      "line_no": 2,
+      "expected_shortfall_cents": 6000
+    },
+    {
+      "case_id": "PC-0311",
+      "rule": "rate.fringe_short",
+      "worker_id": "W-025",
+      "line_no": 1,
+      "expected_shortfall_cents": 15000
+    },
+    {
+      "case_id": "PC-0311",
+      "rule": "overtime.underpaid",
+      "worker_id": "W-025",
+      "line_no": 1,
+      "expected_shortfall_cents": 29375
+    },
+    {
+      "case_id": "PC-0402",
+      "rule": "rate.fringe_short",
+      "worker_id": "W-004",
+      "line_no": 2,
+      "expected_shortfall_cents": 8000
+    },
+    {
+      "case_id": "PC-0409",
+      "rule": "rate.base_short",
+      "worker_id": "W-020",
+      "line_no": 1,
+      "expected_shortfall_cents": 12000
+    },
+    {
+      "case_id": "PC-0410",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0412",
+      "rule": "arithmetic.hours_total",
+      "worker_id": "W-027",
+      "line_no": 1,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0504",
+      "rule": "classification.mismatch",
+      "worker_id": "W-008",
+      "line_no": 1,
+      "expected_shortfall_cents": 91600
+    },
+    {
+      "case_id": "PC-0506",
+      "rule": "sequence.gap",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0523",
+      "rule": "rate.base_short",
+      "worker_id": "W-054",
+      "line_no": 1,
+      "expected_shortfall_cents": 7000
+    },
+    {
+      "case_id": "PC-0601",
+      "rule": "rate.base_short",
+      "worker_id": "W-002",
+      "line_no": 2,
+      "expected_shortfall_cents": 7200
+    },
+    {
+      "case_id": "PC-0603",
+      "rule": "rate.base_short",
+      "worker_id": "W-007",
+      "line_no": 3,
+      "expected_shortfall_cents": 6600
+    },
+    {
+      "case_id": "PC-0612",
+      "rule": "classification.mismatch",
+      "worker_id": "W-027",
+      "line_no": 1,
+      "expected_shortfall_cents": 88600
+    },
+    {
+      "case_id": "PC-0616",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0706",
+      "rule": "registration.inactive",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0712",
+      "rule": "arithmetic.gross",
+      "worker_id": "W-028",
+      "line_no": 2,
+      "expected_shortfall_cents": 12000
+    },
+    {
+      "case_id": "PC-0724",
+      "rule": "rate.fringe_short",
+      "worker_id": "W-057",
+      "line_no": 2,
+      "expected_shortfall_cents": 6000
+    },
+    {
+      "case_id": "PC-0801",
+      "rule": "rate.base_short",
+      "worker_id": "W-001",
+      "line_no": 1,
+      "expected_shortfall_cents": 9000
+    },
+    {
+      "case_id": "PC-0810",
+      "rule": "classification.mismatch",
+      "worker_id": "W-023",
+      "line_no": 2,
+      "expected_shortfall_cents": 59400
+    },
+    {
+      "case_id": "PC-0816",
+      "rule": "form.missing_field",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0823",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-0915",
+      "rule": "arithmetic.gross",
+      "worker_id": "W-033",
+      "line_no": 1,
+      "expected_shortfall_cents": 8550
+    },
+    {
+      "case_id": "PC-1001",
+      "rule": "overtime.underpaid",
+      "worker_id": "W-002",
+      "line_no": 2,
+      "expected_shortfall_cents": 9650
+    },
+    {
+      "case_id": "PC-1005",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1009",
+      "rule": "rate.base_short",
+      "worker_id": "W-021",
+      "line_no": 2,
+      "expected_shortfall_cents": 10000
+    },
+    {
+      "case_id": "PC-1009",
+      "rule": "rate.fringe_short",
+      "worker_id": "W-020",
+      "line_no": 1,
+      "expected_shortfall_cents": 9875
+    },
+    {
+      "case_id": "PC-1015",
+      "rule": "arithmetic.hours_total",
+      "worker_id": "W-034",
+      "line_no": 2,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1017",
+      "rule": "classification.mismatch",
+      "worker_id": "W-039",
+      "line_no": 2,
+      "expected_shortfall_cents": 64400
+    },
+    {
+      "case_id": "PC-1106",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1107",
+      "rule": "rate.fringe_short",
+      "worker_id": "W-017",
+      "line_no": 3,
+      "expected_shortfall_cents": 11000
+    },
+    {
+      "case_id": "PC-1112",
+      "rule": "rate.base_short",
+      "worker_id": "W-027",
+      "line_no": 1,
+      "expected_shortfall_cents": 8400
+    },
+    {
+      "case_id": "PC-1201",
+      "rule": "apprentice.ratio",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1203",
+      "rule": "rate.base_short",
+      "worker_id": "W-006",
+      "line_no": 2,
+      "expected_shortfall_cents": 7200
+    },
+    {
+      "case_id": "PC-1204",
+      "rule": "classification.mismatch",
+      "worker_id": "W-008",
+      "line_no": 1,
+      "expected_shortfall_cents": 91600
+    },
+    {
+      "case_id": "PC-1208",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1209",
+      "rule": "classification.changed",
+      "worker_id": "W-021",
+      "line_no": 2,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1210",
+      "rule": "arithmetic.gross",
+      "worker_id": "W-023",
+      "line_no": 2,
+      "expected_shortfall_cents": 10000
+    },
+    {
+      "case_id": "PC-1210",
+      "rule": "apprentice.unregistered",
+      "worker_id": "W-064",
+      "line_no": 4,
+      "expected_shortfall_cents": 89280
+    },
+    {
+      "case_id": "PC-1211",
+      "rule": "sequence.gap",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1213",
+      "rule": "classification.changed",
+      "worker_id": "W-030",
+      "line_no": 2,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1215",
+      "rule": "overtime.underpaid",
+      "worker_id": "W-033",
+      "line_no": 1,
+      "expected_shortfall_cents": 8990
+    },
+    {
+      "case_id": "PC-1216",
+      "rule": "form.unsigned",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    },
+    {
+      "case_id": "PC-1222",
+      "rule": "timeliness.late",
+      "worker_id": null,
+      "line_no": null,
+      "expected_shortfall_cents": null
+    }
+  ],
+  "screening_flags": [
+    "PC-0704",
+    "PC-0913",
+    "PC-1205"
+  ]
+}

@@ -18,6 +18,11 @@ TOOLS = {
     "search_reference_data",
     "search_documents",
     "read_section",
+    "get_wage_rate",
+    "check_registration",
+    "check_apprentice",
+    "get_filing_rules",
+    "lookup_payroll_term",
 }
 
 
@@ -85,3 +90,25 @@ def test_a_search_with_nothing_to_look_for_is_refused(tool, query):
     )
     assert refused["isError"]
     assert "at least 1 character" in refused["content"][0]["text"]
+
+
+def test_a_payroll_tool_answers_through_the_handler_and_refuses_clearly():
+    arguments = {
+        "craft": "electrician",
+        "classification": "journeyman",
+        "county": "Middlesex",
+        "award_date": "2026-04-15",
+        "work_date": "2026-11-23",
+    }
+    found = through_the_handler(
+        "tools/call", {"name": "get_wage_rate", "arguments": arguments}
+    )
+    rate = json.loads(found["content"][0]["text"])
+    assert rate["row"]["effective"] == "2026-10-01"
+    assert rate["sources"][0]["file"] == "rate_determinations.yaml"
+    refused = through_the_handler(
+        "tools/call",
+        {"name": "get_wage_rate", "arguments": arguments | {"county": "Atlantis"}},
+    )
+    assert refused["isError"]
+    assert "No county Atlantis" in refused["content"][0]["text"]

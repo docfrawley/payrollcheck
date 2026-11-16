@@ -1,0 +1,514 @@
+[
+  {
+    "worker_id": "W-001",
+    "name": "Kim Dimitrov",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-01",
+    "craft": "electrician",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-002",
+    "name": "Zoe Silva",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-01",
+    "craft": "electrician",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-003",
+    "name": "Jorge Oliveira",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-01",
+    "craft": "carpenter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-004",
+    "name": "Tariq Fitzgerald",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-01",
+    "craft": "carpenter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-005",
+    "name": "Adriana Medina",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-01",
+    "craft": "plumber",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-006",
+    "name": "Maria Torres",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-01",
+    "craft": "plumber",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-007",
+    "name": "Nadia Novak",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-01",
+    "craft": "plumber",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-008",
+    "name": "Jamal Fernandes",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-01",
+    "craft": "ironworker",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-009",
+    "name": "Quinn Nakamura",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-01",
+    "craft": "ironworker",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-010",
+    "name": "Kim Fernandes",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-01",
+    "craft": "painter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-011",
+    "name": "Alex Chowdhury",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-01",
+    "craft": "painter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-012",
+    "name": "Omar Torres",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-01",
+    "craft": "bricklayer",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-013",
+    "name": "Lena Romano",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-01",
+    "craft": "bricklayer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-014",
+    "name": "Omar Ibrahim",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-01",
+    "craft": "bricklayer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-015",
+    "name": "Ana Gomez",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-01",
+    "craft": "laborer",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-016",
+    "name": "Carlos Castillo",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-01",
+    "craft": "laborer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-017",
+    "name": "Yara Walsh",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-01",
+    "craft": "laborer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-018",
+    "name": "Nadia Tanaka",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-01",
+    "craft": "operating_engineer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-019",
+    "name": "Rosa Bianchi",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-01",
+    "craft": "operating_engineer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-020",
+    "name": "Kevin Tanaka",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-02",
+    "craft": "electrician",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-021",
+    "name": "Alex Lindqvist",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-02",
+    "craft": "electrician",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-022",
+    "name": "Eli Bianchi",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-02",
+    "craft": "carpenter",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-023",
+    "name": "Quinn Novak",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-02",
+    "craft": "carpenter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-024",
+    "name": "Quinn Yilmaz",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-02",
+    "craft": "carpenter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-025",
+    "name": "Eli Walsh",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-02",
+    "craft": "plumber",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-026",
+    "name": "Jorge Abara",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-02",
+    "craft": "plumber",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-027",
+    "name": "Omar Hoang",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-02",
+    "craft": "ironworker",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-028",
+    "name": "Chen Jablonski",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-02",
+    "craft": "ironworker",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-029",
+    "name": "Xavier Reyes",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-02",
+    "craft": "painter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-030",
+    "name": "Luis Jablonski",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-02",
+    "craft": "painter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-031",
+    "name": "Luis Yilmaz",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-02",
+    "craft": "bricklayer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-032",
+    "name": "Rafael Esposito",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-02",
+    "craft": "bricklayer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-033",
+    "name": "Ben Abara",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-02",
+    "craft": "laborer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-034",
+    "name": "Ana Sharma",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-02",
+    "craft": "laborer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-035",
+    "name": "Nadia Costa",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-02",
+    "craft": "operating_engineer",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-036",
+    "name": "Yusuf Torres",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-02",
+    "craft": "operating_engineer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-037",
+    "name": "Victor Fitzgerald",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-02",
+    "craft": "operating_engineer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-038",
+    "name": "Teresa Mahoney",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-03",
+    "craft": "electrician",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-039",
+    "name": "Maria Santos",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-03",
+    "craft": "electrician",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-040",
+    "name": "Shanice Santos",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-03",
+    "craft": "electrician",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-041",
+    "name": "Ana Oliveira",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-03",
+    "craft": "carpenter",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-042",
+    "name": "Priscilla Okafor",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-03",
+    "craft": "carpenter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-043",
+    "name": "Chen Yilmaz",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-03",
+    "craft": "carpenter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-044",
+    "name": "Paul Santos",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-03",
+    "craft": "plumber",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-045",
+    "name": "Mateo DeLuca",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-03",
+    "craft": "plumber",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-046",
+    "name": "Hector Walsh",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-03",
+    "craft": "plumber",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-047",
+    "name": "Quinn Romano",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-03",
+    "craft": "ironworker",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-048",
+    "name": "Omar Vargas",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-03",
+    "craft": "ironworker",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-049",
+    "name": "Paul Lindqvist",
+    "subcontractor_id": "SUB-04",
+    "project_id": "PRJ-03",
+    "craft": "ironworker",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-050",
+    "name": "Xavier Novak",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-03",
+    "craft": "painter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-051",
+    "name": "Xavier Washington",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-03",
+    "craft": "painter",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-052",
+    "name": "Mateo Tanaka",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-03",
+    "craft": "bricklayer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-053",
+    "name": "Kevin Torres",
+    "subcontractor_id": "SUB-06",
+    "project_id": "PRJ-03",
+    "craft": "bricklayer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-054",
+    "name": "Jorge Santos",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-03",
+    "craft": "laborer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-055",
+    "name": "Jamal Mahoney",
+    "subcontractor_id": "SUB-07",
+    "project_id": "PRJ-03",
+    "craft": "laborer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-056",
+    "name": "Xavier Schultz",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-03",
+    "craft": "operating_engineer",
+    "classification": "foreman"
+  },
+  {
+    "worker_id": "W-057",
+    "name": "Rosa Nakamura",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-03",
+    "craft": "operating_engineer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-058",
+    "name": "Chen Fernandes",
+    "subcontractor_id": "SUB-08",
+    "project_id": "PRJ-03",
+    "craft": "operating_engineer",
+    "classification": "journeyman"
+  },
+  {
+    "worker_id": "W-059",
+    "name": "Dana Novak",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-01",
+    "craft": "electrician",
+    "classification": "apprentice"
+  },
+  {
+    "worker_id": "W-060",
+    "name": "Kim Kaplan",
+    "subcontractor_id": "SUB-01",
+    "project_id": "PRJ-02",
+    "craft": "electrician",
+    "classification": "apprentice"
+  },
+  {
+    "worker_id": "W-061",
+    "name": "Uma Walsh",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-01",
+    "craft": "carpenter",
+    "classification": "apprentice"
+  },
+  {
+    "worker_id": "W-062",
+    "name": "Alex Lopez",
+    "subcontractor_id": "SUB-03",
+    "project_id": "PRJ-02",
+    "craft": "plumber",
+    "classification": "apprentice"
+  },
+  {
+    "worker_id": "W-063",
+    "name": "Rosa Chowdhury",
+    "subcontractor_id": "SUB-05",
+    "project_id": "PRJ-01",
+    "craft": "painter",
+    "classification": "apprentice"
+  },
+  {
+    "worker_id": "W-064",
+    "name": "Zoe Walsh",
+    "subcontractor_id": "SUB-02",
+    "project_id": "PRJ-02",
+    "craft": "carpenter",
+    "classification": "apprentice"
+  }
+]

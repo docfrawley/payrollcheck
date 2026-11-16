@@ -1,0 +1,92 @@
+# Every subcontractor's public works contractor registration, with the periods it was
+# active.
+# Written by data/generate.py (npm run generate). Don't edit it by hand.
+
+source:
+  system: NJDOL public works contractor registry, as we record it
+  owner: Compliance manager
+  reviewed: '2026-11-02'
+notice: Synthetic data — not real rates
+registrations:
+- registration_no: '177511'
+  holder: Garden State Electric LLC
+  fein: 62-9917837
+  periods:
+  - effective: '2026-03-23'
+    expiry: '2027-03-22'
+- registration_no: '326067'
+  holder: Raritan Valley Carpentry Inc.
+  fein: 89-0103318
+  periods:
+  - effective: '2026-07-27'
+    expiry: '2027-07-26'
+- registration_no: '524983'
+  holder: Shore Point Plumbing & Heating LLC
+  fein: 85-2568354
+  periods:
+  - effective: '2026-02-23'
+    expiry: '2027-02-22'
+- registration_no: '525568'
+  holder: Liberty Steel Erectors Inc.
+  fein: 67-6143729
+  periods:
+  - effective: '2026-05-25'
+    expiry: '2027-05-24'
+- registration_no: '903287'
+  holder: Pine Barrens Painting Co.
+  fein: 79-2279772
+  periods:
+  - effective: '2026-07-06'
+    expiry: '2027-07-05'
+- registration_no: '941034'
+  holder: Delaware Valley Masonry LLC
+  fein: 98-5117616
+  periods:
+  - effective: '2025-10-12'
+    expiry: '2026-10-11'
+  - effective: '2026-10-18'
+    expiry: '2027-10-17'
+- registration_no: '915253'
+  holder: Meadowlands Site Services LLC
+  fein: 52-2954586
+  periods:
+  - effective: '2026-04-13'
+    expiry: '2027-04-12'
+- registration_no: '248242'
+  holder: Turnpike Paving & Equipment Inc.
+  fein: 64-8850614
+  periods:
+  - effective: '2026-06-22'
+    expiry: '2027-06-21'
+- registration_no: '739259'
+  holder: Hudson Line Electric LLC
+  fein: 24-7152360
+  periods:
+  - effective: '2026-05-25'
+    expiry: '2027-05-24'
+- registration_no: '976668'
+  holder: Palisades Building Trades Inc.
+  fein: 95-4525143
+  periods:
+  - effective: '2026-03-23'
+    expiry: '2027-03-22'
+- registration_no: '842121'
+  holder: Barnegat Mechanical LLC
+  fein: 98-3334360
+  periods:
+  - effective: '2026-02-16'
+    expiry: '2027-02-15'
+- registration_no: '408998'
+  holder: Ironbound Finishes Co.
+  fein: 31-4675125
+  periods:
+  - effective: '2026-05-18'
+    expiry: '2027-05-17'
+- registration_no: '505210'
+  holder: Navesink Heavy Civil Inc.
+  fein: 72-2970498
+  periods:
+  - effective: '2025-10-12'
+    expiry: '2026-10-11'
+  - effective: '2026-10-18'
+    expiry: '2027-10-17'

@@ -1,0 +1,3833 @@
+[
+  {
+    "case_id": "PC-0101",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-10",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0101-1.csv",
+        "received_on": "2026-09-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0102",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0102-1.csv",
+        "received_on": "2026-09-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0107",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-10",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0107-1.csv",
+        "received_on": "2026-09-09"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0111",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0111-1.csv",
+        "received_on": "2026-09-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0112",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0112-1.csv",
+        "received_on": "2026-09-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0123",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-11",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0123-1.csv",
+        "received_on": "2026-09-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0124",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 1,
+    "week_ending": "2026-09-06",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0124-1.csv",
+        "received_on": "2026-09-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0201",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0201-1.csv",
+        "received_on": "2026-09-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0202",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0202-1.csv",
+        "received_on": "2026-09-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0203",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0203-1.csv",
+        "received_on": "2026-09-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0206",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0206-1.csv",
+        "received_on": "2026-09-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0207",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-17",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0207-1.csv",
+        "received_on": "2026-09-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0209",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0209-1.csv",
+        "received_on": "2026-09-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0211",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0211-1.csv",
+        "received_on": "2026-09-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0212",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-09-17",
+    "accepted_on": "2026-09-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0212-1.csv",
+        "received_on": "2026-09-15"
+      },
+      {
+        "number": 2,
+        "file": "PC-0212-2.csv",
+        "received_on": "2026-09-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0216",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0216-1.csv",
+        "received_on": "2026-09-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0223",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0223-1.csv",
+        "received_on": "2026-09-16"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0224",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 2,
+    "week_ending": "2026-09-13",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0224-1.csv",
+        "received_on": "2026-09-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0301",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-24",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0301-1.csv",
+        "received_on": "2026-09-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0302",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-07",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0302-1.csv",
+        "received_on": "2026-10-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0303",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-26",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0303-1.csv",
+        "received_on": "2026-09-25"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0306",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-27",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0306-1.csv",
+        "received_on": "2026-09-25"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0307",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-24",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0307-1.csv",
+        "received_on": "2026-09-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0309",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-23",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0309-1.csv",
+        "received_on": "2026-09-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0310",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-25",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0310-1.csv",
+        "received_on": "2026-09-24"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0311",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-09-23",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0311-1.csv",
+        "received_on": "2026-09-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0312",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-23",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0312-1.csv",
+        "received_on": "2026-09-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0315",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-24",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0315-1.csv",
+        "received_on": "2026-09-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0316",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-24",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0316-1.csv",
+        "received_on": "2026-09-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0323",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-23",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0323-1.csv",
+        "received_on": "2026-09-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0324",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 3,
+    "week_ending": "2026-09-20",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-26",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0324-1.csv",
+        "received_on": "2026-09-25"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0401",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-03",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0401-1.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0402",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-02",
+    "accepted_on": "2026-10-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0402-1.csv",
+        "received_on": "2026-09-30"
+      },
+      {
+        "number": 2,
+        "file": "PC-0402-2.csv",
+        "received_on": "2026-10-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0403",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-09-30",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0403-1.csv",
+        "received_on": "2026-09-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0406",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-02",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0406-1.csv",
+        "received_on": "2026-10-01"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0407",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-03",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0407-1.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0409",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-01",
+    "accepted_on": "2026-10-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0409-1.csv",
+        "received_on": "2026-09-30"
+      },
+      {
+        "number": 2,
+        "file": "PC-0409-2.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0410",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-12",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0410-1.csv",
+        "received_on": "2026-10-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0411",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-02",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0411-1.csv",
+        "received_on": "2026-09-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0412",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-03",
+    "accepted_on": "2026-10-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0412-1.csv",
+        "received_on": "2026-10-01"
+      },
+      {
+        "number": 2,
+        "file": "PC-0412-2.csv",
+        "received_on": "2026-10-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0413",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-03",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0413-1.csv",
+        "received_on": "2026-10-01"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0415",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0415-1.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0416",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0416-1.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0423",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0423-1.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0424",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 4,
+    "week_ending": "2026-09-27",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0424-1.csv",
+        "received_on": "2026-10-02"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0501",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0501-1.csv",
+        "received_on": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0502",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0502-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0503",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-08",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0503-1.csv",
+        "received_on": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0504",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-11",
+    "accepted_on": "2026-10-15",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0504-1.csv",
+        "received_on": "2026-10-09"
+      },
+      {
+        "number": 2,
+        "file": "PC-0504-2.csv",
+        "received_on": "2026-10-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0506",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-07",
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0506-1.csv",
+        "received_on": "2026-10-06"
+      },
+      {
+        "number": 2,
+        "file": "PC-0506-2.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0507",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0507-1.csv",
+        "received_on": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0509",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-10",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0509-1.csv",
+        "received_on": "2026-10-09"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0510",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-11",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0510-1.csv",
+        "received_on": "2026-10-09"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0511",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0511-1.csv",
+        "received_on": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0512",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0512-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0513",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0513-1.csv",
+        "received_on": "2026-10-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0515",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-10",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0515-1.csv",
+        "received_on": "2026-10-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0516",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-09",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0516-1.csv",
+        "received_on": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0523",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": "2026-10-09",
+    "accepted_on": "2026-10-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0523-1.csv",
+        "received_on": "2026-10-08"
+      },
+      {
+        "number": 2,
+        "file": "PC-0523-2.csv",
+        "received_on": "2026-10-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0524",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 5,
+    "week_ending": "2026-10-04",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-10",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0524-1.csv",
+        "received_on": "2026-10-09"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0601",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-16",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0601-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0602",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0602-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0603",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-15",
+    "accepted_on": "2026-10-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0603-1.csv",
+        "received_on": "2026-10-13"
+      },
+      {
+        "number": 2,
+        "file": "PC-0603-2.csv",
+        "received_on": "2026-10-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0604",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0604-1.csv",
+        "received_on": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0605",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-15",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0605-1.csv",
+        "received_on": "2026-10-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0606",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-17",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0606-1.csv",
+        "received_on": "2026-10-16"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0607",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-15",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0607-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0608",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0608-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0609",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0609-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0610",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-17",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0610-1.csv",
+        "received_on": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0611",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0611-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0612",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-16",
+    "accepted_on": "2026-10-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0612-1.csv",
+        "received_on": "2026-10-15"
+      },
+      {
+        "number": 2,
+        "file": "PC-0612-2.csv",
+        "received_on": "2026-10-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0613",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-15",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0613-1.csv",
+        "received_on": "2026-10-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0615",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-17",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0615-1.csv",
+        "received_on": "2026-10-16"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0616",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-30",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0616-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0623",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0623-1.csv",
+        "received_on": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0624",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 6,
+    "week_ending": "2026-10-11",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-17",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0624-1.csv",
+        "received_on": "2026-10-15"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0701",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0701-1.csv",
+        "received_on": "2026-10-21"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0702",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-24",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0702-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0703",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0703-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0704",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0704-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0705",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-24",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0705-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0706",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-23",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0706-1.csv",
+        "received_on": "2026-10-21"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0707",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0707-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0708",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0708-1.csv",
+        "received_on": "2026-10-21"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0709",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-23",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0709-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0710",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-25",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0710-1.csv",
+        "received_on": "2026-10-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0711",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0711-1.csv",
+        "received_on": "2026-10-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0712",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-25",
+    "accepted_on": "2026-10-28",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0712-1.csv",
+        "received_on": "2026-10-23"
+      },
+      {
+        "number": 2,
+        "file": "PC-0712-2.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0713",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-25",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0713-1.csv",
+        "received_on": "2026-10-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0715",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-23",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0715-1.csv",
+        "received_on": "2026-10-22"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0716",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-25",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0716-1.csv",
+        "received_on": "2026-10-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0723",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0723-1.csv",
+        "received_on": "2026-10-21"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0724",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 7,
+    "week_ending": "2026-10-18",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": "2026-10-23",
+    "accepted_on": "2026-10-27",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0724-1.csv",
+        "received_on": "2026-10-22"
+      },
+      {
+        "number": 2,
+        "file": "PC-0724-2.csv",
+        "received_on": "2026-10-25"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0801",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-30",
+    "accepted_on": "2026-11-02",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0801-1.csv",
+        "received_on": "2026-10-28"
+      },
+      {
+        "number": 2,
+        "file": "PC-0801-2.csv",
+        "received_on": "2026-10-31"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0802",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-30",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0802-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0803",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-28",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0803-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0804",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-31",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0804-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0805",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-29",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0805-1.csv",
+        "received_on": "2026-10-28"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0806",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-31",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0806-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0807",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-28",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0807-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0808",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-28",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0808-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0809",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-31",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0809-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0810",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-01",
+    "accepted_on": "2026-11-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0810-1.csv",
+        "received_on": "2026-10-30"
+      },
+      {
+        "number": 2,
+        "file": "PC-0810-2.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0811",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-31",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0811-1.csv",
+        "received_on": "2026-10-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0812",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-28",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0812-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0813",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-01",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0813-1.csv",
+        "received_on": "2026-10-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0815",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-31",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0815-1.csv",
+        "received_on": "2026-10-29"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0816",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-10-29",
+    "accepted_on": "2026-11-01",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0816-1.csv",
+        "received_on": "2026-10-27"
+      },
+      {
+        "number": 2,
+        "file": "PC-0816-2.csv",
+        "received_on": "2026-10-30"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0817",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-01",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-30",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0817-1.csv",
+        "received_on": "2026-10-28"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0818",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-02",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-30",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0818-1.csv",
+        "received_on": "2026-10-28"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0823",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Returned to sub",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": "2026-11-10",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0823-1.csv",
+        "received_on": "2026-11-08"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0824",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 8,
+    "week_ending": "2026-10-25",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-10-28",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0824-1.csv",
+        "received_on": "2026-10-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0901",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0901-1.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0902",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0902-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0903",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-08",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0903-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0904",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0904-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0905",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-08",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0905-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0906",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-04",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0906-1.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0907",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0907-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0908",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0908-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0909",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0909-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0910",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0910-1.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0911",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0911-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0912",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0912-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0913",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0913-1.csv",
+        "received_on": "2026-11-03"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0914",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-06",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0914-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0915",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-05",
+    "accepted_on": "2026-11-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0915-1.csv",
+        "received_on": "2026-11-04"
+      },
+      {
+        "number": 2,
+        "file": "PC-0915-2.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0916",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0916-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0917",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-01",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0917-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0918",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-02",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0918-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0919",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-03",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0919-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0920",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-04",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0920-1.csv",
+        "received_on": "2026-11-05"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0921",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-05",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0921-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0922",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-06",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-05",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0922-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0923",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-07",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0923-1.csv",
+        "received_on": "2026-11-06"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-0924",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 9,
+    "week_ending": "2026-11-01",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-06",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-0924-1.csv",
+        "received_on": "2026-11-04"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1001",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-14",
+    "accepted_on": "2026-11-17",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1001-1.csv",
+        "received_on": "2026-11-12"
+      },
+      {
+        "number": 2,
+        "file": "PC-1001-2.csv",
+        "received_on": "2026-11-16"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1002",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1002-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1003",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1003-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1004",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-14",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1004-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1005",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-25",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1005-1.csv",
+        "received_on": "2026-11-24"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1006",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-14",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1006-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1007",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1007-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1008",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-11",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1008-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1009",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Returned to sub",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": "2026-11-15",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1009-1.csv",
+        "received_on": "2026-11-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1010",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-15",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1010-1.csv",
+        "received_on": "2026-11-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1011",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1011-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1012",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1012-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1013",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1013-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1014",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-06",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-11",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1014-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1015",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-12",
+    "accepted_on": "2026-11-16",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1015-1.csv",
+        "received_on": "2026-11-10"
+      },
+      {
+        "number": 2,
+        "file": "PC-1015-2.csv",
+        "received_on": "2026-11-14"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1016",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-11",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1016-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1017",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-01",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": "2026-11-12",
+    "accepted_on": "2026-11-15",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1017-1.csv",
+        "received_on": "2026-11-10"
+      },
+      {
+        "number": 2,
+        "file": "PC-1017-2.csv",
+        "received_on": "2026-11-13"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1018",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-02",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-11",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1018-1.csv",
+        "received_on": "2026-11-10"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1019",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-03",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1019-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1020",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-04",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1020-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1021",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-05",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1021-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1022",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-06",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-14",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1022-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1023",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-12",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1023-1.csv",
+        "received_on": "2026-11-11"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1024",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 10,
+    "week_ending": "2026-11-08",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-13",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1024-1.csv",
+        "received_on": "2026-11-12"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1101",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1101-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1102",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1102-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1103",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1103-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1104",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1104-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1105",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-19",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1105-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1106",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Returned to sub",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-29",
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1106-1.csv",
+        "received_on": "2026-11-27"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1107",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-20",
+    "accepted_on": "2026-11-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1107-1.csv",
+        "received_on": "2026-11-18"
+      },
+      {
+        "number": 2,
+        "file": "PC-1107-2.csv",
+        "received_on": "2026-11-21"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1108",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1108-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1109",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1109-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1110",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1110-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1111",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1111-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1112",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": "2026-11-18",
+    "accepted_on": "2026-11-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1112-1.csv",
+        "received_on": "2026-11-17"
+      },
+      {
+        "number": 2,
+        "file": "PC-1112-2.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1113",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-19",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1113-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1114",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-06",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1114-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1115",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1115-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1116",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "marcus.oyelaran@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-20",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1116-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1117",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-01",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1117-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1118",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-02",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1118-1.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1119",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-03",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1119-1.csv",
+        "received_on": "2026-11-19"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1120",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-04",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "dana.whitfield@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-19",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1120-1.csv",
+        "received_on": "2026-11-18"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1121",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-05",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-19",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1121-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1122",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-06",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-18",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1122-1.csv",
+        "received_on": "2026-11-17"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1123",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-07",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-22",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1123-1.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1124",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 11,
+    "week_ending": "2026-11-15",
+    "status": "Accepted",
+    "reviewer": "priya.raman@payrollcheck.example",
+    "returned_on": null,
+    "accepted_on": "2026-11-21",
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1124-1.csv",
+        "received_on": "2026-11-20"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1201",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-01",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1201-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1202",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-02",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1202-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1203",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-03",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1203-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1204",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-04",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1204-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1205",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-05",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1205-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1206",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-06",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1206-1.csv",
+        "received_on": "2026-11-23"
+      },
+      {
+        "number": 2,
+        "file": "PC-1206-2.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1207",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-07",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1207-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1208",
+    "project_id": "PRJ-01",
+    "subcontractor_id": "SUB-08",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1208-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1209",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-01",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1209-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1210",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-02",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1210-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1211",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-03",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1211-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1212",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-04",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1212-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1213",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-05",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1213-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1215",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-07",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1215-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1216",
+    "project_id": "PRJ-02",
+    "subcontractor_id": "SUB-08",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1216-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1217",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-01",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1217-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1218",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-02",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1218-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1219",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-03",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1219-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1220",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-04",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1220-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1221",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-05",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1221-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1222",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-06",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1222-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  },
+  {
+    "case_id": "PC-1224",
+    "project_id": "PRJ-03",
+    "subcontractor_id": "SUB-08",
+    "week": 12,
+    "week_ending": "2026-11-22",
+    "status": "Received",
+    "reviewer": null,
+    "returned_on": null,
+    "accepted_on": null,
+    "submissions": [
+      {
+        "number": 1,
+        "file": "PC-1224-1.csv",
+        "received_on": "2026-11-23"
+      }
+    ]
+  }
+]

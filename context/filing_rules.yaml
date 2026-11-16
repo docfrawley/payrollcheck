@@ -1,0 +1,62 @@
+# The rules for filing a certified payroll on a New Jersey public works project:
+# when it is due, how the payrolls are numbered and what a resubmission is. Before
+# any real use, NJ counsel or a prevailing wage specialist must check them.
+
+source:
+  system: Compliance manual, certified payrolls
+  owner: Compliance manager
+  reviewed: "2026-11-02"
+
+notice: Synthetic data — not real rates
+
+due_days: 10
+
+rules:
+  - rule: due_date
+    name: Due within 10 days of paying the wages
+    applies: >-
+      A certified payroll is due within 10 calendar days of the date the wages for
+      its week were paid, the MW-562's "Date Wages Due & Paid". It is late when it
+      is received more than 10 days after that date, and an expected filing with no
+      payroll is late once that day has passed.
+    cites: N.J.S.A. 34:11-56.29(b)(2); N.J.A.C. 12:60-5.1(c)(1)(i)
+
+  - rule: every_week
+    name: A payroll for every week of the engagement
+    applies: >-
+      A subcontractor files a payroll for every week from its first to its last week
+      on the project, its engagement window. A week with no work on the project is
+      filed as a No Work Week payroll: the certification filled in, with no workers.
+    cites: N.J.S.A. 34:11-56.29(b)(2); MW-562 "No Work Week"
+
+  - rule: sequence
+    name: Payroll numbers in sequence
+    applies: >-
+      A subcontractor numbers its payrolls on a project from 1, one more each week,
+      with no gap. A No Work Week payroll takes its number in the sequence like any
+      other.
+    cites: MW-562 "Payroll No."
+
+  - rule: correction
+    name: A resubmission is a correction
+    applies: >-
+      A payroll sent again for the same project and week ending is a correction of
+      the one before, not a second filing. The latest submission is the payroll of
+      record, and it is checked in full.
+    cites: NJ Wage Hub Contractor User Guide, corrections
+
+  - rule: registration
+    name: Registered on every work date
+    applies: >-
+      A subcontractor needs an active public works contractor registration on every
+      date its workers work on the project. Work on a date with no active
+      registration is a breach, whatever the payroll's filing date.
+    cites: N.J.S.A. 34:11-56.51
+
+  - rule: apprentice_ratio
+    name: Apprentices within the craft's ratio
+    applies: >-
+      A payroll may have no more apprentices of a craft than the craft's ratio
+      allows for the journeymen and foremen of that craft on the same payroll,
+      counted for the week.
+    cites: N.J.A.C. 12:60-6.3
