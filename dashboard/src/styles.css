@@ -2308,3 +2308,57 @@ fieldset.panel legend + * {
     transition: none;
   }
 }
+
+/* Who overrode an exception, when and why, under it. */
+.override-log {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.override-log .small {
+  color: var(--muted);
+}
+
+/* Dismiss or Restore under an exception, on its own inset. */
+.exception > .button,
+.exception > .reason-form {
+  margin-top: 10px;
+}
+
+.exception > .button {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+/* The fields of an exception a reviewer adds, one under another. */
+.add-exception {
+  display: grid;
+  gap: 4px 12px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+}
+
+.add-exception label {
+  font-size: 0.87rem;
+}
+
+.add-exception select,
+.add-exception input,
+.add-exception textarea {
+  font: inherit;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: var(--inset);
+  color: var(--ink);
+}
+
+@container (max-width: 520px) {
+  .add-exception {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

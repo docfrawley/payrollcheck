@@ -1,5 +1,6 @@
 import { Ban, CircleAlert, ListChecks, Scale } from "lucide-react";
-import type { Candidate, Case, ExceptionRecord } from "../api";
+import type { Candidate, Case } from "../api";
+import type { ExceptionRecord } from "../exceptions";
 import { cents, exceptionStatusLabels } from "../format";
 import { exceptionFor, ownJudgment, whereOnPayroll } from "../judgment";
 

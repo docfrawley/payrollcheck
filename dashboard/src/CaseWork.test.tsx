@@ -441,11 +441,25 @@ it("lets any reviewer send a case back to the subcontractor", async () => {
   ]);
 });
 
+it("keeps Sign off disabled while an exception is open", async () => {
+  const { fetchMock } = showCase(awaiting);
+  const review = await reviewPanel();
+  const signOff = review.getByRole("button", { name: "Sign off" });
+  expect(signOff.getAttribute("aria-disabled")).toBe("true");
+  expect(
+    review.getByText(
+      "Sign off waits until nothing is open: dismiss the 2 open exceptions with a reason first.",
+    ),
+  ).toBeDefined();
+  fireEvent.click(signOff);
+  expect(sent(fetchMock, "POST /api/cases/PC-1201/sign-off")).toHaveLength(0);
+});
+
 it("shows why a sign-off was refused", async () => {
-  const { routes } = showCase(awaiting);
+  const { routes } = showCase(clean);
   const review = await reviewPanel();
   const refused =
-    "Case PC-1201 has 2 open exceptions, so it can't be signed off: send it back to its subcontractor";
+    "Case PC-1201 has 1 open exception, so it can't be signed off: dismiss each with a reason, or send it back to its subcontractor";
   routes["POST /api/cases/PC-1201/sign-off"] = new Refusal(409, refused);
   fireEvent.click(review.getByRole("button", { name: "Sign off" }));
   expect((await review.findByRole("alert")).textContent).toBe(refused);

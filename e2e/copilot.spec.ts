@@ -18,9 +18,17 @@ async function ask(page: Page, message: string) {
   await box.press("Enter");
 }
 
+// Where an element is once it's laid out. A busy machine may take a moment to
+// lay the page out, and may render it again as it loads, so this asks until the
+// element has a box.
 async function boxOf(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (!box) throw new Error("Not on the page");
+  const boxes: NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>[] = [];
+  await expect(async () => {
+    const box = await locator.boundingBox();
+    expect(box).not.toBeNull();
+    if (box) boxes.push(box);
+  }).toPass();
+  const [box] = boxes;
   return box;
 }
 

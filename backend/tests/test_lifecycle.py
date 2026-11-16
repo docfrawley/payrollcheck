@@ -136,8 +136,8 @@ def test_sign_off_is_refused_while_an_exception_is_open(dashboard, client):
     refused = sign_off(dashboard, CASE)
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        "Case PC-1201 has 1 open exception, so it can't be signed off: send it "
-        "back to its subcontractor",
+        "Case PC-1201 has 1 open exception, so it can't be signed off: dismiss "
+        "each with a reason, or send it back to its subcontractor",
     )
     assert committed_case(CASE)["status"] == "awaiting_review"
 

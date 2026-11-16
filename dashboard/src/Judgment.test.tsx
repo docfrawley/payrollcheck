@@ -1,6 +1,7 @@
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { Candidate, Case, ExceptionRecord } from "./api";
+import type { Candidate, Case } from "./api";
+import type { ExceptionRecord } from "./exceptions";
 import { awaiting, baseShort, showCase, unsigned } from "./caseTesting";
 import { caseRecord, panel } from "./testing";
 

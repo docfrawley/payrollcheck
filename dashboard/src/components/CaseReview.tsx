@@ -1,6 +1,7 @@
 import { Signature, Undo2 } from "lucide-react";
 import { api, type Case } from "../api";
 import { cents, date } from "../format";
+import { overridable } from "../judgment";
 import { ActionForm } from "./ActionForm";
 
 // Where the case stands, in a sentence.
@@ -42,6 +43,7 @@ export function CaseReview({
 }: Readonly<{ caseRecord: Case; onAnswered: () => void }>) {
   const { case_id: caseId } = caseRecord;
   const awaiting = caseRecord.status === "awaiting_review";
+  const answerable = overridable(caseRecord);
   return (
     <section className="panel" aria-labelledby="review-title">
       <h2 id="review-title">Review</h2>
@@ -61,11 +63,21 @@ export function CaseReview({
           A copy in an evaluation can't be signed off or sent back.
         </p>
       )}
-      {awaiting && !caseRecord.evaluation_id && (
+      {answerable && caseRecord.open_exceptions > 0 && (
+        <p className="muted small">
+          Sign off waits until nothing is open: dismiss{" "}
+          {caseRecord.open_exceptions === 1
+            ? "the open exception"
+            : `the ${String(caseRecord.open_exceptions)} open exceptions`}{" "}
+          with a reason first.
+        </p>
+      )}
+      {answerable && (
         <div className="review-answers">
           <ActionForm
             label="Sign off"
             icon={<Signature />}
+            ready={caseRecord.open_exceptions === 0}
             action={() => api.signOffCase(caseId).then(onAnswered)}
           />
           <ActionForm

@@ -30,6 +30,7 @@ SCOPED = {
 }
 # The ids that aren't of anything on a project, with why scope doesn't cover them.
 UNSCOPED = {
+    "exception_id": "An exception is found only on its own case, which is scoped",
     "run_id": "A run works the whole queue; its cases are filtered to the scope",
     "round_id": "The improver's rounds are the compliance manager's",
     "proposal_id": "The improver's proposals are the compliance manager's",

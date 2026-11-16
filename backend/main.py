@@ -3,13 +3,13 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from mangum import Mangum
 from sqlalchemy import Connection, RowMapping, func, insert, select, update
 
-from backend import agent_api, dashboard
+from backend import agent_api, dashboard, overrides
 from backend.business_date import business_date
 from backend.candidates import keep_findings
 from backend.configuration import router as configuration
@@ -31,6 +31,7 @@ from backend.dependencies import (
     Database,
     ReviewerOrAgent,
     SignedIn,
+    SignedInReviewer,
 )
 from backend.history import payroll_history
 from backend.improvement import router as improvement
@@ -45,9 +46,12 @@ from backend.models import (
     FailureRequest,
     ModelCall,
     ModelCallRequest,
+    NewException,
     NewStep,
+    OverrideRequest,
     PayrollHistory,
     Reviewer,
+    RuleEntry,
     ScreeningFlagRequest,
     StartRequest,
     Status,
@@ -56,9 +60,11 @@ from backend.models import (
     WorkTime,
     WorkTimeRequest,
 )
+from backend.overrides import Overriding
 from backend.projects import router as projects
 from backend.reports import record_report
 from backend.round_state import round_row, why_no_case_starts
+from backend.rule_codes import RULES
 from backend.runs import router as runs
 from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
 from backend.seeding import seed
@@ -73,8 +79,8 @@ NOT_RECEIVED = "Case {case_id} is not Received"
 NOT_AWAITING_REVIEW = "Case {case_id} is not awaiting review"
 A_COPY = "Case {case_id} is a copy in an evaluation and can't be {answered}"
 STILL_OPEN = (
-    "Case {case_id} has {count} open {exceptions}, so it can't be signed off: send "
-    "it back to its subcontractor"
+    "Case {case_id} has {count} open {exceptions}, so it can't be signed off: "
+    "dismiss each with a reason, or send it back to its subcontractor"
 )
 
 
@@ -137,11 +143,22 @@ def awaiting_review(
     return case
 
 
+def hold_for_review(db: Connection, case_id: str) -> None:
+    """Hold a case awaiting review while a reviewer overrides its exceptions, by
+    taking its row's lock with a conditional update, or raise a 409. A sign-off
+    takes the same lock first, so the two never interleave: whichever comes second
+    finds what the first one did."""
+    held = move_case(db, case_id, Status.AWAITING_REVIEW, Status.AWAITING_REVIEW)
+    if not held:
+        raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
+
+
 def review(
     db: Connection, case_id: str, outcome: Status, reviewer: Reviewer, scope: Scope
 ) -> Case:
     """Move a case awaiting review to the reviewer's outcome, for the first of two
-    answers at the same moment, or raise a 409."""
+    answers at the same moment, or raise a 409. The move takes the case's row's
+    lock, so a check made after it sees every override made before it."""
     decided = move_case(
         db,
         case_id,
@@ -378,6 +395,7 @@ def sign_off_case(
 ) -> Case:
     """Sign off a case awaiting review with no open exceptions, which accepts it."""
     case = awaiting_review(db, case_id, scope, "signed off")
+    accepted = review(db, case_id, Status.ACCEPTED, reviewer, scope)
     query = select(func.count()).where(
         exceptions.c.case_id == case_id,
         exceptions.c.submission_no == case["latest_submission_no"],
@@ -385,12 +403,13 @@ def sign_off_case(
     )
     still_open = db.execute(query).scalar_one()
     if still_open:
+        # Raised after the move, which this request's rollback undoes.
         exceptions_ = "exception" if still_open == 1 else "exceptions"
         message = STILL_OPEN.format(
             case_id=case_id, count=still_open, exceptions=exceptions_
         )
         raise HTTPException(409, message)
-    return review(db, case_id, Status.ACCEPTED, reviewer, scope)
+    return accepted
 
 
 @app.post("/api/cases/{case_id}/send-back", operation_id="send_back_case")
@@ -400,6 +419,73 @@ def send_back_case(
     """Send a case awaiting review back to its subcontractor, as Returned to sub."""
     awaiting_review(db, case_id, scope, "sent back")
     return review(db, case_id, Status.RETURNED_TO_SUB, reviewer, scope)
+
+
+@app.get("/api/rules", operation_id="list_rules", dependencies=[SignedInReviewer])
+def list_rules() -> list[RuleEntry]:
+    """List the rule catalogue: each rule's check, severity, money and where found."""
+    return [
+        RuleEntry.model_validate(rule._asdict() | {"rule": code})
+        for code, rule in RULES.items()
+    ]
+
+
+OVERRIDDEN = "overridden"
+
+
+def overriding(
+    case_id: str, reviewer: SignedIn, scope: Scoped, db: Database
+) -> Overriding:
+    """Who overrides the exceptions of a case awaiting review, holding the case for
+    the request, or a 404 or a 409 for a case they can't override: one not
+    awaiting review, or an evaluation's copy."""
+    case = awaiting_review(db, case_id, scope, OVERRIDDEN)
+    hold_for_review(db, case_id)
+    return Overriding(case=case, reviewer=reviewer, scope=scope)
+
+
+Overrides = Annotated[Overriding, Depends(overriding)]
+
+
+@app.post(
+    "/api/cases/{case_id}/exceptions/{exception_id}/dismissal",
+    operation_id="dismiss_exception",
+)
+def dismiss_exception(
+    case_id: str,
+    exception_id: int,
+    request: OverrideRequest,
+    by: Overrides,
+    db: Database,
+) -> Case:
+    """Dismiss an open exception of the latest submission, with why, as an override."""
+    overrides.dismiss(db, by, exception_id, request.reason)
+    return case_in_full(db, case_id, by.scope)
+
+
+@app.post(
+    "/api/cases/{case_id}/exceptions/{exception_id}/restoration",
+    operation_id="restore_exception",
+)
+def restore_exception(
+    case_id: str,
+    exception_id: int,
+    request: OverrideRequest,
+    by: Overrides,
+    db: Database,
+) -> Case:
+    """Reopen a dismissed exception of the latest submission, with why."""
+    overrides.restore(db, by, exception_id, request.reason)
+    return case_in_full(db, case_id, by.scope)
+
+
+@app.post("/api/cases/{case_id}/exceptions", operation_id="add_exception")
+def add_exception(
+    case_id: str, request: NewException, by: Overrides, db: Database
+) -> Case:
+    """Add an exception the agent missed to the latest submission, with why."""
+    overrides.add(db, by, request)
+    return case_in_full(db, case_id, by.scope)
 
 
 # After every route, so the dashboard's build only answers what no route does.

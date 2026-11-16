@@ -145,7 +145,7 @@ Stage 3 removed it: the paused graph, the resume, the sent-back records and thei
 ### The modules, and how they depend
 
 - **`scope.py`** uses `database.py` and `models.py`. `lookups.py` uses it. The routers take their dependencies from `dependencies.py` and their scope from `scope.py`.
-- **`overrides.py`, `notices.py` and `outbox.py` each use `database.py`, `lookups.py` and `rule_codes.py`.** They don't use one another.
+- **`overrides.py`, `notices.py` and `outbox.py` each use `database.py` and `models.py`, and `overrides.py` `rule_codes.py`.** They don't use one another. The routes find the case in scope first, and hand it on. (As built, `overrides.py` takes who is overriding which case as one `Overriding`, which a route's dependency makes.)
   - `main.py`'s routes call them.
   - Send back, in `main.py`, calls `notices.py` and then `outbox.py`.
 - **`intake.py`** uses `lookups.py` for the scoped project and reopens with its own move.
@@ -239,22 +239,22 @@ Success criteria:
   - flagged and agent-failed cases are worked the same way
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_overrides.py --no-cov` passes:
+- [x] `uv run pytest backend/tests/test_overrides.py --no-cov` passes:
   - **logged:** a dismissal, an addition and a restoring each logged with reviewer, time, kind and reason, never edited or deleted
   - **refusals:** each refusal in the design, with its message; an override on a case not Awaiting review, on an earlier submission or on a copy refused
   - **two at once:** two dismissals of the same exception at once record one
   - **the labels:** unchanged after every kind of override, and no route path reads or writes them
   - **by date:** `overrides_between` returns those in its window, in order
-- [ ] The sign-off rule holds:
+- [x] The sign-off rule holds:
   - Sign off is refused with a 409 saying "1 open exception" while one is open, and accepted once it's dismissed
   - two sign-offs at once accept the case once
   - a flagged case with one exception added by hand signs off only after it's dismissed
-- [ ] The agent's key is refused with a 403 on `dismiss_exception`, `restore_exception` and `add_exception`.
-- [ ] vitest:
+- [x] The agent's key is refused with a 403 on `dismiss_exception`, `restore_exception` and `add_exception`.
+- [x] vitest:
   - the dismiss, restore and add forms send their requests and show the refusals
   - the money field appears only for a money rule
   - Sign off is disabled with the count
-- [ ] `npm run check` green. Reviewed, findings fixed, committed.
+- [x] `npm run check` green. Reviewed, findings fixed, committed.
 
 ### Phase 4: the notice, Send back and the outbox
 

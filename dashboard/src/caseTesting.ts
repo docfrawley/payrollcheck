@@ -1,7 +1,8 @@
 // A case as the backend gives it to the case page, with its exceptions, its
 // notice and the agent's steps, for the page's tests.
 
-import type { Case, ExceptionRecord, Step } from "./api";
+import type { Case, Step } from "./api";
+import type { ExceptionRecord } from "./exceptions";
 import type { Source } from "./sources";
 import { caseRecord, panel, renderAt, type Routes, stubApi } from "./testing";
 

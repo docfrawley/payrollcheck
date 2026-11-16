@@ -210,4 +210,5 @@ export const caseRecord: Case = {
   candidates: [],
   checks_run: [],
   notice: null,
+  overrides: [],
 };

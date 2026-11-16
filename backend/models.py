@@ -45,6 +45,15 @@ class ExceptionStatus(StrEnum):
     SUPERSEDED = "superseded"
 
 
+class OverrideKind(StrEnum):
+    """A reviewer's correction of an exception report: an exception dismissed, one
+    added, or a dismissal undone."""
+
+    DISMISSED = "dismissed"
+    ADDED = "added"
+    RESTORED = "restored"
+
+
 class RunKind(StrEnum):
     DISPATCH = "dispatch"
     EVALUATION = "evaluation"
@@ -273,6 +282,48 @@ class ExceptionRecord(BaseModel):
     status: ExceptionStatus
 
 
+class Override(BaseModel):
+    """A reviewer's override of an exception, never edited or deleted."""
+
+    override_id: int
+    exception_id: int
+    submission_no: int
+    kind: OverrideKind
+    reviewer_id: str
+    reviewer_name: str
+    reason: str
+    created_at: str
+
+
+class OverrideRequest(BaseModel):
+    reason: Text = Field(description="Why, for the log")
+
+
+class NewException(BaseModel):
+    """An exception a reviewer adds: a rule from the catalogue, the worker and line
+    for a worker's rule, the shortfall in cents for a rule that carries money, and
+    why."""
+
+    rule: RuleCode
+    worker_id: str | None
+    line_no: int | None
+    expected: Text
+    actual: Text
+    shortfall_cents: int | None
+    reason: Text
+
+
+class RuleEntry(BaseModel):
+    """A rule of the catalogue, as the dashboard's form to add an exception offers
+    it."""
+
+    rule: RuleCode
+    check: CheckName
+    severity: Severity
+    money: bool
+    worker: bool = Field(description="Found on a worker's line, not the payroll")
+
+
 class Notice(BaseModel):
     submission_no: int
     draft: str
@@ -309,6 +360,7 @@ class Case(CaseSummary):
     candidates: list[Candidate] = Field(description="The current attempt's")
     checks_run: list[CheckName] = Field(description="By the current attempt")
     notice: Notice | None = Field(description="The latest submission's draft")
+    overrides: list[Override] = Field(description="Oldest first")
 
 
 class UploadRequest(BaseModel):

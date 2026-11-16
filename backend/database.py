@@ -234,18 +234,24 @@ exceptions = Table(
     Column("candidate_id", Integer, ForeignKey("candidates.candidate_id")),
     Column("status", Text, nullable=False),
 )
-# A reviewer's dismissal or addition of an exception. Stage 4 fills it.
+# A reviewer's dismissal, addition or restoring of an exception, never edited or
+# deleted, read by date for the improver.
 overrides = Table(
     "overrides",
     metadata,
     Column("override_id", Integer, primary_key=True),
-    Column("exception_id", Integer, ForeignKey("exceptions.exception_id")),
+    Column(
+        "exception_id",
+        Integer,
+        ForeignKey("exceptions.exception_id"),
+        nullable=False,
+    ),
     Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
     Column("submission_no", Integer, nullable=False),
     Column("kind", Text, nullable=False),
     Column("reviewer_id", Text, ForeignKey("reviewers.reviewer_id"), nullable=False),
     Column("reason", Text, nullable=False),
-    Column("created_at", Text, nullable=False),
+    Column("created_at", Text, nullable=False, index=True),
 )
 # Each submission's send-back notice: the agent's draft, and from stage 4 the
 # reviewer's edit and who sent it.
