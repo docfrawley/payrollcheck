@@ -113,6 +113,19 @@ it("shows a finished dispatch with its summary", async () => {
   expect(flagged.getAttribute("href")).toBe("/cases/PC-1208");
 });
 
+it("counts the cases a dispatch worked on other projects", async () => {
+  showQueue({ ...finished, other_projects: 8 });
+  const panel = await dispatchPanel();
+  expect(
+    await panel.findByText("And 8 cases on other projects."),
+  ).toBeDefined();
+  cleanup();
+  showQueue({ ...finished, cases: [], other_projects: 1 });
+  const none = await dispatchPanel();
+  expect(await none.findByText("1 case on other projects.")).toBeDefined();
+  expect(none.queryByText(/^No cases in this dispatch/)).toBeNull();
+});
+
 it("shows a stopped dispatch", async () => {
   showQueue({ ...running, status: "stopped" });
   const panel = await dispatchPanel();

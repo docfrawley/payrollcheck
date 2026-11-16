@@ -233,7 +233,10 @@ export interface RunDetails {
 export interface Run extends RunDetails {
   evaluation_set: EvaluationSet | null;
   summary: DispatchSummary | null;
+  // Those in the reviewer's scope.
   cases: RunCase[];
+  // Its cases on projects outside the reviewer's scope.
+  other_projects: number;
 }
 
 export interface Measures {

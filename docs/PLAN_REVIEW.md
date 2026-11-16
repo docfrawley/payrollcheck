@@ -52,6 +52,8 @@ Every phase ends with `npm run check` green and coverage of at least 80%. Tests 
 17. **A reviewer keeps the appearance.** Made while building phase 1. The light or dark appearance is the browser's own, and it lived on the Settings page. So a reviewer's account menu has **Appearance** in place of Settings. It leads to `/settings`, where a reviewer sees only the appearance choice and "Only the compliance manager can see the settings", and nothing is read from the backend. The Improvement and recipe pages show a reviewer only their title and the not-allowed line.
 18. **The Copilot's starts default to 3 payroll agents.** Made while building phase 1. With `get_settings` now the compliance manager's, the Copilot can no longer read the settings' number for a start the reviewer didn't size. Its `start_dispatch` and `start_evaluation` now default in code to 3, the number the queue page first offers.
 
+19. **A reviewer's dispatch time is the dispatch's own.** Made while building phase 6. Each case shows its own seconds. The dispatch's "took" is its time from start to finish for everyone, since payroll agents working at once don't add up to a duration.
+
 ## Design
 
 ### The scope

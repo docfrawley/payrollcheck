@@ -618,7 +618,8 @@ class RunDetails(BaseModel):
 class Run(RunDetails):
     evaluation_set: EvaluationSet | None
     summary: DispatchSummary | None
-    cases: list[RunCase]
+    cases: list[RunCase] = Field(description="Those in the caller's scope")
+    other_projects: int = Field(description="Its cases on projects outside the scope")
 
 
 class StartEvaluationRequest(StartDispatchRequest):

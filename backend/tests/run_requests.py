@@ -28,9 +28,9 @@ def start_dispatch(client, agents=3, email=MARCUS):
     )
 
 
-def create_dispatch(client, agents=3):
+def create_dispatch(client, agents=3, email=DANA):
     """Start a dispatch as a reviewer does, which the app creates, and return it."""
-    return started_run(client, start_dispatch(client, agents, DANA))
+    return started_run(client, start_dispatch(client, agents, email))
 
 
 def dispatch_of(client, *case_ids):

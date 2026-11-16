@@ -22,6 +22,7 @@ from backend.tests.case_requests import sign_off
 from backend.tests.dashboard_reads import steps_of
 from backend.tests.rows import run_heard
 from backend.tests.run_requests import latest_dispatch
+from backend.tests.sign_in import DANA, MARCUS, PRIYA, signed_in
 from backend.tests.uploads import seeded_payroll, upload
 
 
@@ -298,3 +299,36 @@ def test_a_reopened_case_is_worked_afresh_on_a_new_thread(client):
         first["thread_id"],
         again["thread_id"],
     ]
+
+
+def test_a_dispatch_marcus_starts_works_the_whole_queue_and_shows_him_his_own(
+    client,
+):
+    """The week-12 wave's 22 Received cases are on all three projects; Marcus sees
+    his two projects' cases, with their cost and time, and a count of the rest."""
+    received = [c["case_id"] for c in client.get("/api/cases").json()
+                if c["status"] == "received"]  # fmt: skip
+    assert len(received) == 22
+    lines = dispatch(swarm({case_id: work() for case_id in received}), email=MARCUS)
+    assert len(lines) == 22
+    mine = read_as(client, MARCUS)
+    whole = read_as(client, DANA)
+    assert len(whole["cases"]) == 22
+    assert whole["other_projects"] == 0
+    road = {c["case_id"] for c in whole["cases"] if c["project_id"] == "PRJ-03"}
+    assert {c["project_id"] for c in mine["cases"]} == {"PRJ-01", "PRJ-02"}
+    assert mine["other_projects"] == len(road) > 0
+    assert len(mine["cases"]) + mine["other_projects"] == 22
+    assert mine["model_cost"] == pytest.approx(
+        sum(c["model_cost"] for c in mine["cases"])
+    )
+    assert all(c["seconds"] > 0 for c in mine["cases"])
+    summary = mine["summary"]
+    assert road.isdisjoint(case for part in summary.values() for case in part)
+    run = client.get(f"/api/runs/{mine['run_id']}", headers=signed_in(PRIYA)).json()
+    assert {c["project_id"] for c in run["cases"]} == {"PRJ-03"}
+    assert run["other_projects"] == 22 - len(road)
+
+
+def read_as(client, email):
+    return client.get("/api/dispatches/latest", headers=signed_in(email)).json()
