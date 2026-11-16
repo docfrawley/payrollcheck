@@ -27,7 +27,7 @@ def test_an_evaluation_the_round_cant_afford_is_refused(client):
     luna_at_two_tenths_of_a_cent_a_case(client)
     round_id = create_round(client).json()["round_id"]
     approved_change(client, round_id)
-    improver_call(client, round_id, 0.40)
+    improver_call(client, round_id, 4.90)
 
     refused = round_evaluation(client, round_id)
     assert (refused.status_code, refused.json()["detail"]) == (
@@ -51,11 +51,12 @@ def test_a_model_with_no_runs_is_estimated_by_its_prices(client):
         model="google/gemini-3.5-flash-lite",
         reasoning_effort="minimal",
     )
+    improver_call(client, round_id, 1.50)
     refused = round_evaluation(client, round_id)
     # Five times Luna's cost a case, on the 403 cases of the three evaluations:
     # Gemini's output price is five times Luna's.
     assert refused.json()["detail"] == (
-        "The evaluations could cost about $4.03, and $0.50 of the round's limit is left"
+        "The evaluations could cost about $4.03, and $3.50 of the round's limit is left"
     )
 
 
@@ -65,13 +66,13 @@ def test_no_new_case_starts_once_the_limit_is_spent(client):
     run = round_evaluation(client, round_id).json()
     first, second = (copy["case_id"] for copy in run["cases"][:2])
     start(client, first)
-    improver_call(client, round_id, 0.30)
-    record_call(client, first, run["run_id"], cost=0.20)
+    improver_call(client, round_id, 3.00)
+    record_call(client, first, run["run_id"], cost=2.00)
 
     refused = start(client, second)
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        "Round 1 has spent its limit of $0.50",
+        "Round 1 has spent its limit of $5.00",
     )
     assert client.get(f"/api/cases/{second}").json()["status"] == "received"
     assert finish(client, run["run_id"]).json()["status"] == "stopped"
@@ -86,7 +87,7 @@ def test_no_new_case_starts_once_the_limit_is_spent(client):
 def test_a_first_evaluation_cut_short_stops_the_round(client):
     round_id = create_round(client).json()["round_id"]
     run = round_evaluation(client, round_id).json()
-    improver_call(client, round_id, 0.50)
+    improver_call(client, round_id, 5.00)
     cut = finish(client, run["run_id"]).json()
     assert (cut["status"], cut["stopped_because"]) == (
         "stopped",
@@ -98,4 +99,4 @@ def test_a_first_evaluation_cut_short_stops_the_round(client):
     assert listed["stopped_because"] == (
         "The spending limit cut short its first evaluations"
     )
-    assert listed["cost"] == 0.5
+    assert (listed["cost"], listed["spending_limit"]) == (5.0, 5.0)

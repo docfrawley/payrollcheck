@@ -74,6 +74,8 @@ const measures: Measures = {
   shortfall_accuracy: 0.95,
   screening_caught: 1,
   screening_expected: 1,
+  notice_score: null,
+  notices_graded: 0,
   model_cost_per_case: 0.0125,
   seconds_per_case: 40,
   run_seconds: 161,

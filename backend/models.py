@@ -439,18 +439,27 @@ class Step(BaseModel):
 
 
 class MeasureSettings(BaseModel):
-    """A setting for each measure the rule compares: the catch rate as a
-    difference, cost and time per case as fractions of the old value."""
+    """A setting for each measure the rule compares: the catch rate, false
+    exceptions per 100 payrolls, shortfall accuracy and the notice score as
+    differences in their own units, cost and time per case as fractions of the old
+    value."""
 
     catch_rate: float = Field(ge=0)
+    false_per_100: float = Field(ge=0)
+    shortfall_accuracy: float = Field(ge=0)
+    notice_score: float = Field(ge=0)
     cost_per_case: float = Field(ge=0)
     seconds_per_case: float = Field(ge=0)
 
 
 class Objectives(BaseModel):
-    """The floors a new version must meet on the held-out set."""
+    """What a new version must meet on the held-out set: floors on the catch rate,
+    shortfall accuracy and notice score, and a ceiling on false exceptions."""
 
     catch_rate: float = Field(ge=0, le=1)
+    false_per_100: float = Field(ge=0)
+    shortfall_accuracy: float = Field(ge=0, le=1)
+    notice_score: float = Field(ge=0, le=1)
 
 
 class SettingsValues(BaseModel):
@@ -637,6 +646,11 @@ class Measures(BaseModel):
     )
     screening_caught: int
     screening_expected: int
+    notice_score: float | None = Field(
+        description="The judge's average score of the graded notices, or null "
+        "with none graded"
+    )
+    notices_graded: int
     model_cost_per_case: float
     seconds_per_case: float
     run_seconds: float | None

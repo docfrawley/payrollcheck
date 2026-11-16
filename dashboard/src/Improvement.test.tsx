@@ -334,7 +334,7 @@ it("lists the rounds with their scores, verdicts, reviews and cost", async () =>
   expect(reviews).toContain("Dana Whitfield rejected the change");
   expect(reviews).toContain("Keep each rule general");
   expect(reviews).toContain("Dana Whitfield approved the change");
-  expect(cells[column("Cost")].textContent).toBe("$0.1234 of $0.50");
+  expect(cells[column("Cost")].textContent).toBe("$0.1234 of $5.00");
   expect(cells[column("Cost")].className).toContain("num");
 });
 

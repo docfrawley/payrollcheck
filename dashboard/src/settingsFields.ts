@@ -1,11 +1,12 @@
 import { MOST_AGENTS } from "./components/AgentsChoice";
-import type { Settings, SettingsValues } from "./api";
+import type { Settings, SettingsValues } from "./settings";
 import { money } from "./format";
 
 // How the Settings page shows each setting: its group, its label, its unit and
-// its limits. The catch rate and the fractions of cost and time are kept from
-// 0 to 1 and typed as percentages.
-export type Unit = "dollars" | "percent" | "agents";
+// its limits. The catch rate, shortfall accuracy and the fractions of cost and
+// time are kept from 0 to 1 and typed as percentages; the notice score is kept
+// and typed from 0 to 1; false exceptions are a number per 100 payrolls.
+export type Unit = "dollars" | "percent" | "score" | "per100" | "agents";
 
 export interface SettingField {
   id: string;
@@ -28,6 +29,8 @@ export const UNITS: Record<
 > = {
   dollars: { prefix: "$", min: 0.01, step: 0.01 },
   percent: { suffix: "%", min: 0, step: 0.1 },
+  score: { min: 0, step: 0.01 },
+  per100: { suffix: "per 100 payrolls", min: 0, step: 0.1 },
   agents: { min: 1, step: 1 },
 };
 
@@ -43,11 +46,11 @@ export type SettingGroup = (typeof settingGroups)[number];
 export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
   objectives: {
     title: "Objectives on the held-out set",
-    lead: "The lowest scores a new version of the payroll agent can have and be kept.",
+    lead: "What a new version of the payroll agent must meet to be kept: the lowest catch rate, shortfall accuracy and notice score, and the most false exceptions.",
   },
   noise: {
     title: "Noise",
-    lead: "The smallest improvement that counts. The catch rate is in points; cost and time are a share of the old value.",
+    lead: "The smallest improvement that counts. The catch rate and shortfall accuracy are in points, false exceptions per 100 payrolls and the notice score in their own units; cost and time are a share of the old value.",
   },
   tolerance: {
     title: "Tolerance",
@@ -64,12 +67,68 @@ export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
 };
 
 type Measure = keyof SettingsValues["noise"];
+type Objective = keyof SettingsValues["objectives"];
 
-const MEASURES: { measure: Measure; label: string; unit: Unit }[] = [
-  { measure: "catch_rate", label: "Catch rate", unit: "percent" },
+// The measures the rule weighs, each with its unit and, for the four with an
+// objective, whether a version must score at least or at most it.
+const MEASURES: {
+  measure: Measure;
+  label: string;
+  unit: Unit;
+  objective?: { name: Objective; direction: "at least" | "at most" };
+}[] = [
+  {
+    measure: "catch_rate",
+    label: "Catch rate",
+    unit: "percent",
+    objective: { name: "catch_rate", direction: "at least" },
+  },
+  {
+    measure: "false_per_100",
+    label: "False exceptions",
+    unit: "per100",
+    objective: { name: "false_per_100", direction: "at most" },
+  },
+  {
+    measure: "shortfall_accuracy",
+    label: "Shortfall accuracy",
+    unit: "percent",
+    objective: { name: "shortfall_accuracy", direction: "at least" },
+  },
+  {
+    measure: "notice_score",
+    label: "Notice score",
+    unit: "score",
+    objective: { name: "notice_score", direction: "at least" },
+  },
   { measure: "cost_per_case", label: "Model cost per case", unit: "percent" },
   { measure: "seconds_per_case", label: "Time per case", unit: "percent" },
 ];
+
+// The most a share or a score can be, as typed.
+const MOST: Partial<Record<Unit, number>> = { percent: 100, score: 1 };
+
+function objectiveFields(): SettingField[] {
+  return MEASURES.flatMap(({ label, unit, objective }) =>
+    objective
+      ? [
+          {
+            id: `objectives.${objective.name}`,
+            group: "objectives" as const,
+            label: `${label} ${objective.direction}`,
+            name: `${label} objective`,
+            unit,
+            max: MOST[unit],
+            get: (values: SettingsValues) => values.objectives[objective.name],
+            set: (values: SettingsValues, value: number) => ({
+              ...values,
+              objectives: { ...values.objectives, [objective.name]: value },
+            }),
+          },
+        ]
+      : [],
+  );
+}
 
 function measureFields(group: "noise" | "tolerance"): SettingField[] {
   return MEASURES.map(({ measure, label, unit }) => ({
@@ -87,19 +146,7 @@ function measureFields(group: "noise" | "tolerance"): SettingField[] {
 }
 
 export const SETTING_FIELDS: SettingField[] = [
-  {
-    id: "objectives.catch_rate",
-    group: "objectives",
-    label: "Catch rate at least",
-    name: "Catch rate objective",
-    unit: "percent",
-    max: 100,
-    get: (values) => values.objectives.catch_rate,
-    set: (values, value) => ({
-      ...values,
-      objectives: { ...values.objectives, catch_rate: value },
-    }),
-  },
+  ...objectiveFields(),
   ...measureFields("noise"),
   ...measureFields("tolerance"),
   {
@@ -123,19 +170,22 @@ export const SETTING_FIELDS: SettingField[] = [
   },
 ];
 
-// A setting as a reviewer types it: dollars to the cent, and shares as
-// percentages to a tenth.
+// A setting as a reviewer types it: dollars to the cent, shares as percentages
+// to a tenth, a score to a hundredth and false exceptions to a tenth.
 export function toInput(unit: Unit, value: number): string {
-  if (unit === "dollars") return value.toFixed(2);
+  if (unit === "dollars" || unit === "score") return value.toFixed(2);
   if (unit === "percent") return String(Math.round(value * 1000) / 10);
+  if (unit === "per100") return String(Math.round(value * 10) / 10);
   return String(value);
 }
 
 // A setting as typed, rounded to what the page shows.
 export function fromInput(unit: Unit, input: string): number {
   const value = Number(input);
-  if (unit === "dollars") return Math.round(value * 100) / 100;
+  if (unit === "dollars" || unit === "score")
+    return Math.round(value * 100) / 100;
   if (unit === "percent") return Math.round(value * 10) / 1000;
+  if (unit === "per100") return Math.round(value * 10) / 10;
   return Math.round(value);
 }
 
@@ -143,7 +193,9 @@ export function fromInput(unit: Unit, input: string): number {
 function shown(unit: Unit, value: number): string {
   if (unit === "dollars") return money(value);
   if (unit === "percent") return `${toInput(unit, value)}%`;
-  return String(value);
+  if (unit === "per100")
+    return `${toInput(unit, value)} ${UNITS.per100.suffix ?? ""}`;
+  return toInput(unit, value);
 }
 
 export type Inputs = Record<string, string>;

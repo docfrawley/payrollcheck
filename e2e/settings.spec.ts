@@ -5,6 +5,16 @@ import { REVIEWERS } from "./reviewers";
 
 test("a compliance manager changes the spending limit", async ({ page }) => {
   await page.goto("/settings");
+  const objectives = page.getByRole("group", {
+    name: "Objectives on the held-out set",
+  });
+  await expect(objectives.getByLabel("False exceptions at most")).toHaveValue(
+    "2.5",
+  );
+  await expect(objectives.getByText("per 100 payrolls")).toBeVisible();
+  await expect(objectives.getByLabel("Notice score at least")).toHaveValue(
+    "0.80",
+  );
   const limit = page
     .getByRole("group", { name: "Spending" })
     .getByLabel("Spending limit for each round");
@@ -14,7 +24,7 @@ test("a compliance manager changes the spending limit", async ({ page }) => {
 
   await save.click();
   await expect(
-    dialog.getByText("Spending limit for each round: $0.50 to $0.75"),
+    dialog.getByText("Spending limit for each round: $5.00 to $0.75"),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();

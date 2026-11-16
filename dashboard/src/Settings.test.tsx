@@ -6,7 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { SettingsPage } from "./api";
+import type { SettingsPage } from "./settings";
 import {
   wholeText,
   Refusal,
@@ -68,17 +68,37 @@ it("shows each setting with its unit and when it last changed", async () => {
   const catchRate = group("Objectives on the held-out set").getByLabelText(
     "Catch rate at least",
   );
-  expect(catchRate).toHaveProperty("value", "60");
+  expect(catchRate).toHaveProperty("value", "92");
   expect(catchRate.getAttribute("max")).toBe("100");
-  expect(group("Noise").getByLabelText("Catch rate")).toHaveProperty(
+  const objectives = group("Objectives on the held-out set");
+  const falseAtMost = objectives.getByLabelText("False exceptions at most");
+  expect(falseAtMost).toHaveProperty("value", "2.5");
+  expect(
+    document.getElementById(falseAtMost.getAttribute("aria-describedby") ?? "")
+      ?.textContent,
+  ).toBe("per 100 payrolls");
+  expect(
+    objectives.getByLabelText("Shortfall accuracy at least"),
+  ).toHaveProperty("value", "100");
+  const noticeAtLeast = objectives.getByLabelText("Notice score at least");
+  expect(noticeAtLeast).toHaveProperty("value", "0.80");
+  expect(noticeAtLeast.getAttribute("max")).toBe("1");
+  const noise = group("Noise");
+  expect(noise.getByLabelText("Catch rate")).toHaveProperty("value", "5");
+  expect(noise.getByLabelText("False exceptions")).toHaveProperty("value", "1");
+  expect(noise.getByLabelText("Shortfall accuracy")).toHaveProperty(
     "value",
-    "10",
+    "0",
   );
+  expect(noise.getByLabelText("Notice score")).toHaveProperty("value", "0.10");
+  expect(
+    group("Tolerance").getByLabelText("Model cost per case"),
+  ).toHaveProperty("value", "100");
   expect(screen.queryByText(/Approval limit/)).toBeNull();
   expect(screen.queryByText("2026-11-23")).toBeNull();
   const history = await panel("Changes");
   expect(
-    history.getByText("Spending limit for each round: $0.50 to $0.75"),
+    history.getByText("Spending limit for each round: $5.00 to $0.75"),
   ).toBeDefined();
   const models = await panel("Models allowed");
   expect(models.getByText("$0.10 in, $0.50 out").className).toContain("num");
@@ -94,7 +114,7 @@ it("asks before saving, listing each change, and sends every setting", async () 
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   const dialog = within(await screen.findByRole("dialog"));
   expect(
-    dialog.getByText("Spending limit for each round: $0.50 to $0.75"),
+    dialog.getByText("Spending limit for each round: $5.00 to $0.75"),
   ).toBeDefined();
 
   fireEvent.click(dialog.getByRole("button", { name: "Cancel" }));
@@ -183,4 +203,45 @@ it("keeps the appearance chosen in this browser", async () => {
   expect(localStorage.getItem("payrollcheck-appearance")).toBe("dark");
   fireEvent.click(group("Appearance").getByLabelText("Same as this computer"));
   expect(document.documentElement.dataset.theme).toBeUndefined();
+});
+
+it("saves an objective on false exceptions and a notice score's noise", async () => {
+  const fetchMock = stubApi({
+    "GET /api/settings": settings,
+    "PUT /api/settings": changed,
+  });
+  renderAt("/settings");
+  await screen.findByRole("group", { name: "Noise" });
+  fireEvent.change(
+    group("Objectives on the held-out set").getByLabelText(
+      "False exceptions at most",
+    ),
+    { target: { value: "3" } },
+  );
+  fireEvent.change(group("Noise").getByLabelText("Notice score"), {
+    target: { value: "0.2" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  const dialog = within(await screen.findByRole("dialog"));
+  expect(
+    dialog.getByText(
+      "False exceptions objective: 2.5 per 100 payrolls to 3 per 100 payrolls",
+    ),
+  ).toBeDefined();
+  expect(dialog.getByText("Noise on notice score: 0.10 to 0.20")).toBeDefined();
+  fireEvent.click(dialog.getByRole("button", { name: "Save the settings" }));
+  await waitFor(() => {
+    expect(sent(fetchMock, "PUT /api/settings")).toHaveLength(1);
+  });
+  const [values] = sent(fetchMock, "PUT /api/settings") as [
+    { objectives: object; noise: object },
+  ];
+  expect(values.objectives).toEqual({
+    ...settings.current.objectives,
+    false_per_100: 3,
+  });
+  expect(values.noise).toEqual({
+    ...settings.current.noise,
+    notice_score: 0.2,
+  });
 });

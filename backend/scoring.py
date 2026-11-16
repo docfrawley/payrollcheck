@@ -94,6 +94,8 @@ def measures(
         ),
         screening_caught=sum(c.screening_expected and c.screening_found for c in cases),
         screening_expected=sum(c.screening_expected for c in cases),
+        notice_score=None,
+        notices_graded=0,
         model_cost_per_case=model_cost / count if count else 0,
         seconds_per_case=sum(c.seconds for c in cases) / count if count else 0,
         run_seconds=run_seconds,

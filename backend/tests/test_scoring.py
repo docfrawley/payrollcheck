@@ -92,14 +92,19 @@ def test_an_evaluations_measures_as_worked_out_by_hand():
         scored([LATE], []),
         scored([], [raised()], flagged=True, screening=True),
         scored([], [raised(rule="arithmetic.gross")]),
+        scored([], [], screening=True),
+        scored([], [], flagged=True),
+        scored([], [], flagged=True),
     ]
-    measures = scoring.measures(cases, model_cost=0.05, run_seconds=30.0)
+    measures = scoring.measures(cases, model_cost=0.08, run_seconds=30.0)
     # 3 of the 4 exception labels caught, one of the two money labels with the
-    # wrong shortfall, the flagged decoy's and the gross exceptions false.
+    # wrong shortfall. The flagged copy's exception, the gross exception and the
+    # flags on the two decoys are false: 4 of 8 payrolls. The screening missed
+    # one of its two flags, which the catch rate doesn't count.
     assert (measures.caught, measures.labels, measures.catch_rate) == (3, 4, 0.75)
     assert measures.shortfall_accuracy == 0.5
-    assert (measures.false_exceptions, measures.false_per_100) == (2, 40.0)
-    assert (measures.screening_caught, measures.screening_expected) == (1, 1)
+    assert (measures.false_exceptions, measures.false_per_100) == (4, 50.0)
+    assert (measures.screening_caught, measures.screening_expected) == (1, 2)
     assert measures.model_cost_per_case == 0.01
     assert (measures.seconds_per_case, measures.run_seconds) == (10.0, 30.0)
 

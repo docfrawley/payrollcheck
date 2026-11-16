@@ -134,12 +134,12 @@ After pulling this stage, reseed with `npm run seed`.
 
 The six measures in `MeasureSettings`, the four objectives, `data/improvement.json` with the brief's table and $5.00, `Measures.notice_score` (none until phase 3), the rule in `backend/verdict.py`, and the Settings page's fields for them.
 
-- [ ] `backend/tests/test_scoring.py` works out each measure by hand on a small scored run: a label caught, one missed, a false exception, a wrong shortfall, a missed screening flag and a flag on a decoy, with the catch rate, false exceptions per 100 and shortfall accuracy as decision 9 defines them.
-- [ ] `backend/tests/test_verdict.py`: a version kept when false exceptions per 100 fall by more than 1.0 with nothing worse; one rolled back when they rise by more than 1.0, when cost doubles and a bit more, when seconds rise by more than a quarter, when shortfall accuracy falls from 1.00 to 0.98, when it misses any objective, and when it has no notice score where the current version has one; and the notice score left out when neither has one. Each reason names the measures.
-- [ ] Seeding makes settings row 1 with the brief's table and $5.00 (`backend/tests/test_seeding.py`), and `change_settings` takes and records the new shape (`backend/tests/test_settings.py`).
-- [ ] The round's spending tests use the $5.00 limit: an evaluation it can't afford refused, and one cut short by the limit stopped with its version rolled back (`backend/tests/test_spending.py`, `backend/tests/test_rounds.py`).
-- [ ] vitest and `e2e/settings.spec.ts`: the Settings page shows an objective, noise and tolerance for each measure, false exceptions as "at most" and per 100 payrolls, and saves a change.
-- [ ] `npm run check` green.
+- [x] `backend/tests/test_scoring.py` works out each measure by hand on a small scored run: a label caught, one missed, a false exception, a wrong shortfall, a missed screening flag and a flag on a decoy, with the catch rate, false exceptions per 100 and shortfall accuracy as decision 9 defines them.
+- [x] `backend/tests/test_verdict.py`: a version kept when false exceptions per 100 fall by more than 1.0 with nothing worse; one rolled back when they rise by more than 1.0, when cost doubles and a bit more, when seconds rise by more than a quarter, when shortfall accuracy falls from 1.00 to 0.98, when it misses any objective, and when it has no notice score where the current version has one; and the notice score left out when neither has one. Each reason names the measures.
+- [x] Seeding makes settings row 1 with the brief's table and $5.00 (in `backend/tests/test_settings.py`, beside the other settings tests), and `change_settings` takes and records the new shape (`backend/tests/test_settings.py`).
+- [x] The round's spending tests use the $5.00 limit: an evaluation it can't afford refused, and one cut short by the limit stopped with its version rolled back (`backend/tests/test_spending.py`, `backend/tests/test_rounds.py`).
+- [x] vitest and `e2e/settings.spec.ts`: the Settings page shows an objective, noise and tolerance for each measure, false exceptions as "at most" and per 100 payrolls, and saves a change.
+- [x] `npm run check` green.
 
 ### Phase 3: the judge's notice rubric
 

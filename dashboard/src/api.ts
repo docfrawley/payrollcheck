@@ -9,6 +9,7 @@ import type {
 } from "./exceptions";
 import type { Diff, ParameterChange, ParameterValue } from "./changes";
 import type { Notice, OutboxRecord } from "./notices";
+import type { SettingsPage, SettingsValues } from "./settings";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
 
@@ -252,6 +253,9 @@ export interface Measures {
   shortfall_accuracy: number | null;
   screening_caught: number;
   screening_expected: number;
+  // The judge's average score of the graded notices, or null with none graded.
+  notice_score: number | null;
+  notices_graded: number;
   model_cost_per_case: number;
   seconds_per_case: number;
   run_seconds: number | null;
@@ -347,45 +351,6 @@ export interface VersionDetails extends VersionSummary {
 export interface Configuration {
   current: number;
   versions: VersionSummary[];
-}
-
-// A setting for each measure the rule compares: the catch rate as a
-// difference, cost and time per case as fractions of the old value.
-export interface MeasureSettings {
-  catch_rate: number;
-  cost_per_case: number;
-  seconds_per_case: number;
-}
-
-export interface SettingsValues {
-  // The floors a new version must meet on the held-out set.
-  objectives: { catch_rate: number };
-  noise: MeasureSettings;
-  tolerance: MeasureSettings;
-  spending_limit: number;
-  agents: number;
-  // The app's today, or null for the real date.
-  business_date: string | null;
-}
-
-export interface Settings extends SettingsValues {
-  number: number;
-  changed_by: string | null;
-  changed_at: string;
-}
-
-export interface ModelAllowed {
-  model: string;
-  reasoning_efforts: string[];
-  // US dollars per million tokens.
-  input_price: number;
-  output_price: number;
-}
-
-export interface SettingsPage {
-  current: Settings;
-  changes: Settings[];
-  models_allowed: ModelAllowed[];
 }
 
 export type RoundStatus = "open" | "finished" | "stopped";

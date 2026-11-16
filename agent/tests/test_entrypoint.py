@@ -34,7 +34,7 @@ from agent.tests.invoking import (
     work_round,
     work_run,
 )
-from agent.tests.queue_setup import leave_received
+from agent.tests.queue_setup import fewer_labelled_cases, leave_received
 from agent.tests.stubs import stub, swarm
 from agent.tests.stubs import work as work_on_it
 from backend.tests.dashboard_reads import evaluations
@@ -411,6 +411,7 @@ def test_the_app_hears_from_a_run_while_it_works(client, serve, held_run, heard)
 
 
 def test_the_app_hears_from_a_round_while_it_works(client, serve, held_run, heard):
+    fewer_labelled_cases(3)
     round_id = create_round(client).json()["round_id"]
     agent = serve(stub())
     entrypoint.ready.get().improver_model = lambda round: stub("No change.")
