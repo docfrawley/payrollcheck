@@ -4,17 +4,18 @@ import type {
   EvaluationSet,
   RoundStatus,
   Run,
+  ScoredEvaluation,
   StepKind,
 } from "../dashboard/src/api";
 import type { Source } from "../dashboard/src/sources";
 import { REVIEWERS, signedInAs } from "./reviewers";
-import { roundPath, runPath } from "./paths";
+import { EVALUATIONS, evaluationPath, roundPath, runPath } from "./paths";
 import { AGENT_KEY_HEADERS, AGENT_STAND_IN } from "./servers";
 
 // Stands in for the agent and its payroll agents, with one function for each
 // backend operation the tests use, sent through the dashboard's proxy with the
 // agent's key.
-type Request = APIRequestContext;
+export type Request = APIRequestContext;
 
 const casePath = (caseId: string) => `/api/cases/${encodeURIComponent(caseId)}`;
 
@@ -156,6 +157,19 @@ export async function listCases(
   return (await response.json()) as unknown[];
 }
 
+// An evaluation with its copies beside their labels, as Dana Whitfield reads
+// it on the Scoreboard.
+export async function getEvaluation(
+  request: Request,
+  runId: string,
+): Promise<ScoredEvaluation> {
+  const response = await request.get(evaluationPath(runId), {
+    headers: await signedInAs(request, REVIEWERS.dana),
+  });
+  await expect(response).toBeOK();
+  return (await response.json()) as ScoredEvaluation;
+}
+
 // A run as the agent reads it.
 export async function getRun(request: Request, runId: string): Promise<Run> {
   const response = await request.get(runPath(runId), {
@@ -189,7 +203,7 @@ export const startEvaluation = (
   evaluationSet: EvaluationSet,
   agents: number,
 ) =>
-  startRun(request, "/api/evaluations", {
+  startRun(request, EVALUATIONS, {
     evaluation_set: evaluationSet,
     agents,
   });

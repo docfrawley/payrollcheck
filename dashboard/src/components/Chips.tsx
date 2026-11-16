@@ -1,5 +1,6 @@
 import { Bot, ShieldAlert } from "lucide-react";
 import type {
+  LabelMatch,
   RoundStatus,
   RunStatus,
   Severity,
@@ -72,5 +73,29 @@ export function RoundChip({ status }: Readonly<{ status: RoundStatus }>) {
 export function VerdictChip({ verdict }: Readonly<{ verdict: Verdict }>) {
   return (
     <span className={`chip verdict-${verdict}`}>{verdictLabels[verdict]}</span>
+  );
+}
+
+const LABEL_RESULTS: Record<LabelMatch["result"], string> = {
+  caught: "Caught",
+  missed: "Missed",
+  shortfall_wrong: "Shortfall wrong",
+};
+
+// Whether the agent caught a label, and with the right shortfall.
+export function LabelResultChip({
+  result,
+}: Readonly<{ result: LabelMatch["result"] }>) {
+  return (
+    <span className={`chip score-${result}`}>{LABEL_RESULTS[result]}</span>
+  );
+}
+
+// Whether an exception the agent raised matched a label.
+export function MatchedChip({ matched }: Readonly<{ matched: boolean }>) {
+  return matched ? (
+    <span className="chip score-caught">Matched</span>
+  ) : (
+    <span className="chip score-missed">False</span>
   );
 }

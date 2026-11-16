@@ -135,8 +135,10 @@ def into_round(round_id, *evaluations):
 def labels_of(evaluation_set):
     """The labels of an evaluation's set, by case."""
     with engine().connect() as db:
-        query = select(labels).where(
-            labels.c.labelled_set == LABELLED_SET[evaluation_set]
+        query = (
+            select(labels)
+            .where(labels.c.labelled_set == LABELLED_SET[evaluation_set])
+            .order_by(labels.c.label_id)
         )
         found: dict[str, list] = {}
         for row in db.execute(query).mappings():

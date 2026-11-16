@@ -1,15 +1,14 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router";
-import { api, type ScoredCase, type ScoredEvaluation } from "../api";
-import { RunChip, StatusChip } from "../components/Chips";
-import { CaseLink } from "../components/CaseLink";
+import { api, type ScoredEvaluation } from "../api";
+import { RunChip } from "../components/Chips";
+import { ScoredCopies } from "../components/ScoredCopies";
 import { StateMessage } from "../components/StateMessage";
 import { ModelName } from "../components/ModelName";
 import { PageHeader } from "../components/PageHeader";
 import {
   agentsAtOnce,
   dateTime,
-  duration,
   evaluationSetName,
   modelCost,
 } from "../format";
@@ -45,7 +44,7 @@ export function EvaluationPage() {
       />
       <div className="column">
         <MeasuresPanel evaluation={evaluation} />
-        <ScoredCases cases={evaluation.cases} />
+        <ScoredCopies cases={evaluation.cases} />
       </div>
     </>
   );
@@ -79,75 +78,6 @@ function MeasuresPanel({
           </div>
         ))}
       </dl>
-    </section>
-  );
-}
-
-// Whether a copy was expected to be flagged by the screening, and was.
-function screening(copy: ScoredCase): string {
-  if (copy.screening_expected)
-    return copy.screening_found ? "Expected and flagged" : "Expected, missed";
-  return copy.screening_found ? "Flagged, not expected" : "";
-}
-
-function ScoredCases({ cases }: Readonly<{ cases: ScoredCase[] }>) {
-  return (
-    <section className="panel" aria-labelledby="cases-title">
-      <h2 id="cases-title">Copies</h2>
-      <p className="muted small">
-        Each copy of a labeled payroll beside its labels: how many the agent
-        caught, how many it missed, and the exceptions it raised that match no
-        label.
-      </p>
-      <div className="table-scroll">
-        <table className="table steady">
-          <colgroup>
-            <col className="col-case" />
-            <col className="col-id" />
-            <col className="col-status" />
-            <col className="col-chip" />
-            <col className="col-chip" />
-            <col className="col-chip" />
-            <col className="col-status" />
-            <col className="col-money" />
-            <col className="col-time" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Copy</th>
-              <th>Of</th>
-              <th>Status</th>
-              <th className="num">Caught</th>
-              <th className="num">Missed</th>
-              <th className="num">False exceptions</th>
-              <th>Screening</th>
-              <th className="num">Model cost</th>
-              <th className="num">Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cases.map((copy) => (
-              <tr key={copy.case_id}>
-                <td>
-                  <CaseLink caseId={copy.case_id} />
-                </td>
-                <td className="mono">{copy.copy_of}</td>
-                <td>
-                  <StatusChip status={copy.status} />
-                </td>
-                <td className="num mono">
-                  {copy.labels.length - copy.misses} of {copy.labels.length}
-                </td>
-                <td className="num mono">{copy.misses}</td>
-                <td className="num mono">{copy.false_exceptions}</td>
-                <td>{screening(copy)}</td>
-                <td className="num mono">{modelCost(copy.model_cost)}</td>
-                <td className="num mono">{duration(copy.seconds)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </section>
   );
 }

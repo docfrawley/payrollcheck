@@ -399,12 +399,12 @@ Success criteria:
 - The improver's view, from phase 2's bridge, holds the development set's misses and false exceptions with the label beside each exception, and nothing from the held-out set but its scores.
 
 Success criteria:
-- [ ] `backend/tests/test_scoreboard.py`: an evaluation played out through the API, with a caught label, a missed one, a wrong shortfall, a false exception, a flagged decoy and a missed screening flag, reads back with each measure as worked out by hand, in a fixed number of queries.
-- [ ] `backend/tests/test_improvement.py`: the improver's view holds the development misses and nothing of the held-out labels.
-- [ ] Sign off and Send back on a copy refused with a 409.
-- [ ] vitest covers the Scoreboard's measures and the evaluation page's chips and ordering.
-- [ ] `e2e/scoreboard.spec.ts` shows an evaluation of the tiny set played out through the API, with its measures, a miss and a false exception, each copy linking to its case page.
-- [ ] `npm run check` is green.
+- [x] `backend/tests/test_scoreboard.py`: an evaluation played out through the API, with a caught label, a missed one, a wrong shortfall, a false exception, a flagged decoy and a missed screening flag, reads back with each measure as worked out by hand, in a fixed number of queries.
+- [x] `backend/tests/test_improvement.py`: the improver's view holds the development misses and nothing of the held-out labels.
+- [x] Sign off and Send back on a copy refused with a 409.
+- [x] vitest covers the Scoreboard's measures and the evaluation page's chips and ordering.
+- [x] `e2e/scoreboard.spec.ts` shows an evaluation of the tiny set played out through the API, with its measures, a miss and a false exception, each copy linking to its case page.
+- [x] `npm run check` is green.
 
 ### Phase 6: the documents, the live checks and the spending limit
 

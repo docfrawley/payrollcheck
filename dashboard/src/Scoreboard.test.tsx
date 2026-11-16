@@ -148,37 +148,75 @@ it("shows an evaluation's copies beside their labels", async () => {
   );
   expect(measures.queryByText(/judge/)).toBeNull();
   const copies = await panel("Copies");
-  const headings = copies
-    .getAllByRole("columnheader")
-    .map((header) => header.textContent);
   const rows = copies.getAllByRole("row").slice(1);
-  const cells = rows.map((row) =>
-    Object.fromEntries(
-      within(row)
-        .getAllByRole("cell")
-        .map((cell, index) => [headings[index], cell.textContent]),
-    ),
+  // The copy with a miss and a false exception comes first, tinted.
+  expect(
+    rows.map((row) => within(row).getAllByRole("link")[0].textContent),
+  ).toEqual(["PC-0507-E9", "PC-0412-E9", "PC-0809-E9"]);
+  expect(rows.map((row) => row.className)).toEqual(["copy-off", "", ""]);
+  const [wrong, right, flagged] = rows.map((row) => within(row));
+  const missed = wrong.getByText("Missed");
+  expect(missed.className).toBe("chip score-missed");
+  expect(missed.parentElement?.textContent).toBe(
+    "Missed rate.base_short W-001, line 1 $64.00 expected",
   );
-  expect(cells[0]).toMatchObject({
-    Copy: "PC-0412-E9",
-    Of: "PC-0412",
-    Status: "Awaiting review",
-    Caught: "1 of 1",
-    Missed: "0",
-    "False exceptions": "0",
-    Screening: "",
-  });
-  expect(cells[1]).toMatchObject({
-    Caught: "0 of 1",
-    Missed: "1",
-    "False exceptions": "1",
-  });
-  expect(cells[2]).toMatchObject({
-    Caught: "0 of 0",
-    Screening: "Expected and flagged",
-  });
-  const link = within(rows[0]).getByRole("link", { name: "PC-0412-E9" });
+  const falseOne = wrong.getByText("False");
+  expect(falseOne.className).toBe("chip score-missed");
+  expect(falseOne.parentElement?.textContent).toBe(
+    "False arithmetic.gross W-001, line 1 $64.00",
+  );
+  expect(right.getByText("Caught").className).toBe("chip score-caught");
+  expect(right.getByText("Matched").className).toBe("chip score-caught");
+  expect(right.getByText("Caught").parentElement?.textContent).toBe(
+    "Caught rate.base_short W-001, line 1 $64.00",
+  );
+  expect(flagged.getAllByText("None")).toHaveLength(2);
+  expect(flagged.getByText("Expected and flagged")).toBeDefined();
+  const link = right.getByRole("link", { name: "PC-0412-E9" });
   expect(link.getAttribute("href")).toBe("/cases/PC-0412-E9");
+});
+
+it("shows a shortfall caught wrong with both amounts, after the misses", async () => {
+  const [copy] = scored.cases;
+  const [label] = copy.labels;
+  stubApi({
+    "GET /api/evaluations/run-9": {
+      ...scored,
+      cases: [
+        {
+          ...copy,
+          labels: [
+            { ...label, result: "shortfall_wrong", shortfall_cents: 6401 },
+            {
+              ...label,
+              rule: "form.unsigned",
+              worker_id: null,
+              line_no: null,
+              expected_shortfall_cents: null,
+              result: "missed",
+              shortfall_cents: null,
+            },
+          ],
+          misses: 1,
+        },
+      ],
+    },
+  });
+  renderAt("/scoreboard/run-9");
+  const labels = (await panel("Copies")).getAllByRole("list", {
+    name: "Labels",
+  });
+  expect(
+    within(labels[0])
+      .getAllByRole("listitem")
+      .map((item) => item.textContent),
+  ).toEqual([
+    "Missed form.unsigned The whole payroll",
+    "Shortfall wrong rate.base_short W-001, line 1 $64.00 expected, $64.01 raised",
+  ]);
+  expect(within(labels[0]).getByText("Shortfall wrong").className).toBe(
+    "chip score-shortfall_wrong",
+  );
 });
 
 it("says when a copy's screening was missed or not expected", async () => {

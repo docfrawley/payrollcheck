@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  type Request,
   recordCheckFindings,
   recordExceptionReport,
   recordStep,
@@ -34,10 +35,7 @@ const BASE_SHORT = {
 
 // Works a case to Awaiting review with no exceptions, every check finding
 // nothing.
-async function checkClean(
-  request: Parameters<typeof startCase>[0],
-  caseId: string,
-) {
+async function checkClean(request: Request, caseId: string) {
   await startCase(request, caseId, `e2e-${caseId}`);
   for (const check of CHECKS) await recordCheckFindings(request, caseId, check);
   await recordExceptionReport(request, caseId);
@@ -45,10 +43,7 @@ async function checkClean(
 
 // Works a case to Awaiting review with one base rate short, raised from the
 // rates check's finding, and a draft notice.
-async function checkWithAnException(
-  request: Parameters<typeof startCase>[0],
-  caseId: string,
-) {
+async function checkWithAnException(request: Request, caseId: string) {
   await startCase(request, caseId, `e2e-${caseId}`);
   const [candidate] = await recordCheckFindings(
     request,

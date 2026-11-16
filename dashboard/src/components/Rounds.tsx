@@ -8,6 +8,7 @@ import {
   whereRoundIs,
 } from "../format";
 import { RoundChip, VerdictChip } from "./Chips";
+import { None } from "./None";
 import { StateMessage } from "./StateMessage";
 import { RecipeLink, VersionLink } from "./VersionLink";
 
@@ -122,7 +123,7 @@ function BeforeAfter({
   show,
 }: Readonly<{ round: RoundSummary; show: (measures: Measures) => string }>) {
   const { held_out_before: before, held_out_after: after } = round;
-  if (!before && !after) return <span className="muted">None</span>;
+  if (!before && !after) return <None />;
   return (
     <>
       {before ? show(before) : "None"} to {after ? show(after) : "None"}

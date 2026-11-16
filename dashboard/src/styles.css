@@ -37,6 +37,8 @@
   --on-copilot: #ffffff;
   /* What stands out for a reviewer: a card for an action. */
   --held: color-mix(in srgb, var(--hi-vis-amber) 22%, var(--panel));
+  /* What went wrong in an evaluation: a miss or a false exception. */
+  --off: color-mix(in srgb, var(--stop-red) 14%, var(--panel));
   --sans: "Instrument Sans", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
@@ -533,6 +535,7 @@ p {
 }
 
 .status-accepted,
+.score-caught,
 .run-finished,
 .version-kept,
 .round-finished,
@@ -541,7 +544,8 @@ p {
 }
 
 .status-awaiting_review,
-.version-under_test {
+.version-under_test,
+.score-shortfall_wrong {
   background: var(--hi-vis-amber);
 }
 
@@ -572,7 +576,8 @@ p {
 .severity-high,
 .flag,
 .step-failed,
-.step-refused {
+.step-refused,
+.score-missed {
   background: var(--stop-red);
   color: #ffffff;
 }
@@ -670,6 +675,11 @@ p {
   white-space: nowrap;
 }
 
+/* A copy's labels and exceptions wrap in the columns left to them. */
+.table.steady td:has(.matches) {
+  white-space: normal;
+}
+
 .col-case {
   width: 8.5rem;
 }
@@ -680,10 +690,6 @@ p {
 
 .col-status {
   width: 10rem;
-}
-
-.col-chip {
-  width: 6.5rem;
 }
 
 .col-money {
@@ -728,6 +734,33 @@ p {
 
 .table tbody tr:nth-child(odd) td:last-child {
   border-radius: 0 8px 8px 0;
+}
+
+/* A copy with a miss, a false exception or a screening the agent got wrong,
+   tinted Stop Red, with the rounded ends a shaded row has. */
+.table tbody tr.copy-off td {
+  background: var(--off);
+}
+
+.table tbody tr.copy-off td + td {
+  box-shadow: -1px 0 0 var(--off);
+}
+
+.table tbody tr.copy-off td:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.table tbody tr.copy-off td:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+/* A copy's labels and exceptions, each on a line with its chip. */
+.matches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
 }
 
 .table tfoot th,
