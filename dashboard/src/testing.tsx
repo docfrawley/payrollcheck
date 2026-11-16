@@ -211,4 +211,5 @@ export const caseRecord: Case = {
   checks_run: [],
   notice: null,
   overrides: [],
+  sent_notices: [],
 };

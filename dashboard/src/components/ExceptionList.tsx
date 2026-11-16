@@ -6,7 +6,7 @@ import {
   exceptionStatusLabels,
   overrideLabels,
 } from "../format";
-import { overridable, ownJudgment, whereOnPayroll } from "../judgment";
+import { reviewable, ownJudgment, whereOnPayroll } from "../judgment";
 import { SeverityChip } from "./Chips";
 import { ExceptionOverride } from "./ExceptionOverride";
 
@@ -19,7 +19,7 @@ export function ExceptionList({
   onChanged,
 }: Readonly<{ caseRecord: Case; onChanged: () => void }>) {
   const { exceptions, latest_submission_no: latestSubmission } = caseRecord;
-  const mayOverride = overridable(caseRecord);
+  const mayOverride = reviewable(caseRecord);
   const ordered = [...exceptions].sort(
     (a, b) =>
       Number(b.submission_no === latestSubmission) -

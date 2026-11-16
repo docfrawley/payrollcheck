@@ -7,6 +7,7 @@ import type {
   RuleEntry,
   Severity,
 } from "./exceptions";
+import type { Notice, OutboxRecord } from "./notices";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
 
@@ -117,13 +118,6 @@ export interface Candidate {
   dismissed_because: string | null;
 }
 
-export interface Notice {
-  submission_no: number;
-  draft: string;
-  drafted_by: string;
-  drafted_at: string;
-}
-
 export interface Case extends CaseSummary {
   screening_reason: string | null;
   latest_submission_no: number;
@@ -146,6 +140,8 @@ export interface Case extends CaseSummary {
   notice: Notice | null;
   // Oldest first.
   overrides: Override[];
+  // Newest first.
+  sent_notices: OutboxRecord[];
 }
 
 export interface Project {
@@ -560,6 +556,8 @@ export const api = {
     post<Accepted>(EVALUATIONS, { evaluation_set: evaluationSet, agents }),
   signOffCase: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
   sendBackCase: (caseId: string) => post<Case>(`${casePath(caseId)}/send-back`),
+  saveNotice: (caseId: string, text: string) =>
+    send<Case>("PUT", `${casePath(caseId)}/notice`, { text }),
   listRules: () => request<RuleEntry[]>("/api/rules"),
   dismissException: (caseId: string, exceptionId: number, reason: string) =>
     post<Case>(`${exceptionPath(caseId, exceptionId)}/dismissal`, { reason }),

@@ -22,7 +22,6 @@ import { dateTime } from "./format";
 import {
   Refusal,
   caseRecord,
-  marcus,
   panel,
   sent,
   submission,
@@ -271,13 +270,24 @@ it("shows an exception on a worker with no line, and medium and low severities",
 it("says when a case has no exceptions and no notice", async () => {
   showCase(clean);
   expect((await panel("Exceptions")).getByText("No exceptions.")).toBeDefined();
+  const notice = await panel("Send-back notice");
   expect(
-    (await panel("Send-back notice")).getByText("No notice drafted."),
-  ).toBeDefined();
+    notice.getByLabelText("The notice to the subcontractor"),
+  ).toHaveProperty("value", "");
+  expect(
+    notice
+      .getByRole("button", { name: "Send back" })
+      .getAttribute("aria-disabled"),
+  ).toBe("true");
   expect(
     (await reviewPanel()).getByText(
       "The payroll agent has checked this payroll and it's waiting for a reviewer.",
     ),
+  ).toBeDefined();
+  cleanup();
+  showCase({ ...clean, status: "accepted" });
+  expect(
+    (await panel("Send-back notice")).getByText("No notice drafted."),
   ).toBeDefined();
 });
 
@@ -417,28 +427,6 @@ it("lets a reviewer sign off a clean case, which accepts it", async () => {
     undefined,
   ]);
   expect((await panel("Case")).getByText("HND-01")).toBeDefined();
-});
-
-it("lets any reviewer send a case back to the subcontractor", async () => {
-  const { routes, fetchMock } = showCase(awaiting);
-  routes["GET /api/me"] = marcus;
-  const review = await reviewPanel();
-  const returned: Case = {
-    ...awaiting,
-    status: "returned_to_sub",
-    reviewed_by: "HND-02",
-    reviewed_on: "2026-11-23",
-  };
-  routes["POST /api/cases/PC-1201/send-back"] = returned;
-  routes["GET /api/cases/PC-1201"] = returned;
-  fireEvent.click(await review.findByRole("button", { name: "Send back" }));
-
-  expect(
-    await review.findByText("Sent back to the subcontractor on Nov 23, 2026."),
-  ).toBeDefined();
-  expect(sent(fetchMock, "POST /api/cases/PC-1201/send-back")).toEqual([
-    undefined,
-  ]);
 });
 
 it("keeps Sign off disabled while an exception is open", async () => {

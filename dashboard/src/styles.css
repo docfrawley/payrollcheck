@@ -2362,3 +2362,65 @@ fieldset.panel legend + * {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The notice to the subcontractor, edited in place. */
+.notice-editor {
+  display: grid;
+  gap: 6px;
+}
+
+.notice-editor label {
+  font-size: 0.87rem;
+  color: var(--muted);
+}
+
+.notice-editor textarea {
+  font: inherit;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--inset);
+  color: var(--ink);
+  resize: vertical;
+  max-width: 75ch;
+}
+
+/* A notice sent to the subcontractor, as the email it would be. */
+.email {
+  background: var(--inset);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.email + .email {
+  margin-top: 12px;
+}
+
+.email-head {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 0 0 8px;
+}
+
+.email-head div {
+  display: contents;
+}
+
+.email-head dt {
+  color: var(--muted);
+  font-size: 0.87rem;
+}
+
+.email-head dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.email .notice {
+  background: var(--panel);
+}
+
+.email details {
+  margin-top: 8px;
+}

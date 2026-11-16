@@ -87,6 +87,13 @@ def send_back(client, case_id, email=DANA):
     return client.post(f"/api/cases/{case_id}/send-back", headers=signed_in(email))
 
 
+def save_notice(client, case_id, text, email=DANA):
+    """Save an edit of a case's notice as a reviewer does, without sending it."""
+    return client.put(
+        f"/api/cases/{case_id}/notice", json={"text": text}, headers=signed_in(email)
+    )
+
+
 def record_call(client, case_id, run_id, **usage):
     body = {"input_tokens": 1200, "output_tokens": 300, "cost": 0.0042} | usage
     return client.post(

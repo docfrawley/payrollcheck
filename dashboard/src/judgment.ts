@@ -29,7 +29,7 @@ export function whereOnPayroll(
   return lineNo === null ? workerId : `${workerId}, line ${String(lineNo)}`;
 }
 
-// Whether a reviewer may override a case's exceptions: only while it awaits
-// review, and never on an evaluation's copy.
-export const overridable = (caseRecord: Case) =>
+// Whether a reviewer may work a case: override its exceptions, edit its notice
+// and answer it, only while it awaits review, and never on an evaluation's copy.
+export const reviewable = (caseRecord: Case) =>
   caseRecord.status === "awaiting_review" && caseRecord.evaluation_id === null;

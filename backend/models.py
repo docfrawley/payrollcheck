@@ -325,10 +325,36 @@ class RuleEntry(BaseModel):
 
 
 class Notice(BaseModel):
+    """A submission's send-back notice: the agent's draft, if it wrote one, and the
+    reviewer's edit, both kept, and who sent it and when."""
+
     submission_no: int
-    draft: str
-    drafted_by: str
-    drafted_at: str
+    draft: str | None
+    drafted_by: str | None
+    drafted_at: str | None
+    edited_text: str | None
+    edited_by: str | None
+    edited_at: str | None
+    sent_by: str | None
+    sent_at: str | None
+
+
+class NoticeRequest(BaseModel):
+    text: Text = Field(description="The notice to the subcontractor, as edited")
+
+
+class OutboxRecord(BaseModel):
+    """A notice sent to a subcontractor's payroll contact, with the agent's draft of
+    it, if it wrote one."""
+
+    outbox_id: int
+    submission_no: int
+    to_address: str
+    subject: str
+    body: str
+    sent_by: str
+    sent_at: str
+    draft: str | None
 
 
 class CaseSummary(BaseModel):
@@ -361,6 +387,7 @@ class Case(CaseSummary):
     checks_run: list[CheckName] = Field(description="By the current attempt")
     notice: Notice | None = Field(description="The latest submission's draft")
     overrides: list[Override] = Field(description="Oldest first")
+    sent_notices: list[OutboxRecord] = Field(description="Newest first")
 
 
 class UploadRequest(BaseModel):

@@ -268,16 +268,16 @@ Success criteria:
 - `e2e/send_back.spec.ts` rewritten for this.
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_send_back.py backend/tests/test_notices.py --no-cov` passes:
+- [x] `uv run pytest backend/tests/test_send_back.py backend/tests/test_notices.py --no-cov` passes:
   - **one record:** Send back writes one outbox row with the subcontractor's `contact_email`, the subject, the edited body, the sender and the time, and calls `deliver` once with it
   - **both texts kept:** the draft and the sent text are both kept
   - **a blank notice:** refused with a 422, with nothing written
   - **two at once:** two Send backs at once write one row
   - **`deliver` fails:** the case stays Awaiting review with no row
-- [ ] Saving an edit without sending keeps the case Awaiting review. On a clean case with no draft, it creates the notice with no draft.
-- [ ] The agent's key is refused with a 403 on `save_notice`.
-- [ ] Playwright, `e2e/send_back.spec.ts`: Marcus edits the draft notice, presses Send back, and sees Returned to sub and the email preview with the subcontractor's address.
-- [ ] `npm run check` green. Reviewed, findings fixed, committed.
+- [x] Saving an edit without sending keeps the case Awaiting review. On a clean case with no draft, it creates the notice with no draft.
+- [x] The agent's key is refused with a 403 on `save_notice`.
+- [x] Playwright, `e2e/send_back.spec.ts`: Marcus edits the draft notice, presses Send back, and sees Returned to sub and the email preview with the subcontractor's address.
+- [x] `npm run check` green. Reviewed, findings fixed, committed.
 
 ### Phase 5: a new submission reopens the case
 

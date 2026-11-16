@@ -22,6 +22,7 @@ from backend.models import (
     Submission,
     Worker,
 )
+from backend.outbox import sent_to
 from backend.overrides import overrides_of
 from backend.rule_codes import CHECKS
 from backend.scope import Scope
@@ -92,6 +93,7 @@ def case_in_full(db: Connection, case_id: str, scope: Scope) -> Case:
         checks_run=checks_run_on(db, case_id, thread_id),
         notice=notice_of(db, case_id, row["latest_submission_no"]),
         overrides=overrides_of(db, case_id),
+        sent_notices=sent_to(db, case_id),
     )
 
 

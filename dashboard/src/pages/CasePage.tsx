@@ -9,13 +9,14 @@ import { ContextUsed } from "../components/ContextUsed";
 import { AddException } from "../components/AddException";
 import { ExceptionList } from "../components/ExceptionList";
 import { NoticePanel } from "../components/NoticePanel";
+import { SentNotices } from "../components/SentNotices";
 import { StateMessage } from "../components/StateMessage";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectLink } from "../components/ProjectLink";
 import { StepList } from "../components/StepList";
 import { SubmissionPanels } from "../components/SubmissionPanels";
 import { date } from "../format";
-import { overridable } from "../judgment";
+import { reviewable } from "../judgment";
 import { evaluationPage, QUEUE } from "../paths";
 import { REFRESH_MS, useLoad } from "../useLoad";
 
@@ -94,11 +95,12 @@ export function CasePage() {
         <div className="column">
           <CaseReview caseRecord={caseRecord} onAnswered={reload} />
           <ExceptionList caseRecord={caseRecord} onChanged={reload} />
-          {overridable(caseRecord) && (
+          {reviewable(caseRecord) && (
             <AddException caseRecord={caseRecord} onAdded={reload} />
           )}
           <CheckFindings caseRecord={caseRecord} />
-          <NoticePanel notice={caseRecord.notice} />
+          <NoticePanel caseRecord={caseRecord} onChanged={reload} />
+          <SentNotices caseRecord={caseRecord} />
           <StepList steps={steps.data} error={steps.error} />
         </div>
       </div>

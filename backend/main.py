@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from mangum import Mangum
 from sqlalchemy import Connection, RowMapping, func, insert, select, update
 
-from backend import agent_api, dashboard, overrides
+from backend import agent_api, dashboard, notices, outbox, overrides
 from backend.business_date import business_date
 from backend.candidates import keep_findings
 from backend.configuration import router as configuration
@@ -48,6 +48,7 @@ from backend.models import (
     ModelCallRequest,
     NewException,
     NewStep,
+    NoticeRequest,
     OverrideRequest,
     PayrollHistory,
     Reviewer,
@@ -144,8 +145,9 @@ def awaiting_review(
 
 
 def hold_for_review(db: Connection, case_id: str) -> None:
-    """Hold a case awaiting review while a reviewer overrides its exceptions, by
-    taking its row's lock with a conditional update, or raise a 409. A sign-off
+    """Hold a case awaiting review while a reviewer overrides its exceptions or
+    edits its notice, by taking its row's lock with a conditional update, or raise
+    a 409. A sign-off
     takes the same lock first, so the two never interleave: whichever comes second
     finds what the first one did."""
     held = move_case(db, case_id, Status.AWAITING_REVIEW, Status.AWAITING_REVIEW)
@@ -153,12 +155,11 @@ def hold_for_review(db: Connection, case_id: str) -> None:
         raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
 
 
-def review(
-    db: Connection, case_id: str, outcome: Status, reviewer: Reviewer, scope: Scope
-) -> Case:
+def decide(db: Connection, case_id: str, outcome: Status, reviewer: Reviewer) -> None:
     """Move a case awaiting review to the reviewer's outcome, for the first of two
     answers at the same moment, or raise a 409. The move takes the case's row's
-    lock, so a check made after it sees every override made before it."""
+    lock, so whatever the answer reads after it sees every override and every edit
+    of the notice made before it."""
     decided = move_case(
         db,
         case_id,
@@ -169,7 +170,6 @@ def review(
     )
     if not decided:
         raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
-    return case_in_full(db, case_id, scope)
 
 
 def started_thread(db: Connection, case_id: str) -> str:
@@ -395,7 +395,7 @@ def sign_off_case(
 ) -> Case:
     """Sign off a case awaiting review with no open exceptions, which accepts it."""
     case = awaiting_review(db, case_id, scope, "signed off")
-    accepted = review(db, case_id, Status.ACCEPTED, reviewer, scope)
+    decide(db, case_id, Status.ACCEPTED, reviewer)
     query = select(func.count()).where(
         exceptions.c.case_id == case_id,
         exceptions.c.submission_no == case["latest_submission_no"],
@@ -409,16 +409,38 @@ def sign_off_case(
             case_id=case_id, count=still_open, exceptions=exceptions_
         )
         raise HTTPException(409, message)
-    return accepted
+    return case_in_full(db, case_id, scope)
 
 
 @app.post("/api/cases/{case_id}/send-back", operation_id="send_back_case")
 def send_back_case(
     case_id: str, reviewer: SignedIn, scope: Scoped, db: Database
 ) -> Case:
-    """Send a case awaiting review back to its subcontractor, as Returned to sub."""
-    awaiting_review(db, case_id, scope, "sent back")
-    return review(db, case_id, Status.RETURNED_TO_SUB, reviewer, scope)
+    """Send a case back to its subcontractor with its notice, through the outbox."""
+    case = awaiting_review(db, case_id, scope, "sent back")
+    decide(db, case_id, Status.RETURNED_TO_SUB, reviewer)
+    # Read after the move, which holds the case, so no edit lands in between; a
+    # refusal undoes the move with the rest of the request.
+    body = notices.notice_to_send(db, case)
+    sent_at = now()
+    notices.mark_sent(db, case, reviewer, sent_at)
+    outbox.send(db, case, body, reviewer, sent_at)
+    return case_in_full(db, case_id, scope)
+
+
+@app.put("/api/cases/{case_id}/notice", operation_id="save_notice")
+def save_notice(
+    case_id: str,
+    request: NoticeRequest,
+    reviewer: SignedIn,
+    scope: Scoped,
+    db: Database,
+) -> Case:
+    """Save the reviewer's edit of the latest submission's notice, without sending."""
+    case = awaiting_review(db, case_id, scope, "edited")
+    hold_for_review(db, case_id)
+    notices.save_notice(db, case, request.text, reviewer)
+    return case_in_full(db, case_id, scope)
 
 
 @app.get("/api/rules", operation_id="list_rules", dependencies=[SignedInReviewer])

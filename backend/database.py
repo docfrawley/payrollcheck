@@ -253,21 +253,36 @@ overrides = Table(
     Column("reason", Text, nullable=False),
     Column("created_at", Text, nullable=False, index=True),
 )
-# Each submission's send-back notice: the agent's draft, and from stage 4 the
-# reviewer's edit and who sent it.
+# Each submission's send-back notice: the agent's draft, if it wrote one, the
+# reviewer's edit, both kept, and who sent it and when.
 notices = Table(
     "notices",
     metadata,
     Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
     Column("submission_no", Integer, primary_key=True, autoincrement=False),
-    Column("draft", Text, nullable=False),
-    Column("drafted_by", Text, nullable=False),
-    Column("drafted_at", Text, nullable=False),
+    Column("draft", Text),
+    Column("drafted_by", Text),
+    Column("drafted_at", Text),
     Column("edited_text", Text),
     Column("edited_by", Text),
     Column("edited_at", Text),
     Column("sent_by", Text),
     Column("sent_at", Text),
+)
+# Each notice sent to a subcontractor, one for each submission: no real email is
+# sent, and this is the record of it.
+outbox = Table(
+    "outbox",
+    metadata,
+    Column("outbox_id", Integer, primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
+    Column("submission_no", Integer, nullable=False),
+    Column("to_address", Text, nullable=False),
+    Column("subject", Text, nullable=False),
+    Column("body", Text, nullable=False),
+    Column("sent_by", Text, nullable=False),
+    Column("sent_at", Text, nullable=False),
+    UniqueConstraint("case_id", "submission_no"),
 )
 # The labelled sets' cases, out of the queue, with their submissions as the
 # generator wrote them, and their labels: the answer key only scoring reads.

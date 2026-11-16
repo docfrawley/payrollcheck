@@ -1,7 +1,7 @@
-import { Signature, Undo2 } from "lucide-react";
+import { Signature } from "lucide-react";
 import { api, type Case } from "../api";
 import { cents, date } from "../format";
-import { overridable } from "../judgment";
+import { reviewable } from "../judgment";
 import { ActionForm } from "./ActionForm";
 
 // Where the case stands, in a sentence.
@@ -34,16 +34,16 @@ function openExceptions(count: number): string {
   return `${String(count)} open ${count === 1 ? "exception" : "exceptions"}`;
 }
 
-// A case's review: where it stands, what its open exceptions come to, and
-// Sign off and Send back while it awaits review, unless it's an evaluation's
-// copy, which nobody answers.
+// A case's review: where it stands, what its open exceptions come to, and Sign
+// off while it awaits review, unless it's an evaluation's copy, which nobody
+// answers. Send back is with the notice it sends.
 export function CaseReview({
   caseRecord,
   onAnswered,
 }: Readonly<{ caseRecord: Case; onAnswered: () => void }>) {
   const { case_id: caseId } = caseRecord;
   const awaiting = caseRecord.status === "awaiting_review";
-  const answerable = overridable(caseRecord);
+  const answerable = reviewable(caseRecord);
   return (
     <section className="panel" aria-labelledby="review-title">
       <h2 id="review-title">Review</h2>
@@ -79,11 +79,6 @@ export function CaseReview({
             icon={<Signature />}
             ready={caseRecord.open_exceptions === 0}
             action={() => api.signOffCase(caseId).then(onAnswered)}
-          />
-          <ActionForm
-            label="Send back"
-            icon={<Undo2 />}
-            action={() => api.sendBackCase(caseId).then(onAnswered)}
           />
         </div>
       )}

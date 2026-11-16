@@ -81,6 +81,11 @@ REVIEWER_OPERATIONS = {
     "sign_off_case": ("POST", "/api/cases/PC-1202/sign-off", None),
     "send_back_case": ("POST", "/api/cases/PC-1202/send-back", None),
     "list_rules": ("GET", "/api/rules", None),
+    "save_notice": (
+        "PUT",
+        "/api/cases/PC-1202/notice",
+        {"text": "Please correct line 1 and resubmit."},
+    ),
     "dismiss_exception": (
         "POST",
         "/api/cases/PC-1202/exceptions/1/dismissal",
