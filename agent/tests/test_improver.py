@@ -113,7 +113,8 @@ def test_a_round_runs_its_first_evaluations_then_waits_for_a_change(
     assert len(model.prompts) == 2
     read = model.prompts[1][-1]
     assert read.name == "read_results"
-    assert '"development_set"' in read.content
+    assert '"development_mistakes"' in read.content
+    assert '"overrides"' in read.content
     # The round waits for a reviewer, so a dispatch can start.
     assert new_dispatch()["status"] == "running"
 
@@ -189,6 +190,56 @@ def test_a_model_outside_the_models_allowed_goes_back_to_the_improver(
     assert round_["stage"] == "change_waiting"
     assert round_["waiting"]["model_after"] == "openai/gpt-6-luna"
     assert [r["kind"] for r in round_["reviews"]] == []
+
+
+def test_parameters_outside_their_bounds_go_back_to_the_improver(client, serve_rounds):
+    model = improver(
+        call("read_results"),
+        propose(parameters={"rounding_tolerance_cents": 500}),
+        propose(parameters={"rounding_tolerance_cents": 2}),
+    )
+    agent = serve_rounds(model, payroll_agents_model())
+    start_round(agent)
+    assert model.prompts[2][-1].content == (
+        "rounding_tolerance_cents must be a whole number of cents from 0 to 100, "
+        "not 500."
+    )
+    waiting = the_round(client)["waiting"]
+    assert [(c["before"], c["after"]) for c in waiting["parameter_changes"]] == [(0, 2)]
+    assert waiting["case_ids"]
+    assert all("-E" not in case_id for case_id in waiting["case_ids"])
+
+
+def test_a_change_with_a_field_missing_goes_back_to_the_improver(client, serve_rounds):
+    incomplete = {
+        "instructions": VERSION_1 + RULE,
+        "model": "openai/gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "It dismissed findings that were breaches.",
+        "case_ids": [],
+    }
+    model = improver(
+        call("read_results"), call("propose_change", change=incomplete), propose()
+    )
+    agent = serve_rounds(model, payroll_agents_model())
+    start_round(agent)
+    answer = model.prompts[2][-1]
+    assert answer.name == "propose_change"
+    assert "parameters" in answer.content
+    round_ = the_round(client)
+    assert (round_["status"], round_["stage"]) == ("open", "change_waiting")
+
+
+def test_a_change_the_backend_refuses_goes_back_as_a_rejection(client, serve_rounds):
+    model = improver(
+        call("read_results"),
+        propose(VERSION_1 + "\nA rule for PC-0311.\n"),
+        propose(),
+    )
+    agent = serve_rounds(model, payroll_agents_model())
+    start_round(agent)
+    assert "The change names PC-0311" in model.prompts[2][-1].content
+    assert the_round(client)["stage"] == "change_waiting"
 
 
 def test_a_round_whose_improver_proposes_nothing_finishes(client, serve_rounds):

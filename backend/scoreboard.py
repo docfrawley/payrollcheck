@@ -23,7 +23,6 @@ from backend.grading import grades_of, judge_costs
 from backend.lookups import round_numbers
 from backend.models import (
     LABELLED_SET,
-    EvaluationSet,
     ExceptionStatus,
     LabelledSet,
     Measures,
@@ -170,6 +169,8 @@ def open_exceptions_of(
                 row["rule"],
                 row["worker_id"],
                 row["line_no"],
+                row["expected"],
+                row["actual"],
                 row["shortfall_cents"],
             )
         )
@@ -288,21 +289,20 @@ BySet = dict[str, list[RowMapping]]
 
 
 def round_evaluations_of(db: Connection, numbers: list[int]) -> dict[int, BySet]:
-    """Return the finished whole-set evaluations rounds ran on each version, oldest
-    first, on each set, in one query for all the versions. The Scoreboard's own
-    evaluations and any stopped evaluation don't count."""
+    """Return the finished evaluations rounds ran on each version, oldest first,
+    on each set they count as, in one query for all the versions. The Scoreboard's
+    own evaluations and any stopped evaluation don't count."""
     query = select(runs).where(
         runs.c.version.in_(numbers),
         runs.c.kind == RunKind.EVALUATION,
-        runs.c.round_id.is_not(None),
+        runs.c.scored_as.is_not(None),
         runs.c.status == RunStatus.FINISHED,
-        runs.c.evaluation_set != EvaluationSet.TINY,
     )
     by_version: dict[int, BySet] = {
         number: {s: [] for s in LabelledSet} for number in numbers
     }
     for row in db.execute(query.order_by(runs.c.number)).mappings():
-        by_version[row["version"]][row["evaluation_set"]].append(row)
+        by_version[row["version"]][row["scored_as"]].append(row)
     return by_version
 
 

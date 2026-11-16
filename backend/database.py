@@ -439,6 +439,9 @@ runs = Table(
     Column("model", Text, nullable=False),
     Column("reasoning_effort", Text, nullable=False),
     Column("evaluation_set", Text),
+    # The labelled set a round counts its evaluation as: the set it works, or on
+    # free models the one its tiny set stands in for. None outside a round.
+    Column("scored_as", Text),
     Column("status", Text, nullable=False),
     Column("started_at", Text, nullable=False),
     Column("finished_at", Text),

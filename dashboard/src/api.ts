@@ -278,6 +278,8 @@ export interface ExceptionMatch {
   rule: string;
   worker_id: string | null;
   line_no: number | null;
+  expected: string;
+  actual: string;
   shortfall_cents: number | null;
   matched: boolean;
 }
@@ -404,6 +406,9 @@ export interface WaitingProposal {
   reasoning_effort_before: string | null;
   model_after: string | null;
   reasoning_effort_after: string | null;
+  parameter_changes: ParameterChange[];
+  // The cases behind a change.
+  case_ids: string[];
 }
 
 export interface RoundSummary {

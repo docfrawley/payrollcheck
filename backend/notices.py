@@ -16,7 +16,7 @@ from sqlalchemy import (
 )
 
 from backend.database import cases, notices, now
-from backend.models import Reviewer
+from backend.models import NoticeEdit, Reviewer
 
 NOTHING_TO_SEND = (
     "{case_id} has no notice to send: write one for its subcontractor first"
@@ -84,3 +84,21 @@ def drafts_of(db: Connection, case_ids: list[str]) -> dict[str, str]:
         .where(notices.c.case_id.in_(case_ids), notices.c.draft.is_not(None))
     )
     return {case_id: draft for case_id, draft in db.execute(query)}
+
+
+def edited_between(
+    db: Connection, start: str, end: str, most: int
+) -> tuple[int, list[NoticeEdit]]:
+    """How many of the agent's drafts a reviewer rewrote from one moment up to
+    another, and the newest of them, each beside the edit."""
+    edited = (
+        notices.c.edited_at >= start,
+        notices.c.edited_at < end,
+        notices.c.draft.is_not(None),
+        notices.c.edited_text != notices.c.draft,
+    )
+    total = db.execute(select(func.count()).where(*edited)).scalar_one()
+    query = (
+        select(notices).where(*edited).order_by(notices.c.edited_at.desc()).limit(most)
+    )
+    return total, [NoticeEdit(**row) for row in db.execute(query).mappings()]

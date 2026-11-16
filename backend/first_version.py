@@ -24,6 +24,7 @@ FIRST_MODEL = ("openai/gpt-6-luna", "none")
 FIRST_RECIPE = {
     "number": 1,
     "reason": "The lab's first recipe, which tries the models and reasoning efforts "
-    "not yet tried, then adds a rule for each mistake",
+    "not yet tried, then makes the narrowest general change behind the "
+    "development mistakes and the reviewers' corrections",
     "proposed_by": "The compliance team",
 }

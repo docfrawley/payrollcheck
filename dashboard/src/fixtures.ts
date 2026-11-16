@@ -130,6 +130,8 @@ export const scoredCopy: ScoredCase = {
       rule: "rate.base_short",
       worker_id: "W-001",
       line_no: 1,
+      expected: "$60.95/h",
+      actual: "$59.35/h",
       shortfall_cents: 6400,
       matched: true,
     },

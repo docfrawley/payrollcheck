@@ -21,16 +21,10 @@ def get_improver_view(round_id: str) -> dict[str, Any]:
     return call("GET", f"/rounds/{round_id}/results")
 
 
-def record_change_proposal(
-    round_id: str, instructions: str, model: str, reasoning_effort: str, reason: str
-) -> dict[str, Any]:
-    body = {
-        "instructions": instructions,
-        "model": model,
-        "reasoning_effort": reasoning_effort,
-        "reason": reason,
-    }
-    return call("POST", f"/rounds/{round_id}/proposals/change", json=body)
+def record_change_proposal(round_id: str, change: dict[str, Any]) -> dict[str, Any]:
+    """Record a change: its instructions, model, reasoning effort, parameters,
+    reason and the cases behind it."""
+    return call("POST", f"/rounds/{round_id}/proposals/change", json=change)
 
 
 def record_recipe_proposal(round_id: str, recipe: str, reason: str) -> dict[str, Any]:

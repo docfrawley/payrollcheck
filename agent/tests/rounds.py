@@ -2,6 +2,11 @@
 improver that follows a script of tool calls, and stub payroll agents that raise
 the check tools' findings once their instructions hold the improver's rule."""
 
+import json
+from typing import Any
+
+from langchain_core.messages import ToolMessage
+
 from agent.tests.stubs import (
     NOTICE,
     StubModel,
@@ -11,6 +16,7 @@ from agent.tests.stubs import (
     stub,
 )
 from backend.first_version import INSTRUCTIONS
+from backend.parameters import FIRST_PARAMETERS
 
 # What the improver adds to the payroll agent's instructions in the tests, and what
 # makes the stub payroll agents raise what the checks found.
@@ -35,13 +41,32 @@ def payroll_agents_model():
     return RuleFollowingModel(messages=iter(()))
 
 
-def propose(instructions=VERSION_1 + RULE, **model):
-    return call(
-        "propose_change",
-        instructions=instructions,
-        reason="It dismissed findings that were breaches.",
-        **(LUNA | model),
-    )
+def cited(messages):
+    """The first case the improver's latest read of the results holds, as it would
+    cite it, or none."""
+    results = [
+        m for m in messages if isinstance(m, ToolMessage) and m.name == "read_results"
+    ]
+    if not results:
+        return []
+    view = json.loads(results[-1].text)
+    return [case["case_id"] for case in view["development_mistakes"]["shown"]][:1]
+
+
+def propose(instructions=VERSION_1 + RULE, **changes) -> Any:
+    """A reply worked out from the prompt, as the stub models take one: a change
+    citing a case the results it read hold."""
+
+    def reply(messages):
+        change = {
+            "instructions": instructions,
+            "parameters": FIRST_PARAMETERS,
+            "reason": "It dismissed findings that were breaches.",
+            "case_ids": cited(messages),
+        }
+        return call("propose_change", change=change | LUNA | changes)
+
+    return reply
 
 
 def improver(*replies):
@@ -55,7 +80,7 @@ def whole_round():
     proposes a recipe and ends."""
     return improver(
         call("read_results"),
-        propose(VERSION_1 + "\nA rule for PC-0311.\n"),
+        propose(VERSION_1 + "\nA rule for weekend premiums.\n"),
         propose(),
         call("run_evaluation"),
         call("propose_recipe", recipe="1. Read the results.\n", reason="Shorter"),

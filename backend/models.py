@@ -722,6 +722,8 @@ class ExceptionMatch(BaseModel):
     rule: str
     worker_id: str | None
     line_no: int | None
+    expected: str
+    actual: str
     shortfall_cents: int | None
     matched: bool
 
@@ -882,6 +884,7 @@ class RoundForTheAgent(BaseModel):
     improver_reasoning_effort: str
     instructions: str = Field(description="The improver's, around the recipe")
     models_allowed: list[ModelAllowed]
+    parameters_allowed: list[ParameterAllowed]
     first_evaluations: list[EvaluationSet] = Field(
         description="The first evaluations the round needed as it started, in order"
     )
@@ -894,7 +897,14 @@ class ChangeProposalRequest(BaseModel):
     instructions: str = Field(min_length=1)
     model: str = Field(min_length=1)
     reasoning_effort: str = Field(min_length=1)
+    parameters: dict[str, Any] = Field(
+        description="Every one of the check tools' tunable parameters, each inside "
+        "its bounds"
+    )
     reason: str = Field(min_length=1)
+    case_ids: list[str] = Field(
+        description="The cases behind the change, each one the round's results hold"
+    )
 
 
 class RecipeProposalRequest(BaseModel):
@@ -910,6 +920,8 @@ class Proposal(BaseModel):
     instructions: str | None
     model: str | None
     reasoning_effort: str | None
+    parameters: dict[str, Any] | None
+    case_ids: list[str]
     recipe: str | None
     proposed_at: str
     review: Review | None
@@ -959,6 +971,47 @@ class CaseResults(BaseModel):
     screening_found: bool
 
 
+class WeakNotice(BaseModel):
+    """A development copy's notice the judge scored low, with the exceptions it
+    goes with and the judge's four points."""
+
+    case_id: str
+    notice: str | None
+    exceptions: list[ExceptionAsRead]
+    grade: NoticeGradeRecord
+
+
+class CorrectedException(Override):
+    """A reviewer's override, with the case and the exception it corrected."""
+
+    case_id: str
+    rule: str
+    worker_id: str | None
+    line_no: int | None
+    expected: str
+    actual: str
+    shortfall_cents: int | None
+    source: ExceptionSource = Field(description="What raised the exception")
+
+
+class NoticeEdit(BaseModel):
+    """A notice a reviewer rewrote before sending, beside the agent's draft."""
+
+    case_id: str
+    submission_no: int
+    draft: str
+    edited_text: str
+    edited_by: str
+    edited_at: str
+
+
+class Listed[Item](BaseModel):
+    """Some of a list, the most telling first, with how many there are in all."""
+
+    total: int
+    shown: list[Item]
+
+
 class EarlierRound(BaseModel):
     round: int
     recipe_version: int
@@ -983,9 +1036,22 @@ class ImproverView(BaseModel):
         description="Its instructions, model, reasoning effort and parameters"
     )
     scores: VersionScores
-    development_set: list[CaseResults] = Field(
-        description="The latest development evaluation's cases with a miss or a "
-        "false exception"
+    development_mistakes: Listed[CaseResults] = Field(
+        description="From the latest development evaluation, the cases with a "
+        "miss, a wrong shortfall, a false exception or a wrong screening"
+    )
+    weakest_notices: Listed[WeakNotice] = Field(
+        description="From the same evaluation, the notices the judge scored lowest"
+    )
+    corrections_since: str | None = Field(
+        description="When the newest earlier round that finished started, from "
+        "which the reviewers' corrections are read, or null for every one"
+    )
+    overrides: Listed[CorrectedException] = Field(
+        description="Exceptions reviewers dismissed or added, newest first"
+    )
+    notice_edits: Listed[NoticeEdit] = Field(
+        description="Notices reviewers rewrote, newest first"
     )
     earlier_rounds: list[EarlierRound]
     objectives_on_the_held_out_set: Objectives
@@ -994,6 +1060,7 @@ class ImproverView(BaseModel):
     rule: str
     spending: Spending
     models_allowed: list[ModelAllowed]
+    parameters_allowed: list[ParameterAllowed]
 
 
 # What the Improvement page shows.
@@ -1019,6 +1086,8 @@ class WaitingProposal(BaseModel):
     reasoning_effort_before: str | None
     model_after: str | None
     reasoning_effort_after: str | None
+    parameter_changes: list[ParameterChange]
+    case_ids: list[str] = Field(description="The cases behind a change")
 
 
 class RoundSummary(BaseModel):

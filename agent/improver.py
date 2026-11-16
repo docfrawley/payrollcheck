@@ -33,6 +33,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.runtime import Runtime
 from langgraph.types import Command
+from pydantic import BaseModel, Field, StrictInt, ValidationError
 
 from agent import improver_api
 from agent.connection import Refused
@@ -70,34 +71,65 @@ def is_allowed(round: dict[str, Any], model: str, reasoning_effort: str) -> bool
     )
 
 
+def out_of_bounds(round: dict[str, Any], parameters: dict[str, Any]) -> str | None:
+    """Say why the parameters don't keep to the ones allowed: every one given, each
+    a whole number inside its bounds, and no other. Or nothing when they do. It
+    answers as the backend's refusal would, so the improver hears the same."""
+    allowed = {each["name"]: each for each in round["parameters_allowed"]}
+    unknown = sorted(set(parameters) - set(allowed))
+    if unknown:
+        return f"There is no parameter {', '.join(unknown)}."
+    for name, bounds in allowed.items():
+        if name not in parameters:
+            return f"{name} is missing."
+        value = parameters[name]
+        whole = isinstance(value, int) and not isinstance(value, bool)
+        if not whole or not bounds["lowest"] <= value <= bounds["highest"]:
+            return (
+                f"{name} must be a whole number of {bounds['unit']} from "
+                f"{bounds['lowest']} to {bounds['highest']}, not {value}."
+            )
+    return None
+
+
 def round_of(runtime: ToolRuntime[RoundContext] | Runtime[RoundContext]) -> str:
     return runtime.context.round["round_id"]
 
 
 @tool
 def read_results(runtime: ToolRuntime[RoundContext]) -> str:
-    """Read the current version of the payroll agent's configuration, its scores, its mistakes and weakest explanations on the evaluation set, the earlier rounds, the objectives, the round's spending limit and the models allowed."""  # noqa: E501
+    """Read the current version of the payroll agent's configuration and its scores, its mistakes and weakest notices on the development set, the reviewers' corrections since the last round, the earlier rounds, the objectives, the round's spending limit, and the models and parameters allowed."""  # noqa: E501
     return as_json(improver_api.get_improver_view(round_of(runtime)), indent=2)
 
 
-@tool(parse_docstring=True)
-def propose_change(
-    instructions: str,
-    model: str,
-    reasoning_effort: str,
-    reason: str,
-    runtime: ToolRuntime[RoundContext],
-) -> str:
-    """Propose a new version of the payroll agent's configuration. A human reviews it before it's saved.
+class Change(BaseModel):
+    """A new version of the payroll agent's configuration, and why."""
 
-    Args:
-        instructions: The payroll agent's complete instructions
-        model: One of the models allowed
-        reasoning_effort: A reasoning level allowed for that model
-        reason: Why this change should improve the scores
-    """  # noqa: E501
-    if not is_allowed(runtime.context.round, model, reasoning_effort):
-        return f"{model} at {reasoning_effort} isn't allowed. Choose from the models allowed."  # noqa: E501
+    instructions: str = Field(
+        description="The payroll agent's complete instructions, which never name a case"
+    )
+    model: str = Field(description="One of the models allowed")
+    reasoning_effort: str = Field(description="A reasoning level allowed for it")
+    parameters: dict[str, StrictInt] = Field(
+        description="Every one of the check tools' parameters, each inside its bounds"
+    )
+    reason: str = Field(
+        description="Why this change should improve the scores, naming the cases "
+        "behind it"
+    )
+    case_ids: list[str] = Field(
+        description="The ids of the cases behind the change, from read_results"
+    )
+
+
+@tool
+def propose_change(change: Change, runtime: ToolRuntime[RoundContext]) -> str:
+    """Propose a new version of the payroll agent's configuration. A human reviews it before it's saved."""  # noqa: E501
+    round = runtime.context.round
+    if not is_allowed(round, change.model, change.reasoning_effort):
+        return f"{change.model} at {change.reasoning_effort} isn't allowed. Choose from the models allowed."  # noqa: E501
+    if why := out_of_bounds(round, change.parameters):
+        return why
     version = improver_api.create_version(round_of(runtime))
     return f"Saved as version {version['number']}. Run the evaluation next."
 
@@ -134,13 +166,17 @@ IMPROVER_TOOLS = [read_results, propose_change, run_evaluation, propose_recipe]
 
 
 def needs_a_reviewer(request: ToolCallRequest) -> bool:
-    """Pause for a reviewer only for a change the payroll agent may use; any other
-    goes straight to the tool, which tells the improver it isn't allowed."""
-    args = request.tool_call["args"]
-    context = cast(RoundContext, request.runtime.context)
+    """Pause for a reviewer only for a change the payroll agent may use, on a
+    model allowed with parameters inside their bounds; any other goes straight to
+    the tool, which tells the improver why it isn't allowed."""
+    try:
+        change = Change.model_validate(request.tool_call["args"].get("change"))
+    except ValidationError:  # the tool tells the improver what's wrong with it
+        return False
+    round = cast(RoundContext, request.runtime.context).round
     return is_allowed(
-        context.round, args.get("model", ""), args.get("reasoning_effort", "")
-    )
+        round, change.model, change.reasoning_effort
+    ) and not out_of_bounds(round, change.parameters)
 
 
 def answer_refusals(error: Exception, request: ToolCallRequest) -> str | None:
@@ -280,12 +316,6 @@ def record_proposal(round_id: str, request: dict[str, Any]) -> None:
     it paused on."""
     args = request["args"]
     if request["name"] == propose_change.name:
-        improver_api.record_change_proposal(
-            round_id,
-            args["instructions"],
-            args["model"],
-            args["reasoning_effort"],
-            args["reason"],
-        )
+        improver_api.record_change_proposal(round_id, args["change"])
     else:
         improver_api.record_recipe_proposal(round_id, args["recipe"], args["reason"])

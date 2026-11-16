@@ -28,6 +28,8 @@ class Raised(NamedTuple):
     rule: str
     worker_id: str | None
     line_no: int | None
+    expected: str
+    actual: str
     shortfall_cents: int | None
 
 

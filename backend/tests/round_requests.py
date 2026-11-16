@@ -1,10 +1,11 @@
 """Requests the backend's tests send to play out a round of the improver, as the
 agent and the dashboard do."""
 
-from sqlalchemy import select, update
+from sqlalchemy import case, select, update
 
 from backend.database import SCREENING, engine, labels, runs
-from backend.models import LABELLED_SET
+from backend.models import LABELLED_SET, EvaluationSet
+from backend.parameters import FIRST_PARAMETERS
 from backend.tests.case_requests import flag, record_findings, report, start
 from backend.tests.dashboard_reads import read
 from backend.tests.rows import newest_round
@@ -21,7 +22,9 @@ CHANGE = {
     "instructions": "# Working a case\n\nA rule for stolen phones.\n",
     "model": "openai/gpt-6-luna",
     "reasoning_effort": "low",
+    "parameters": FIRST_PARAMETERS,
     "reason": "Two misclassifications were missed",
+    "case_ids": [],
 }
 ALL = 100  # more cases than any set holds
 RECIPE = {
@@ -56,8 +59,23 @@ def fail_round(client, round_id, reason="RuntimeError: The improver broke"):
     return client.post(f"{round_path(round_id)}/failure", json={"reason": reason})
 
 
+def cited(client, round_id):
+    """The first case the round's results hold, as the improver would cite it, or
+    none when they hold none."""
+    view = client.get(f"{round_path(round_id)}/results").json()
+    held = [
+        entry["case_id"]
+        for listed in ("development_mistakes", "weakest_notices", "overrides")
+        for entry in view[listed]["shown"]
+    ]
+    return held[:1]
+
+
 def propose_change(client, round_id, **change):
-    return client.post(f"{round_path(round_id)}/proposals/change", json=CHANGE | change)
+    """Propose a change as the improver does, citing the first case the round's
+    results hold unless the change gives its own."""
+    body = CHANGE | {"case_ids": cited(client, round_id)} | change
+    return client.post(f"{round_path(round_id)}/proposals/change", json=body)
 
 
 def propose_recipe(client, round_id):
@@ -123,12 +141,19 @@ def stop_round(client, round_id, email=DANA):
 
 
 def into_round(round_id, *evaluations):
-    """Make evaluations a round's, as if the round had run them."""
+    """Make evaluations a round's, as if the round had run them, each counted as
+    its own set, but a tiny one, which a round runs only on free models."""
     with engine().begin() as db:
         db.execute(
             update(runs)
             .where(runs.c.run_id.in_([e["run_id"] for e in evaluations]))
-            .values(round_id=round_id)
+            .values(
+                round_id=round_id,
+                scored_as=case(
+                    (runs.c.evaluation_set == EvaluationSet.TINY, None),
+                    else_=runs.c.evaluation_set,
+                ),
+            )
         )
 
 

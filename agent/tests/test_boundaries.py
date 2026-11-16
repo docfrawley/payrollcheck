@@ -4,9 +4,10 @@ import each other's parts."""
 
 import ast
 import inspect
+import re
 from pathlib import Path
 
-from agent import api
+from agent import api, improver, improver_api
 from backend.database import metadata
 from backend.main import app
 
@@ -16,6 +17,7 @@ OUT_OF_REACH = (
     "/api/improvement",
     "/api/configuration",
     "/api/settings",
+    "/api/evaluations",
 )
 
 
@@ -65,6 +67,37 @@ def test_the_payroll_agents_api_has_no_way_to_the_rounds_scores_or_settings():
     assert operations_out_of_reach() & functions == set()
     source = inspect.getsource(api)
     assert [path for path in OUT_OF_REACH if path.removeprefix("/api") in source] == []
+
+
+def paths_called(module) -> list[str]:
+    """The paths a client module's functions call on the backend."""
+    pattern = r'call\(\s*"[A-Z]+",\s*f?"([^"]+)"'
+    return re.findall(pattern, inspect.getsource(module))
+
+
+def test_the_payroll_agents_api_reads_no_labels_overrides_or_scores():
+    paths = paths_called(api)
+    assert paths
+    for word in ("labels", "overrides", "exceptions/", "scores", "results"):
+        assert [path for path in paths if word in path] == [], word
+
+
+def test_the_improver_has_its_four_tools_and_its_api_only_the_rounds():
+    assert [t.name for t in improver.IMPROVER_TOOLS] == [
+        "read_results",
+        "propose_change",
+        "run_evaluation",
+        "propose_recipe",
+    ]
+    paths = paths_called(improver_api)
+    assert paths
+    # Nothing to the settings, the models allowed, the sets, the labels, the
+    # judge or a version's verdict but through the round's own operations.
+    assert [p for p in paths if not p.startswith(("/rounds/", "/runs/rounds/"))] == []
+    names = {name for name, _ in inspect.getmembers(improver_api, inspect.isfunction)}
+    assert {
+        n for n in names if "settings" in n or "label" in n or "judge" in n
+    } == set()
 
 
 def test_the_payroll_agent_doesnt_import_the_improvers_api():

@@ -5,6 +5,7 @@ import json
 import pytest
 from sqlalchemy import event, select
 
+from backend import improver_view
 from backend.database import engine, labelled_cases, labels
 from backend.tests.agent_answers import unreachable
 from backend.tests.dashboard_reads import read, recipe
@@ -330,7 +331,7 @@ def test_the_improver_reads_nothing_from_the_held_out_set_but_scores(client):
 
     assert view["current_version"]["number"] == 1
     assert view["scores"]["held_out"]["catch_rate"] is not None
-    development = view["development_set"]
+    development = view["development_mistakes"]["shown"]
     assert development
     assert set(development[0]) == {
         "case_id",
@@ -340,6 +341,9 @@ def test_the_improver_reads_nothing_from_the_held_out_set_but_scores(client):
         "screening_found",
     }
     assert view["rule"].startswith("A new version is kept when it meets")
+    assert [p["name"] for p in view["parameters_allowed"]] == [
+        "rounding_tolerance_cents"
+    ]
     assert view["spending"]["limit"] == 10.0
     assert [m["model"] for m in view["models_allowed"]] == [
         "openai/gpt-6-luna",
@@ -365,7 +369,8 @@ def test_the_improver_reads_the_earlier_rounds(client):
     assert earlier["why"] == "the round was stopped before its verdict"
 
 
-def test_the_improver_reads_the_development_sets_misses_by_case(client):
+def test_the_improver_reads_the_development_sets_misses_by_case(client, monkeypatch):
+    monkeypatch.setattr(improver_view, "MOST_MISTAKES", ALL)
     change_settings(client, spending_limit=10.0)
     round_id = create_round(client).json()["round_id"]
     evaluation = play_out(client, round_id, caught=10)
@@ -376,9 +381,9 @@ def test_the_improver_reads_the_development_sets_misses_by_case(client):
         c for c in evaluation["cases"] if c["labels"] or c["screening_expected"]
     ]
     caught = [c["copy_of"] for c in with_labels[:10]]
-    missed = {c["case_id"] for c in view["development_set"]}
+    missed = {c["case_id"] for c in view["development_mistakes"]["shown"]}
     assert missed == {c["copy_of"] for c in with_labels} - set(caught)
-    one = next(c for c in view["development_set"] if c["missed"])
+    one = next(c for c in view["development_mistakes"]["shown"] if c["missed"])
     assert {label["result"] for label in one["missed"]} == {"missed"}
     with engine().connect() as db:
         assert db.execute(select(labels)).first() is not None

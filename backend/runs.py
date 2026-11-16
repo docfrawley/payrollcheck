@@ -57,6 +57,7 @@ from backend.round_state import (
     evaluations_of,
     left_to_spend,
     open_round,
+    played_on,
     round_row,
     stop,
     tried_version,
@@ -230,7 +231,7 @@ def refuse_what_the_round_cant_afford(
     more than what's left of the round's limit, so the first of the three checks
     all three."""
     done = len(evaluations_of(db, row["round_id"], version["number"]))
-    cases_left = sum(set_size(db, s) for s in EVALUATIONS[done:])
+    cases_left = sum(set_size(db, played_on(s)) for s in EVALUATIONS[done:])
     models = {model.model: model for model in allowed_models(db)}
     current = version_row(db, current_version_number(db))
     per_case = spending.cost_per_case(
@@ -298,11 +299,12 @@ def evaluation_row(db: Connection, run_id: str) -> RowMapping:
 def create_round_evaluation(round_id: str, db: Database) -> Run:
     """Record a round's next whole-set evaluation, on the set it needs next."""
     row = open_round(db, round_id)
-    version, evaluation_set = next_evaluation(db, row)
+    version, scored_as = next_evaluation(db, row)
     if version["number"] != row["starting_version"]:
         refuse_what_the_round_cant_afford(db, row, version)
     fields = {
-        "evaluation_set": evaluation_set,
+        "evaluation_set": played_on(scored_as),
+        "scored_as": scored_as,
         "agents": settings_number(db, row["settings"]).agents,
         "round_id": round_id,
     }

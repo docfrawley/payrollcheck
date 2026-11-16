@@ -271,10 +271,34 @@ export async function getRound(
   };
 }
 
+// The first case the round's results hold, as the improver would cite it, or
+// none when they hold none.
+async function citedIn(request: Request, roundId: string): Promise<string[]> {
+  const response = await request.get(`${roundPath(roundId)}/results`, {
+    headers: AGENT_KEY_HEADERS,
+  });
+  await expect(response).toBeOK();
+  const view = (await response.json()) as Record<
+    "development_mistakes" | "weakest_notices" | "overrides",
+    { shown: { case_id: string }[] }
+  >;
+  return [
+    ...view.development_mistakes.shown,
+    ...view.weakest_notices.shown,
+    ...view.overrides.shown,
+  ]
+    .map((entry) => entry.case_id)
+    .slice(0, 1);
+}
+
+// Propose a change as the improver does, citing the first case the round's
+// results hold unless the caller gives its own.
 export async function recordChangeProposal(
   request: Request,
   roundId: string,
   instructions: string,
+  parameters: Record<string, number> = { rounding_tolerance_cents: 0 },
+  caseIds?: string[],
 ): Promise<string> {
   const response = await send(
     request,
@@ -284,7 +308,9 @@ export async function recordChangeProposal(
       instructions,
       model: "openai/gpt-6-luna",
       reasoning_effort: "low",
+      parameters,
       reason: "Two weekend premiums were missed on the rates check",
+      case_ids: caseIds ?? (await citedIn(request, roundId)),
     },
   );
   return ((await response.json()) as { proposal_id: string }).proposal_id;

@@ -18,7 +18,7 @@ def raised(
     shortfall: int | None = 3200,
     number: int = 1,
 ) -> Raised:
-    return Raised(number, rule, worker, 1, shortfall)
+    return Raised(number, rule, worker, 1, "As the rules require", "As paid", shortfall)
 
 
 def results(labels, found, flagged=False):
@@ -37,7 +37,7 @@ def test_another_rule_in_the_same_family_is_not_a_catch():
 
 def test_another_worker_is_not_a_catch_and_the_line_isnt_compared():
     assert results([SHORT], [raised(worker="W-002")]) == (["missed"], [False])
-    other_line = Raised(1, "rate.base_short", "W-001", 7, 3200)
+    other_line = Raised(1, "rate.base_short", "W-001", 7, "$60.00/h", "$59.20/h", 3200)
     assert results([SHORT], [other_line]) == (["caught"], [True])
 
 

@@ -78,6 +78,16 @@ export const change: WaitingProposal = {
   reasoning_effort_before: "low",
   model_after: "google/gemini-3.5-flash-lite",
   reasoning_effort_after: "minimal",
+  parameter_changes: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      before: 0,
+      after: 2,
+    },
+  ],
+  case_ids: ["PC-0311", "PC-1210"],
 };
 
 export const open: RoundView = {
