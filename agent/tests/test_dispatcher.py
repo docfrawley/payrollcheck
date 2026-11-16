@@ -22,6 +22,7 @@ from backend.tests.case_requests import sign_off
 from backend.tests.dashboard_reads import steps_of
 from backend.tests.rows import run_heard
 from backend.tests.run_requests import latest_dispatch
+from backend.tests.uploads import seeded_payroll, upload
 
 
 def tries_on(model, case_id):
@@ -272,3 +273,28 @@ def test_a_dispatch_with_nothing_to_work_finishes(client):
     finished = latest_dispatch(client)
     assert (finished["status"], finished["cases"]) == ("finished", [])
     assert finished["summary"]["unfinished"] == []
+
+
+def test_a_reopened_case_is_worked_afresh_on_a_new_thread(client):
+    """A correction uploaded after the agent's report puts the case back as a first
+    attempt, which the next dispatch starts on a thread of its own, never carrying
+    the old one on."""
+    leave_received("PC-1206")
+    dispatch(stub(*work()))
+    first = case_of(client, "PC-1206")
+    assert (first["status"], first["attempts"]) == ("awaiting_review", 1)
+    reopened = upload(client, "PRJ-01", "SUB-06", seeded_payroll("PC-1206"))
+    assert reopened.json()["status"] == "received"
+    dispatch(stub(*work()))
+    again = case_of(client, "PC-1206")
+    assert (again["status"], again["attempts"], again["latest_submission_no"]) == (
+        "awaiting_review",
+        1,
+        first["latest_submission_no"] + 1,
+    )
+    assert again["thread_id"] not in (None, first["thread_id"])
+    screenings = [s for s in steps_of(client, "PC-1206") if s["kind"] == "screening"]
+    assert [s["thread_id"] for s in screenings] == [
+        first["thread_id"],
+        again["thread_id"],
+    ]

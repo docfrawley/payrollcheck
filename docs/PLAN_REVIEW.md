@@ -287,16 +287,16 @@ Success criteria:
 - `data/README.md` says how a correction is uploaded.
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_intake.py backend/tests/test_reopening.py --no-cov` passes. A new submission on an Accepted case:
+- [x] `uv run pytest backend/tests/test_intake.py backend/tests/test_reopening.py --no-cov` passes. A new submission on an Accepted case:
   - the case back to Received, at submission 2
   - the earlier submission's open exceptions superseded and its dismissed ones still dismissed
   - its thread, attempts, flags and review cleared
   - Sign off then looking only at submission 2
-- [ ] The same holds for a Returned to sub case.
-- [ ] An upload while In progress is refused with a 409 and changes nothing. Two uploads at once make one new submission.
-- [ ] `uv run pytest agent/tests/test_dispatcher.py --no-cov`: the next dispatch works the reopened case on a new thread, as attempt 1, never carrying on the old one.
-- [ ] Playwright: a corrected CSV uploaded for an Accepted case reopens it to Received, with submission 1's exceptions shown as superseded.
-- [ ] `npm run check` green. Reviewed, findings fixed, committed.
+- [x] The same holds for a Returned to sub case.
+- [x] An upload while In progress is refused with a 409 and changes nothing. Two uploads at once make one new submission.
+- [x] `uv run pytest agent/tests/test_dispatcher.py --no-cov`: the next dispatch works the reopened case on a new thread, as attempt 1, never carrying on the old one.
+- [x] Playwright: a corrected CSV uploaded for an Accepted case reopens it to Received, with submission 1's exceptions shown as superseded.
+- [x] `npm run check` green. Reviewed, findings fixed, committed.
 
 ### Phase 6: the dispatch as each person sees it, the end-to-end tests, the documents and the live checks
 

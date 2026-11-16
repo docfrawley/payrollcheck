@@ -2,17 +2,25 @@
 with no model, or refused with its reason and no case created. Only a file that
 can't become a submission is refused; anything else it says is accepted, however
 wrong, for the payroll agent to find. The first upload for a subcontractor,
-project and week creates its case, Received."""
+project and week creates its case, Received, and any later one is a correction:
+the case's next submission, which reopens it."""
 
 from datetime import date
 
 from fastapi import HTTPException
-from sqlalchemy import Connection, RowMapping, func, insert, select
+from sqlalchemy import Connection, RowMapping, func, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
 from backend.business_date import business_date
-from backend.database import cases, engagements, now, projects, submissions
-from backend.models import Reviewer, Status, UploadRequest
+from backend.database import (
+    cases,
+    engagements,
+    exceptions,
+    now,
+    projects,
+    submissions,
+)
+from backend.models import ExceptionStatus, Reviewer, Status, UploadRequest
 from data.payroll_world.template import Payroll, Unreadable, payroll_record, read_upload
 
 CSV = ".csv"
@@ -24,6 +32,24 @@ ALREADY = (
     "Case {case_id} already holds {subcontractor_id}'s payroll on {project_id} for "
     "the week ending {week_ending}"
 )
+BEING_CHECKED = (
+    "{case_id} is being checked: upload the correction once it's awaiting review"
+)
+UPLOADED_MEANWHILE = (
+    "{case_id} took another upload a moment ago: reload it, then upload again"
+)
+# A new or reopened case, as the next dispatch finds it: Received, never started,
+# with nothing flagged and no review.
+FRESH = {
+    "status": Status.RECEIVED,
+    "thread_id": None,
+    "attempts": 0,
+    "agent_failed": False,
+    "screening_flag": False,
+    "screening_reason": None,
+    "reviewed_by": None,
+    "reviewed_on": None,
+}
 CASE_ID = "PC-{week:02d}{pair:02d}"
 # A case's id holds its week in two digits.
 MOST_WEEKS = 99
@@ -69,22 +95,17 @@ def week_of(db: Connection, week_ending: date) -> int:
     return days // 7 + 1
 
 
-def refuse_an_existing_case(
+def existing_case(
     db: Connection, project_id: str, subcontractor_id: str, week_ending: date
-) -> None:
-    """A 409 naming the case when the week's payroll already has one. Reopening a
-    case with a new submission comes in stage 4."""
-    query = select(cases.c.case_id).where(
+) -> RowMapping | None:
+    """The queue's case for a subcontractor, project and week, if it has one."""
+    query = select(cases).where(
         cases.c.evaluation_id.is_(None),
         cases.c.project_id == project_id,
         cases.c.subcontractor_id == subcontractor_id,
         cases.c.week_ending == week_ending.isoformat(),
     )
-    found = db.execute(query).scalar_one_or_none()
-    if found is not None:
-        raise HTTPException(
-            409, already(found, project_id, subcontractor_id, week_ending)
-        )
+    return db.execute(query).mappings().first()
 
 
 def already(
@@ -101,9 +122,10 @@ def already(
 def take_upload(
     db: Connection, project_id: str, request: UploadRequest, reviewer: Reviewer
 ) -> str:
-    """Turn an upload on a project's page into a Received case with its first
-    submission, uploaded by the reviewer and received on the business date, and
-    return the case's id."""
+    """Turn an upload on a project's page into a submission, uploaded by the
+    reviewer and received on the business date: a Received case's first, or the
+    next of the case the week's payroll already has, which reopens it. Return the
+    case's id."""
     payroll = read_file(request)
     certification = payroll.certification
     if certification.project_id != project_id:
@@ -112,7 +134,10 @@ def take_upload(
     subcontractor_id = request.subcontractor_id
     engagement = engagement_of(db, project_id, subcontractor_id)
     week_ending = certification.week_ending
-    refuse_an_existing_case(db, project_id, subcontractor_id, week_ending)
+    case = existing_case(db, project_id, subcontractor_id, week_ending)
+    if case is not None:
+        reopen(db, case, request, payroll, reviewer)
+        return case["case_id"]
     case_id = CASE_ID.format(week=week_of(db, week_ending), pair=engagement["pair"])
     record_case(db, case_id, request, payroll, reviewer)
     return case_id
@@ -138,20 +163,31 @@ def record_case(
                 subcontractor_id=subcontractor_id,
                 project_id=project_id,
                 week_ending=week_ending.isoformat(),
-                status=Status.RECEIVED,
-                screening_flag=False,
-                agent_failed=False,
                 latest_submission_no=1,
-                attempts=0,
+                **FRESH,
             )
         )
     except IntegrityError as taken:
         message = already(case_id, project_id, subcontractor_id, week_ending)
         raise HTTPException(409, message) from taken
+    record_submission(db, (case_id, 1), request, payroll, reviewer)
+
+
+def record_submission(
+    db: Connection,
+    submission: tuple[str, int],
+    request: UploadRequest,
+    payroll: Payroll,
+    reviewer: Reviewer,
+) -> None:
+    """Record an upload as a case's submission, by the case's id and the
+    submission's number, received on the business date."""
+    case_id, submission_no = submission
+    certification = payroll.certification
     db.execute(
         insert(submissions).values(
             case_id=case_id,
-            submission_no=1,
+            submission_no=submission_no,
             uploaded_by=reviewer.reviewer_id,
             uploaded_at=now(),
             received_on=business_date(db).isoformat(),
@@ -161,3 +197,51 @@ def record_case(
             **payroll_record(payroll),
         )
     )
+
+
+def reopen(
+    db: Connection,
+    case: RowMapping,
+    request: UploadRequest,
+    payroll: Payroll,
+    reviewer: Reviewer,
+) -> None:
+    """Add the upload to a case as its next submission, in one move: the case back
+    to Received as a fresh first attempt on no thread, and the open exceptions of
+    its earlier submissions superseded, its dismissed ones left as they are. A case
+    the agent is checking is refused, and so is the second of two uploads at the
+    same moment, which finds the case moved on."""
+    case_id, latest = case["case_id"], case["latest_submission_no"]
+    if case["status"] == Status.IN_PROGRESS:
+        raise HTTPException(409, BEING_CHECKED.format(case_id=case_id))
+    moved = db.execute(
+        update(cases)
+        .where(
+            cases.c.case_id == case_id,
+            cases.c.latest_submission_no == latest,
+            cases.c.status != Status.IN_PROGRESS,
+        )
+        .values(latest_submission_no=latest + 1, **FRESH)
+    )
+    if moved.rowcount != 1:
+        raise HTTPException(409, why_not_reopened(db, case_id))
+    record_submission(db, (case_id, latest + 1), request, payroll, reviewer)
+    db.execute(
+        update(exceptions)
+        .where(
+            exceptions.c.case_id == case_id,
+            exceptions.c.submission_no <= latest,
+            exceptions.c.status == ExceptionStatus.OPEN,
+        )
+        .values(status=ExceptionStatus.SUPERSEDED)
+    )
+
+
+def why_not_reopened(db: Connection, case_id: str) -> str:
+    """Why a case another request moved on a moment ago wasn't reopened: the agent
+    started checking it, or it took another upload."""
+    status = db.execute(
+        select(cases.c.status).where(cases.c.case_id == case_id)
+    ).scalar_one()
+    template = BEING_CHECKED if status == Status.IN_PROGRESS else UPLOADED_MEANWHILE
+    return template.format(case_id=case_id)

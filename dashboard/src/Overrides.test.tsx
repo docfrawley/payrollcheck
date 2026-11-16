@@ -188,3 +188,34 @@ it("reads a shortfall in dollars as whole cents", () => {
   expect(shortfallInCents("1.234")).toBeUndefined();
   expect(shortfallInCents("-3")).toBeUndefined();
 });
+
+it("groups the exceptions by submission, the earlier ones superseded with no overrides", async () => {
+  showWithRules({
+    ...awaiting,
+    latest_submission_no: 2,
+    open_exceptions: 1,
+    exceptions: [
+      { ...baseShort, status: "superseded" },
+      { ...unsigned, status: "dismissed" },
+      { ...baseShort, exception_id: 9, submission_no: 2 },
+    ],
+  });
+  const exceptions = await panel("Exceptions");
+  const latest = within(
+    exceptions.getByRole("region", { name: "Submission 2" }),
+  );
+  const earlier = within(
+    exceptions.getByRole("region", { name: "Submission 1" }),
+  );
+  expect(
+    latest.getByRole("heading", { name: "Submission 2, the latest" }),
+  ).toBeDefined();
+  expect(latest.getAllByRole("listitem")).toHaveLength(1);
+  expect(latest.getByRole("button", { name: "Dismiss" })).toBeDefined();
+  expect(
+    earlier.getByRole("heading", { name: "Submission 1, before a correction" }),
+  ).toBeDefined();
+  expect(earlier.getByText("Superseded, submission 1")).toBeDefined();
+  expect(earlier.getByText("Dismissed, submission 1")).toBeDefined();
+  expect(earlier.queryByRole("button")).toBeNull();
+});

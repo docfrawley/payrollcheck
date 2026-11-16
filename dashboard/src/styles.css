@@ -2424,3 +2424,13 @@ fieldset.panel legend + * {
 .email details {
   margin-top: 8px;
 }
+
+/* A submission's exceptions, under its heading, the latest first. */
+.exception-group + .exception-group {
+  margin-top: 16px;
+}
+
+.exception-group h3 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}

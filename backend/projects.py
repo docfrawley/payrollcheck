@@ -71,6 +71,6 @@ def upload_payroll(
     scope: Scoped,
     db: Database,
 ) -> Case:
-    """Upload a subcontractor's payroll CSV, which creates its Received case."""
+    """Upload a payroll CSV: a new Received case, or a correction that reopens one."""
     project_row(db, project_id, scope)
     return case_in_full(db, take_upload(db, project_id, request, reviewer), scope)
