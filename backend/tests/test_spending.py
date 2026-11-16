@@ -2,7 +2,10 @@
 an estimate before a version's evaluations, and no new case once the limit is
 spent."""
 
+import pytest
+
 from backend.tests.case_requests import record_call, start
+from backend.tests.copies_worked import FALSE, raise_these
 from backend.tests.round_requests import (
     approved_change,
     create_round,
@@ -100,3 +103,16 @@ def test_a_first_evaluation_cut_short_stops_the_round(client):
         "The spending limit cut short its first evaluations"
     )
     assert (listed["cost"], listed["spending_limit"]) == (5.0, 5.0)
+
+
+def test_a_rounds_spending_counts_the_judge(client):
+    round_id = create_round(client).json()["round_id"]
+    run = round_evaluation(client, round_id).json()
+    first = run["cases"][0]["case_id"]
+    raise_these(client, first, [FALSE])
+    record_call(client, first, run["run_id"], cost=0.01)
+    improver_call(client, round_id, 0.02)
+    assert finish(client, run["run_id"]).json()["status"] == "finished"
+    [listed] = improvement(client)["rounds"]
+    # The improver's call, the copy's model call and the judge's grade of its notice.
+    assert listed["cost"] == pytest.approx(0.02 + 0.01 + 0.00002)

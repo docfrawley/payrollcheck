@@ -7,7 +7,8 @@ import pytest
 from sqlalchemy import event
 
 from backend.database import SCREENING, engine
-from backend.tests.case_requests import flag, record_findings, report, start
+from backend.tests.case_requests import flag, start
+from backend.tests.copies_worked import FALSE, original, raise_these
 from backend.tests.dashboard_reads import evaluations
 from backend.tests.round_requests import as_finding, labels_of
 from backend.tests.run_requests import create_evaluation, fail_run, get_evaluation
@@ -22,28 +23,6 @@ def money_labelled(copies, found, count):
         and all(x["expected_shortfall_cents"] for x in found[original(c)])
     ]
     return chosen[:count]
-
-
-def original(copy_id):
-    return copy_id.rsplit("-E", 1)[0]
-
-
-def raise_these(client, copy_id, findings, notice="Please correct and resubmit."):
-    start(client, copy_id, thread_id=copy_id)
-    candidates = record_findings(client, copy_id, findings=findings).json()
-    ids = [c["candidate_id"] for c in candidates]
-    return report(client, copy_id, raised=ids, notice=notice if ids else "")
-
-
-FALSE = {
-    "rule": "form.missing_field",
-    "worker_id": None,
-    "line_no": None,
-    "expected": "Every required field filled in",
-    "actual": "Blank: fein",
-    "shortfall_cents": None,
-    "citation": "MW-562 payroll certification",
-}
 
 
 @pytest.fixture
@@ -94,6 +73,13 @@ def test_an_evaluations_measures_as_worked_out_by_hand(client, played_out):
         0,
         len(flags),
     )
+    # The judge graded the three copies with an exception open, each 0.85.
+    assert (measures["notice_score"], measures["notices_graded"]) == (
+        pytest.approx(0.85),
+        3,
+    )
+    assert evaluation["judge_cost"] == pytest.approx(3 * 0.00002)
+    assert evaluation["model_cost"] == 0
 
     by_copy = {c["case_id"]: c for c in evaluation["cases"]}
     assert {x["result"] for x in by_copy[caught]["labels"]} == {"caught"}

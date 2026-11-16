@@ -50,6 +50,7 @@ export const evaluation: Evaluation = {
   finished_at: "2026-10-04T09:02:00+00:00",
   seconds: 120,
   model_cost: 0.05,
+  judge_cost: 0.0002,
   evaluation_set: "held_out",
   size: 98,
   measures: measures(0.6),

@@ -19,6 +19,7 @@ from backend.database import (
     runs,
     work_times,
 )
+from backend.grading import grades_of, judge_costs
 from backend.lookups import round_numbers
 from backend.models import (
     LABELLED_SET,
@@ -26,6 +27,7 @@ from backend.models import (
     ExceptionStatus,
     LabelledSet,
     Measures,
+    NoticeGradeRecord,
     RunCase,
     RunKind,
     RunStatus,
@@ -175,9 +177,13 @@ def open_exceptions_of(
 
 
 def scored_case(
-    row: RowMapping, expected: list[scoring.Label], raised: list[scoring.Raised]
+    row: RowMapping,
+    expected: list[scoring.Label],
+    raised: list[scoring.Raised],
+    notice: NoticeGradeRecord | None,
 ) -> ScoredCase:
-    """An evaluation's copy beside its original's labels."""
+    """An evaluation's copy beside its original's labels, with its notice's
+    grade."""
     screening = any(label.rule == SCREENING for label in expected)
     found_labels = [label for label in expected if label.rule != SCREENING]
     matches, found = scoring.match_copy(found_labels, raised, row["screening_flag"])
@@ -190,6 +196,7 @@ def scored_case(
         screening_found=row["screening_flag"],
         misses=sum(m.result == "missed" for m in matches),
         false_exceptions=scoring.false_count(found, row["screening_flag"], screening),
+        notice=notice,
     )
 
 
@@ -197,6 +204,7 @@ def scored_copies(
     row: RowMapping,
     copies: list[RowMapping],
     raised: dict[str, list[scoring.Raised]],
+    notices: dict[str, NoticeGradeRecord],
     expected: Expected,
 ) -> list[ScoredCase]:
     """An evaluation's copies as they stand, each beside its original's labels."""
@@ -206,6 +214,7 @@ def scored_copies(
             case,
             expected.get((labelled_set, case["copy_of"]), []),
             raised[case["case_id"]],
+            notices.get(case["case_id"]),
         )
         for case in copies
     ]
@@ -215,6 +224,7 @@ def scored_evaluation(
     row: RowMapping,
     scored: list[ScoredCase],
     model_cost: float,
+    judge_cost: float,
     round_number: int | None,
 ) -> ScoredEvaluation:
     """An evaluation with its measures from its scored copies."""
@@ -222,6 +232,7 @@ def scored_evaluation(
     return ScoredEvaluation(
         **row,
         model_cost=model_cost,
+        judge_cost=judge_cost,
         seconds=seconds,
         round_number=round_number,
         size=len(scored),
@@ -233,17 +244,19 @@ def scored_evaluation(
 def score_all(
     db: Connection, rows: list[RowMapping], expected: Expected
 ) -> list[ScoredEvaluation]:
-    """Score evaluations, in four queries for them all."""
+    """Score evaluations, in six queries for them all."""
     run_ids = [row["run_id"] for row in rows]
     copies, costs = cases_of_runs(db, run_ids), model_costs(db, run_ids)
     copy_ids = [copy["case_id"] for found in copies.values() for copy in found]
-    raised = open_exceptions_of(db, copy_ids)
+    raised, notices = open_exceptions_of(db, copy_ids), grades_of(db, copy_ids)
+    judged = judge_costs(db, run_ids)
     numbers = round_numbers(db, [row["round_id"] for row in rows])
     return [
         scored_evaluation(
             row,
-            scored_copies(row, copies[row["run_id"]], raised, expected),
+            scored_copies(row, copies[row["run_id"]], raised, notices, expected),
             costs[row["run_id"]],
+            judged[row["run_id"]],
             numbers.get(row["round_id"]),
         )
         for row in rows

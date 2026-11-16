@@ -105,13 +105,13 @@ class VersionStatus(StrEnum):
     UNDER_TEST = "under_test"
 
 
-class Letter(StrEnum):
-    """The judge's levels, from different grounds to better expressed."""
+class NoticeResult(StrEnum):
+    """What came of grading a copy's notice: graded, no notice where one was
+    needed, which scores 0, or one the judge couldn't grade."""
 
-    F = "F"
-    C = "C"
-    B = "B"
-    A = "A"
+    GRADED = "graded"
+    NO_NOTICE = "no_notice"
+    NOT_GRADED = "not_graded"
 
 
 class RoundStatus(StrEnum):
@@ -656,15 +656,52 @@ class Measures(BaseModel):
     run_seconds: float | None
 
 
-class CaseGrade(BaseModel):
-    """The judge's grade of an explanation: its score from 0 to 3, the likeliest
-    level, and the chances of the same grounds and the same section as the
-    reviewer's."""
+class ExceptionAsRead(BaseModel):
+    """An open exception as the judge reads it beside the notice."""
+
+    rule: str
+    worker: str | None
+    line_no: int | None
+    expected: str
+    actual: str
+    shortfall: str | None = Field(description="In dollars, such as $1,250.00")
+    citation: str
+
+
+class NoticeToGrade(BaseModel):
+    """A draft notice and the exceptions it goes with, as the judge grades it."""
+
+    notice: str
+    exceptions: list[ExceptionAsRead]
+
+
+class RubricPoints(BaseModel):
+    """The chance, from 0 to 1, that a notice keeps to each point of the rubric."""
+
+    covers_every_exception: float
+    amounts_match: float
+    plain_language: float
+    no_legal_interpretation: float
+
+
+class NoticeGrade(RubricPoints):
+    """The judge's grade of a notice: its four points, their average as its score,
+    and what the judge cost."""
 
     score: float
-    letter: Letter
-    same_grounds: float
-    same_section: float
+    cost: float
+
+
+class NoticeGradeRecord(BaseModel):
+    """A copy's notice as the evaluation graded it: its four points and score when
+    graded, a score of 0 with no notice, and neither when the judge couldn't."""
+
+    result: NoticeResult
+    score: float | None
+    covers_every_exception: float | None = None
+    amounts_match: float | None = None
+    plain_language: float | None = None
+    no_legal_interpretation: float | None = None
     cost: float
 
 
@@ -697,11 +734,15 @@ class ScoredCase(RunCase):
     screening_found: bool
     misses: int
     false_exceptions: int
+    notice: NoticeGradeRecord | None = Field(
+        description="Its notice's grade, or null when nothing open needs a notice"
+    )
 
 
 class Evaluation(RunDetails):
     evaluation_set: EvaluationSet
     size: int
+    judge_cost: float = Field(description="The judge's, apart from the model cost")
     measures: Measures
 
 

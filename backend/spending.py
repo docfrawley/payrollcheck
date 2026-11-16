@@ -1,22 +1,32 @@
 """What a round of the improver spends against its limit: its improver's model calls,
-and every model call in its evaluations, and an estimate
-of what a version's evaluations will cost before they start."""
+every model call in its evaluations and the judge's grades of their notices, and an
+estimate of what a version's evaluations will cost before they start."""
 
 from sqlalchemy import Connection, func, select
 
-from backend.database import improver_calls, model_calls, run_cases, runs
+from backend.database import (
+    improver_calls,
+    model_calls,
+    notice_grades,
+    run_cases,
+    runs,
+)
 from backend.models import ModelAllowed, RunStatus
 
 
 def spent_in(db: Connection, round_ids: list[str]) -> dict[str, float]:
-    """Return what each round has spent so far, in US dollars, in two queries for
-    all the rounds."""
+    """Return what each round has spent so far, in US dollars, in three queries
+    for all the rounds."""
     parts = [
         select(improver_calls.c.round_id, func.sum(improver_calls.c.cost))
         .where(improver_calls.c.round_id.in_(round_ids))
         .group_by(improver_calls.c.round_id),
         select(runs.c.round_id, func.sum(model_calls.c.cost))
         .join(runs, runs.c.run_id == model_calls.c.run_id)
+        .where(runs.c.round_id.in_(round_ids))
+        .group_by(runs.c.round_id),
+        select(runs.c.round_id, func.sum(notice_grades.c.cost))
+        .join(runs, runs.c.run_id == notice_grades.c.run_id)
         .where(runs.c.round_id.in_(round_ids))
         .group_by(runs.c.round_id),
     ]

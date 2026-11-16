@@ -23,6 +23,7 @@ from backend.database import (
     runs,
 )
 from backend.dependencies import AgentKey, Database, SignedInReviewer
+from backend.grading import grade_notices
 from backend.lookups import (
     CASE_NOT_FOUND,
     RUN_NOT_FOUND,
@@ -329,7 +330,7 @@ def record_run_cases(run_id: str, request: RunCasesRequest, db: Database) -> Run
     "/api/runs/{run_id}/finish", operation_id="finish_run", dependencies=[AgentKey]
 )
 def finish_run(run_id: str, db: Database) -> Run:
-    """Finish a run: a dispatch gets its summary, an evaluation its finish or a stop."""
+    """Finish a run: summarize a dispatch, grade an evaluation's notices, or stop."""
     row = run_row(db, run_id)
     if row["status"] == RunStatus.STOPPED:
         return find_run(db, run_id, EVERYTHING)
@@ -340,6 +341,7 @@ def finish_run(run_id: str, db: Database) -> Run:
     elif because := why_cut_short(db, row):
         end_cut_short(db, row, because)
     else:
+        grade_notices(db, run_id)
         mark_finished(db, run_id, None)
     return find_run(db, run_id, EVERYTHING)
 

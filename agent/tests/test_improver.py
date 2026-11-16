@@ -23,7 +23,13 @@ from agent.tests.rounds import (
     whole_round,
 )
 from agent.tests.stubs import StubModel, call
-from backend.database import engine, improver_calls, model_calls, runs
+from backend.database import (
+    engine,
+    improver_calls,
+    model_calls,
+    notice_grades,
+    runs,
+)
 from backend.tests.dashboard_reads import configuration, version_details
 from backend.tests.round_requests import create_round, improvement, stop_round
 from backend.tests.round_requests import review as review_as_a_reviewer
@@ -155,7 +161,11 @@ def test_a_whole_round_with_a_rejection(client, serve_rounds):
     cost = total(
         improver_calls, improver_calls.c.cost, improver_calls.c.round_id == round_id
     ) + total(model_calls, model_calls.c.cost, model_calls.c.run_id.in_(in_round))
-    assert finished["cost"] == pytest.approx(cost)
+    judged = total(
+        notice_grades, notice_grades.c.cost, notice_grades.c.run_id.in_(in_round)
+    )
+    assert judged > 0
+    assert finished["cost"] == pytest.approx(cost + judged)
     assert total(improver_calls, improver_calls.c.cost, True) == pytest.approx(
         6 * 0.0042
     )

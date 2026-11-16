@@ -388,6 +388,23 @@ improver_calls = Table(
     Column("cost", Float, nullable=False),
     Column("created_at", Text, nullable=False),
 )
+# The judge's grade of the draft notice of each evaluation copy that needed one:
+# its four points and score, a score of 0 with no notice, or neither when the
+# judge couldn't grade it.
+notice_grades = Table(
+    "notice_grades",
+    metadata,
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
+    Column("run_id", Text, ForeignKey("runs.run_id"), nullable=False, index=True),
+    Column("result", Text, nullable=False),
+    Column("score", Float),
+    Column("covers_every_exception", Float),
+    Column("amounts_match", Float),
+    Column("plain_language", Float),
+    Column("no_legal_interpretation", Float),
+    Column("cost", Float, nullable=False),
+    Column("graded_at", Text, nullable=False),
+)
 versions = Table(
     "versions",
     metadata,

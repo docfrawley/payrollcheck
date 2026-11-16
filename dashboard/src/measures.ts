@@ -3,6 +3,8 @@ import { duration, modelCost, percent } from "./format";
 
 // A run that's running or stopped has no run time.
 const NOT_FINISHED = "Not finished";
+// A notice score with no notice graded, or a notice the judge couldn't grade.
+export const NOT_GRADED = "Not graded";
 // Shortfall accuracy with no money label caught.
 export const NONE_CAUGHT = "None caught";
 
@@ -32,6 +34,13 @@ export const MEASURES: {
     label: "Screening flags",
     show: (m) =>
       `${String(m.screening_caught)} of ${String(m.screening_expected)}`,
+  },
+  {
+    label: "Notice score",
+    show: (m) =>
+      m.notice_score === null
+        ? NOT_GRADED
+        : `${m.notice_score.toFixed(2)} (${String(m.notices_graded)} graded)`,
   },
   {
     label: "Model cost per case",

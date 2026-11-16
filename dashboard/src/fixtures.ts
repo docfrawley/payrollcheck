@@ -4,6 +4,7 @@ import type {
   ProjectInFull,
   Evaluation,
   Measures,
+  NoticeGradeRecord,
   Run,
   RunCase,
   ScoredCase,
@@ -74,8 +75,8 @@ const measures: Measures = {
   shortfall_accuracy: 0.95,
   screening_caught: 1,
   screening_expected: 1,
-  notice_score: null,
-  notices_graded: 0,
+  notice_score: 0.84,
+  notices_graded: 30,
   model_cost_per_case: 0.0125,
   seconds_per_case: 40,
   run_seconds: 161,
@@ -98,6 +99,7 @@ export const finishedEvaluation: Evaluation = {
   finished_at: "2026-11-23T17:04:54+00:00",
   seconds: 161,
   model_cost: 0.3125,
+  judge_cost: 0.0006,
   size: 207,
   measures,
 };
@@ -132,10 +134,29 @@ export const scoredCopy: ScoredCase = {
       matched: true,
     },
   ],
+  notice: {
+    result: "graded",
+    score: 0.85,
+    covers_every_exception: 0.9,
+    amounts_match: 0.8,
+    plain_language: 0.7,
+    no_legal_interpretation: 1,
+    cost: 0.00002,
+  },
   screening_expected: false,
   screening_found: false,
   misses: 0,
   false_exceptions: 0,
+};
+
+const noGrade: NoticeGradeRecord = {
+  result: "not_graded",
+  score: null,
+  covers_every_exception: null,
+  amounts_match: null,
+  plain_language: null,
+  no_legal_interpretation: null,
+  cost: 0,
 };
 
 export const scoredEvaluation: ScoredEvaluation = {
@@ -163,6 +184,7 @@ export const scoredEvaluation: ScoredEvaluation = {
       ],
       misses: 1,
       false_exceptions: 1,
+      notice: noGrade,
     },
     {
       ...scoredCopy,
@@ -173,6 +195,7 @@ export const scoredEvaluation: ScoredEvaluation = {
       exceptions: [],
       screening_expected: true,
       screening_found: true,
+      notice: null,
     },
   ],
 };

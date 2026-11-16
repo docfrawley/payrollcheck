@@ -120,8 +120,8 @@ def judge_answers(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def judged(judge_answers):
-    """Stand in for the judge, grading every explanation a B, and keep the body of
-    each request to it."""
+    """Stand in for the judge, grading every notice 0.85 on the rubric's four
+    points, and keep the body of each request to it."""
     requests: list[dict] = []
 
     def grade(request: httpx.Request) -> httpx.Response:

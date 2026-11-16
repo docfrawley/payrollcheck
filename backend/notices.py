@@ -8,13 +8,14 @@ from sqlalchemy import (
     ColumnElement,
     Connection,
     RowMapping,
+    and_,
     func,
     insert,
     select,
     update,
 )
 
-from backend.database import notices, now
+from backend.database import cases, notices, now
 from backend.models import Reviewer
 
 NOTHING_TO_SEND = (
@@ -66,3 +67,20 @@ def mark_sent(
         .where(*latest(case))
         .values(sent_by=reviewer.name, sent_at=sent_at)
     )
+
+
+def drafts_of(db: Connection, case_ids: list[str]) -> dict[str, str]:
+    """The agent's draft of each case's latest submission's notice, where it wrote
+    one, in one query."""
+    query = (
+        select(notices.c.case_id, notices.c.draft)
+        .join(
+            cases,
+            and_(
+                cases.c.case_id == notices.c.case_id,
+                cases.c.latest_submission_no == notices.c.submission_no,
+            ),
+        )
+        .where(notices.c.case_id.in_(case_ids), notices.c.draft.is_not(None))
+    )
+    return {case_id: draft for case_id, draft in db.execute(query)}

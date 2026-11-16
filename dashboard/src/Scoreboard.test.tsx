@@ -143,10 +143,10 @@ it("shows an evaluation's copies beside their labels", async () => {
   expect(shown("Shortfall accuracy")).toBe("95%");
   expect(shown("Screening flags")).toBe("1 of 1");
   expect(shown("Run time")).toBe("2 min 41 s");
+  expect(shown("Notice score")).toBe("0.84 (30 graded)");
   expect(measures.getByText(/Started/).textContent).toContain(
-    "Model cost $0.3125.",
+    "Model cost $0.3125, judge cost $0.0006.",
   );
-  expect(measures.queryByText(/judge/)).toBeNull();
   const copies = await panel("Copies");
   const rows = copies.getAllByRole("row").slice(1);
   // The copy with a miss and a false exception comes first, tinted.
@@ -172,6 +172,17 @@ it("shows an evaluation's copies beside their labels", async () => {
   );
   expect(flagged.getAllByText("None")).toHaveLength(2);
   expect(flagged.getByText("Expected and flagged")).toBeDefined();
+  expect(right.getByText("0.85").parentElement?.textContent).toMatch(
+    /^Score 0.85/,
+  );
+  expect(right.getByText("Plain language").nextSibling?.textContent).toBe(
+    "0.70",
+  );
+  expect(
+    right.getByText("No legal interpretation").nextSibling?.textContent,
+  ).toBe("1.00");
+  expect(wrong.getByText("Not graded")).toBeDefined();
+  expect(flagged.getByText("No notice needed")).toBeDefined();
   const link = right.getByRole("link", { name: "PC-0412-E9" });
   expect(link.getAttribute("href")).toBe("/cases/PC-0412-E9");
 });

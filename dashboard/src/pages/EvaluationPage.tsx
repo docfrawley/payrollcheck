@@ -65,7 +65,8 @@ function MeasuresPanel({
         />
         , version {evaluation.version}. Started{" "}
         {dateTime(evaluation.started_at)}. Model cost{" "}
-        <span className="mono">{modelCost(evaluation.model_cost)}</span>.
+        <span className="mono">{modelCost(evaluation.model_cost)}</span>, judge
+        cost <span className="mono">{modelCost(evaluation.judge_cost)}</span>.
       </p>
       {evaluation.stopped_because && (
         <p className="stopped">{evaluation.stopped_because}</p>

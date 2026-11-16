@@ -1,4 +1,4 @@
-"""The judge, Jev, grading the agent's explanation against the reviewer's reason."""
+"""The judge, Jev, grading a draft notice against the business's rubric."""
 
 import json
 import logging
@@ -7,15 +7,28 @@ import httpx
 import pytest
 
 from backend import judge
-from backend.tests.judging import answer
+from backend.models import ExceptionAsRead, NoticeToGrade
+from backend.tests.judging import POINTS, answer
 
-REVIEWER = judge.Explanation(
-    "approve", "The delay was over six hours.", "Policy wording, section 3"
+NOTICE = NoticeToGrade(
+    notice="Please pay Jorge Oliveira the $0.40 he was short on line 1.",
+    exceptions=[
+        ExceptionAsRead(
+            rule="rate.base_short",
+            worker="Jorge Oliveira",
+            line_no=1,
+            expected="$55.12 an hour",
+            actual="$55.11 an hour",
+            shortfall="$0.40",
+            citation="MID-2025-11, Carpenter Journeyman, effective 2026-10-01",
+        )
+    ],
 )
-AGENT = judge.Explanation("approve", "A long delay is covered.", "Section 3")
 
 
-def test_the_request(judge_answers):
+def test_the_request_carries_the_notice_its_exceptions_and_the_four_points(
+    judge_answers,
+):
     requests = []
 
     def keep(request):
@@ -23,44 +36,24 @@ def test_the_request(judge_answers):
         return httpx.Response(200, json=answer())
 
     judge_answers(keep)
-    grade = judge.grade(REVIEWER, AGENT)
+    grade = judge.grade(NOTICE)
     [request] = requests
     assert str(request.url) == "https://judge.test/api/alpha/decisions"
     body = json.loads(request.content)
     assert body["model"] == "typesafe/jev-1.13"
-    assert body["state"] == {
-        "reviewer": {
-            "decision": "approve",
-            "reason": "The delay was over six hours.",
-            "reference": "Policy wording, section 3",
-        },
-        "agent": {
-            "decision": "approve",
-            "reason": "A long delay is covered.",
-            "section": "Section 3",
-        },
-    }
-    assert list(body["questions"]) == ["grade", "same_grounds", "same_section"]
-    assert "`agent.reason`" in body["questions"]["grade"]["instructions"]
+    assert body["state"] == NOTICE.model_dump()
+    assert list(body["questions"]) == list(POINTS)
+    assert all(q["type"] == "noul" for q in body["questions"].values())
     assert request.extensions["timeout"]["read"] == 10
     assert grade is not None
-    assert (grade.score, grade.letter, grade.cost) == (2.2, "B", 0.00002)
-    assert (grade.same_grounds, grade.same_section) == (0.8, 0.3)
-
-
-def test_the_letter_is_the_likeliest_level_not_the_score_rounded(judge_answers):
-    judge_answers(
-        lambda request: httpx.Response(
-            200,
-            json=answer(
-                score=1.5,
-                probabilities={"0": 0.4, "1": 0.05, "2": 0.2, "3": 0.35},
-            ),
-        )
-    )
-    grade = judge.grade(REVIEWER, AGENT)
-    assert grade is not None
-    assert (grade.score, grade.letter) == (1.5, "F")
+    assert (
+        grade.covers_every_exception,
+        grade.amounts_match,
+        grade.plain_language,
+        grade.no_legal_interpretation,
+    ) == (0.9, 0.8, 0.7, 1.0)
+    assert grade.score == pytest.approx(0.85)
+    assert grade.cost == 0.00002
 
 
 @pytest.mark.parametrize(
@@ -68,11 +61,15 @@ def test_the_letter_is_the_likeliest_level_not_the_score_rounded(judge_answers):
     [
         lambda request: (_ for _ in ()).throw(httpx.ReadTimeout("Timed out")),
         lambda request: httpx.Response(500, json={"error": "Down"}),
-        lambda request: httpx.Response(200, json=answer() | {"answers": {}}),
+        lambda request: httpx.Response(
+            200,
+            json=answer()
+            | {"answers": {"covers_every_exception": {"type": "noul", "noul": 1}}},
+        ),
     ],
-    ids=["a timeout", "an error", "no grade"],
+    ids=["a timeout", "an error", "a point missing"],
 )
-def test_a_case_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
+def test_a_notice_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
     calls = []
 
     def once(request):
@@ -81,6 +78,6 @@ def test_a_case_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
 
     judge_answers(once)
     with caplog.at_level(logging.ERROR):
-        assert judge.grade(REVIEWER, AGENT) is None
+        assert judge.grade(NOTICE) is None
     assert len(calls) == 1
-    assert "The judge couldn't grade the explanation" in caplog.text
+    assert "The judge couldn't grade the notice" in caplog.text

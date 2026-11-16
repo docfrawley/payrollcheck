@@ -4,6 +4,7 @@ import { whereOnPayroll } from "../judgment";
 import { CaseLink } from "./CaseLink";
 import { LabelResultChip, MatchedChip, StatusChip } from "./Chips";
 import { None } from "./None";
+import { NoticeGrade } from "./NoticeGrade";
 
 // Whether a copy was expected to be flagged by the screening, and was.
 function screening(copy: ScoredCase): string {
@@ -106,7 +107,8 @@ export function ScoredCopies({ cases }: Readonly<{ cases: ScoredCase[] }>) {
       <p className="muted small">
         Each copy of a labeled payroll beside its labels: each label caught,
         missed or caught with the wrong shortfall, and each exception the agent
-        raised, matched to a label or false. Copies with a miss, a false
+        raised, matched to a label or false, and the judge's score of its draft
+        notice on the rubric's four points. Copies with a miss, a false
         exception or a screening the agent got wrong come first, tinted.
       </p>
       <div className="table-scroll">
@@ -118,6 +120,7 @@ export function ScoredCopies({ cases }: Readonly<{ cases: ScoredCase[] }>) {
             <col />
             <col />
             <col className="col-status" />
+            <col />
             <col className="col-money" />
             <col className="col-time" />
           </colgroup>
@@ -129,6 +132,7 @@ export function ScoredCopies({ cases }: Readonly<{ cases: ScoredCase[] }>) {
               <th>Labels</th>
               <th>Exceptions</th>
               <th>Screening</th>
+              <th>Notice</th>
               <th className="num">Model cost</th>
               <th className="num">Time</th>
             </tr>
@@ -153,6 +157,9 @@ export function ScoredCopies({ cases }: Readonly<{ cases: ScoredCase[] }>) {
                   <Exceptions exceptions={copy.exceptions} />
                 </td>
                 <td>{screening(copy)}</td>
+                <td>
+                  <NoticeGrade notice={copy.notice} />
+                </td>
                 <td className="num mono">{modelCost(copy.model_cost)}</td>
                 <td className="num mono">{duration(copy.seconds)}</td>
               </tr>

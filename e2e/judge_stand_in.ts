@@ -1,21 +1,21 @@
 // Stands in for OpenRouter's Decisions endpoint in the end-to-end tests: it grades
-// every explanation the same, a score of 2.2 with B the most likely level, the
-// same grounds at 0.8 and the same section at 0.3, for $0.00002.
+// every notice the same on the rubric's four points, covering every exception
+// at 0.9, its amounts matching at 0.8, plain language at 0.7 and no legal
+// interpretation at 1.0, a score of 0.85, for $0.00002.
 import { createServer } from "node:http";
 import { reply } from "./stand_in.ts";
+
+const point = (noul: number) => ({ type: "noul", noul });
 
 const ANSWER = {
   model: "typesafe/jev-1.13",
   answers: {
-    grade: {
-      type: "score",
-      score: 2.2,
-      probabilities: { "0": 0.05, "1": 0.1, "2": 0.5, "3": 0.35 },
-    },
-    same_grounds: { type: "noul", noul: 0.8 },
-    same_section: { type: "noul", noul: 0.3 },
+    covers_every_exception: point(0.9),
+    amounts_match: point(0.8),
+    plain_language: point(0.7),
+    no_legal_interpretation: point(1.0),
   },
-  usage: { input_tokens: 400, output_tokens: 3, cost: 0.00002 },
+  usage: { input_tokens: 400, output_tokens: 4, cost: 0.00002 },
 };
 
 createServer((request, response) => {

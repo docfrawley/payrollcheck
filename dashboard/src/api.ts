@@ -291,11 +291,30 @@ export interface ScoredCase extends RunCase {
   screening_found: boolean;
   misses: number;
   false_exceptions: number;
+  // Its notice's grade, or null when nothing open needs a notice.
+  notice: NoticeGradeRecord | null;
 }
+
+// The rubric's four points, each the chance a notice keeps to it.
+export type RubricPoint =
+  | "covers_every_exception"
+  | "amounts_match"
+  | "plain_language"
+  | "no_legal_interpretation";
+
+// A copy's notice as the evaluation graded it: its four points and score when
+// graded, a score of 0 with no notice, and neither when the judge couldn't.
+export type NoticeGradeRecord = { cost: number } & (
+  | ({ result: "graded"; score: number } & Record<RubricPoint, number>)
+  | ({ result: "no_notice"; score: number } & Record<RubricPoint, null>)
+  | ({ result: "not_graded"; score: null } & Record<RubricPoint, null>)
+);
 
 export interface Evaluation extends RunDetails {
   evaluation_set: EvaluationSet;
   size: number;
+  // The judge's grades of its notices, apart from the model cost.
+  judge_cost: number;
   measures: Measures;
 }
 
