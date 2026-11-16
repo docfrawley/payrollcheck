@@ -75,7 +75,8 @@ def get_wage_rate(
 ) -> dict[str, Any]:
     """The rate for a day's work on a project: the determination in force on the
     project's award date and its latest row dated on or before the work date, with
-    the craft's overtime rules, apprentice schedule and ratio."""
+    the craft's whole entry: its name, whether it is statewide, its overtime rules,
+    apprentice schedule and ratio."""
     refuse_unknown_rate(craft, classification, county)
     work = wage_rules.Work(craft, classification, county, award_date)
     try:
@@ -98,11 +99,9 @@ def get_wage_rate(
             "fringe_cents": row.fringe,
             "total_cents": row.total,
         },
-        "overtime_rules": entry["overtime_rules"],
+        "craft_rules": entry,
         "weekly_overtime_floor": FILES[RATE_DETERMINATIONS]["weekly_overtime_floor"],
         "holidays": FILES[RATE_DETERMINATIONS]["holidays"],
-        "apprentice_schedule": entry["apprentice_schedule"],
-        "apprentice_ratio": entry["apprentice_ratio"],
         "sources": sources_of(RATE_DETERMINATIONS),
     }
 

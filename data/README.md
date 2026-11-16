@@ -22,7 +22,7 @@ It works in two passes. The first draws a world (`payroll_world/world.py`, from 
 - **Held-out** (`held_out/`): three other projects in the same counties, five other subcontractors with workers of their own, none sharing a name with the development world's, the same crafts, and eight weeks from the week ending 2026-10-04, every case waiting with one submission. Only the improver's keep/rollback gate scores it.
 - **Tiny**: ten development cases, one for each check family, one hidden instruction and one decoy, for free models, listed in `evals/tiny_labels.json`.
 
-Each set's folder holds `world.json` (the business date, the weeks, and the projects with their award dates, public bodies, contract numbers, reviewers and engagement windows), `subcontractors.json` (legal name, FEIN, registration number and payroll contact), `workers.json` (each worker's established craft and classification), `cases.json` (each case's status, the reviewer who decided it and when, and its submissions with the date each was received and its file) and `payrolls/`, a CSV for each submission, `PC-WWPP-N.csv` for submission N.
+Each set's folder holds `world.json` (the business date, the weeks, and the projects with their award dates, public bodies, contract numbers, reviewers and engagement windows, each with its pair's number), `subcontractors.json` (legal name, FEIN, registration number and payroll contact), `workers.json` (each worker's established craft and classification), `cases.json` (each case's status, the reviewer who decided it and when, and its submissions with the date each was received and its file) and `payrolls/`, a CSV for each submission, `PC-WWPP-N.csv` for submission N. The development set's `arrivals/` holds the payrolls of the two missing filings, `PC-1214-1.csv` and `PC-1223-1.csv`, which seeding never loads: they are the files a reviewer uploads when the payrolls arrive.
 
 ### The manifests
 
@@ -41,7 +41,7 @@ Each set's folder holds `world.json` (the business date, the weeks, and the proj
 
 ### The template
 
-One CSV for each submission, one row for each worker's week, with the certification repeated on every row. A No Work Week payroll is one row with the certification filled in, the worker columns blank and `no_work_week` set to `true`. `payroll_world/template.py` writes and reads it.
+One CSV for each submission, one row for each worker's week, with the certification repeated on every row. A No Work Week payroll is one row with the certification filled in, the worker columns blank and `no_work_week` set to `true`. `payroll_world/template.py` writes and reads it: `read_upload`, which the app's intake uses, refuses a file that can't become a payroll with the reason (no header row, a missing column, certification columns that differ between rows, a number or date that won't parse, a `no_work_week` that isn't `true` or `false`) and reads anything else as it is, however wrong. `payroll_record` gives a payroll as the app keeps it in JSON.
 
 | Column | What it holds |
 |---|---|

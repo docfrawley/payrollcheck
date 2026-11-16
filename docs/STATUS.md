@@ -29,6 +29,12 @@ What stage 3 inherits:
 - The held-out projects PRJ-51 and PRJ-52 name Marcus Oyelaran as their reviewer; the held-out cases must stay out of the queue, or the Copilot's expected answers change.
 - `copilot_expected.json`'s classification changes compare each worker's line with the same pair's line the week before, and its late filings are judged on the first submission; missing filings aren't yet past their due date. Stage 6's tools must define them the same way.
 
+## Stage 3
+
+Stage 3, cases and checks (`docs/PLAN_CASES.md`), is being built on `stage-3-cases`.
+
+- **Phase 1, the check tools and the CSV reader:** `agent/checks/` holds the payroll agent's eight check tools in order (`CHECKS`: `check_form`, `check_contractor_registration`, `check_rates`, `check_overtime`, `check_arithmetic`, `check_apprentices`, `check_timeliness`, `check_classification`), each a pure function of `CheckInputs` (`agent/checks/inputs.py`, plain data) and the version's `Parameters` (the rounding tolerance), finding candidates (`agent/checks/findings.py`, which also names the 15 rule codes on the agent's side) with every amount from `context/wage_rules.py`. `agent/check_inputs.py` reads `CheckInputs` from the app's JSON and a lookup function, asking each lookup once. On both labelled sets the checks find every label to the cent and nothing else, but the classification change with a note (PC-1202), "Garden St. Electric" (PC-1109) and a hidden instruction written into a contractor's name (PC-5507, which the screening stops first). Where the plan and the code differ: an apprentice's level comes from the context layer's `check_apprentice`, so the checks import only `context/wage_rules.py` and the AgentCore package stages `context/__init__.py` and `wage_rules.py`, not `registrations.py`; a misclassification paid the established craft's rates owes nothing and isn't found; a classification the rate determinations don't have is a `classification.mismatch` with no money; and the form check compares the FEIN, registration number and project id with our records as well as the name. `get_wage_rate`'s answer now carries the craft's whole entry as `craft_rules`. `data/payroll_world/template.py` gains `read_upload`, which refuses a file that can't become a payroll with its reason, and `payroll_record`, a payroll as the app keeps it in JSON. `world.json` gives each engagement its pair, and `data/development/arrivals/` holds the two missing filings' payrolls; the labels are unchanged.
+
 ## Running it
 
 - After pulling stage 1:

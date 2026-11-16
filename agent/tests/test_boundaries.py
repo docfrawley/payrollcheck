@@ -184,3 +184,30 @@ def test_the_copilots_memory_uses_only_agentcore_memory():
     assert theirs == {"agentcore_memory"}
     for module in copilot_modules() - {"copilot.graph", "copilot.turns"}:
         assert "copilot.memory" not in imports_of(module), module
+
+
+def imported_names(path: Path) -> set[str]:
+    """Every module a file imports, with a package's modules imported from it."""
+    names: set[str] = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            names |= {alias.name for alias in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            names.add(node.module)
+            names |= {f"{node.module}.{alias.name}" for alias in node.names}
+    return names
+
+
+def test_the_check_tools_import_the_rate_logic_and_nothing_else_of_ours():
+    ours = ("agent", "context", "data", "backend")
+    imported = {
+        name
+        for path in (AGENT / "checks").glob("*.py")
+        for name in imported_names(path)
+        if name.split(".")[0] in ours and not name.startswith("agent.checks")
+    }
+    rate_logic = {"context", "context.wage_rules"}
+    assert {name for name in imported if name not in rate_logic} == {
+        name for name in imported if name.startswith("context.wage_rules.")
+    }
+    assert "context.wage_rules" in imported

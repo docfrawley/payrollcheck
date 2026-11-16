@@ -213,15 +213,15 @@ Built first because both are pure, deterministic and additive: nothing in the tr
 - `agentcore/cdk/lib/cdk-stack.ts` stages `context/__init__.py`, `wage_rules.py` and `registrations.py` beside `agent/`.
 
 Success criteria:
-- [ ] `uv run pytest agent/tests/test_checks.py --no-cov` passes, built from the committed records and the context layer's lookups called in process, for both labelled sets:
+- [x] `uv run pytest agent/tests/test_checks.py --no-cov` passes, built from the committed records and the context layer's lookups called in process, for both labelled sets:
   - every label of each check's rules found on its case, with its worker, line and shortfall to the cent
   - on every other payroll, correction and decoy, no finding but one each on the two decoys that need judgment: the classification change with a valid note (`classification.changed`) and "Garden St. Electric" (`form.project_mismatch`)
   - the pre-listed Middlesex increase applied from 2026-10-01, and the later determination ignored, shown by the rate-increase-week and later-determination decoys
-- [ ] A unit test for each check on hand-made inputs, covering each finding's citation (the determination id and row, the registry record, the filing rule) and the rounding tolerance: a difference of 1 cent found at a tolerance of 0 and not at 1.
-- [ ] `uv run pytest data/tests/test_template.py --no-cov` passes, including an accept/reject table for `read_upload`: each refusal with its reason, and accepted files that break rules (blank FEIN, unsigned, bad arithmetic, a late wage payment date, a No Work Week row).
-- [ ] `npm run generate` leaves no change after the commit, and `data/tests/test_determinism.py` passes. The labels in `data/evals/` are byte for byte the same as before the phase.
-- [ ] `npm run check:runtime` and `npm run check:context` exit 0, and `context/tests/test_payroll_files.py` covers the craft entry in `get_wage_rate`'s answer.
-- [ ] `npm run check` is green.
+- [x] A unit test for each check on hand-made inputs (committed payrolls edited by hand), covering each finding's citation (the determination id and row, the registry record, the filing rule) and the rounding tolerance: a difference of 1 cent found at a tolerance of 0 and not at 1.
+- [x] `uv run pytest data/tests/test_template.py --no-cov` passes, including an accept/reject table for `read_upload`: each refusal with its reason, and accepted files that break rules (blank FEIN, unsigned, bad arithmetic, a late wage payment date, a No Work Week row).
+- [x] `npm run generate` leaves no change after the commit, and `data/tests/test_determinism.py` passes. The labels in `data/evals/` are byte for byte the same as before the phase.
+- [x] `npm run check:runtime` and `npm run check:context` exit 0, and `context/tests/test_payroll_files.py` covers the craft entry in `get_wage_rate`'s answer.
+- [x] `npm run check` is green.
 
 ### Phase 2: the change-over, from records to the case lifecycle
 

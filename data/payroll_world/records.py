@@ -52,6 +52,7 @@ def world_record(world: World) -> dict[str, Any]:
                 "subcontractors": [
                     {
                         "subcontractor_id": e.subcontractor_id,
+                        "pair": e.pair,
                         "first_week": e.first_week,
                         "last_week": e.last_week,
                         "first_week_ending": world.week_ending(

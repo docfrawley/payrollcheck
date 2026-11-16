@@ -2,13 +2,16 @@
 certification repeated on every row. Money is dollars and cents, hours are decimals
 and dates are ISO. A No Work Week payroll is one row with the certification filled
 in, the worker columns blank and no_work_week true. The generator writes every
-payroll with it, and the app's intake reads them with it."""
+payroll with it, and the app's intake reads them with it, refusing a file that
+can't become a payroll. A payroll's JSON record is how the app keeps it."""
 
 import csv
 import io
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 CERTIFICATION = (
     "contractor_name",
@@ -194,46 +197,160 @@ def write_payroll(payroll: Payroll) -> str:
     return text.getvalue()
 
 
-def read_certification(row: dict[str, str]) -> Certification:
+class Unreadable(ValueError):
+    """A file that can't become a payroll, with the reason."""
+
+
+# How a cell is read, and what it must be when it can't be.
+Reads = tuple[Callable[[str], Any], str]
+NUMBER: Reads = (Decimal, "a number")
+WHOLE: Reads = (int, "a whole number")
+DAY: Reads = (date.fromisoformat, "a date, YYYY-MM-DD")
+YES_OR_NO: Reads = (lambda text: {TRUE: True, FALSE: False}[text], f"{TRUE} or {FALSE}")
+AMOUNT: Reads = (cents, "dollars and cents")
+
+
+def optional(reads: Reads) -> Reads:
+    """A cell that may be blank, read as None."""
+    parse, what = reads
+    return (lambda text: parse(text) if text else None, what)
+
+
+def parsed(row: dict[str, str], row_no: int, column: str, reads: Reads) -> Any:
+    """A cell read, or refused naming its row and column. A number that isn't
+    finite, such as NaN, is refused too."""
+    parse, what = reads
+    text = row[column]
+    try:
+        value = parse(text)
+    except (ValueError, ArithmeticError, KeyError) as error:
+        raise Unreadable(f'Row {row_no}, {column}: "{text}" isn\'t {what}') from error
+    if isinstance(value, Decimal) and not value.is_finite():
+        raise Unreadable(f'Row {row_no}, {column}: "{text}" isn\'t {what}')
+    return value
+
+
+def read_certification(row: dict[str, str], row_no: int) -> Certification:
+    def read(column: str, reads: Reads) -> Any:
+        return parsed(row, row_no, column, reads)
+
     return Certification(
         row["contractor_name"],
         row["fein"],
         row["registration_no"],
         row["project_id"],
-        int(row["payroll_no"]),
-        date.fromisoformat(row["week_ending"]),
-        date.fromisoformat(row["wage_payment_date"]),
+        read("payroll_no", WHOLE),
+        read("week_ending", DAY),
+        read("wage_payment_date", DAY),
         row["signed_by"],
-        date.fromisoformat(row["signed_on"]) if row["signed_on"] else None,
-        row["no_work_week"] == TRUE,
+        read("signed_on", optional(DAY)),
+        read("no_work_week", YES_OR_NO),
         row["payroll_notes"],
     )
 
 
-def read_line(row: dict[str, str]) -> Line:
-    level = row["apprentice_level"]
+def read_line(row: dict[str, str], row_no: int) -> Line:
+    def read(column: str, reads: Reads) -> Any:
+        return parsed(row, row_no, column, reads)
+
     return Line(
         row["worker_id"],
         row["worker_name"],
         row["classification"],
-        int(level) if level else None,
-        tuple(Decimal(row[column]) for column in DAILY_HOURS),
-        Decimal(row["total_hours"]),
-        cents(row["base_rate"]),
-        cents(row["fringe_rate"]),
-        cents(row["fringe_cash"]),
-        Decimal(row["overtime_hours"]),
-        cents(row["gross"]),
-        cents(row["deductions"]),
-        cents(row["net"]),
+        read("apprentice_level", optional(WHOLE)),
+        tuple(read(column, NUMBER) for column in DAILY_HOURS),
+        read("total_hours", NUMBER),
+        read("base_rate", AMOUNT),
+        read("fringe_rate", AMOUNT),
+        read("fringe_cash", AMOUNT),
+        read("overtime_hours", NUMBER),
+        read("gross", AMOUNT),
+        read("deductions", AMOUNT),
+        read("net", AMOUNT),
         row["line_notes"],
+    )
+
+
+def check_header(reader: csv.DictReader) -> None:
+    header = list(reader.fieldnames or [])
+    if not set(header) & set(COLUMNS):
+        raise Unreadable(
+            "The file has no header row: its first row must name the template's columns"
+        )
+    missing = [column for column in COLUMNS if column not in header]
+    if missing:
+        raise Unreadable(f"The file is missing columns: {', '.join(missing)}")
+
+
+def read_upload(text: str) -> Payroll:
+    """A payroll from the template's CSV, or Unreadable with the reason when the
+    file can't become one. Anything else it says is read as it is, however wrong."""
+    reader = csv.DictReader(io.StringIO(text))
+    check_header(reader)
+    rows = list(reader)
+    if not rows:
+        raise Unreadable("The file has no rows under its header")
+    differ = [
+        c for c in (*CERTIFICATION, "payroll_notes") if len({r[c] for r in rows}) > 1
+    ]
+    if differ:
+        raise Unreadable(
+            f"The certification differs between rows in: {', '.join(differ)}"
+        )
+    # The header is the spreadsheet's row 1, so the first payroll row is row 2.
+    certification = read_certification(rows[0], 2)
+    if certification.no_work_week:
+        return Payroll(certification, ())
+    return Payroll(
+        certification,
+        tuple(read_line(row, n) for n, row in enumerate(rows, start=2)),
     )
 
 
 def read_payroll(text: str) -> Payroll:
     """A payroll from the template's CSV, as the generator wrote it."""
-    rows = list(csv.DictReader(io.StringIO(text)))
-    certification = read_certification(rows[0])
-    if certification.no_work_week:
-        return Payroll(certification, ())
-    return Payroll(certification, tuple(read_line(row) for row in rows))
+    return read_upload(text)
+
+
+def certification_record(found: Certification) -> dict[str, Any]:
+    return {
+        "contractor_name": found.contractor_name,
+        "fein": found.fein,
+        "registration_no": found.registration_no,
+        "project_id": found.project_id,
+        "payroll_no": found.payroll_no,
+        "week_ending": found.week_ending.isoformat(),
+        "wage_payment_date": found.wage_payment_date.isoformat(),
+        "signed_by": found.signed_by,
+        "signed_on": found.signed_on.isoformat() if found.signed_on else None,
+        "no_work_week": found.no_work_week,
+        "payroll_notes": found.payroll_notes,
+    }
+
+
+def line_record(line: Line) -> dict[str, Any]:
+    return {
+        "worker_id": line.worker_id,
+        "worker_name": line.worker_name,
+        "classification": line.classification,
+        "apprentice_level": line.apprentice_level,
+        "hours": [hours_text(h) for h in line.hours],
+        "total_hours": hours_text(line.total_hours),
+        "base_rate": line.base_rate,
+        "fringe_rate": line.fringe_rate,
+        "fringe_cash": line.fringe_cash,
+        "overtime_hours": hours_text(line.overtime_hours),
+        "gross": line.gross,
+        "deductions": line.deductions,
+        "net": line.net,
+        "line_notes": line.line_notes,
+    }
+
+
+def payroll_record(payroll: Payroll) -> dict[str, Any]:
+    """A payroll as the app keeps it, in JSON: money in cents, hours exact as
+    strings, dates ISO."""
+    return {
+        "certification": certification_record(payroll.certification),
+        "lines": [line_record(line) for line in payroll.lines],
+    }
