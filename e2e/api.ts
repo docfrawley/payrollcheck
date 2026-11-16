@@ -146,6 +146,16 @@ export const recordWorkTime = (
     seconds,
   });
 
+// The queue's cases, as a reviewer reads them.
+export async function listCases(
+  request: Request,
+  headers: Record<string, string>,
+): Promise<unknown[]> {
+  const response = await request.get("/api/cases", { headers });
+  await expect(response).toBeOK();
+  return (await response.json()) as unknown[];
+}
+
 // A run as the agent reads it.
 export async function getRun(request: Request, runId: string): Promise<Run> {
   const response = await request.get(runPath(runId), {

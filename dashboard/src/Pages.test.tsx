@@ -4,6 +4,8 @@ import { endSession } from "./fakeAuth";
 import {
   configuration,
   finishedEvaluation,
+  municipal,
+  project,
   runningDispatch,
   scoredEvaluation,
   versionDetails,
@@ -42,6 +44,8 @@ const PAGES: [string, Routes][] = [
       "GET /api/cases/PC-1201/steps": [],
     },
   ],
+  ["/projects", { "GET /api/projects": [municipal] }],
+  ["/projects/PRJ-02", { "GET /api/projects/PRJ-02": project }],
   ["/scoreboard", { "GET /api/evaluations": [finishedEvaluation] }],
   ["/scoreboard/run-9", { "GET /api/evaluations/run-9": scoredEvaluation }],
   [

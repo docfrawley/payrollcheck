@@ -12,9 +12,13 @@ export const SETTINGS = "/settings";
 export const IMPROVEMENT = "/improvement";
 export const RECIPE_PAGE = `${IMPROVEMENT}/recipes/:number`;
 export const CASE_PAGE = "/cases/:caseId";
+export const PROJECTS = "/projects";
+export const PROJECT_PAGE = `${PROJECTS}/:projectId`;
 export const EVALUATION_PAGE = `${SCOREBOARD}/:runId`;
 
 export const casePage = (caseId: string) => generatePath(CASE_PAGE, { caseId });
+export const projectPage = (projectId: string) =>
+  generatePath(PROJECT_PAGE, { projectId });
 export const evaluationPage = (runId: string) =>
   generatePath(EVALUATION_PAGE, { runId });
 export const versionPage = (number: number) =>

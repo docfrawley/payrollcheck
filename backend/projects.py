@@ -1,14 +1,17 @@
 """The projects: the list a reviewer sees, a project with its subcontractors and
-their engagement windows, and the project's subcontractors as the payroll agent
-reads them. No list holds a held-out record."""
+their engagement windows, the project's subcontractors as the payroll agent reads
+them, and a payroll uploaded on a project's page. No list holds a held-out
+record."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import Connection, select
 
 from backend.database import engagements, projects, subcontractors
-from backend.dependencies import Database, ReviewerOrAgent, SignedInReviewer
-from backend.lookups import project_row
-from backend.models import Engagement, Project, ProjectInFull
+from backend.dependencies import Database, ReviewerOrAgent, SignedIn, SignedInReviewer
+from backend.intake import take_upload
+from backend.lookups import PROJECT_NOT_FOUND, project_row
+from backend.models import Case, Engagement, Project, ProjectInFull, UploadRequest
+from backend.views import case_in_full
 
 router = APIRouter()
 
@@ -56,3 +59,17 @@ def list_subcontractors(project_id: str, db: Database) -> list[Engagement]:
     """List a project's subcontractors with their records and engagement windows."""
     project_row(db, project_id)
     return engagements_of(db, project_id)
+
+
+@router.post(
+    "/api/projects/{project_id}/payrolls",
+    operation_id="upload_payroll",
+    status_code=201,
+)
+def upload_payroll(
+    project_id: str, request: UploadRequest, reviewer: SignedIn, db: Database
+) -> Case:
+    """Upload a subcontractor's payroll CSV, which creates its Received case."""
+    if project_row(db, project_id)["held_out"]:
+        raise HTTPException(404, PROJECT_NOT_FOUND.format(project_id=project_id))
+    return case_in_full(db, take_upload(db, project_id, request, reviewer))

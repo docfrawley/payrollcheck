@@ -70,9 +70,14 @@ it("says when the payroll agent hasn't checked the payroll", async () => {
   expect(review.getByText("No open exceptions.")).toBeDefined();
   expect(review.queryByRole("button")).toBeNull();
   expect(await screen.findByText(/No steps yet/)).toBeDefined();
+  const lead = screen.getByText(
+    wholeText("Lincoln School renovation, week ending Nov 22, 2026"),
+  );
   expect(
-    screen.getByText("Lincoln School renovation, week ending Nov 22, 2026"),
-  ).toBeDefined();
+    within(lead)
+      .getByRole("link", { name: "Lincoln School renovation" })
+      .getAttribute("href"),
+  ).toBe("/projects/PRJ-01");
 });
 
 it("says when a case is back in the queue after a failed attempt", async () => {

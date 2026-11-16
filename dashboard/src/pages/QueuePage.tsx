@@ -12,6 +12,7 @@ import { CaseLink } from "../components/CaseLink";
 import { StateMessage } from "../components/StateMessage";
 import { DispatchPanel } from "../components/DispatchPanel";
 import { PageHeader } from "../components/PageHeader";
+import { ProjectLink } from "../components/ProjectLink";
 import { cents, date, statusLabels } from "../format";
 import { REFRESH_MS, useLoad } from "../useLoad";
 
@@ -82,7 +83,12 @@ export function QueuePage() {
                     <CaseLink caseId={caseRecord.case_id} />
                   </td>
                   <td>{caseRecord.subcontractor_name}</td>
-                  <td>{caseRecord.project_name}</td>
+                  <td>
+                    <ProjectLink
+                      projectId={caseRecord.project_id}
+                      name={caseRecord.project_name}
+                    />
+                  </td>
                   <td className="nowrap">{date(caseRecord.week_ending)}</td>
                   <td>
                     <StatusChip status={caseRecord.status} />

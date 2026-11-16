@@ -293,6 +293,15 @@ class Case(CaseSummary):
     notice: Notice | None = Field(description="The latest submission's draft")
 
 
+class UploadRequest(BaseModel):
+    """A payroll a reviewer uploads on a subcontractor's behalf: the file's name and
+    its text."""
+
+    subcontractor_id: Text
+    file_name: Text
+    content: str = Field(description="The CSV in our template, as text")
+
+
 class PayrollOfRecord(BaseModel):
     """An earlier week's payroll: the latest submission of its case."""
 

@@ -9,6 +9,7 @@ import { ExceptionList } from "../components/ExceptionList";
 import { NoticePanel } from "../components/NoticePanel";
 import { StateMessage } from "../components/StateMessage";
 import { PageHeader } from "../components/PageHeader";
+import { ProjectLink } from "../components/ProjectLink";
 import { StepList } from "../components/StepList";
 import { SubmissionPanels } from "../components/SubmissionPanels";
 import { date } from "../format";
@@ -67,7 +68,13 @@ export function CasePage() {
               </Link>
             </>
           ) : (
-            `${caseRecord.project_name}, week ending ${date(caseRecord.week_ending)}`
+            <>
+              <ProjectLink
+                projectId={caseRecord.project_id}
+                name={caseRecord.project_name}
+              />
+              , week ending {date(caseRecord.week_ending)}
+            </>
           )
         }
       />
@@ -110,7 +117,10 @@ function CaseDetails({ caseRecord }: Readonly<{ caseRecord: Case }>) {
         <div>
           <dt>Project</dt>
           <dd>
-            {caseRecord.project_name}{" "}
+            <ProjectLink
+              projectId={caseRecord.project_id}
+              name={caseRecord.project_name}
+            />{" "}
             <span className="mono muted">{caseRecord.project_id}</span>
           </dd>
         </div>

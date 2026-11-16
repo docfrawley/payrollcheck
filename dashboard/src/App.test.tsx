@@ -67,7 +67,11 @@ it("shows the queue with a tile for each status, in order", async () => {
   expect(flagged.getByText("Screening flag")).toBeDefined();
   expect(flagged.getByText("Agent failed")).toBeDefined();
   expect(screen.getAllByText("Garden State Electric LLC")).toHaveLength(5);
-  expect(screen.getAllByText("Lincoln School renovation")).toHaveLength(5);
+  const projects = screen.getAllByRole("link", {
+    name: "Lincoln School renovation",
+  });
+  expect(projects).toHaveLength(5);
+  expect(projects[0].getAttribute("href")).toBe("/projects/PRJ-01");
   expect(screen.getAllByText("Nov 22, 2026")).toHaveLength(5);
 });
 

@@ -344,14 +344,14 @@ Success criteria:
   - every case's project linked to its page
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_intake.py --no-cov` passes an accept/reject table: each refusal with its reason and no case created, and accepted files that break rules creating a Received case: blank FEIN, unsigned, bad arithmetic, a late wage payment date, an unregistered apprentice, a No Work Week row with no lines, and a hidden instruction in free text.
-- [ ] A second upload for the same subcontractor, project and week answers 409 naming the case, and the case and its submissions are unchanged.
-- [ ] An upload with the agent's key is refused with a 403.
-- [ ] vitest covers the project page's form, its refusal and its link to the created case.
-- [ ] `e2e/intake.spec.ts`, signed in as Dana Whitfield:
+- [x] `uv run pytest backend/tests/test_intake.py --no-cov` passes an accept/reject table: each refusal with its reason and no case created, and accepted files that break rules creating a Received case: blank FEIN, unsigned, bad arithmetic, a late wage payment date, an unregistered apprentice, a No Work Week row with no lines, and a hidden instruction in free text.
+- [x] A second upload for the same subcontractor, project and week answers 409 naming the case, and the case and its submissions are unchanged.
+- [x] An upload with the agent's key is refused with a 403.
+- [x] vitest covers the project page's form, its refusal and its link to the created case.
+- [x] `e2e/intake.spec.ts`, signed in as Dana Whitfield:
   - an upload refused with its reason on the page
   - `data/development/arrivals/PC-1214-1.csv` creating PC-1214, Received, which shows in the queue
-- [ ] `npm run check` is green.
+- [x] `npm run check` is green.
 
 ### Phase 4: the payroll agent's judgment and its notice
 

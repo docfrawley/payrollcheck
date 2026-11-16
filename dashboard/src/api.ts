@@ -514,6 +514,9 @@ const askTheCopilot = (path: string, body: object) =>
 
 const CASES = "/api/cases";
 const casePath = (caseId: string) => `${CASES}/${encodeURIComponent(caseId)}`;
+const PROJECTS = "/api/projects";
+const projectPath = (projectId: string) =>
+  `${PROJECTS}/${encodeURIComponent(projectId)}`;
 const DISPATCHES = "/api/dispatches";
 const CONFIGURATION = "/api/configuration";
 const SETTINGS = "/api/settings";
@@ -532,6 +535,20 @@ export const api = {
   listCases: () => request<CaseSummary[]>(CASES),
   getCase: (caseId: string) => request<Case>(casePath(caseId)),
   listSteps: (caseId: string) => request<Step[]>(`${casePath(caseId)}/steps`),
+  listProjects: () => request<Project[]>(PROJECTS),
+  getProject: (projectId: string) =>
+    request<ProjectInFull>(projectPath(projectId)),
+  uploadPayroll: (
+    projectId: string,
+    subcontractorId: string,
+    fileName: string,
+    content: string,
+  ) =>
+    post<Case>(`${projectPath(projectId)}/payrolls`, {
+      subcontractor_id: subcontractorId,
+      file_name: fileName,
+      content,
+    }),
   getConfiguration: () => request<Configuration>(CONFIGURATION),
   getVersionDetails: (number: string) =>
     request<VersionDetails>(

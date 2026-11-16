@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { REVIEWERS } from "./reviewers";
+import { listCases } from "./api";
+import { REVIEWERS, signedInAs } from "./reviewers";
 
 test("the queue lists every case, with a tile for each status", async ({
   page,
+  request,
 }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Case queue" })).toBeVisible();
@@ -16,8 +18,14 @@ test("the queue lists every case, with a tile for each status", async ({
     /^Accepted/,
     /^Returned to sub/,
   ]);
+  // The seeded 207, and any case another test's upload added.
+  const all = await listCases(
+    request,
+    await signedInAs(request, REVIEWERS.dana),
+  );
+  expect(all.length).toBeGreaterThanOrEqual(207);
   const cases = page.getByRole("region", { name: "Cases" });
-  await expect(cases.locator("tbody tr")).toHaveCount(207);
+  await expect(cases.locator("tbody tr")).toHaveCount(all.length);
   const row = cases.getByRole("row").filter({ hasText: "PC-1201" });
   await expect(row.getByText("Received")).toBeVisible();
   await expect(row.getByText("Nov 22, 2026")).toBeVisible();

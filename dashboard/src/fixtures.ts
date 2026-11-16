@@ -1,5 +1,7 @@
 import type {
   Configuration,
+  Project,
+  ProjectInFull,
   Evaluation,
   Measures,
   Run,
@@ -231,4 +233,36 @@ export const versionDetails: VersionDetails = {
       [{ kind: "context", text: "Record the report." }],
     ],
   },
+};
+
+export const municipal: Project = {
+  project_id: "PRJ-02",
+  name: "Municipal building",
+  county: "Middlesex",
+  location: "New Brunswick",
+  public_body: "City of New Brunswick",
+  contract_no: "NB-2026-114",
+  award_date: "2026-08-03",
+};
+
+export const project: ProjectInFull = {
+  ...municipal,
+  subcontractors: [
+    {
+      subcontractor_id: "SUB-01",
+      legal_name: "Garden State Electric LLC",
+      fein: "62-9917837",
+      registration_no: "177511",
+      first_week_ending: "2026-09-06",
+      last_week_ending: "2026-11-22",
+    },
+    {
+      subcontractor_id: "SUB-06",
+      legal_name: "Delaware Valley Masonry LLC",
+      fein: "98-5117616",
+      registration_no: "941034",
+      first_week_ending: "2026-09-13",
+      last_week_ending: "2026-12-20",
+    },
+  ],
 };

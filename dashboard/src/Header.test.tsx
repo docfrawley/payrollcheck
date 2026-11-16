@@ -20,6 +20,7 @@ it("shows the reviewer's initials, and keeps Settings and Sign out in their menu
   const nav = within(screen.getByRole("navigation", { name: "Main" }));
   expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual([
     "Queue",
+    "Projects",
     "Scoreboard",
     "Improvement",
     "Configuration",

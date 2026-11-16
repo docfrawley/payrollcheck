@@ -60,6 +60,11 @@ REVIEWER_OPERATIONS = {
     "get_signed_in_reviewer": ("GET", "/api/me", None),
     "list_steps": ("GET", "/api/cases/PC-1202/steps", None),
     "list_projects": ("GET", "/api/projects", None),
+    "upload_payroll": (
+        "POST",
+        "/api/projects/PRJ-01/payrolls",
+        {"subcontractor_id": "SUB-01", "file_name": "p.csv", "content": ""},
+    ),
     "get_configuration": ("GET", "/api/configuration", None),
     "get_version_details": ("GET", "/api/configuration/versions/1", None),
     "get_settings": ("GET", "/api/settings", None),
