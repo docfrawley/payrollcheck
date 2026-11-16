@@ -118,7 +118,7 @@ it("asks before saving, listing each change, and sends every setting", async () 
   );
 });
 
-it("never changes a setting the handler didn't touch", async () => {
+it("never changes a setting the reviewer didn't touch", async () => {
   const precise = { ...settings.current, spending_limit: 0.755 };
   stubApi({ "GET /api/settings": { ...settings, current: precise } });
   renderAt("/settings");
@@ -149,13 +149,13 @@ it("shows why the backend refused a setting", async () => {
   );
 });
 
-it("shows the settings read only to a handler who can't change them", async () => {
+it("shows the settings read only to a reviewer who can't change them", async () => {
   stubApi({ "GET /api/settings": settings, "GET /api/me": marcus });
   renderAt("/settings");
   expect(
     await screen.findByText(
       wholeText(
-        "Only a handler who can sign off payouts over $1,000.00 can change the settings. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can change the settings. Marcus Oyelaran can't.",
       ),
     ),
   ).toBeDefined();
@@ -169,7 +169,7 @@ it("keeps the appearance chosen in this browser", async () => {
   await screen.findByRole("group", { name: "Appearance" });
   fireEvent.click(group("Appearance").getByLabelText("Dark"));
   expect(document.documentElement.dataset.theme).toBe("dark");
-  expect(localStorage.getItem("undercover-appearance")).toBe("dark");
+  expect(localStorage.getItem("payrollcheck-appearance")).toBe("dark");
   fireEvent.click(group("Appearance").getByLabelText("Same as this computer"));
   expect(document.documentElement.dataset.theme).toBeUndefined();
 });

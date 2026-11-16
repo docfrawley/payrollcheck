@@ -1,7 +1,7 @@
 import pytest
 
 from backend import runs
-from backend.tests.claim_requests import (
+from backend.tests.case_requests import (
     decide,
     fail,
     pay,
@@ -17,7 +17,7 @@ from backend.tests.run_requests import (
     fail_run,
     finish,
     latest_dispatch,
-    record_claims,
+    record_cases,
 )
 
 
@@ -46,43 +46,43 @@ def test_create_a_dispatch(client):
         None,
         None,
     )
-    assert (dispatch["claims"], dispatch["model_cost"]) == ([], 0)
+    assert (dispatch["cases"], dispatch["model_cost"]) == ([], 0)
     assert latest_dispatch(client) == dispatch
 
 
 @pytest.mark.parametrize("agents", [0, 26])
-def test_a_dispatch_has_1_to_25_claim_agents(client, agents):
+def test_a_dispatch_has_1_to_25_payroll_agents(client, agents):
     assert create_dispatch(client, agents).status_code == 422
     assert latest_dispatch(client) is None
 
 
-def test_record_the_claims_of_a_dispatch_in_order(client):
+def test_record_the_cases_of_a_dispatch_in_order(client):
     run_id = create_dispatch(client).json()["run_id"]
-    record_claims(client, run_id, "CLM-1008", "CLM-1001")
-    dispatch = record_claims(client, run_id, "CLM-1011", "CLM-1001", "CLM-1008").json()
-    assert [c["claim_id"] for c in dispatch["claims"]] == [
+    record_cases(client, run_id, "CLM-1008", "CLM-1001")
+    dispatch = record_cases(client, run_id, "CLM-1011", "CLM-1001", "CLM-1008").json()
+    assert [c["case_id"] for c in dispatch["cases"]] == [
         "CLM-1011",
         "CLM-1001",
         "CLM-1008",
     ]
-    assert latest_dispatch(client)["claims"] == dispatch["claims"]
+    assert latest_dispatch(client)["cases"] == dispatch["cases"]
 
 
-def test_recording_claims_needs_a_running_dispatch_and_known_claims(client):
-    unknown = record_claims(client, "run-9", "CLM-1001")
+def test_recording_cases_needs_a_running_dispatch_and_known_cases(client):
+    unknown = record_cases(client, "run-9", "CLM-1001")
     assert unknown.status_code == 404
     assert unknown.json()["detail"] == "Run run-9 not found"
     run_id = create_dispatch(client).json()["run_id"]
-    missing = record_claims(client, run_id, "CLM-1001", "CLM-9999")
+    missing = record_cases(client, run_id, "CLM-1001", "CLM-9999")
     assert missing.status_code == 404
-    assert missing.json()["detail"] == "Claim CLM-9999 not found"
+    assert missing.json()["detail"] == "Case CLM-9999 not found"
     finish(client, run_id)
-    finished = record_claims(client, run_id, "CLM-1001")
+    finished = record_cases(client, run_id, "CLM-1001")
     assert finished.status_code == 409
     assert finished.json()["detail"] == f"Run {run_id} is not running"
 
 
-def test_each_claim_shows_where_it_stands_with_its_cost_and_time(client):
+def test_each_case_shows_where_it_stands_with_its_cost_and_time(client):
     run_id = dispatch_of(client, "CLM-1001", "CLM-1003")
     start(client, "CLM-1001")
     record_call(client, "CLM-1001", run_id, cost=0.004)
@@ -94,8 +94,8 @@ def test_each_claim_shows_where_it_stands_with_its_cost_and_time(client):
     pay(client, "CLM-1001", 420.0)
 
     dispatch = latest_dispatch(client)
-    first, second = dispatch["claims"]
-    assert (first["claim_id"], first["customer_name"], first["status"]) == (
+    first, second = dispatch["cases"]
+    assert (first["case_id"], first["subcontractor_name"], first["status"]) == (
         "CLM-1001",
         "Maya Patel",
         "decided",
@@ -112,12 +112,12 @@ def test_each_claim_shows_where_it_stands_with_its_cost_and_time(client):
     assert dispatch["model_cost"] == pytest.approx(0.01)
 
 
-def test_finishing_a_dispatch_sums_up_its_claims(client):
+def test_finishing_a_dispatch_sums_up_its_cases(client):
     started = ["CLM-1001", "CLM-1003", "CLM-1004", "CLM-1008", "CLM-1016"]
     started += ["CLM-1012", "CLM-1002", "CLM-1006"]
     run_id = dispatch_of(client, *started, "CLM-1005")
-    for claim_id in started:
-        start(client, claim_id)
+    for case_id in started:
+        start(client, case_id)
     decide(client, "CLM-1001", "approve", 420.0)
     pay(client, "CLM-1001", 420.0)
     decide(client, "CLM-1003", "decline", 0)
@@ -139,8 +139,8 @@ def test_finishing_a_dispatch_sums_up_its_claims(client):
         "approved": 3,
         "declined": 1,
         "referred": 1,
-        "waiting_for_sign_off": [{"claim_id": "CLM-1008", "payout": 2240.0}],
-        "left_for_handler": ["CLM-1016"],
+        "waiting_for_sign_off": [{"case_id": "CLM-1008", "payout": 2240.0}],
+        "left_for_reviewer": ["CLM-1016"],
         "unfinished": ["CLM-1012", "CLM-1006", "CLM-1005"],
     }
     assert latest_dispatch(client) == dispatch

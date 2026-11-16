@@ -1,0 +1,23 @@
+[
+  {
+    "reviewer_id": "HND-01",
+    "name": "Dana Whitfield",
+    "role": "Compliance Manager",
+    "email": "dana.whitfield@payrollcheck.example",
+    "can_approve_over_limit": true
+  },
+  {
+    "reviewer_id": "HND-02",
+    "name": "Marcus Oyelaran",
+    "role": "Reviewer",
+    "email": "marcus.oyelaran@payrollcheck.example",
+    "can_approve_over_limit": false
+  },
+  {
+    "reviewer_id": "HND-03",
+    "name": "Priya Raman",
+    "role": "Reviewer",
+    "email": "priya.raman@payrollcheck.example",
+    "can_approve_over_limit": false
+  }
+]

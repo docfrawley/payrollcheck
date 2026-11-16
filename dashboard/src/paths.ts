@@ -11,11 +11,10 @@ export const VERSION_PAGE = `${CONFIGURATION}/versions/:number`;
 export const SETTINGS = "/settings";
 export const IMPROVEMENT = "/improvement";
 export const RECIPE_PAGE = `${IMPROVEMENT}/recipes/:number`;
-export const CLAIM_PAGE = "/claims/:claimId";
+export const CASE_PAGE = "/cases/:caseId";
 export const EVALUATION_PAGE = `${SCOREBOARD}/:runId`;
 
-export const claimPage = (claimId: string) =>
-  generatePath(CLAIM_PAGE, { claimId });
+export const casePage = (caseId: string) => generatePath(CASE_PAGE, { caseId });
 export const evaluationPage = (runId: string) =>
   generatePath(EVALUATION_PAGE, { runId });
 export const versionPage = (number: number) =>

@@ -1,6 +1,6 @@
-import type { Claim, Decision, Payment } from "../api";
+import type { Case, Decision, Payment } from "../api";
 import { money, time } from "../format";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import { DecisionDetails } from "./DecisionDetails";
 import { NotAllowed } from "./NotAllowed";
 import { SendBackForm } from "./SendBackForm";
@@ -14,28 +14,29 @@ function whoAndWhen({ signed_off_by, signed_off_at }: SignOff): string | null {
     : null;
 }
 
-function progress(claim: Claim): string {
-  if (claim.status === "in_progress")
-    return "The agent is working on this claim.";
-  if (claim.status === "sent_back")
+function progress(caseRecord: Case): string {
+  if (caseRecord.status === "in_progress")
+    return "The agent is working on this case.";
+  if (caseRecord.status === "sent_back")
     return "Sent back to the agent, which hasn't taken it up yet. The next dispatch works on it.";
-  if (claim.status === "left_for_handler")
-    return `The agent couldn't finish this claim in ${String(claim.attempts)} attempts, so it's left for a handler.`;
-  if (claim.attempts > 0) return "Back in the queue after a failed attempt.";
-  return "The agent hasn't started on this claim.";
+  if (caseRecord.status === "left_for_reviewer")
+    return `The agent couldn't finish this case in ${String(caseRecord.attempts)} attempts, so it's left for a reviewer.`;
+  if (caseRecord.attempts > 0)
+    return "Back in the queue after a failed attempt.";
+  return "The agent hasn't started on this case.";
 }
 
 export function DecisionPanel({
-  claim,
+  caseRecord,
   onAnswered,
-}: Readonly<{ claim: Claim; onAnswered: () => void }>) {
-  const { decision, payment } = claim;
+}: Readonly<{ caseRecord: Case; onAnswered: () => void }>) {
+  const { decision, payment } = caseRecord;
   const paidSignedOff = payment && whoAndWhen(payment);
 
   return (
     <section className="panel" aria-labelledby="decision-title">
       <h2 id="decision-title">Decision</h2>
-      {!decision && <p className="muted">{progress(claim)}</p>}
+      {!decision && <p className="muted">{progress(caseRecord)}</p>}
       {decision && <DecisionDetails decision={decision} />}
       {payment && (
         <p className="payment">
@@ -45,12 +46,12 @@ export function DecisionPanel({
       )}
       {decision?.decision === "approve" &&
         !payment &&
-        claim.status === "in_progress" && (
+        caseRecord.status === "in_progress" && (
           <p className="payment">Waiting for the agent to pay it.</p>
         )}
-      {decision && claim.status === "waiting_for_sign_off" && (
+      {decision && caseRecord.status === "waiting_for_sign_off" && (
         <HeldPayment
-          claim={claim}
+          caseRecord={caseRecord}
           decision={decision}
           onAnswered={onAnswered}
         />
@@ -59,7 +60,7 @@ export function DecisionPanel({
   );
 }
 
-// Why a payment waits for a handler's sign-off: it's over the approval limit,
+// Why a payment waits for a reviewer's sign-off: it's over the approval limit,
 // or the Gateway refused it.
 function WhyHeld({ decision }: Readonly<{ decision: Decision }>) {
   const amount = <span className="mono">{money(decision.payout)}</span>;
@@ -68,7 +69,7 @@ function WhyHeld({ decision }: Readonly<{ decision: Decision }>) {
       <>
         <p>
           The Gateway refused the payment of {amount}, so it waits for a
-          handler's sign-off.
+          reviewer's sign-off.
         </p>
         <p className="small muted">{decision.gateway_refusal}</p>
       </>
@@ -76,21 +77,21 @@ function WhyHeld({ decision }: Readonly<{ decision: Decision }>) {
   return (
     <p>
       The payment of {amount} is over the approval limit and waits for a
-      handler's sign-off.
+      reviewer's sign-off.
     </p>
   );
 }
 
 // A payment over the limit or refused by the Gateway, which waits for a
-// handler to sign it off or send it back, unless the claim is an evaluation's
+// reviewer to sign it off or send it back, unless the case is an evaluation's
 // copy, which nobody can answer.
 function HeldPayment({
-  claim,
+  caseRecord,
   decision,
   onAnswered,
-}: Readonly<{ claim: Claim; decision: Decision; onAnswered: () => void }>) {
-  const handler = useHandler();
-  if (claim.evaluation_id)
+}: Readonly<{ caseRecord: Case; decision: Decision; onAnswered: () => void }>) {
+  const reviewer = useReviewer();
+  if (caseRecord.evaluation_id)
     return (
       <p className="payment">
         Held for sign-off. In an evaluation this counts as finished, and a copy
@@ -100,10 +101,10 @@ function HeldPayment({
   return (
     <div className="sign-off">
       <WhyHeld decision={decision} />
-      {handler.can_approve_over_limit ? (
+      {reviewer.can_approve_over_limit ? (
         <div className="held-answers">
-          <SignOffForm claimId={claim.claim_id} onSignedOff={onAnswered} />
-          <SendBackForm claimId={claim.claim_id} onSentBack={onAnswered} />
+          <SignOffForm caseId={caseRecord.case_id} onSignedOff={onAnswered} />
+          <SendBackForm caseId={caseRecord.case_id} onSentBack={onAnswered} />
         </div>
       ) : (
         <NotAllowed action="sign this off or send it back" />

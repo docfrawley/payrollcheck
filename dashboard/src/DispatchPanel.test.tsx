@@ -15,7 +15,7 @@ import {
 import {
   Refusal,
   type Routes,
-  summary as claimSummary,
+  summary as caseSummary,
   panel,
   renderAt,
   sent,
@@ -34,8 +34,8 @@ const finished: Run = {
   status: "finished",
   finished_at: "2026-10-03T17:04:54+00:00",
   seconds: 161,
-  claims: running.claims.map((claim) => ({
-    ...claim,
+  cases: running.cases.map((caseRecord) => ({
+    ...caseRecord,
     status: "decided",
     decision: "refer",
     payout: 0,
@@ -45,17 +45,17 @@ const finished: Run = {
     declined: 1,
     referred: 1,
     waiting_for_sign_off: [
-      { claim_id: "CLM-1008", payout: 2240 },
-      { claim_id: "CLM-1011", payout: 1150 },
+      { case_id: "CLM-1008", payout: 2240 },
+      { case_id: "CLM-1011", payout: 1150 },
     ],
-    left_for_handler: ["CLM-1016"],
+    left_for_reviewer: ["CLM-1016"],
     unfinished: ["CLM-1012"],
   },
 };
 
 function showQueue(dispatch: Run | null) {
   const routes: Routes = {
-    "GET /api/claims": [claimSummary],
+    "GET /api/cases": [caseSummary],
     "GET /api/dispatches/latest": dispatch,
   };
   stubApi(routes);
@@ -64,7 +64,7 @@ function showQueue(dispatch: Run | null) {
 }
 
 const dispatchPanel = () => panel("Dispatch");
-const NO_DISPATCH = /^No dispatch yet\. Start one to work the waiting claims/;
+const NO_DISPATCH = /^No dispatch yet\. Start one to work the waiting cases/;
 
 const started = (fetchMock: ReturnType<typeof stubApi>) =>
   sent(fetchMock, "POST /api/dispatches");
@@ -75,12 +75,12 @@ it("says when there's no dispatch yet", async () => {
   expect(await panel.findByText(NO_DISPATCH)).toBeDefined();
 });
 
-it("shows a running dispatch with its claims", async () => {
+it("shows a running dispatch with its cases", async () => {
   showQueue(running);
   const panel = await dispatchPanel();
   expect(await panel.findByText("Running")).toBeDefined();
   expect(
-    panel.getByText(/with 3 claim agents at once, on version 1\./),
+    panel.getByText(/with 3 payroll agents at once, on version 1\./),
   ).toBeDefined();
   expect(panel.getByText("$0.0125", { selector: "p > span" })).toBeDefined();
   expect(panel.queryByText(/took/)).toBeNull();
@@ -96,7 +96,7 @@ it("shows a running dispatch with its claims", async () => {
   expect(within(rows[1]).getByText("In progress")).toBeDefined();
   expect(within(rows[2]).getByText("Waiting")).toBeDefined();
   const link = first.getByRole("link", { name: "CLM-1001" });
-  expect(link.getAttribute("href")).toBe("/claims/CLM-1001");
+  expect(link.getAttribute("href")).toBe("/cases/CLM-1001");
   expect(panel.queryByText("When it finished")).toBeNull();
 });
 
@@ -111,11 +111,11 @@ it("shows a finished dispatch with its summary", async () => {
   expect(lines).toEqual([
     "3 approved, 1 declined and 1 referred.",
     "Waiting for sign-off: CLM-1008 $2,240.00, CLM-1011 $1,150.00",
-    "Left for a handler: CLM-1016",
+    "Left for a reviewer: CLM-1016",
     "Left for the next dispatch: CLM-1012",
   ]);
   const held = panel.getByRole("link", { name: "CLM-1011" });
-  expect(held.getAttribute("href")).toBe("/claims/CLM-1011");
+  expect(held.getAttribute("href")).toBe("/cases/CLM-1011");
 });
 
 it("shows a stopped dispatch", async () => {
@@ -125,7 +125,7 @@ it("shows a stopped dispatch", async () => {
   expect(chip.className).toBe("chip run-stopped");
   expect(
     panel.getByText(
-      "It stopped before it finished. The next dispatch carries on its claims.",
+      "It stopped before it finished. The next dispatch carries on its cases.",
     ),
   ).toBeDefined();
 });
@@ -139,7 +139,7 @@ it("says why a dispatch stopped", async () => {
   const panel = await dispatchPanel();
   expect(
     await panel.findByText(
-      "Stopped: The agent stopped answering. The next dispatch carries on its claims.",
+      "Stopped: The agent stopped answering. The next dispatch carries on its cases.",
     ),
   ).toBeDefined();
 });
@@ -150,7 +150,7 @@ it("follows a dispatch as it works", async () => {
   const panel = await dispatchPanel();
   expect(await panel.findByText(NO_DISPATCH)).toBeDefined();
 
-  routes["GET /api/dispatches/latest"] = { ...running, claims: [waiting] };
+  routes["GET /api/dispatches/latest"] = { ...running, cases: [waiting] };
   await act(() => vi.advanceTimersByTimeAsync(REFRESH_MS));
   expect(panel.getByText("Waiting")).toBeDefined();
 
@@ -161,15 +161,17 @@ it("follows a dispatch as it works", async () => {
 });
 
 function startWith(agents: string) {
-  const choice = screen.getByRole("combobox", { name: "Claim agents at once" });
+  const choice = screen.getByRole("combobox", {
+    name: "Payroll agents at once",
+  });
   fireEvent.change(choice, { target: { value: agents } });
   fireEvent.click(screen.getByRole("button", { name: "Start a dispatch" }));
 }
 
-it("offers 1 to 25 claim agents at once, with 3 chosen", async () => {
+it("offers 1 to 25 payroll agents at once, with 3 chosen", async () => {
   showQueue(null);
   const choice = await screen.findByRole("combobox", {
-    name: "Claim agents at once",
+    name: "Payroll agents at once",
   });
   const options = within(choice).getAllByRole("option");
   expect(options.map((option) => option.textContent)).toEqual(
@@ -178,9 +180,9 @@ it("offers 1 to 25 claim agents at once, with 3 chosen", async () => {
   expect((choice as HTMLSelectElement).value).toBe("3");
 });
 
-it("starts a dispatch with the claim agents chosen", async () => {
+it("starts a dispatch with the payroll agents chosen", async () => {
   const routes: Routes = {
-    "GET /api/claims": [claimSummary],
+    "GET /api/cases": [caseSummary],
     "GET /api/dispatches/latest": null,
     "POST /api/dispatches": { status: "accepted" },
   };
@@ -199,7 +201,7 @@ it.each([
   [503, "The agent's service isn't running"],
 ])("shows a refusal with status %i", async (status, detail) => {
   const routes: Routes = {
-    "GET /api/claims": [claimSummary],
+    "GET /api/cases": [caseSummary],
     "GET /api/dispatches/latest": null,
     "POST /api/dispatches": new Refusal(status, detail),
   };

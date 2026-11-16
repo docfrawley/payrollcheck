@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router";
-import { api, type ScoredClaim, type ScoredEvaluation } from "../api";
+import { api, type ScoredCase, type ScoredEvaluation } from "../api";
 import { DecisionPayout, RightChip, RunChip } from "../components/Chips";
-import { ClaimLink } from "../components/ClaimLink";
+import { CaseLink } from "../components/CaseLink";
 import { Check, GradeChip } from "../components/Judging";
 import { StateMessage } from "../components/StateMessage";
 import { ModelName } from "../components/ModelName";
@@ -47,7 +47,7 @@ export function EvaluationPage() {
       />
       <div className="column">
         <MeasuresPanel evaluation={evaluation} />
-        <ScoredClaims claims={evaluation.claims} />
+        <ScoredCases cases={evaluation.cases} />
       </div>
     </>
   );
@@ -87,18 +87,18 @@ function MeasuresPanel({
   );
 }
 
-function ScoredClaims({ claims }: Readonly<{ claims: ScoredClaim[] }>) {
+function ScoredCases({ cases }: Readonly<{ cases: ScoredCase[] }>) {
   return (
-    <section className="panel" aria-labelledby="claims-title">
-      <h2 id="claims-title">Claims</h2>
+    <section className="panel" aria-labelledby="cases-title">
+      <h2 id="cases-title">Cases</h2>
       <p className="muted small">
-        A claim the agent didn't decide counts as a referral and gets an F from
+        A case the agent didn't decide counts as a referral and gets an F from
         the judge.
       </p>
       <div className="table-scroll">
-        <table className="table steady scored-claims">
+        <table className="table steady scored-cases">
           <colgroup>
-            <col className="col-claim" />
+            <col className="col-case" />
             <col className="col-id" />
             <col className="col-decision" />
             <col className="col-decision" />
@@ -115,7 +115,7 @@ function ScoredClaims({ claims }: Readonly<{ claims: ScoredClaim[] }>) {
             <tr>
               <th>Copy</th>
               <th>Of</th>
-              <th>Handler</th>
+              <th>Reviewer</th>
               <th>Agent</th>
               <th>Score</th>
               <th>Grade</th>
@@ -128,46 +128,53 @@ function ScoredClaims({ claims }: Readonly<{ claims: ScoredClaim[] }>) {
             </tr>
           </thead>
           <tbody>
-            {claims.map((claim) => (
-              <tr key={claim.claim_id}>
+            {cases.map((caseRecord) => (
+              <tr key={caseRecord.case_id}>
                 <td className="nowrap">
-                  <ClaimLink claimId={claim.claim_id} />
+                  <CaseLink caseId={caseRecord.case_id} />
                 </td>
-                <td className="mono nowrap">{claim.copy_of}</td>
+                <td className="mono nowrap">{caseRecord.copy_of}</td>
                 <td className="nowrap">
                   <DecisionPayout
-                    decision={claim.handler_decision}
-                    payout={claim.handler_payout}
+                    decision={caseRecord.reviewer_decision}
+                    payout={caseRecord.reviewer_payout}
                   />
                 </td>
                 <td className="nowrap">
-                  {claim.decision && claim.payout !== null ? (
+                  {caseRecord.decision && caseRecord.payout !== null ? (
                     <DecisionPayout
-                      decision={claim.decision}
-                      payout={claim.payout}
+                      decision={caseRecord.decision}
+                      payout={caseRecord.payout}
                     />
                   ) : (
                     <span className="muted">No decision</span>
                   )}
                 </td>
                 <td>
-                  <RightChip right={claim.right} />
+                  <RightChip right={caseRecord.right} />
                 </td>
                 <td>
-                  <GradeChip grade={claim.grade} />
+                  <GradeChip grade={caseRecord.grade} />
                 </td>
                 <td>
-                  {claim.grade && <Check chance={claim.grade.same_grounds} />}
+                  {caseRecord.grade && (
+                    <Check chance={caseRecord.grade.same_grounds} />
+                  )}
                 </td>
                 <td>
-                  {claim.grade && <Check chance={claim.grade.same_section} />}
+                  {caseRecord.grade && (
+                    <Check chance={caseRecord.grade.same_section} />
+                  )}
                 </td>
-                <td className="num mono">{money(claim.mistake_cost)}</td>
-                <td className="num mono">{modelCost(claim.model_cost)}</td>
-                <td className="num mono">{duration(claim.seconds)}</td>
+                <td className="num mono">{money(caseRecord.mistake_cost)}</td>
+                <td className="num mono">{modelCost(caseRecord.model_cost)}</td>
+                <td className="num mono">{duration(caseRecord.seconds)}</td>
                 <td className="small">
-                  <span className="two-lines" title={claim.reason ?? undefined}>
-                    {claim.reason}
+                  <span
+                    className="two-lines"
+                    title={caseRecord.reason ?? undefined}
+                  >
+                    {caseRecord.reason}
                   </span>
                 </td>
               </tr>

@@ -1,5 +1,5 @@
-"""The judge: Jev, through OpenRouter's Decisions endpoint, grades the claim agent's
-explanation of a decision against the handler's reason and reference, as in
+"""The judge: Jev, through OpenRouter's Decisions endpoint, grades the payroll agent's
+explanation of a decision against the reviewer's reason and reference, as in
 labs/week2day5.ipynb. The endpoint is in alpha, so this is the one module that calls
 it, and the one that knows its address."""
 
@@ -16,46 +16,46 @@ from openrouter.components import (
 )
 from openrouter.utils import BackoffStrategy, RetryConfig
 
-from backend.models import ClaimGrade, Letter
+from backend.models import CaseGrade, Letter
 
 JEV = "typesafe/jev-1.13"
 # The client ignores an address set on it, so each call passes this one.
 JUDGE_URL = os.getenv("JUDGE_URL", "https://openrouter.ai")
 TIMEOUT_MS = 10_000
-# No retries: a claim the judge can't grade at once is left ungraded.
+# No retries: a case the judge can't grade at once is left ungraded.
 NO_RETRIES = RetryConfig("none", BackoffStrategy(0, 0, 0, 0), False)
 
 # Jev numbers the levels by their place in the list, so F is 0 and A is 3.
 RUBRIC = {
-    Letter.F: "different grounds from the handler's reason, or it contradicts the "
-    "handler's reason",
-    Letter.C: "partly the same as the handler's reason: one of the handler's grounds "
-    "or the section is missing, or it adds a ground the handler did not give",
+    Letter.F: "different grounds from the reviewer's reason, or it contradicts the "
+    "reviewer's reason",
+    Letter.C: "partly the same as the reviewer's reason: one of the reviewer's grounds "
+    "or the section is missing, or it adds a ground the reviewer did not give",
     Letter.B: "the same grounds and the same section of the policy wording as the "
-    "handler's reason",
-    Letter.A: "the same grounds and section as the handler's reason, and clearly "
-    "better expressed: clearer for the customer, with the section and the figures, "
-    "shorter, and no jargon",
+    "reviewer's reason",
+    Letter.A: "the same grounds and section as the reviewer's reason, and clearly "
+    "better expressed: clearer for the subcontractor, with the section and the "
+    "figures, shorter, and no jargon",
 }
 LEVELS = list(RUBRIC)
 
 QUESTIONS: dict[str, QuestionsTypedDict] = {
     "grade": {
         "type": "score",
-        "instructions": "An expert claims handler decided a travel insurance claim "
-        "and gave `handler.reason`, resting on `handler.reference`. Grade how well "
+        "instructions": "An expert reviewer decided a travel insurance case "
+        "and gave `reviewer.reason`, resting on `reviewer.reference`. Grade how well "
         "`agent.reason`, citing `agent.section`, explains the same decision.",
         "criteria": [f"{letter}: {text}" for letter, text in RUBRIC.items()],
     },
     "same_grounds": {
         "type": "noul",
         "instructions": "`agent.reason` gives the same main grounds for the "
-        "decision as `handler.reason`",
+        "decision as `reviewer.reason`",
     },
     "same_section": {
         "type": "noul",
         "instructions": "`agent.section` refers to the same section of the policy "
-        "wording as `handler.reference`",
+        "wording as `reviewer.reference`",
     },
 }
 
@@ -63,8 +63,8 @@ log = logging.getLogger(__name__)
 
 
 class Explanation(NamedTuple):
-    """A decision on a claim with its reason and the section relied on: the agent's
-    section, or the handler's reference."""
+    """A decision on a case with its reason and the section relied on: the agent's
+    section, or the reviewer's reference."""
 
     decision: str
     reason: str
@@ -81,13 +81,13 @@ def client() -> OpenRouter:
     return OpenRouter()
 
 
-def ask(handler: Explanation, agent: Explanation) -> ClaimGrade:
-    """Ask Jev once to grade the agent's explanation against the handler's."""
+def ask(reviewer: Explanation, agent: Explanation) -> CaseGrade:
+    """Ask Jev once to grade the agent's explanation against the reviewer's."""
     state = {
-        "handler": {
-            "decision": handler.decision,
-            "reason": handler.reason,
-            "reference": handler.section,
+        "reviewer": {
+            "decision": reviewer.decision,
+            "reason": reviewer.reason,
+            "reference": reviewer.section,
         },
         "agent": {
             "decision": agent.decision,
@@ -115,7 +115,7 @@ def ask(handler: Explanation, agent: Explanation) -> ClaimGrade:
         raise Ungradable(f"The judge answered {response.answers}")
     probabilities = score.probabilities
     likeliest = max(probabilities, key=lambda level: probabilities[level])
-    return ClaimGrade(
+    return CaseGrade(
         score=score.score,
         letter=LEVELS[int(likeliest)],
         same_grounds=grounds.noul,
@@ -124,11 +124,11 @@ def ask(handler: Explanation, agent: Explanation) -> ClaimGrade:
     )
 
 
-def grade(handler: Explanation, agent: Explanation) -> ClaimGrade | None:
+def grade(reviewer: Explanation, agent: Explanation) -> CaseGrade | None:
     """Grade the agent's explanation, or return nothing when the judge can't, such
     as on a timeout, which is logged."""
     try:
-        return ask(handler, agent)
-    except Exception:  # an ungraded claim never stops an evaluation finishing
+        return ask(reviewer, agent)
+    except Exception:  # an ungraded case never stops an evaluation finishing
         log.exception("The judge couldn't grade the explanation")
         return None

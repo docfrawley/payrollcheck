@@ -15,7 +15,7 @@ NO_REASONING_EFFORT = "default"
 RETRIES = 5
 
 
-# How long a claim agent's or the Copilot's model call may take before it's given
+# How long a payroll agent's or the Copilot's model call may take before it's given
 # up and retried; the improver's calls, which think for longer, take their own.
 MODEL_TIMEOUT = 120
 

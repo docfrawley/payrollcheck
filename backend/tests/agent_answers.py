@@ -22,7 +22,7 @@ def refusing_with(reason):
     return lambda request: httpx.Response(200, json={"refused": reason})
 
 
-refusing = refusing_with("Claim CLM-1002 isn't paused for a handler")
+refusing = refusing_with("Case CLM-1002 isn't paused for a reviewer")
 
 
 def broken(request):

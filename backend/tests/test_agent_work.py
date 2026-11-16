@@ -16,7 +16,7 @@ from backend import agent_work
 from backend.database import engine, locks, proposals, rounds, runs
 from backend.round_state import round_row, stop
 from backend.tests.agent_answers import broken, refusing_with, slow, unreachable
-from backend.tests.claim_requests import NOTE, held, send_back, sign_off
+from backend.tests.case_requests import NOTE, held, send_back, sign_off
 from backend.tests.round_requests import (
     approve,
     create_round,
@@ -28,7 +28,7 @@ from backend.tests.round_requests import (
     stop_round,
 )
 from backend.tests.rows import (
-    committed_claim,
+    committed_case,
     count,
     newest_run,
     round_heard,
@@ -98,7 +98,7 @@ def test_an_evaluation_is_created_with_its_copies(client, agent_calls):
     [asked] = agent_calls
     evaluation = run_of(client, asked["run_id"])
     assert (evaluation["kind"], evaluation["status"]) == ("evaluation", "running")
-    assert [c["claim_id"][-3:] for c in evaluation["claims"]] == ["-E1"] * 5
+    assert [c["case_id"][-3:] for c in evaluation["cases"]] == ["-E1"] * 5
 
 
 def test_a_round_is_created_and_a_review_recorded_before_the_agent_is_asked(
@@ -165,7 +165,7 @@ def test_a_review_is_refused_while_a_dispatch_runs_and_its_proposal_waits(client
     assert improvement(client)["round"]["waiting"]["proposal_id"] == proposal_id
 
 
-def test_a_round_waiting_for_a_handler_doesnt_stop_a_dispatch(client):
+def test_a_round_waiting_for_a_reviewer_doesnt_stop_a_dispatch(client):
     round_id = create_round(client).json()["round_id"]
     propose_change(client, round_id)
     assert start_dispatch(client).status_code == 202
@@ -375,7 +375,7 @@ def test_a_request_that_asks_the_agent_holds_one_connection_at_a_time(
     stop_round(client, round_id)
     assert start_dispatch(client).status_code == 202
     assert connections_held["most"] == 1
-    assert committed_claim("CLM-1008")["status"] == "decided"
+    assert committed_case("CLM-1008")["status"] == "decided"
 
 
 def test_stopping_a_round_stops_its_running_evaluation(client):

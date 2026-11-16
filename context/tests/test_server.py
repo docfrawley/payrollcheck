@@ -14,7 +14,7 @@ TOOLS = {
     "lookup_term",
     "describe_fields",
     "get_plan",
-    "get_claim_rules",
+    "get_case_rules",
     "search_reference_data",
     "search_documents",
     "read_section",

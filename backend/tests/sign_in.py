@@ -1,4 +1,4 @@
-"""Signing in as a handler in the tests, with tokens signed by a key pair made here
+"""Signing in as a reviewer in the tests, with tokens signed by a key pair made here
 in place of Supabase's."""
 
 import time
@@ -12,8 +12,8 @@ from backend.dependencies import API_KEY_HEADER
 
 # The Supabase project the tests stand in for.
 SUPABASE_URL = "https://supabase.test"
-DANA = "dana.whitfield@undercover.example"
-MARCUS = "marcus.oyelaran@undercover.example"
+DANA = "dana.whitfield@payrollcheck.example"
+MARCUS = "marcus.oyelaran@payrollcheck.example"
 
 KEY_ID = "test-key"
 KEY = ec.generate_private_key(ec.SECP256R1())
@@ -39,7 +39,7 @@ def token(
     """A Supabase access token for an email, as Supabase Auth signs one, issued now
     by Supabase's clock, or that many seconds ahead of ours."""
     issued = int(time.time()) + issued_in
-    claims = {
+    cases = {
         "sub": email,
         "email": email,
         "aud": audience,
@@ -47,16 +47,16 @@ def token(
         "iat": issued,
         "exp": issued + expires_in,
     }
-    return jwt.encode(claims, key, algorithm="ES256", headers={"kid": KEY_ID})
+    return jwt.encode(cases, key, algorithm="ES256", headers={"kid": KEY_ID})
 
 
 def bearer(access_token: str) -> dict[str, str]:
-    """The headers of a request a handler's browser sends with its access token,
+    """The headers of a request a reviewer's browser sends with its access token,
     which carry no agent's key, as a browser's never do, even when the test's
     client sends the key by default."""
     return {"Authorization": f"Bearer {access_token}", API_KEY_HEADER: ""}
 
 
 def signed_in(email: str = DANA, **options) -> dict[str, str]:
-    """The headers of a request from the handler with this email."""
+    """The headers of a request from the reviewer with this email."""
     return bearer(token(email, **options))

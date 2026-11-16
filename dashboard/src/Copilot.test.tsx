@@ -84,7 +84,7 @@ it("collapses on Escape where it sits over the page, on a narrow window, and not
   expect(narrow).toHaveBeenCalledWith(OVERLAY);
 });
 
-it("greets the handler by first name with questions to click", async () => {
+it("greets the reviewer by first name with questions to click", async () => {
   const fetchMock = stubApi({
     [`POST ${CONVERSATIONS}`]: conversation(
       turn({ status: "working", answer: null }),

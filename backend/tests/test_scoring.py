@@ -1,6 +1,6 @@
 import pytest
 
-from backend.models import ClaimGrade, DecisionKind, Letter, ScoredClaim, Status
+from backend.models import CaseGrade, DecisionKind, Letter, ScoredCase, Status
 from backend.scoring import Answer, answer_of, is_right, measures, mistake_cost
 
 APPROVE, DECLINE, REFER = DecisionKind.APPROVE, DecisionKind.DECLINE, DecisionKind.REFER
@@ -34,22 +34,22 @@ def test_a_payout_within_a_dollar_is_right():
     assert not is_right(Answer(DECLINE, 0), Answer(REFER, 0))
 
 
-def test_a_claim_the_agent_didnt_decide_counts_as_a_referral():
+def test_a_case_the_agent_didnt_decide_counts_as_a_referral():
     assert answer_of(None, None) == Answer(REFER, 0)
     assert answer_of(APPROVE, 420) == Answer(APPROVE, 420)
 
 
-def scored(agent, handler, seconds, grade=None):
-    """A copy decided as the agent did, beside the handler's decision."""
-    (decision, payout), (handler_decision, handler_payout) = agent, handler
+def scored(agent, reviewer, seconds, grade=None):
+    """A copy decided as the agent did, beside the reviewer's decision."""
+    (decision, payout), (reviewer_decision, reviewer_payout) = agent, reviewer
     answer, expected = (
         answer_of(decision, payout),
-        Answer(handler_decision, handler_payout),
+        Answer(reviewer_decision, reviewer_payout),
     )
-    return ScoredClaim(
-        claim_id="CLM-1104-E1",
-        customer_name="Ada Lovelace",
-        claim_type="baggage",
+    return ScoredCase(
+        case_id="CLM-1104-E1",
+        subcontractor_name="Ada Lovelace",
+        case_type="baggage",
         summary="A suitcase",
         amount_claimed=300,
         submitted_on="2026-08-14",
@@ -63,8 +63,8 @@ def scored(agent, handler, seconds, grade=None):
         copy_of="CLM-1104",
         reason=None,
         section=None,
-        handler_decision=handler_decision,
-        handler_payout=handler_payout,
+        reviewer_decision=reviewer_decision,
+        reviewer_payout=reviewer_payout,
         right=is_right(answer, expected),
         mistake_cost=mistake_cost(answer, expected),
         grade=grade,
@@ -72,33 +72,33 @@ def scored(agent, handler, seconds, grade=None):
 
 
 def test_the_measures_of_an_evaluation():
-    claims = [
+    cases = [
         scored((APPROVE, 420), (APPROVE, 420), 30),
         scored((APPROVE, 500), (APPROVE, 420), 50),
         scored((DECLINE, 0), (REFER, 0), 40),
         scored((None, None), (APPROVE, 100), 0),
     ]
-    result = measures(claims, model_cost=0.08, run_seconds=95)
+    result = measures(cases, model_cost=0.08, run_seconds=95)
     assert result.decision_accuracy == 0.5
     assert result.accuracy == 0.25
     assert result.cost_of_mistakes == 80 + 1500 + 50
     assert result.straight_through == 0.75
-    assert result.model_cost_per_claim == pytest.approx(0.02)
-    assert result.seconds_per_claim == 30
+    assert result.model_cost_per_case == pytest.approx(0.02)
+    assert result.seconds_per_case == 30
     assert result.run_seconds == 95
     assert result.grade is None
 
 
 def grade_of(score):
-    return ClaimGrade(
+    return CaseGrade(
         score=score, letter=Letter.B, same_grounds=1, same_section=1, cost=0
     )
 
 
-def test_the_grade_averages_the_claims_the_judge_graded():
-    claims = [
+def test_the_grade_averages_the_cases_the_judge_graded():
+    cases = [
         scored((APPROVE, 420), (APPROVE, 420), 30, grade_of(3.0)),
         scored((APPROVE, 420), (APPROVE, 420), 30, grade_of(1.5)),
         scored((APPROVE, 420), (APPROVE, 420), 30),
     ]
-    assert measures(claims, model_cost=0, run_seconds=None).grade == 2.25
+    assert measures(cases, model_cost=0, run_seconds=None).grade == 2.25

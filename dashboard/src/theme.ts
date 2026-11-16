@@ -4,7 +4,7 @@
 export const appearances = ["light", "dark", "system"] as const;
 export type Appearance = (typeof appearances)[number];
 
-const KEY = "undercover-appearance";
+const KEY = "payrollcheck-appearance";
 
 export function savedAppearance(): Appearance {
   const saved = localStorage.getItem(KEY);

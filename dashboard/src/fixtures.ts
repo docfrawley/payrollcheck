@@ -2,8 +2,8 @@ import type {
   Configuration,
   Evaluation,
   Run,
-  RunClaim,
-  ScoredClaim,
+  RunCase,
+  ScoredCase,
   ScoredEvaluation,
   VersionDetails,
   VersionSummary,
@@ -11,11 +11,11 @@ import type {
 import { summary } from "./testing";
 
 // What the backend gives the pages, for the tests of more than one page: a
-// dispatch at work, evaluations, and the claim agent's versions.
-export const waitingInRun: RunClaim = {
+// dispatch at work, evaluations, and the payroll agent's versions.
+export const waitingInRun: RunCase = {
   ...summary,
-  claim_id: "CLM-1013",
-  customer_name: "Grace Liu",
+  case_id: "CLM-1013",
+  subcontractor_name: "Grace Liu",
   started_at: null,
   seconds: 0,
   model_cost: 0,
@@ -40,11 +40,11 @@ export const runningDispatch: Run = {
   seconds: null,
   summary: null,
   model_cost: 0.0125,
-  claims: [
+  cases: [
     {
       ...waitingInRun,
-      claim_id: "CLM-1001",
-      customer_name: "Maya Patel",
+      case_id: "CLM-1001",
+      subcontractor_name: "Maya Patel",
       status: "decided",
       decision: "approve",
       payout: 420,
@@ -54,7 +54,7 @@ export const runningDispatch: Run = {
     },
     {
       ...waitingInRun,
-      claim_id: "CLM-1014",
+      case_id: "CLM-1014",
       status: "in_progress",
       seconds: 12,
     },
@@ -88,15 +88,15 @@ export const finishedEvaluation: Evaluation = {
     cost_of_mistakes: 1600,
     straight_through: 0.88,
     grade: 2.2,
-    model_cost_per_claim: 0.0125,
-    seconds_per_claim: 40,
+    model_cost_per_case: 0.0125,
+    seconds_per_case: 40,
     run_seconds: 161,
   },
 };
 
-export const scoredCopy: ScoredClaim = {
+export const scoredCopy: ScoredCase = {
   ...summary,
-  claim_id: "CLM-1104-E9",
+  case_id: "CLM-1104-E9",
   started_at: "2026-10-03T17:02:14+00:00",
   seconds: 40,
   model_cost: 0.0125,
@@ -105,8 +105,8 @@ export const scoredCopy: ScoredClaim = {
   payout: 250,
   copy_of: "CLM-1104",
   reason: "The delay was covered.",
-  handler_decision: "approve",
-  handler_payout: 250,
+  reviewer_decision: "approve",
+  reviewer_payout: 250,
   right: true,
   mistake_cost: 0,
   grade: {
@@ -125,28 +125,28 @@ export const scoredEvaluation: ScoredEvaluation = {
   evaluation_set: "held_out",
   tiny: true,
   size: 5,
-  claims: [
+  cases: [
     scoredCopy,
     {
       ...scoredCopy,
-      claim_id: "CLM-1112-E9",
+      case_id: "CLM-1112-E9",
       copy_of: "CLM-1112",
       status: "waiting_for_sign_off",
       payout: 1200,
-      handler_payout: 680,
+      reviewer_payout: 680,
       right: false,
       mistake_cost: 520,
     },
     {
       ...scoredCopy,
-      claim_id: "CLM-1114-E9",
+      case_id: "CLM-1114-E9",
       copy_of: "CLM-1114",
       status: "in_progress",
       decision: null,
       payout: null,
       reason: null,
-      handler_decision: "decline",
-      handler_payout: 0,
+      reviewer_decision: "decline",
+      reviewer_payout: 0,
       right: false,
       mistake_cost: 50,
       grade: null,
@@ -164,7 +164,7 @@ export const firstVersion: VersionSummary = {
   based_on: null,
   lines_added: 0,
   lines_removed: 0,
-  reason: "The claim agent as the claims team built it",
+  reason: "The payroll agent as the claims team built it",
   proposed_by: "The claims team",
   round_id: null,
   approved_by: null,
@@ -199,13 +199,13 @@ export const configuration: Configuration = {
 
 export const versionDetails: VersionDetails = {
   ...secondVersion,
-  instructions: "# Working a claim\n\n## Contents of the claims manual",
+  instructions: "# Working a case\n\n## Contents of the claims manual",
   diff: {
     added: 1,
     removed: 1,
     hunks: [
       [
-        { kind: "context", text: "Read the claim." },
+        { kind: "context", text: "Read the case." },
         { kind: "removed", text: "Refer a stolen phone." },
         { kind: "added", text: "Decline a phone left unattended." },
       ],

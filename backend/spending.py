@@ -4,7 +4,7 @@ of what a version's evaluations will cost before they start."""
 
 from sqlalchemy import Connection, func, select
 
-from backend.database import grades, improver_calls, model_calls, run_claims, runs
+from backend.database import grades, improver_calls, model_calls, run_cases, runs
 from backend.models import ModelAllowed, RunStatus
 
 
@@ -36,9 +36,9 @@ def spent(db: Connection, round_id: str) -> float:
     return spent_in(db, [round_id])[round_id]
 
 
-def highest_cost_per_claim(db: Connection, model: str) -> float | None:
-    """Return the highest model cost per claim of any finished run on a model, or
-    nothing when it has no finished runs with claims."""
+def highest_cost_per_case(db: Connection, model: str) -> float | None:
+    """Return the highest model cost per case of any finished run on a model, or
+    nothing when it has no finished runs with cases."""
     cost = (
         select(func.coalesce(func.sum(model_calls.c.cost), 0))
         .where(model_calls.c.run_id == runs.c.run_id)
@@ -46,7 +46,7 @@ def highest_cost_per_claim(db: Connection, model: str) -> float | None:
     )
     size = (
         select(func.count())
-        .where(run_claims.c.run_id == runs.c.run_id)
+        .where(run_cases.c.run_id == runs.c.run_id)
         .scalar_subquery()
     )
     query = select(func.max(cost / func.nullif(size, 0))).where(
@@ -63,14 +63,14 @@ def price_ratio(new: ModelAllowed, current: ModelAllowed) -> float:
     )
 
 
-def cost_per_claim(db: Connection, model: ModelAllowed, current: ModelAllowed) -> float:
-    """Estimate a claim's model cost on a model: the highest seen on it, or for a
+def cost_per_case(db: Connection, model: ModelAllowed, current: ModelAllowed) -> float:
+    """Estimate a case's model cost on a model: the highest seen on it, or for a
     model with none, the current model's scaled by their prices, or nothing when
-    neither has been seen, which leaves the hard limit to stop the claims."""
-    seen = highest_cost_per_claim(db, model.model)
+    neither has been seen, which leaves the hard limit to stop the cases."""
+    seen = highest_cost_per_case(db, model.model)
     if seen is not None:
         return seen
-    base = highest_cost_per_claim(db, current.model)
+    base = highest_cost_per_case(db, current.model)
     if base is None:
         return 0
     return base * price_ratio(model, current)

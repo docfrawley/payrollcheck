@@ -1,8 +1,8 @@
 import { use } from "react";
 import { Link, NavLink, useMatch } from "react-router";
-import { HandlerContext } from "../handler";
+import { ReviewerContext } from "../reviewer";
 import {
-  CLAIM_PAGE,
+  CASE_PAGE,
   CONFIGURATION,
   IMPROVEMENT,
   QUEUE,
@@ -10,21 +10,24 @@ import {
 } from "../paths";
 import { AccountMenu } from "./AccountMenu";
 import { Brand } from "./Brand";
+import { SyntheticData } from "./SyntheticData";
 
-// The band across the top of every signed-in page: the brand, the main nav,
-// and the handler signed in with their menu once they have loaded.
+// The band across the top of every signed-in page: the brand, the chip saying
+// the data is synthetic, the main nav, and the reviewer signed in with their
+// menu once they have loaded.
 export function Header() {
-  const handler = use(HandlerContext);
-  // A claim's page belongs to the queue.
+  const reviewer = use(ReviewerContext);
+  // A case's page belongs to the queue.
   const queuePage = useMatch(QUEUE);
-  const claimPage = useMatch(CLAIM_PAGE);
-  const onQueue = queuePage !== null || claimPage !== null;
+  const casePage = useMatch(CASE_PAGE);
+  const onQueue = queuePage !== null || casePage !== null;
   return (
     <header className="header">
       <div className="header-bar">
         <Link to={QUEUE} className="brand">
           <Brand />
         </Link>
+        <SyntheticData />
         <nav className="nav" aria-label="Main">
           <Link
             to={QUEUE}
@@ -37,11 +40,11 @@ export function Header() {
           <NavLink to={IMPROVEMENT}>Improvement</NavLink>
           <NavLink to={CONFIGURATION}>Configuration</NavLink>
         </nav>
-        {handler && (
+        {reviewer && (
           <div className="who" role="group" aria-label="Signed in">
             <p className="who-text">
-              <span className="who-name">{handler.name}</span>
-              <span className="who-role">{handler.role}</span>
+              <span className="who-name">{reviewer.name}</span>
+              <span className="who-role">{reviewer.role}</span>
             </p>
             <AccountMenu />
           </div>

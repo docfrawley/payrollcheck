@@ -1,4 +1,4 @@
-"""The Gateway route: the claim agent's tools and its payment as the AgentCore
+"""The Gateway route: the payroll agent's tools and its payment as the AgentCore
 Gateway's MCP tools, each request signed for bedrock-agentcore with the AWS CLI's
 credentials and region, so the Gateway's Policy sees every call."""
 
@@ -16,7 +16,7 @@ from mcp.shared.exceptions import McpError
 from agent.mcp_tools import McpTools
 from agent.routes import GatewayRefused, Target
 
-GATEWAY_URL = "UNDERCOVER_GATEWAY_URL"
+GATEWAY_URL = "PAYROLLCHECK_GATEWAY_URL"
 GATEWAY = "The Gateway"
 SERVICE = "bedrock-agentcore"
 # The Gateway names each tool <target>___<operation>.
@@ -75,6 +75,6 @@ class Gateway:
 
 
 def from_environment() -> Gateway | None:
-    """The Gateway at UNDERCOVER_GATEWAY_URL, read now, or None when it isn't set."""
+    """The Gateway at PAYROLLCHECK_GATEWAY_URL, read now, or None when it isn't set."""
     url = os.getenv(GATEWAY_URL)
     return Gateway(url) if url else None

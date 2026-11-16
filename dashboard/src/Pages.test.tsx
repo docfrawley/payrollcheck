@@ -17,7 +17,7 @@ import {
   open,
 } from "./improvementTesting";
 import {
-  claim,
+  caseRecord,
   history,
   policy,
   renderAt,
@@ -38,17 +38,17 @@ const PAGES: [string, Routes][] = [
   [
     "/",
     {
-      "GET /api/claims": [summary],
+      "GET /api/cases": [summary],
       "GET /api/dispatches/latest": runningDispatch,
     },
   ],
   [
-    "/claims/CLM-1002",
+    "/cases/CLM-1002",
     {
-      "GET /api/claims/CLM-1002": claim,
-      "GET /api/claims/CLM-1002/steps": [],
+      "GET /api/cases/CLM-1002": caseRecord,
+      "GET /api/cases/CLM-1002/steps": [],
       "GET /api/policies/POL-2002": policy,
-      "GET /api/customers/CUS-3002/claims": history,
+      "GET /api/subcontractors/CUS-3002/cases": history,
     },
   ],
   ["/scoreboard", { "GET /api/evaluations": [finishedEvaluation] }],
@@ -143,8 +143,8 @@ it("the sign-in page has a page header", async () => {
 const EMPTY_STATES: [string, Routes, RegExp][] = [
   [
     "/",
-    { "GET /api/claims": [summary], "GET /api/dispatches/latest": null },
-    /^No dispatch yet\. Start one to work the waiting claims\.$/,
+    { "GET /api/cases": [summary], "GET /api/dispatches/latest": null },
+    /^No dispatch yet\. Start one to work the waiting cases\.$/,
   ],
   [
     "/scoreboard",
@@ -152,12 +152,12 @@ const EMPTY_STATES: [string, Routes, RegExp][] = [
     /^No evaluations yet\. Start one above/,
   ],
   [
-    "/claims/CLM-1002",
+    "/cases/CLM-1002",
     {
-      "GET /api/claims/CLM-1002": claim,
-      "GET /api/claims/CLM-1002/steps": [],
+      "GET /api/cases/CLM-1002": caseRecord,
+      "GET /api/cases/CLM-1002/steps": [],
       "GET /api/policies/POL-2002": policy,
-      "GET /api/customers/CUS-3002/claims": [],
+      "GET /api/subcontractors/CUS-3002/cases": [],
     },
     /^No steps yet\. They appear here as the agent works/,
   ],
@@ -183,9 +183,9 @@ it.each(EMPTY_STATES)(
   },
 );
 
-it("marks the Queue in the header on a claim's page", async () => {
+it("marks the Queue in the header on a case's page", async () => {
   stubApi(PAGES[1][1]);
-  renderAt("/claims/CLM-1002");
+  renderAt("/cases/CLM-1002");
   const nav = within(await screen.findByRole("navigation", { name: "Main" }));
   await waitFor(() => {
     expect(

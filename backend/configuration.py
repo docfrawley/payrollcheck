@@ -1,5 +1,5 @@
-"""The backend's operations on the claim agent's configuration: its versions, for the
-claim agent and for the Configuration page, and the platform's settings and the
+"""The backend's operations on the payroll agent's configuration: its versions, for the
+payroll agent and for the Configuration page, and the platform's settings and the
 models allowed, for the Settings page."""
 
 from typing import Annotated
@@ -8,7 +8,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import Connection, RowMapping, insert, select
 
 from backend.database import now, settings, versions
-from backend.dependencies import AgentKey, Database, SignedInHandler, senior
+from backend.dependencies import (
+    AgentKey,
+    Database,
+    SignedInReviewer,
+    compliance_manager,
+)
 from backend.diffs import diff
 from backend.documents import contents
 from backend.free_models import model_or_free
@@ -19,9 +24,9 @@ from backend.lookups import (
     version_row,
 )
 from backend.models import (
-    ClaimAgentVersion,
     Configuration,
-    Handler,
+    PayrollAgentVersion,
+    Reviewer,
     ScreeningModel,
     Settings,
     SettingsPage,
@@ -35,22 +40,24 @@ from backend.scoreboard import expected_answers, scores_of_versions, version_sco
 
 router = APIRouter()
 
-# The model the check for instructions hidden in a claim runs on, with no
+# The model the check for instructions hidden in a case runs on, with no
 # reasoning. No version, proposal or setting changes it.
 SCREENING_MODEL = ("openai/gpt-6-luna", "none")
 
-ChangesTheSettings = Annotated[Handler, Depends(senior("change the settings"))]
+ChangesTheSettings = Annotated[
+    Reviewer, Depends(compliance_manager("change the settings"))
+]
 
 
 def with_contents(db: Connection, instructions: str) -> str:
-    """The claim agent's instructions as it reads them: they end with the contents
+    """The payroll agent's instructions as it reads them: they end with the contents
     of the policy wording and the claims manual."""
     return f"{instructions}\n{contents(db)}"
 
 
-def for_the_claim_agent(db: Connection, row: RowMapping) -> ClaimAgentVersion:
-    """A version as the claim agent reads it, with no scores."""
-    return ClaimAgentVersion(
+def for_the_payroll_agent(db: Connection, row: RowMapping) -> PayrollAgentVersion:
+    """A version as the payroll agent reads it, with no scores."""
+    return PayrollAgentVersion(
         number=row["number"],
         instructions=with_contents(db, row["instructions"]),
         model=row["model"],
@@ -90,22 +97,22 @@ def summary_of(
 @router.get(
     "/api/versions/current", operation_id="get_current_version", dependencies=[AgentKey]
 )
-def get_current_version(db: Database) -> ClaimAgentVersion:
-    """Get the current version of the claim agent: its instructions and its model."""
-    return for_the_claim_agent(db, version_row(db, current_version_number(db)))
+def get_current_version(db: Database) -> PayrollAgentVersion:
+    """Get the current version of the payroll agent: its instructions and its model."""
+    return for_the_payroll_agent(db, version_row(db, current_version_number(db)))
 
 
 @router.get(
     "/api/versions/{number}", operation_id="get_version", dependencies=[AgentKey]
 )
-def get_version(number: int, db: Database) -> ClaimAgentVersion:
-    """Get one version of the claim agent: its instructions and its model."""
-    return for_the_claim_agent(db, version_row(db, number))
+def get_version(number: int, db: Database) -> PayrollAgentVersion:
+    """Get one version of the payroll agent: its instructions and its model."""
+    return for_the_payroll_agent(db, version_row(db, number))
 
 
 @router.get("/api/screening", operation_id="get_screening", dependencies=[AgentKey])
 def get_screening() -> ScreeningModel:
-    """Get the model the check for instructions hidden in a claim runs on."""
+    """Get the model the check for instructions hidden in a case runs on."""
     model, reasoning_effort = model_or_free(*SCREENING_MODEL)
     return ScreeningModel(model=model, reasoning_effort=reasoning_effort)
 
@@ -113,10 +120,10 @@ def get_screening() -> ScreeningModel:
 @router.get(
     "/api/configuration",
     operation_id="get_configuration",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_configuration(db: Database) -> Configuration:
-    """Get the claim agent's versions, newest first, with what each changed."""
+    """Get the payroll agent's versions, newest first, with what each changed."""
     current = current_version_number(db)
     query = select(versions).order_by(versions.c.number.desc())
     rows = {row["number"]: row for row in db.execute(query).mappings()}
@@ -133,7 +140,7 @@ def get_configuration(db: Database) -> Configuration:
 @router.get(
     "/api/configuration/versions/{number}",
     operation_id="get_version_details",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def get_version_details(number: int, db: Database) -> VersionDetails:
     """Get one version in full, with its diff from the version it was based on."""
@@ -149,7 +156,7 @@ def get_version_details(number: int, db: Database) -> VersionDetails:
 
 
 @router.get(
-    "/api/settings", operation_id="get_settings", dependencies=[SignedInHandler]
+    "/api/settings", operation_id="get_settings", dependencies=[SignedInReviewer]
 )
 def get_settings(db: Database) -> SettingsPage:
     """Get the settings in force, every change with who made it, and the models."""
@@ -163,15 +170,15 @@ def get_settings(db: Database) -> SettingsPage:
 @router.put("/api/settings", operation_id="change_settings")
 def change_settings(
     request: SettingsValues,
-    handler: ChangesTheSettings,
+    reviewer: ChangesTheSettings,
     db: Database,
 ) -> SettingsPage:
-    """Change the settings, recording every value with the handler and the time."""
+    """Change the settings, recording every value with the reviewer and the time."""
     db.execute(
         insert(settings).values(
             number=current_settings(db).number + 1,
             **request.model_dump(),
-            changed_by=handler.name,
+            changed_by=reviewer.name,
             changed_at=now(),
         )
     )

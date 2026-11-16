@@ -1,5 +1,5 @@
-"""The Copilot's memory of each handler: searched as a turn starts, with a card of
-what it found, which goes into the instructions, and the handler's message and the
+"""The Copilot's memory of each reviewer: searched as a turn starts, with a card of
+what it found, which goes into the instructions, and the reviewer's message and the
 answer saved as the turn ends, and nothing else."""
 
 import logging
@@ -11,7 +11,7 @@ from agent.copilot.memory import MEMORY_ID, memory_store
 from agent.tests.copilot_driver import Copilot
 from agent.tests.memory_stand_in import MemoryStandIn
 from agent.tests.stubs import call, stub
-from backend.tests.claim_requests import held
+from backend.tests.case_requests import held
 from backend.tests.sign_in import MARCUS
 
 PREFERENCE = "Dana likes amounts first, in short bullet points"
@@ -21,7 +21,7 @@ ANSWER = "- $3,750.00 on CLM-1003, held for your sign-off"
 
 def remembering() -> MemoryStandIn:
     """A memory with one of Dana's preferences in it."""
-    return MemoryStandIn(memories=[("/handlers/HND-01/preferences/", PREFERENCE)])
+    return MemoryStandIn(memories=[("/reviewers/HND-01/preferences/", PREFERENCE)])
 
 
 def test_a_turn_starts_with_what_the_copilot_remembers(copilot: Copilot):
@@ -39,7 +39,7 @@ def test_a_turn_starts_with_what_the_copilot_remembers(copilot: Copilot):
     assert card["answer"] == f"- {PREFERENCE}"
     [system, *_] = copilot.model.prompts[0]
     assert f"- {PREFERENCE}" in system.text
-    assert copilot.store.searched == ["/handlers/HND-01"]
+    assert copilot.store.searched == ["/reviewers/HND-01"]
 
 
 def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
@@ -47,7 +47,7 @@ def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
 ):
     held(client, "CLM-1003", 3750.0)
     copilot.store = remembering()
-    copilot.model = stub(call("get_claim", claim_id="CLM-1003"), ANSWER)
+    copilot.model = stub(call("get_case", case_id="CLM-1003"), ANSWER)
     conversation_id = copilot.ask(QUESTION)["conversation_id"]
     message, answer = copilot.store.events
     assert (message.actor, message.session) == ("HND-01", conversation_id)
@@ -59,11 +59,11 @@ def test_a_turn_saves_the_message_and_the_answer_and_nothing_else(
     assert sign_in not in repr(copilot.store.events)
 
 
-def test_each_handler_is_searched_alone(copilot: Copilot):
+def test_each_reviewer_is_searched_alone(copilot: Copilot):
     copilot.store = remembering()
     copilot.model = stub("Hello, Marcus.")
     [turn] = copilot.ask("Hello", email=MARCUS)["turns"]
-    assert copilot.store.searched == ["/handlers/HND-02"]
+    assert copilot.store.searched == ["/reviewers/HND-02"]
     assert turn["steps"][0]["answer"] == "Nothing remembered that bears on this"
     assert PREFERENCE not in copilot.model.prompts[0][0].text
     assert [event.actor for event in copilot.store.events] == ["HND-02", "HND-02"]
@@ -72,7 +72,7 @@ def test_each_handler_is_searched_alone(copilot: Copilot):
 def test_a_paused_turn_saves_once_after_its_answer(client, copilot: Copilot):
     held(client, "CLM-1003", 3750.0)
     copilot.store = remembering()
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1003"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
     conversation_id = copilot.ask("Sign off CLM-1003")["conversation_id"]
     assert copilot.store.events == []
     copilot.answer(conversation_id, "cancel")
@@ -86,7 +86,7 @@ def test_a_paused_turn_saves_once_after_its_answer(client, copilot: Copilot):
 def test_a_signed_off_turn_saves_once_after_the_models_answer(client, copilot: Copilot):
     held(client, "CLM-1003", 3750.0)
     copilot.store = remembering()
-    copilot.model = stub(call("sign_off_claim", claim_id="CLM-1003"))
+    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
     conversation_id = copilot.ask("Sign off CLM-1003")["conversation_id"]
     copilot.model = stub("Signed off and paid.")
     copilot.answer(conversation_id, "sign_off")
@@ -128,8 +128,8 @@ def test_the_memory_is_read_from_its_setting(monkeypatch):
     monkeypatch.setattr(agentcore_memory, "AgentCoreMemoryStore", recorder)
     monkeypatch.setenv("AWS_DEFAULT_REGION", "eu-west-2")
     assert memory_store() is None
-    monkeypatch.setenv(MEMORY_ID, "undercover_copilot_memory-abc")
+    monkeypatch.setenv(MEMORY_ID, "payrollcheck_copilot_memory-abc")
     assert isinstance(memory_store(), MemoryStandIn)
     assert made == [
-        {"memory_id": "undercover_copilot_memory-abc", "region_name": "eu-west-2"}
+        {"memory_id": "payrollcheck_copilot_memory-abc", "region_name": "eu-west-2"}
     ]

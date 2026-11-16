@@ -1,5 +1,5 @@
 """What claims manual section 14 asks of a decision record: the request's checks,
-which need nothing from the claim, and the calculation's, each refusing with a 422
+which need nothing from the case, and the calculation's, each refusing with a 422
 whose message names section 14."""
 
 from fastapi import HTTPException

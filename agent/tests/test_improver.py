@@ -1,5 +1,5 @@
 """Rounds of the improver through the agent's AgentCore app, on a stub improver that
-follows a script and stub claim agents, with the backend as it is."""
+follows a script and stub payroll agents, with the backend as it is."""
 
 from collections.abc import Callable
 from typing import Any
@@ -16,8 +16,8 @@ from agent.tests.rounds import (
     RULE,
     VERSION_1,
     RuleFollowingModel,
-    claim_agents_model,
     improver,
+    payroll_agents_model,
     propose,
     whole_round,
 )
@@ -25,20 +25,20 @@ from agent.tests.stubs import StubModel, call
 from backend.database import engine, grades, improver_calls, model_calls, runs
 from backend.tests.dashboard_reads import configuration, version_details
 from backend.tests.round_requests import create_round, improvement, stop_round
-from backend.tests.round_requests import review as review_as_a_handler
+from backend.tests.round_requests import review as review_as_a_reviewer
 from backend.tests.run_requests import get_evaluation
 from backend.tests.settings_requests import STARTING, change_settings
 
-# Room for a round's evaluations: a spending limit above what the stub claim agents
+# Room for a round's evaluations: a spending limit above what the stub payroll agents
 # cost, and noise and a tolerance on time so wide that a test's timing, which is
 # real, never counts for or against a version.
-UNTIMED = {"seconds_per_claim": 1000}
+UNTIMED = {"seconds_per_case": 1000}
 ROOM: dict[str, Any] = {
     "spending_limit": 5.0,
     "noise": STARTING["noise"] | UNTIMED,
     "tolerance": STARTING["tolerance"] | UNTIMED,
 }
-# Fewer claim agents at once than the agent's most, to show that a round uses its
+# Fewer payroll agents at once than the agent's most, to show that a round uses its
 # own setting.
 AGENTS = 5
 
@@ -49,7 +49,7 @@ def room_to_run(client):
 
 
 def start_round(agent, wait=True):
-    """Start a round as a handler does, which the app creates, and have the agent
+    """Start a round as a reviewer does, which the app creates, and have the agent
     work it."""
     with the_app() as caller:
         round_id = create_round(caller).json()["round_id"]
@@ -57,11 +57,11 @@ def start_round(agent, wait=True):
 
 
 def review(agent, round_, proposal_id, verdict="approved"):
-    """Review a proposal as a handler does, which the app records, and have the
+    """Review a proposal as a reviewer does, which the app records, and have the
     agent carry the round on."""
     round_id = round_["round_id"]
     with the_app() as caller:
-        reviewed = review_as_a_handler(caller, round_id, proposal_id, verdict)
+        reviewed = review_as_a_reviewer(caller, round_id, proposal_id, verdict)
     assert reviewed.status_code == 200, reviewed.text
     return agent.invoke(carry_round_on(round_id, proposal_id))
 
@@ -80,7 +80,7 @@ def test_a_round_runs_its_first_evaluations_then_waits_for_a_change(
     client, serve_rounds
 ):
     model = whole_round()
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     assert start_round(agent).json() == ACCEPTED
 
     round_ = the_round(client)
@@ -102,13 +102,13 @@ def test_a_round_runs_its_first_evaluations_then_waits_for_a_change(
     read = model.prompts[1][-1]
     assert read.name == "read_results"
     assert '"wrong"' in read.content
-    # The round waits for a handler, so a dispatch can start.
+    # The round waits for a reviewer, so a dispatch can start.
     assert new_dispatch()["status"] == "running"
 
 
 def test_a_whole_round_with_a_rejection(client, serve_rounds):
     model = whole_round()
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
     round_ = the_round(client)
 
@@ -167,7 +167,7 @@ def test_a_model_outside_the_models_allowed_goes_back_to_the_improver(
         propose(model="openai/gpt-7", reasoning_effort="high"),
         propose(),
     )
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
     answer = model.prompts[2][-1]
     assert answer.content == (
@@ -182,7 +182,7 @@ def test_a_model_outside_the_models_allowed_goes_back_to_the_improver(
 def test_a_round_whose_improver_proposes_nothing_finishes(client, serve_rounds):
     agent = serve_rounds(
         improver(call("read_results"), "No change would help."),
-        claim_agents_model(),
+        payroll_agents_model(),
     )
     start_round(agent)
     round_ = the_round(client)
@@ -200,16 +200,16 @@ def test_the_improver_is_built_from_the_rounds_model(monkeypatch):
 
 
 def test_the_rounds_work_is_traced_in_its_own_session(client, serve_rounds, traces):
-    agent = serve_rounds(whole_round(), claim_agents_model())
+    agent = serve_rounds(whole_round(), payroll_agents_model())
     start_round(agent)
     round_ = the_round(client)
     session = f"Round 1:{round_['round_id']}"
     improver_traces = [t for t in traces if t.get("langfuse_trace_name") == "Improver"]
     assert [t["langfuse_session_id"] for t in improver_traces] == [session]
-    claims = [t for t in traces if t.get("langfuse_trace_name") == "Work claim"]
-    assert len(claims) == 75
+    cases = [t for t in traces if t.get("langfuse_trace_name") == "Work case"]
+    assert len(cases) == 75
     run_ids = {e["run_id"] for e in round_["evaluations"]}
-    for trace in claims:
+    for trace in cases:
         run_id, round_id = trace["langfuse_tags"]
         assert (run_id in run_ids, round_id) == (True, round_["round_id"])
     assert RULE not in VERSION_1
@@ -221,11 +221,11 @@ def restart(monkeypatch, fresh_agent):
     fresh_agent().invoke(HEALTH)
 
 
-def test_a_round_waiting_for_a_handler_survives_a_restart(
+def test_a_round_waiting_for_a_reviewer_survives_a_restart(
     client, serve_rounds, monkeypatch, fresh_agent
 ):
     model = whole_round()
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
     restart(monkeypatch, fresh_agent)
     round_ = the_round(client)
@@ -247,7 +247,7 @@ def test_a_round_in_its_first_evaluations_is_left_open_by_a_restart(
 
 
 class StoppingModel(RuleFollowingModel):
-    """Stub claim agents that stop the round as they work the version under test."""
+    """Stub payroll agents that stop the round as they work the version under test."""
 
     stop: Callable[[], None] = lambda: None
 
@@ -262,8 +262,8 @@ def test_stopping_a_round_during_its_evaluations(client, serve_rounds):
     model = improver(
         call("read_results"), propose(), call("run_evaluation"), "Never reached"
     )
-    claims = claim_agents_model()
-    stopping = StoppingModel(messages=iter(()), answers=claims.answers)
+    cases = payroll_agents_model()
+    stopping = StoppingModel(messages=iter(()), answers=cases.answers)
     agent = serve_rounds(model, stopping)
     start_round(agent)
     round_ = the_round(client)
@@ -274,8 +274,8 @@ def test_stopping_a_round_during_its_evaluations(client, serve_rounds):
     assert (stopped["status"], stopped["stopped_by"]) == ("stopped", "Dana Whitfield")
     [tested] = [e for e in stopped["evaluations"] if e["version"] == 2]
     assert tested["status"] == "stopped"
-    # The claim in hand when the round stopped finished; no other started.
-    copies = get_evaluation(client, tested["run_id"])["claims"]
+    # The case in hand when the round stopped finished; no other started.
+    copies = get_evaluation(client, tested["run_id"])["cases"]
     statuses = [copy["status"] for copy in copies]
     assert (statuses.count("decided"), statuses.count("waiting")) == (1, 24)
     assert len(model.prompts) == 3
@@ -293,7 +293,7 @@ def test_the_improver_stops_after_20_model_calls_in_a_round(client, serve_rounds
         call("read_results"),
         call("read_results"),
     )
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
     round_ = the_round(client)
     review(agent, round_, round_["waiting"]["proposal_id"])
@@ -309,7 +309,7 @@ def test_the_spending_limit_cuts_a_round_short_in_its_first_evaluations(
 ):
     change_settings(client, spending_limit=0.01, agents=1)
     model = whole_round()
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
 
     round_ = the_round(client)
@@ -330,7 +330,7 @@ def test_a_proposal_the_backend_refuses_goes_back_to_the_improver(client, serve_
         propose(VERSION_1 + "\nAnother rule.\n"),
         call("propose_recipe", recipe="1. Read the results.\n", reason="Shorter"),
     )
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
     round_ = the_round(client)
     review(agent, round_, round_["waiting"]["proposal_id"])
@@ -350,7 +350,7 @@ def test_a_version_is_evaluated_only_until_its_verdict(client, serve_rounds):
         call("run_evaluation"),
         "The round is done.",
     )
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
     round_ = the_round(client)
     review(agent, round_, round_["waiting"]["proposal_id"])
@@ -364,7 +364,7 @@ def test_a_version_is_evaluated_only_until_its_verdict(client, serve_rounds):
 
 
 class StoppedMidCall(StubModel):
-    """A stub improver whose second reply comes after a handler stops the round."""
+    """A stub improver whose second reply comes after a reviewer stops the round."""
 
     stop: Callable[[], None] = lambda: None
 
@@ -376,7 +376,7 @@ class StoppedMidCall(StubModel):
 
 def test_a_round_stopped_during_a_model_call_ends_quietly(client, serve_rounds, caplog):
     model = StoppedMidCall(messages=iter([call("read_results"), propose()]))
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     model.stop = lambda: stop_round(client, the_round(client)["round_id"])
     start_round(agent)
 
@@ -390,7 +390,7 @@ def test_a_round_stopped_during_a_model_call_ends_quietly(client, serve_rounds, 
 
 def test_the_improver_asks_for_one_tool_call_at_a_time(client, serve_rounds):
     model = improver(call("read_results"), "No change would help.")
-    start_round(serve_rounds(model, claim_agents_model()))
+    start_round(serve_rounds(model, payroll_agents_model()))
     assert model.bound_with
     assert all(bound["parallel_tool_calls"] is False for bound in model.bound_with)
 
@@ -398,16 +398,16 @@ def test_the_improver_asks_for_one_tool_call_at_a_time(client, serve_rounds):
 def test_a_round_whose_evaluation_fails_is_stopped_with_its_run(
     client, serve_rounds, monkeypatch
 ):
-    def broken(run, claim_agents):
-        raise RuntimeError("The claim agents couldn't be built")
+    def broken(run, payroll_agents):
+        raise RuntimeError("The payroll agents couldn't be built")
 
-    monkeypatch.setattr(work, "claim_work", broken)
+    monkeypatch.setattr(work, "case_work", broken)
     model = whole_round()
-    agent = serve_rounds(model, claim_agents_model())
+    agent = serve_rounds(model, payroll_agents_model())
     start_round(agent)
 
     round_ = the_round(client)
-    because = "RuntimeError: The claim agents couldn't be built"
+    because = "RuntimeError: The payroll agents couldn't be built"
     assert (round_["status"], round_["stopped_because"]) == ("stopped", because)
     [evaluation] = round_["evaluations"]
     assert (evaluation["status"], evaluation["stopped_because"]) == (

@@ -10,13 +10,13 @@ AS_BEFORE = [
     ("GET", "/api/nothing", 404),
     ("POST", "/api/nothing", 404),
     ("POST", "/api/health", 405),
-    ("DELETE", "/api/claims", 405),
-    ("GET", "/api/claims/", 307),
+    ("DELETE", "/api/cases", 405),
+    ("GET", "/api/cases/", 307),
 ]
 
 
 @pytest.mark.usefixtures("build")
-@pytest.mark.parametrize("path", ["/", "/claims/CLM-1001", "/improvement/recipes/2"])
+@pytest.mark.parametrize("path", ["/", "/cases/CLM-1001", "/improvement/recipes/2"])
 def test_every_page_gets_the_builds_index(dashboard, path):
     page = dashboard.get(path)
     assert (page.status_code, page.text) == (200, INDEX)
@@ -56,7 +56,7 @@ def test_the_api_and_its_docs_work_beside_the_build(dashboard):
 
 
 @pytest.mark.usefixtures("no_build")
-@pytest.mark.parametrize("path", ["/", "/claims/CLM-1001"])
+@pytest.mark.parametrize("path", ["/", "/cases/CLM-1001"])
 def test_without_a_build_every_other_path_is_a_404_in_json(dashboard, path):
     page = dashboard.get(path)
     assert (page.status_code, page.json()) == (404, {"detail": "Not Found"})

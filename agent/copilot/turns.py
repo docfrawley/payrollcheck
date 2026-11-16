@@ -1,4 +1,4 @@
-"""Working a turn of a conversation, and the handler's answer to its confirmation:
+"""Working a turn of a conversation, and the reviewer's answer to its confirmation:
 the turn checked with the app first, then its model, graph and context built, any
 tool call a stopped turn left open closed, the graph run on the conversation's
 thread, and the app told how the turn ended: answered, paused or failed."""
@@ -36,16 +36,16 @@ class NotThisTurn(Exception):
 
 
 class NoAnswer(Exception):
-    """The model's last reply had no text to give the handler."""
+    """The model's last reply had no text to give the reviewer."""
 
 
 @dataclass
 class Turn:
-    """A turn the app asked the Copilot to work, as the app gave it: the handler's
-    sign-in, the handler, the conversation and the app's record of the turn."""
+    """A turn the app asked the Copilot to work, as the app gave it: the reviewer's
+    sign-in, the reviewer, the conversation and the app's record of the turn."""
 
     sign_in: str = field(repr=False)
-    handler: dict[str, Any]
+    reviewer: dict[str, Any]
     conversation_id: str
     record: dict[str, Any]
 
@@ -56,14 +56,14 @@ class Turn:
 
 def the_turn(sign_in: str, conversation_id: str, turn_id: str) -> Turn:
     """Ask the app who is signed in, before any model call, and read the
-    conversation with their sign-in, which the app finds only for its own handler.
-    The app refuses a sign-in it doesn't accept and another handler's conversation;
+    conversation with their sign-in, which the app finds only for its own reviewer.
+    The app refuses a sign-in it doesn't accept and another reviewer's conversation;
     a turn that isn't the conversation's latest working one is refused here."""
-    handler = app_api.get_signed_in_handler(sign_in)
+    reviewer = app_api.get_signed_in_reviewer(sign_in)
     latest = app_api.get_conversation(sign_in, conversation_id)["turns"][-1]
     if latest["turn_id"] != turn_id or latest["status"] != app_api.WORKING:
         raise NotThisTurn(NOT_THE_TURN.format(turn_id=turn_id))
-    return Turn(sign_in, handler, conversation_id, latest)
+    return Turn(sign_in, reviewer, conversation_id, latest)
 
 
 def copilot_model(sign_in: str) -> ChatOpenAI:
@@ -93,11 +93,11 @@ def left_open(graph: CopilotGraph, config: RunnableConfig) -> list[ToolMessage]:
 
 
 def tell_the_app(turn: Turn, saved: StateSnapshot) -> None:
-    """Tell the app how the turn ended: paused on a claim, once the interrupt is
+    """Tell the app how the turn ended: paused on a case, once the interrupt is
     saved, or answered, with its model calls and their cost."""
     if saved.interrupts:
-        claim_id = saved.interrupts[0].value["claim_id"]
-        app_api.pause_turn(turn.sign_in, turn.turn_id, claim_id)
+        case_id = saved.interrupts[0].value["case_id"]
+        app_api.pause_turn(turn.sign_in, turn.turn_id, case_id)
         return
     values = saved.values
     answer = values["messages"][-1].text
@@ -119,7 +119,7 @@ def work(turn: Turn, start: Start, saver: BaseCheckpointSaver[Any]) -> None:
         config = thread_of(turn.conversation_id)
         context = CopilotContext(
             turn.sign_in,
-            turn.handler,
+            turn.reviewer,
             turn.conversation_id,
             turn.turn_id,
             tool_route.from_environment(),
@@ -143,9 +143,9 @@ def take_turn(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
 
 
 def resume_of(record: dict[str, Any]) -> dict[str, Any]:
-    """The handler's answer to the confirmation, read from the app's record of the
+    """The reviewer's answer to the confirmation, read from the app's record of the
     turn: Sign off, Cancel, or a Sign off the app took as a Cancel because the
-    claim changed."""
+    case changed."""
     answer: dict[str, Any] = {"answer": record["confirmation_answer"]}
     if record["canceled_because"]:
         answer["changed"] = True
@@ -153,7 +153,7 @@ def resume_of(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def waits_for_an_answer(graph: CopilotGraph, config: RunnableConfig) -> bool:
-    """Say whether the conversation's graph is paused for the handler's answer to a
+    """Say whether the conversation's graph is paused for the reviewer's answer to a
     confirmation."""
     return bool(graph.get_state(config).interrupts)
 
@@ -166,7 +166,7 @@ def check_paused(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
 
 
 def answer_confirmation(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
-    """Carry a paused turn on with the handler's answer to its confirmation."""
+    """Carry a paused turn on with the reviewer's answer to its confirmation."""
 
     def start(graph: CopilotGraph, config: RunnableConfig) -> Command:
         if not waits_for_an_answer(graph, config):

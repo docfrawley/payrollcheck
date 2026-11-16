@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-INDEX = "<!doctype html><title>UnderCover</title>"
-APP = "console.log('UnderCover');"
+INDEX = "<!doctype html><title>PayrollCheck</title>"
+APP = "console.log('PayrollCheck');"
 
 
 def stand_in_build(folder: Path) -> Path:

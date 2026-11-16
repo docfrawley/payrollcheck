@@ -58,8 +58,8 @@ export function VersionPage() {
         <section className="panel" aria-labelledby="instructions-title">
           <h2 id="instructions-title">Instructions</h2>
           <p className="muted small">
-            The claim agent's system prompt, followed by the policy wording and
-            the claims manual.
+            The payroll agent's system prompt, followed by the policy wording
+            and the claims manual.
           </p>
           <pre className="instructions">{version.instructions}</pre>
         </section>

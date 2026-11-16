@@ -1,8 +1,8 @@
-"""The Copilot's records in the app: each handler's conversations, their turns and
-each turn's cards. A conversation is found only for its own handler and takes one
+"""The Copilot's records in the app: each reviewer's conversations, their turns and
+each turn's cards. A conversation is found only for its own reviewer and takes one
 message at a time. A turn that has worked too long reads as stopped and stays
 stopped, refusing a late record. A sign-off's confirmation card is filled in from
-the claim, and an answer of Sign off is taken as a Cancel when the claim has
+the case, and an answer of Sign off is taken as a Cancel when the case has
 changed since."""
 
 import uuid
@@ -18,7 +18,7 @@ from backend.database import (
     copilot_turns,
     now_precisely,
 )
-from backend.lookups import A_COPY, NOT_WAITING_FOR_SIGN_OFF, find_claim
+from backend.lookups import A_COPY, NOT_WAITING_FOR_SIGN_OFF, find_case
 from backend.models import (
     CardStatus,
     ConfirmationAnswer,
@@ -28,14 +28,14 @@ from backend.models import (
     CopilotStepRequest,
     CopilotStepResult,
     CopilotTurn,
-    Handler,
+    Reviewer,
     Status,
     TurnFinishRequest,
     TurnStatus,
 )
 
 TITLE_LENGTH = 120
-# A turn still working this long after it started, or after the handler answered
+# A turn still working this long after it started, or after the reviewer answered
 # its confirmation, reads as stopped.
 STOPPED_AFTER = timedelta(minutes=20)
 CONVERSATION_NOT_FOUND = "Conversation {conversation_id} not found"
@@ -47,7 +47,7 @@ NOT_WORKING = "Turn {number} isn't working"
 NOTHING_TO_CONFIRM = "Turn {number} isn't waiting for a confirmation"
 NO_SUCH_CONFIRMATION = "That confirmation isn't waiting for an answer"
 STEP_FINISHED = "Step {step_id} has finished"
-CLAIM_CHANGED = "The claim changed since the card was shown"
+CASE_CHANGED = "The case changed since the card was shown"
 
 
 def new_conversation_id() -> str:
@@ -73,7 +73,7 @@ def status_of(turn: RowMapping) -> TurnStatus:
 
 def seconds_of(turn: RowMapping) -> float | None:
     """How long a turn that has finished took, leaving out the wait for the
-    handler's confirmation."""
+    reviewer's confirmation."""
     if turn["finished_at"] is None:
         return None
     worked = seconds_from(turn["started_at"], turn["finished_at"])
@@ -110,12 +110,12 @@ def steps_by_turn(db: Connection, turn_ids: list[str]) -> dict[str, list[Copilot
     return cards
 
 
-def owned(db: Connection, conversation_id: str, handler: Handler) -> RowMapping:
-    """Return one of the handler's own conversations, or raise a 404, as for a
+def owned(db: Connection, conversation_id: str, reviewer: Reviewer) -> RowMapping:
+    """Return one of the reviewer's own conversations, or raise a 404, as for a
     conversation that isn't there."""
     query = select(conversations).where(
         conversations.c.conversation_id == conversation_id,
-        conversations.c.handler_id == handler.handler_id,
+        conversations.c.reviewer_id == reviewer.reviewer_id,
     )
     row = db.execute(query).mappings().first()
     if row is None:
@@ -125,10 +125,10 @@ def owned(db: Connection, conversation_id: str, handler: Handler) -> RowMapping:
 
 
 def conversation(
-    db: Connection, conversation_id: str, handler: Handler
+    db: Connection, conversation_id: str, reviewer: Reviewer
 ) -> Conversation:
-    """One of the handler's conversations, with every turn and its cards."""
-    row = owned(db, conversation_id, handler)
+    """One of the reviewer's conversations, with every turn and its cards."""
+    row = owned(db, conversation_id, reviewer)
     query = (
         select(copilot_turns)
         .where(copilot_turns.c.conversation_id == conversation_id)
@@ -144,11 +144,11 @@ def conversation(
     )
 
 
-def conversations_of(db: Connection, handler: Handler) -> list[ConversationSummary]:
-    """The handler's conversations, newest first."""
+def conversations_of(db: Connection, reviewer: Reviewer) -> list[ConversationSummary]:
+    """The reviewer's conversations, newest first."""
     query = (
         select(conversations)
-        .where(conversations.c.handler_id == handler.handler_id)
+        .where(conversations.c.reviewer_id == reviewer.reviewer_id)
         .order_by(conversations.c.created_at.desc(), conversations.c.conversation_id)
     )
     return [ConversationSummary(**row) for row in db.execute(query).mappings()]
@@ -171,14 +171,14 @@ def add_turn(db: Connection, conversation_id: str, number: int, message: str) ->
     return turn_id
 
 
-def start(db: Connection, handler: Handler, message: str) -> tuple[str, str]:
-    """Start a conversation for the handler, titled with its first message, with
+def start(db: Connection, reviewer: Reviewer, message: str) -> tuple[str, str]:
+    """Start a conversation for the reviewer, titled with its first message, with
     that message as its first turn, and return their ids."""
     conversation_id = new_conversation_id()
     db.execute(
         insert(conversations).values(
             conversation_id=conversation_id,
-            handler_id=handler.handler_id,
+            reviewer_id=reviewer.reviewer_id,
             title=message[:TITLE_LENGTH],
             turns=1,
             created_at=now_precisely(),
@@ -207,10 +207,10 @@ def refuse_while_busy(turn: RowMapping) -> None:
 
 
 def next_turn(
-    db: Connection, conversation_id: str, handler: Handler, message: str
+    db: Connection, conversation_id: str, reviewer: Reviewer, message: str
 ) -> str:
-    """Add a turn to one of the handler's conversations, and return its id."""
-    return add_after(db, owned(db, conversation_id, handler), message)
+    """Add a turn to one of the reviewer's conversations, and return its id."""
+    return add_after(db, owned(db, conversation_id, reviewer), message)
 
 
 def add_after(db: Connection, row: RowMapping, message: str) -> str:
@@ -248,15 +248,15 @@ def fail_untaken(db: Connection, turn_id: str, reason: str) -> None:
 # The Copilot's own records of a turn.
 
 
-def turn_of(db: Connection, turn_id: str, handler: Handler) -> RowMapping:
-    """Return a turn of one of the handler's own conversations, with how many turns
+def turn_of(db: Connection, turn_id: str, reviewer: Reviewer) -> RowMapping:
+    """Return a turn of one of the reviewer's own conversations, with how many turns
     its conversation has, or raise a 404."""
     query = (
         select(copilot_turns, conversations.c.turns)
         .join(conversations)
         .where(
             copilot_turns.c.turn_id == turn_id,
-            conversations.c.handler_id == handler.handler_id,
+            conversations.c.reviewer_id == reviewer.reviewer_id,
         )
     )
     row = db.execute(query).mappings().first()
@@ -265,11 +265,11 @@ def turn_of(db: Connection, turn_id: str, handler: Handler) -> RowMapping:
     return row
 
 
-def working_turn(db: Connection, turn_id: str, handler: Handler) -> RowMapping:
-    """Return the handler's turn when it is its conversation's latest and still
+def working_turn(db: Connection, turn_id: str, reviewer: Reviewer) -> RowMapping:
+    """Return the reviewer's turn when it is its conversation's latest and still
     working, by the rule status_of reads it by, or raise a 404 or a 409. A stopped
     turn stays stopped."""
-    turn = turn_of(db, turn_id, handler)
+    turn = turn_of(db, turn_id, reviewer)
     if turn["number"] != turn["turns"] or status_of(turn) != TurnStatus.WORKING:
         raise HTTPException(409, NOT_WORKING.format(number=turn["number"]))
     return turn
@@ -360,48 +360,46 @@ def fail(db: Connection, turn: RowMapping, reason: str) -> None:
     )
 
 
-def card_of(db: Connection, claim_id: str) -> dict[str, Any]:
-    """The confirmation card of a sign-off, from the claim's record, with the held
-    decision's decided_at, or a 404, or a 409 for a claim that isn't waiting for
+def card_of(db: Connection, case_id: str) -> dict[str, Any]:
+    """The confirmation card of a sign-off, from the case's record, with the held
+    decision's decided_at, or a 404, or a 409 for a case that isn't waiting for
     sign-off or is an evaluation's copy."""
-    claim = find_claim(db, claim_id)
-    if claim["evaluation_id"] is not None:
-        raise HTTPException(
-            409, A_COPY.format(claim_id=claim_id, answered="signed off")
-        )
-    if claim["status"] != Status.WAITING_FOR_SIGN_OFF:
-        raise HTTPException(409, NOT_WAITING_FOR_SIGN_OFF.format(claim_id=claim_id))
+    case = find_case(db, case_id)
+    if case["evaluation_id"] is not None:
+        raise HTTPException(409, A_COPY.format(case_id=case_id, answered="signed off"))
+    if case["status"] != Status.WAITING_FOR_SIGN_OFF:
+        raise HTTPException(409, NOT_WAITING_FOR_SIGN_OFF.format(case_id=case_id))
     return {
-        "claim_id": claim_id,
-        "customer_name": claim["customer_name"],
-        "payout": claim["payout"],
-        "reason": claim["reason"],
-        "decided_at": claim["decided_at"],
+        "case_id": case_id,
+        "subcontractor_name": case["subcontractor_name"],
+        "payout": case["payout"],
+        "reason": case["reason"],
+        "decided_at": case["decided_at"],
     }
 
 
-def pause(db: Connection, turn: RowMapping, claim_id: str) -> None:
-    """Record that a working turn waits for the handler to confirm a sign-off, with
-    its card filled in from the claim."""
+def pause(db: Connection, turn: RowMapping, case_id: str) -> None:
+    """Record that a working turn waits for the reviewer to confirm a sign-off, with
+    its card filled in from the case."""
     move(
         db,
         turn,
         status=TurnStatus.WAITING_FOR_CONFIRMATION,
         paused_at=now_precisely(),
-        confirmation=card_of(db, claim_id),
+        confirmation=card_of(db, case_id),
     )
 
 
-# The handler's answer to a confirmation.
+# The reviewer's answer to a confirmation.
 
 
 def waiting_turn(
-    db: Connection, conversation_id: str, turn_id: str, handler: Handler
+    db: Connection, conversation_id: str, turn_id: str, reviewer: Reviewer
 ) -> RowMapping:
-    """Return the turn of one of the handler's conversations whose card was shown,
+    """Return the turn of one of the reviewer's conversations whose card was shown,
     if it is the one waiting for a confirmation, or raise a 404 or a 409, as for an
     older card or one answered already."""
-    turn = latest_turn(db, owned(db, conversation_id, handler))
+    turn = latest_turn(db, owned(db, conversation_id, reviewer))
     if turn["turn_id"] != turn_id:
         raise HTTPException(409, NO_SUCH_CONFIRMATION)
     if turn["status"] != TurnStatus.WAITING_FOR_CONFIRMATION:
@@ -410,21 +408,21 @@ def waiting_turn(
 
 
 def why_not_sign_off(db: Connection, turn: RowMapping) -> str | None:
-    """Say why a sign-off can't go ahead as the card showed it: the claim is no
+    """Say why a sign-off can't go ahead as the card showed it: the case is no
     longer waiting for sign-off, or its held decision isn't the card's, as after a
     send back and a new decision, even with the same payout."""
     card = turn["confirmation"]
-    claim = find_claim(db, card["claim_id"])
-    held = claim["status"] == Status.WAITING_FOR_SIGN_OFF
+    case = find_case(db, card["case_id"])
+    held = case["status"] == Status.WAITING_FOR_SIGN_OFF
     shown = (card["decided_at"], card["payout"], card["reason"])
-    if not held or (claim["decided_at"], claim["payout"], claim["reason"]) != shown:
-        return CLAIM_CHANGED
+    if not held or (case["decided_at"], case["payout"], case["reason"]) != shown:
+        return CASE_CHANGED
     return None
 
 
 def record_answer(db: Connection, turn: RowMapping, answer: ConfirmationAnswer) -> None:
-    """Record the handler's answer to a turn's confirmation and when it came, and
-    move the turn back to working. A Sign off for a claim that changed since the
+    """Record the reviewer's answer to a turn's confirmation and when it came, and
+    move the turn back to working. A Sign off for a case that changed since the
     card was shown is recorded as a Cancel, with why."""
     canceled_because = None
     if answer == ConfirmationAnswer.SIGN_OFF:

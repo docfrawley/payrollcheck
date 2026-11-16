@@ -30,7 +30,7 @@ def test_start_a_dispatch(client, agent_calls):
 
 
 @pytest.mark.parametrize("agents", [0, 26])
-def test_a_dispatch_has_1_to_25_claim_agents(client, agent_calls, agents):
+def test_a_dispatch_has_1_to_25_payroll_agents(client, agent_calls, agents):
     assert start_dispatch(client, agents).status_code == 422
     assert agent_calls == []
     assert count(runs) == 0
@@ -48,7 +48,7 @@ def test_start_an_evaluation(client, agent_calls):
         "running",
         25,
     )
-    assert len(evaluation["claims"]) == 25
+    assert len(evaluation["cases"]) == 25
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-"""The UnderCover backend."""
+"""The PayrollCheck backend."""
 
 import logging
 from collections.abc import AsyncIterator
@@ -18,10 +18,9 @@ from backend.calculation import (
 )
 from backend.configuration import router as configuration
 from backend.copilot import router as copilot
-from backend.customers import router as customers_router
 from backend.database import (
-    claim_view,
-    claims,
+    case_view,
+    cases,
     decisions,
     engine,
     is_seeded,
@@ -38,29 +37,28 @@ from backend.database import (
 from backend.dependencies import (
     AgentKey,
     Database,
-    HandlerOrAgent,
+    ReviewerOrAgent,
     SignedIn,
-    SignedInHandler,
-    senior,
+    SignedInReviewer,
+    compliance_manager,
 )
 from backend.documents import manual_version
 from backend.improvement import router as improvement
 from backend.lookups import (
     A_COPY,
-    CLAIM_NOT_FOUND,
+    CASE_NOT_FOUND,
     NOT_WAITING_FOR_SIGN_OFF,
     current_settings,
-    customer_record,
-    find_claim,
+    find_case,
     run_row,
+    subcontractor_record,
 )
 from backend.models import (
-    Claim,
-    ClaimSummary,
+    Case,
+    CaseSummary,
     DecisionKind,
     DecisionRequest,
     FailureRequest,
-    Handler,
     HoldRequest,
     ModelCall,
     ModelCallRequest,
@@ -71,7 +69,8 @@ from backend.models import (
     PayoutsOverTheLimit,
     Plans,
     Policy,
-    PreviousClaim,
+    PreviousCase,
+    Reviewer,
     SendBackRequest,
     StartRequest,
     Status,
@@ -84,19 +83,20 @@ from backend.models import (
 from backend.money import dollars
 from backend.payout import needs_sign_off, work_out_payout
 from backend.records import check_calculation, check_request
-from backend.round_state import round_row, why_no_claim_starts
+from backend.round_state import round_row, why_no_case_starts
 from backend.runs import router as runs
 from backend.sent_back import keep, sent_back_of
-from backend.views import to_claim, to_summary
+from backend.subcontractors import router as subcontractors_router
+from backend.views import to_case, to_summary
 
 ATTEMPTS = 2
-NOT_APPROVED = "Claim {claim_id} has not been approved"
-ALREADY_PAID = "Claim {claim_id} has already been paid"
-NOT_STARTED = "Claim {claim_id} has not been started"
-NOT_IN_PROGRESS = "Claim {claim_id} is not in progress"
-ALREADY_DECIDED = "Claim {claim_id} has already been decided"
-NOT_WAITING = "Claim {claim_id} is not waiting"
-NOT_SENT_BACK = "Claim {claim_id} isn't sent back"
+NOT_APPROVED = "Case {case_id} has not been approved"
+ALREADY_PAID = "Case {case_id} has already been paid"
+NOT_STARTED = "Case {case_id} has not been started"
+NOT_IN_PROGRESS = "Case {case_id} is not in progress"
+ALREADY_DECIDED = "Case {case_id} has already been decided"
+NOT_WAITING = "Case {case_id} is not waiting"
+NOT_SENT_BACK = "Case {case_id} isn't sent back"
 
 log = logging.getLogger(__name__)
 
@@ -109,19 +109,19 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="UnderCover", lifespan=lifespan)
+app = FastAPI(title="PayrollCheck", lifespan=lifespan)
 app.include_router(runs)
 app.include_router(configuration)
 app.include_router(improvement)
 app.include_router(copilot)
-app.include_router(customers_router)
+app.include_router(subcontractors_router)
 
-SignsOffOverTheLimit = Annotated[Handler, Depends(senior("sign this off"))]
-SendsBack = Annotated[Handler, Depends(senior("send this back"))]
+SignsOffOverTheLimit = Annotated[Reviewer, Depends(compliance_manager("sign this off"))]
+SendsBack = Annotated[Reviewer, Depends(compliance_manager("send this back"))]
 
 
 def approval_limit(db: Connection) -> float:
-    """Return the largest payout that can be paid without a handler's sign-off, as
+    """Return the largest payout that can be paid without a reviewer's sign-off, as
     the settings in force have it."""
     return current_settings(db).approval_limit
 
@@ -131,9 +131,9 @@ def plans(db: Connection) -> Plans:
     return Plans(**db.execute(select(payout_rules.c.plans)).scalar_one())
 
 
-def claim_in_full(db: Connection, claim_id: str) -> Claim:
-    """Return one claim in full, as the API shows it, or raise a 404."""
-    return to_claim(find_claim(db, claim_id), sent_back_of(db, claim_id))
+def case_in_full(db: Connection, case_id: str) -> Case:
+    """Return one case in full, as the API shows it, or raise a 404."""
+    return to_case(find_case(db, case_id), sent_back_of(db, case_id))
 
 
 def find_policy(db: Connection, policy_id: str) -> Policy:
@@ -146,88 +146,86 @@ def find_policy(db: Connection, policy_id: str) -> Policy:
 
 
 def over_the_limit(limit: float) -> str:
-    """Say that a payout over a limit needs a handler's sign-off."""
-    return f"A payout over {dollars(limit)} needs a handler's sign-off"
+    """Say that a payout over a limit needs a reviewer's sign-off."""
+    return f"A payout over {dollars(limit)} needs a reviewer's sign-off"
 
 
-def record_payment(db: Connection, claim: RowMapping) -> None:
-    """Pay an approved claim its payout."""
+def record_payment(db: Connection, case: RowMapping) -> None:
+    """Pay an approved case its payout."""
     db.execute(
         insert(payments).values(
-            claim_id=claim["claim_id"], amount=claim["payout"], paid_at=now()
+            case_id=case["case_id"], amount=case["payout"], paid_at=now()
         )
     )
 
 
-def set_status(db: Connection, claim_id: str, status: Status) -> None:
-    """Move a claim to a new status."""
-    db.execute(
-        update(claims).where(claims.c.claim_id == claim_id).values(status=status)
-    )
+def set_status(db: Connection, case_id: str, status: Status) -> None:
+    """Move a case to a new status."""
+    db.execute(update(cases).where(cases.c.case_id == case_id).values(status=status))
 
 
-def move_claim(
-    db: Connection, claim_id: str, old: Status, new: Status, **columns: Any
+def move_case(
+    db: Connection, case_id: str, old: Status, new: Status, **columns: Any
 ) -> bool:
-    """Move a claim from one status to another, setting any other columns given, and
+    """Move a case from one status to another, setting any other columns given, and
     say whether it moved: only the first of two requests at the same moment finds
     it in the old status."""
     moved = db.execute(
-        update(claims)
-        .where(claims.c.claim_id == claim_id, claims.c.status == old)
+        update(cases)
+        .where(cases.c.case_id == case_id, cases.c.status == old)
         .values(status=new, **columns)
     )
     return moved.rowcount == 1
 
 
 def answer_held(
-    db: Connection, claim_id: str, answer: Status, answered: str
+    db: Connection, case_id: str, answer: Status, answered: str
 ) -> RowMapping:
-    """Move a claim held for sign-off on with a handler's answer, and return its row
+    """Move a case held for sign-off on with a reviewer's answer, and return its row
     as the move found it, with the decision that was held, or raise a 404, or a 409
-    for an evaluation's copy, which nobody answers, or for a claim no longer
+    for an evaluation's copy, which nobody answers, or for a case no longer
     waiting, as when another answer came first."""
-    if find_claim(db, claim_id)["evaluation_id"] is not None:
-        raise HTTPException(409, A_COPY.format(claim_id=claim_id, answered=answered))
-    if not move_claim(db, claim_id, Status.WAITING_FOR_SIGN_OFF, answer):
-        raise HTTPException(409, NOT_WAITING_FOR_SIGN_OFF.format(claim_id=claim_id))
-    return find_claim(db, claim_id)
+    if find_case(db, case_id)["evaluation_id"] is not None:
+        raise HTTPException(409, A_COPY.format(case_id=case_id, answered=answered))
+    if not move_case(db, case_id, Status.WAITING_FOR_SIGN_OFF, answer):
+        raise HTTPException(409, NOT_WAITING_FOR_SIGN_OFF.format(case_id=case_id))
+    return find_case(db, case_id)
 
 
-def record_send_back(db: Connection, claim: RowMapping, note: str, by: str) -> None:
-    """Keep a held decision sent back with its note, clear it from the claim with
+def record_send_back(db: Connection, case: RowMapping, note: str, by: str) -> None:
+    """Keep a held decision sent back with its note, clear it from the case with
     its calculation, so nothing can pay it, and record the note as a step."""
-    keep(db, claim, note, by)
-    db.execute(delete(decisions).where(decisions.c.claim_id == claim["claim_id"]))
-    clear_calculation(db, claim["claim_id"])
+    keep(db, case, note, by)
+    db.execute(delete(decisions).where(decisions.c.case_id == case["case_id"]))
+    clear_calculation(db, case["case_id"])
     step = NewStep(kind="sent_back", content=f"Sent back by {by}: {note}", sources=[])
-    add_step(db, claim["claim_id"], claim["thread_id"], step)
+    add_step(db, case["case_id"], case["thread_id"], step)
 
 
-def ask_to_resume(claim_id: str) -> None:
-    """Ask the agent to resume a claim after a handler's answer, which stands
+def ask_to_resume(case_id: str) -> None:
+    """Ask the agent to resume a case after a reviewer's answer, which stands
     whatever happens to the call: a failure is logged as a warning."""
     try:
-        agent_service.resume_claim(claim_id)
-    except Exception as error:  # the handler's answer stands whatever happens
-        log.warning("%s wasn't resumed: %s", claim_id, error)
+        agent_service.resume_case(case_id)
+    except Exception as error:  # the reviewer's answer stands whatever happens
+        log.warning("%s wasn't resumed: %s", case_id, error)
 
 
-def started_thread(db: Connection, claim_id: str) -> str:
-    """Return the thread of a claim that has been started, or raise a 404 or a 409."""
-    thread_id = find_claim(db, claim_id)["thread_id"]
+def started_thread(db: Connection, case_id: str) -> str:
+    """Return the thread of a case that has been started, or raise a 404 or a 409."""
+    thread_id = find_case(db, case_id)["thread_id"]
     if thread_id is None:
-        raise HTTPException(409, NOT_STARTED.format(claim_id=claim_id))
+        raise HTTPException(409, NOT_STARTED.format(case_id=case_id))
     return thread_id
 
 
 def refuse_a_round_that_cant_go_on(db: Connection, run_id: str) -> None:
     """Raise a 409 when an evaluation belongs to a round that was stopped or has
-    spent its limit, so no new claim starts in it."""
+    spent its limit, so no new case starts in it."""
     round_id = run_row(db, run_id)["round_id"]
     if round_id is None:
         return
-    reason = why_no_claim_starts(db, round_row(db, round_id))
+    reason = why_no_case_starts(db, round_row(db, round_id))
     if reason:
         raise HTTPException(409, reason)
 
@@ -238,12 +236,12 @@ def check_run(db: Connection, run_id: str | None) -> None:
         run_row(db, run_id)
 
 
-def add_step(db: Connection, claim_id: str, thread_id: str, step: NewStep) -> Step:
-    """Add one step of the agent's work to a claim."""
+def add_step(db: Connection, case_id: str, thread_id: str, step: NewStep) -> Step:
+    """Add one step of the agent's work to a case."""
     query = (
         insert(steps)
         .values(
-            claim_id=claim_id,
+            case_id=case_id,
             thread_id=thread_id,
             **step.model_dump(),
             created_at=now(),
@@ -259,26 +257,26 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/claims", operation_id="list_claims", dependencies=[HandlerOrAgent])
-def list_claims(db: Database) -> list[ClaimSummary]:
-    """List every claim in the queue, in id order, leaving out evaluations' copies."""
-    query = claim_view.where(claims.c.evaluation_id.is_(None))
-    rows = db.execute(query.order_by(claims.c.claim_id)).mappings()
+@app.get("/api/cases", operation_id="list_cases", dependencies=[ReviewerOrAgent])
+def list_cases(db: Database) -> list[CaseSummary]:
+    """List every case in the queue, in id order, leaving out evaluations' copies."""
+    query = case_view.where(cases.c.evaluation_id.is_(None))
+    rows = db.execute(query.order_by(cases.c.case_id)).mappings()
     return [to_summary(row) for row in rows]
 
 
 @app.get(
-    "/api/claims/{claim_id}", operation_id="get_claim", dependencies=[HandlerOrAgent]
+    "/api/cases/{case_id}", operation_id="get_case", dependencies=[ReviewerOrAgent]
 )
-def get_claim(claim_id: str, db: Database) -> Claim:
-    """Get one claim in full: the story, the items claimed and the documents."""
-    return claim_in_full(db, claim_id)
+def get_case(case_id: str, db: Database) -> Case:
+    """Get one case in full: the story, the items claimed and the documents."""
+    return case_in_full(db, case_id)
 
 
 @app.get(
     "/api/policies/{policy_id}",
     operation_id="get_policy",
-    dependencies=[HandlerOrAgent],
+    dependencies=[ReviewerOrAgent],
 )
 def get_policy(policy_id: str, db: Database) -> Policy:
     """Get a policy: the plan, add-ons, purchase date, trip and travelers."""
@@ -286,40 +284,40 @@ def get_policy(policy_id: str, db: Database) -> Policy:
 
 
 @app.get(
-    "/api/customers/{customer_id}/claims",
-    operation_id="get_claim_history",
-    dependencies=[HandlerOrAgent],
+    "/api/subcontractors/{subcontractor_id}/cases",
+    operation_id="get_case_history",
+    dependencies=[ReviewerOrAgent],
 )
-def get_claim_history(customer_id: str, db: Database) -> list[PreviousClaim]:
-    """Get a customer's earlier claims, with the outcome and the amount paid."""
-    record = customer_record(db, customer_id)
-    return [PreviousClaim(**claim) for claim in record["previous_claims"]]
+def get_case_history(subcontractor_id: str, db: Database) -> list[PreviousCase]:
+    """Get a subcontractor's earlier cases, with the outcome and the amount paid."""
+    record = subcontractor_record(db, subcontractor_id)
+    return [PreviousCase(**case) for case in record["previous_cases"]]
 
 
 @app.get(
     "/api/agent/openapi.json",
     operation_id="get_agent_api",
-    dependencies=[HandlerOrAgent],
+    dependencies=[ReviewerOrAgent],
 )
 def get_agent_api() -> dict[str, Any]:
-    """Get the OpenAPI document of the claim agent's own operations, for the Gateway."""
+    """Get the OpenAPI document of the payroll agent's operations, for the Gateway."""
     return agent_api.document(app)
 
 
 @app.get(
     "/api/payouts/over-limit",
     operation_id="count_payouts_over_limit",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
 def count_payouts_over_limit(db: Database) -> PayoutsOverTheLimit:
     """Count the queue's payouts over their decision's limit, and those signed off."""
     query = (
         select(decisions.c.signed_off_by)
-        .select_from(claims)
-        .join(decisions, decisions.c.claim_id == claims.c.claim_id)
-        .join(payments, payments.c.claim_id == claims.c.claim_id)
+        .select_from(cases)
+        .join(decisions, decisions.c.case_id == cases.c.case_id)
+        .join(payments, payments.c.case_id == cases.c.case_id)
         .where(
-            claims.c.evaluation_id.is_(None),
+            cases.c.evaluation_id.is_(None),
             payments.c.amount > decisions.c.approval_limit,
         )
     )
@@ -330,60 +328,60 @@ def count_payouts_over_limit(db: Database) -> PayoutsOverTheLimit:
     )
 
 
-@app.get("/api/me", operation_id="get_signed_in_handler")
-def get_signed_in_handler(handler: SignedIn) -> Handler:
-    """Get the handler signed in, with what they may sign off."""
-    return handler
+@app.get("/api/me", operation_id="get_signed_in_reviewer")
+def get_signed_in_reviewer(reviewer: SignedIn) -> Reviewer:
+    """Get the reviewer signed in, with what they may sign off."""
+    return reviewer
 
 
 @app.post(
-    "/api/claims/{claim_id}/start", operation_id="start_claim", dependencies=[AgentKey]
+    "/api/cases/{case_id}/start", operation_id="start_case", dependencies=[AgentKey]
 )
-def start_claim(claim_id: str, request: StartRequest, db: Database) -> Claim:
-    """Start work on a waiting claim, which moves it to in progress, only once."""
-    claim = find_claim(db, claim_id)
-    if claim["status"] != Status.WAITING:
-        raise HTTPException(409, NOT_WAITING.format(claim_id=claim_id))
-    if claim["evaluation_id"]:
-        refuse_a_round_that_cant_go_on(db, claim["evaluation_id"])
-    started = move_claim(
+def start_case(case_id: str, request: StartRequest, db: Database) -> Case:
+    """Start work on a waiting case, which moves it to in progress, only once."""
+    case = find_case(db, case_id)
+    if case["status"] != Status.WAITING:
+        raise HTTPException(409, NOT_WAITING.format(case_id=case_id))
+    if case["evaluation_id"]:
+        refuse_a_round_that_cant_go_on(db, case["evaluation_id"])
+    started = move_case(
         db,
-        claim_id,
+        case_id,
         Status.WAITING,
         Status.IN_PROGRESS,
         thread_id=request.thread_id,
-        attempts=claims.c.attempts + 1,
+        attempts=cases.c.attempts + 1,
         resume_heard_at=None,
     )
     if not started:
-        raise HTTPException(409, NOT_WAITING.format(claim_id=claim_id))
-    return claim_in_full(db, claim_id)
+        raise HTTPException(409, NOT_WAITING.format(case_id=case_id))
+    return case_in_full(db, case_id)
 
 
 @app.post(
-    "/api/claims/{claim_id}/steps", operation_id="record_step", dependencies=[AgentKey]
+    "/api/cases/{case_id}/steps", operation_id="record_step", dependencies=[AgentKey]
 )
-def record_step(claim_id: str, request: StepRequest, db: Database) -> Step:
-    """Record one step of the agent's work on a claim."""
-    thread_id = started_thread(db, claim_id)
-    return add_step(db, claim_id, thread_id, NewStep(**request.model_dump()))
+def record_step(case_id: str, request: StepRequest, db: Database) -> Step:
+    """Record one step of the agent's work on a case."""
+    thread_id = started_thread(db, case_id)
+    return add_step(db, case_id, thread_id, NewStep(**request.model_dump()))
 
 
 @app.post(
-    "/api/claims/{claim_id}/model-calls",
+    "/api/cases/{case_id}/model-calls",
     operation_id="record_model_call",
     dependencies=[AgentKey],
 )
 def record_model_call(
-    claim_id: str, request: ModelCallRequest, db: Database
+    case_id: str, request: ModelCallRequest, db: Database
 ) -> ModelCall:
-    """Record the tokens and the cost of one model call on a started claim."""
-    thread_id = started_thread(db, claim_id)
+    """Record the tokens and the cost of one model call on a started case."""
+    thread_id = started_thread(db, case_id)
     check_run(db, request.run_id)
     query = (
         insert(model_calls)
         .values(
-            claim_id=claim_id,
+            case_id=case_id,
             thread_id=thread_id,
             **request.model_dump(),
             created_at=now(),
@@ -394,19 +392,19 @@ def record_model_call(
 
 
 @app.post(
-    "/api/claims/{claim_id}/work-times",
+    "/api/cases/{case_id}/work-times",
     operation_id="record_work_time",
     dependencies=[AgentKey],
 )
-def record_work_time(claim_id: str, request: WorkTimeRequest, db: Database) -> WorkTime:
-    """Record one spell of the agent's work on a started claim, ending now."""
-    thread_id = started_thread(db, claim_id)
+def record_work_time(case_id: str, request: WorkTimeRequest, db: Database) -> WorkTime:
+    """Record one spell of the agent's work on a started case, ending now."""
+    thread_id = started_thread(db, case_id)
     check_run(db, request.run_id)
     started = datetime.now(UTC) - timedelta(seconds=request.seconds)
     query = (
         insert(work_times)
         .values(
-            claim_id=claim_id,
+            case_id=case_id,
             thread_id=thread_id,
             run_id=request.run_id,
             started_at=stamp(started),
@@ -418,40 +416,40 @@ def record_work_time(claim_id: str, request: WorkTimeRequest, db: Database) -> W
 
 
 @app.get(
-    "/api/claims/{claim_id}/steps",
+    "/api/cases/{case_id}/steps",
     operation_id="list_steps",
-    dependencies=[SignedInHandler],
+    dependencies=[SignedInReviewer],
 )
-def list_steps(claim_id: str, db: Database) -> list[Step]:
-    """List the steps of the agent's work on a claim, in order."""
-    find_claim(db, claim_id)
-    query = select(steps).where(steps.c.claim_id == claim_id).order_by(steps.c.step_id)
+def list_steps(case_id: str, db: Database) -> list[Step]:
+    """List the steps of the agent's work on a case, in order."""
+    find_case(db, case_id)
+    query = select(steps).where(steps.c.case_id == case_id).order_by(steps.c.step_id)
     return [Step(**row) for row in db.execute(query).mappings()]
 
 
 @app.post(
-    "/api/claims/{claim_id}/decision",
+    "/api/cases/{case_id}/decision",
     operation_id="record_decision",
     dependencies=[AgentKey],
 )
-def record_decision(claim_id: str, request: DecisionRequest, db: Database) -> Claim:
-    """Record a claim's decision once, as section 14 asks; approvals await payment."""
+def record_decision(case_id: str, request: DecisionRequest, db: Database) -> Case:
+    """Record a case's decision once, as section 14 asks; approvals await payment."""
     check_request(request)
-    claim = find_claim(db, claim_id)
+    case = find_case(db, case_id)
     payout = request.payout
-    if claim["decision"] is not None:
-        if (claim["decision"], claim["payout"]) == (request.decision, payout):
-            return claim_in_full(db, claim_id)
-        raise HTTPException(409, ALREADY_DECIDED.format(claim_id=claim_id))
-    if claim["status"] != Status.IN_PROGRESS:
-        raise HTTPException(409, NOT_IN_PROGRESS.format(claim_id=claim_id))
+    if case["decision"] is not None:
+        if (case["decision"], case["payout"]) == (request.decision, payout):
+            return case_in_full(db, case_id)
+        raise HTTPException(409, ALREADY_DECIDED.format(case_id=case_id))
+    if case["status"] != Status.IN_PROGRESS:
+        raise HTTPException(409, NOT_IN_PROGRESS.format(case_id=case_id))
     calculation = None
     if request.decision == DecisionKind.APPROVE:
-        calculation = check_calculation(payout, attempts_calculation(db, claim))
+        calculation = check_calculation(payout, attempts_calculation(db, case))
     limit = approval_limit(db)
     db.execute(
         insert(decisions).values(
-            claim_id=claim_id,
+            case_id=case_id,
             decision=request.decision,
             payout=payout,
             section=request.section,
@@ -464,153 +462,151 @@ def record_decision(claim_id: str, request: DecisionRequest, db: Database) -> Cl
         )
     )
     if request.decision != DecisionKind.APPROVE:
-        set_status(db, claim_id, Status.DECIDED)
+        set_status(db, case_id, Status.DECIDED)
     elif needs_sign_off(payout, limit):
-        set_status(db, claim_id, Status.WAITING_FOR_SIGN_OFF)
-    return claim_in_full(db, claim_id)
+        set_status(db, case_id, Status.WAITING_FOR_SIGN_OFF)
+    return case_in_full(db, case_id)
 
 
 @app.post(
-    "/api/claims/{claim_id}/payout",
+    "/api/cases/{case_id}/payout",
     operation_id="calculate_payout",
     dependencies=[AgentKey],
 )
-def calculate_payout(claim_id: str, request: PayoutRequest, db: Database) -> Payout:
+def calculate_payout(case_id: str, request: PayoutRequest, db: Database) -> Payout:
     """Work out and keep an approval's payout with UnderCover's payout rules."""
-    claim = claim_in_full(db, claim_id)
-    if claim.thread_id is None:
-        raise HTTPException(409, NOT_STARTED.format(claim_id=claim_id))
-    if claim.status != Status.IN_PROGRESS:
-        raise HTTPException(409, NOT_IN_PROGRESS.format(claim_id=claim_id))
-    policy = find_policy(db, claim.policy_id)
+    case = case_in_full(db, case_id)
+    if case.thread_id is None:
+        raise HTTPException(409, NOT_STARTED.format(case_id=case_id))
+    if case.status != Status.IN_PROGRESS:
+        raise HTTPException(409, NOT_IN_PROGRESS.format(case_id=case_id))
+    policy = find_policy(db, case.policy_id)
     payout = work_out_payout(policy, plans(db), request, approval_limit(db))
-    keep_calculation(db, claim_id, claim.thread_id, payout)
+    keep_calculation(db, case_id, case.thread_id, payout)
     return payout
 
 
 @app.post(
-    "/api/claims/{claim_id}/payment", operation_id="pay_claim", dependencies=[AgentKey]
+    "/api/cases/{case_id}/payment", operation_id="pay_case", dependencies=[AgentKey]
 )
-def pay_claim(claim_id: str, request: PaymentRequest, db: Database) -> Claim:
-    """Pay an approved claim its payout once, unless it is over the limit."""
+def pay_case(case_id: str, request: PaymentRequest, db: Database) -> Case:
+    """Pay an approved case its payout once, unless it is over the limit."""
     amount = round(request.amount, 2)
     limit = approval_limit(db)
     if needs_sign_off(amount, limit):
         raise HTTPException(403, over_the_limit(limit))
-    claim = find_claim(db, claim_id)
-    if claim["decision"] != DecisionKind.APPROVE:
-        raise HTTPException(409, NOT_APPROVED.format(claim_id=claim_id))
-    if claim["paid_at"] is not None:
-        if amount == claim["amount"]:
-            return claim_in_full(db, claim_id)
-        raise HTTPException(409, ALREADY_PAID.format(claim_id=claim_id))
-    if claim["status"] == Status.WAITING_FOR_SIGN_OFF:
-        raise HTTPException(403, over_the_limit(claim["approval_limit"]))
-    if amount != claim["payout"]:
+    case = find_case(db, case_id)
+    if case["decision"] != DecisionKind.APPROVE:
+        raise HTTPException(409, NOT_APPROVED.format(case_id=case_id))
+    if case["paid_at"] is not None:
+        if amount == case["amount"]:
+            return case_in_full(db, case_id)
+        raise HTTPException(409, ALREADY_PAID.format(case_id=case_id))
+    if case["status"] == Status.WAITING_FOR_SIGN_OFF:
+        raise HTTPException(403, over_the_limit(case["approval_limit"]))
+    if amount != case["payout"]:
         raise HTTPException(
-            422, f"The amount must be the approved payout of {dollars(claim['payout'])}"
+            422, f"The amount must be the approved payout of {dollars(case['payout'])}"
         )
-    record_payment(db, claim)
-    set_status(db, claim_id, Status.DECIDED)
-    return claim_in_full(db, claim_id)
+    record_payment(db, case)
+    set_status(db, case_id, Status.DECIDED)
+    return case_in_full(db, case_id)
 
 
 @app.post(
-    "/api/claims/{claim_id}/hold", operation_id="hold_payment", dependencies=[AgentKey]
+    "/api/cases/{case_id}/hold", operation_id="hold_payment", dependencies=[AgentKey]
 )
-def hold_payment(claim_id: str, request: HoldRequest, db: Database) -> Claim:
-    """Hold an approval the Gateway refused to pay for a handler's sign-off."""
-    claim = find_claim(db, claim_id)
-    if claim["decision"] != DecisionKind.APPROVE:
-        raise HTTPException(409, NOT_APPROVED.format(claim_id=claim_id))
-    if claim["paid_at"] is not None:
-        raise HTTPException(409, ALREADY_PAID.format(claim_id=claim_id))
-    if claim["status"] == Status.WAITING_FOR_SIGN_OFF:
-        return claim_in_full(db, claim_id)
+def hold_payment(case_id: str, request: HoldRequest, db: Database) -> Case:
+    """Hold an approval the Gateway refused to pay for a reviewer's sign-off."""
+    case = find_case(db, case_id)
+    if case["decision"] != DecisionKind.APPROVE:
+        raise HTTPException(409, NOT_APPROVED.format(case_id=case_id))
+    if case["paid_at"] is not None:
+        raise HTTPException(409, ALREADY_PAID.format(case_id=case_id))
+    if case["status"] == Status.WAITING_FOR_SIGN_OFF:
+        return case_in_full(db, case_id)
     db.execute(
         update(decisions)
-        .where(decisions.c.claim_id == claim_id)
+        .where(decisions.c.case_id == case_id)
         .values(gateway_refusal=request.reason)
     )
-    set_status(db, claim_id, Status.WAITING_FOR_SIGN_OFF)
-    return claim_in_full(db, claim_id)
+    set_status(db, case_id, Status.WAITING_FOR_SIGN_OFF)
+    return case_in_full(db, case_id)
 
 
-@app.post("/api/claims/{claim_id}/sign-off", operation_id="sign_off_claim")
-def sign_off_claim(claim_id: str, handler: SignsOffOverTheLimit, db: Database) -> Claim:
-    """Sign off a held payout as the handler signed in, which pays it."""
-    claim = answer_held(db, claim_id, Status.DECIDED, "signed off")
+@app.post("/api/cases/{case_id}/sign-off", operation_id="sign_off_case")
+def sign_off_case(case_id: str, reviewer: SignsOffOverTheLimit, db: Database) -> Case:
+    """Sign off a held payout as the reviewer signed in, which pays it."""
+    case = answer_held(db, case_id, Status.DECIDED, "signed off")
     db.execute(
         update(decisions)
-        .where(decisions.c.claim_id == claim_id)
-        .values(signed_off_by=handler.name, signed_off_at=now())
+        .where(decisions.c.case_id == case_id)
+        .values(signed_off_by=reviewer.name, signed_off_at=now())
     )
-    record_payment(db, claim)
+    record_payment(db, case)
     db.commit()
-    ask_to_resume(claim_id)
-    return claim_in_full(db, claim_id)
+    ask_to_resume(case_id)
+    return case_in_full(db, case_id)
 
 
-@app.post("/api/claims/{claim_id}/send-back", operation_id="send_back_claim")
-def send_back_claim(
-    claim_id: str, request: SendBackRequest, handler: SendsBack, db: Database
-) -> Claim:
-    """Send a held decision back to the agent with a note, as the handler signed in."""
-    claim = answer_held(db, claim_id, Status.SENT_BACK, "sent back")
-    record_send_back(db, claim, request.note, handler.name)
+@app.post("/api/cases/{case_id}/send-back", operation_id="send_back_case")
+def send_back_case(
+    case_id: str, request: SendBackRequest, reviewer: SendsBack, db: Database
+) -> Case:
+    """Send a held decision back to the agent with a note, as the reviewer signed in."""
+    case = answer_held(db, case_id, Status.SENT_BACK, "sent back")
+    record_send_back(db, case, request.note, reviewer.name)
     db.commit()
-    ask_to_resume(claim_id)
-    return claim_in_full(db, claim_id)
+    ask_to_resume(case_id)
+    return case_in_full(db, case_id)
 
 
 @app.post(
-    "/api/claims/{claim_id}/take", operation_id="take_claim", dependencies=[AgentKey]
+    "/api/cases/{case_id}/take", operation_id="take_case", dependencies=[AgentKey]
 )
-def take_claim(claim_id: str, request: TakeRequest, db: Database) -> Claim:
-    """Take a sent-back claim back into work, once, for a dispatch or a resume."""
-    find_claim(db, claim_id)
+def take_case(case_id: str, request: TakeRequest, db: Database) -> Case:
+    """Take a sent-back case back into work, once, for a dispatch or a resume."""
+    find_case(db, case_id)
     check_run(db, request.run_id)
     heard = now() if request.run_id is None else None
     sent_back, in_progress = Status.SENT_BACK, Status.IN_PROGRESS
-    if not move_claim(db, claim_id, sent_back, in_progress, resume_heard_at=heard):
-        raise HTTPException(409, NOT_SENT_BACK.format(claim_id=claim_id))
-    return claim_in_full(db, claim_id)
+    if not move_case(db, case_id, sent_back, in_progress, resume_heard_at=heard):
+        raise HTTPException(409, NOT_SENT_BACK.format(case_id=case_id))
+    return case_in_full(db, case_id)
 
 
 @app.post(
-    "/api/claims/{claim_id}/heartbeat",
-    operation_id="record_claim_heartbeat",
+    "/api/cases/{case_id}/heartbeat",
+    operation_id="record_case_heartbeat",
     dependencies=[AgentKey],
 )
-def record_claim_heartbeat(claim_id: str, db: Database) -> Claim:
-    """Record that a resume is still working on a claim."""
+def record_case_heartbeat(case_id: str, db: Database) -> Case:
+    """Record that a resume is still working on a case."""
     heard = db.execute(
-        update(claims)
-        .where(claims.c.claim_id == claim_id)
-        .values(resume_heard_at=now())
+        update(cases).where(cases.c.case_id == case_id).values(resume_heard_at=now())
     )
     if heard.rowcount == 0:
-        raise HTTPException(404, CLAIM_NOT_FOUND.format(claim_id=claim_id))
-    return claim_in_full(db, claim_id)
+        raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))
+    return case_in_full(db, case_id)
 
 
 @app.post(
-    "/api/claims/{claim_id}/failure", operation_id="fail_claim", dependencies=[AgentKey]
+    "/api/cases/{case_id}/failure", operation_id="fail_case", dependencies=[AgentKey]
 )
-def fail_claim(claim_id: str, request: FailureRequest, db: Database) -> Claim:
-    """Put a failed claim back in the queue, or leave it for a handler after two."""
-    claim = find_claim(db, claim_id)
-    if claim["status"] != Status.IN_PROGRESS:
-        raise HTTPException(409, NOT_IN_PROGRESS.format(claim_id=claim_id))
-    if claim["decision"] is not None:
-        raise HTTPException(409, ALREADY_DECIDED.format(claim_id=claim_id))
+def fail_case(case_id: str, request: FailureRequest, db: Database) -> Case:
+    """Put a failed case back in the queue, or leave it for a reviewer after two."""
+    case = find_case(db, case_id)
+    if case["status"] != Status.IN_PROGRESS:
+        raise HTTPException(409, NOT_IN_PROGRESS.format(case_id=case_id))
+    if case["decision"] is not None:
+        raise HTTPException(409, ALREADY_DECIDED.format(case_id=case_id))
     error = NewStep(kind="error", content=request.reason, sources=[])
-    add_step(db, claim_id, claim["thread_id"], error)
+    add_step(db, case_id, case["thread_id"], error)
     status = (
-        Status.LEFT_FOR_HANDLER if claim["attempts"] >= ATTEMPTS else Status.WAITING
+        Status.LEFT_FOR_REVIEWER if case["attempts"] >= ATTEMPTS else Status.WAITING
     )
-    set_status(db, claim_id, status)
-    return claim_in_full(db, claim_id)
+    set_status(db, case_id, status)
+    return case_in_full(db, case_id)
 
 
 # After every route, so the dashboard's build only answers what no route does.

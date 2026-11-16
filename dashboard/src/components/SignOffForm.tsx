@@ -2,16 +2,16 @@ import { Signature } from "lucide-react";
 import { api } from "../api";
 import { ActionForm } from "./ActionForm";
 
-// Signs off a held payout as the handler signed in.
+// Signs off a held payout as the reviewer signed in.
 export function SignOffForm({
-  claimId,
+  caseId,
   onSignedOff,
-}: Readonly<{ claimId: string; onSignedOff: () => void }>) {
+}: Readonly<{ caseId: string; onSignedOff: () => void }>) {
   return (
     <ActionForm
       label="Sign off"
       icon={<Signature />}
-      action={() => api.signOff(claimId).then(onSignedOff)}
+      action={() => api.signOff(caseId).then(onSignedOff)}
     />
   );
 }

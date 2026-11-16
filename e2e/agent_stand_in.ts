@@ -11,8 +11,8 @@ import { roundPath, runPath } from "./paths.ts";
 import { reply } from "./stand_in.ts";
 
 const started: Payload[] = [];
-const app = process.env.UNDERCOVER_API ?? "";
-const key = process.env.UNDERCOVER_API_KEY ?? "";
+const app = process.env.PAYROLLCHECK_API ?? "";
+const key = process.env.PAYROLLCHECK_API_KEY ?? "";
 const OVER = { reason: "The test is over" };
 
 // Stops one piece of work the stand-in was given, if it's still going; the app

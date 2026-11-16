@@ -96,7 +96,7 @@ def no_waits(monkeypatch):
 
 
 def pauses_in(kind):
-    """Whether a kind of run's claim agents pause for a handler, as the harness
+    """Whether a kind of run's payroll agents pause for a reviewer, as the harness
     builds them."""
     return harness.traits_of(kind).pauses
 
@@ -112,16 +112,16 @@ def fresh_agent():
 @pytest.fixture
 def workers_from(monkeypatch):
     """Stand in for what the agent builds as it gets ready: no checkpoint pool, and
-    the workers given, with each version's claim agents on a stub model, given the
+    the workers given, with each version's payroll agents on a stub model, given the
     version's instructions. The agent gets ready again in each test."""
 
-    def given(claim_model, saver, improver_model):
-        def claim_agents(version, kind):
+    def given(payroll_model, saver, improver_model):
+        def payroll_agents(version, kind):
             return partial(
-                agent_on, claim_model, saver, version, pauses=pauses_in(kind)
+                agent_on, payroll_model, saver, version, pauses=pauses_in(kind)
             )
 
-        workers = work.Workers(claim_agents, lambda round: improver_model, saver)
+        workers = work.Workers(payroll_agents, lambda round: improver_model, saver)
         monkeypatch.setattr(entrypoint, "open_checkpoint_pool", object)
         monkeypatch.setattr(entrypoint, "workers_on", lambda pool: workers)
         monkeypatch.setattr(entrypoint, "ready", entrypoint.new_ready())
@@ -132,7 +132,7 @@ def workers_from(monkeypatch):
 
 @pytest.fixture
 def serve(workers_from, fresh_agent):
-    """The agent's AgentCore app, ready, with its claim agents on a stub model,
+    """The agent's AgentCore app, ready, with its payroll agents on a stub model,
     whose graphs share a saver."""
 
     def with_model(model, saver=None):
@@ -146,12 +146,12 @@ def serve(workers_from, fresh_agent):
 
 @pytest.fixture
 def serve_rounds(workers_from, fresh_agent):
-    """The agent's AgentCore app, ready, with a stub improver and stub claim agents
+    """The agent's AgentCore app, ready, with a stub improver and stub payroll agents
     for each version, which save their progress in memory."""
     saver = InMemorySaver()
 
-    def with_models(improver_model, claim_model):
-        workers_from(claim_model, saver, improver_model)
+    def with_models(improver_model, payroll_model):
+        workers_from(payroll_model, saver, improver_model)
         agent = fresh_agent()
         agent.invoke(HEALTH)
         return agent
@@ -234,9 +234,9 @@ def on_runtime(monkeypatch, agent_key):
     # The database's value is empty, which keeps the tests' backend, in the same
     # process, on SQLite.
     values = {
-        "undercover-openrouter": "openrouter-key",
-        "undercover-api-key": agent_key,
-        "undercover-database": "",
+        "payrollcheck-openrouter": "openrouter-key",
+        "payrollcheck-api-key": agent_key,
+        "payrollcheck-database": "",
     }
 
     def requires_api_key(provider_name):

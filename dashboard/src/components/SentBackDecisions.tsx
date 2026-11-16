@@ -2,9 +2,9 @@ import type { SentBackDecision } from "../api";
 import { time } from "../format";
 import { DecisionDetails } from "./DecisionDetails";
 
-// The decisions senior handlers sent back to the agent, oldest first, each with
+// The decisions compliance managers sent back to the agent, oldest first, each with
 // its whole record, the note, who sent it back and when. Nothing shows for a
-// claim with none.
+// case with none.
 export function SentBackDecisions({
   decisions,
 }: Readonly<{ decisions: SentBackDecision[] }>) {

@@ -44,7 +44,7 @@ const modelDollars = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 4,
 });
 
-// A context file's source as a handler reads it, such as "Claims operations,
+// A context file's source as a reviewer reads it, such as "Claims operations,
 // owned by the Head of claims operations, reviewed Sep 1, 2026". An owner that
 // is a role, a head of something, is "the" head.
 export function sourceOf(source: Source): string {
@@ -102,10 +102,10 @@ export function dateTime(isoTime: string): string {
 }
 
 export function agentsAtOnce(agents: number): string {
-  return `${String(agents)} claim ${agents === 1 ? "agent" : "agents"} at once`;
+  return `${String(agents)} payroll ${agents === 1 ? "agent" : "agents"} at once`;
 }
 
-// A handler's initials, from their first and last names, such as DW for Dana
+// A reviewer's initials, from their first and last names, such as DW for Dana
 // Whitfield.
 export function initials(name: string): string {
   const [first = "", ...rest] = name.split(" ");
@@ -124,7 +124,7 @@ export const statusLabels: Record<Status, string> = {
   waiting_for_sign_off: "Waiting for sign-off",
   sent_back: "Sent back",
   decided: "Decided",
-  left_for_handler: "Left for a handler",
+  left_for_reviewer: "Left for a reviewer",
 };
 
 export const runLabels: Record<RunStatus, string> = {
@@ -166,7 +166,7 @@ export const stageLabels: Record<RoundStage, string> = {
 };
 export const roundStages = Object.keys(stageLabels) as RoundStage[];
 
-// A verdict's reason in words: the rule names measures such as cost_per_claim.
+// A verdict's reason in words: the rule names measures such as cost_per_case.
 export function inWords(reason: string | null): string {
   return (reason ?? "").replaceAll("_", " ");
 }
@@ -193,7 +193,7 @@ export const evaluationSetLabels: Record<EvaluationSet, string> = {
 };
 
 export function evaluationSetName(set: EvaluationSet, size: number): string {
-  return `${evaluationSetLabels[set]}, ${String(size)} claims`;
+  return `${evaluationSetLabels[set]}, ${String(size)} cases`;
 }
 
 export const decisionLabels: Record<DecisionKind, string> = {

@@ -13,12 +13,12 @@ export const CONVERSATION_PATH = `${CONVERSATIONS}/${CONVERSATION_ID}`;
 export function step(changes: Partial<CopilotStep> = {}): CopilotStep {
   return {
     step_id: 1,
-    tool: "get_claim",
-    kind: "claims",
+    tool: "get_case",
+    kind: "cases",
     input: "CLM-1012",
-    asked: '{"claim_id": "CLM-1012"}',
+    asked: '{"case_id": "CLM-1012"}',
     status: "done",
-    answer: '{"claim_id": "CLM-1012", "status": "decided"}',
+    answer: '{"case_id": "CLM-1012", "status": "decided"}',
     reason: null,
     sources: [],
     started_at: "2026-10-10T09:00:01.000+00:00",
@@ -62,8 +62,8 @@ export function conversation(...turns: CopilotTurn[]): Conversation {
 
 // A turn waiting for Dana to confirm the sign-off of CLM-1003.
 export const confirmation = {
-  claim_id: "CLM-1003",
-  customer_name: "Lena Fischer",
+  case_id: "CLM-1003",
+  subcontractor_name: "Lena Fischer",
   payout: 3750,
   reason: "The hospital bill is covered under section 7.",
 };
@@ -83,9 +83,9 @@ export function waiting(changes: Partial<CopilotTurn> = {}): CopilotTurn {
   });
 }
 
-// The handler opened a conversation in this browser before.
-export function openedBefore(handlerId = "HND-01") {
-  saveConversation(handlerId, CONVERSATION_ID);
+// The reviewer opened a conversation in this browser before.
+export function openedBefore(reviewerId = "HND-01") {
+  saveConversation(reviewerId, CONVERSATION_ID);
 }
 
 export const sidebar = () =>

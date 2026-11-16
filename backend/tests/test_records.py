@@ -9,7 +9,7 @@ from sqlalchemy import select
 from backend.context_files import CONTEXT
 from backend.database import calculations, decisions, engine
 from backend.models import Decision
-from backend.tests.claim_requests import (
+from backend.tests.case_requests import (
     MAKER,
     decide,
     fail,
@@ -23,26 +23,26 @@ from backend.tests.rows import count
 from backend.tests.settings_requests import change_settings
 
 
-def work_out(client, claim_id, amount=293.0):
-    """Work out an emergency medical payout on a claim from one bill."""
+def work_out(client, case_id, amount=293.0):
+    """Work out an emergency medical payout on a case from one bill."""
     bill = line("Hospital bill", amount, "expense")
-    return work_out_payout(client, claim_id, "emergency_medical", [bill])
+    return work_out_payout(client, case_id, "emergency_medical", [bill])
 
 
-def record(client, claim_id, **changes):
-    """Ask to record an approval of $243.00 on a claim, unless told otherwise."""
+def record(client, case_id, **changes):
+    """Ask to record an approval of $243.00 on a case, unless told otherwise."""
     approval = {"decision": "approve", "payout": 243.0} | changes
-    return record_decision(client, claim_id, **approval)
+    return record_decision(client, case_id, **approval)
 
 
-def kept(claim_id):
-    """The calculations kept for a claim: none, or its latest."""
+def kept(case_id):
+    """The calculations kept for a case: none, or its latest."""
     with engine().connect() as db:
-        query = select(calculations).where(calculations.c.claim_id == claim_id)
+        query = select(calculations).where(calculations.c.case_id == case_id)
         return db.execute(query).mappings().all()
 
 
-def test_the_latest_calculation_is_kept_for_the_claims_attempt(client):
+def test_the_latest_calculation_is_kept_for_the_cases_attempt(client):
     start(client, "CLM-1005")
     first = work_out(client, "CLM-1005", 293.0).json()
     assert [c["payout"] for c in kept("CLM-1005")] == [first["payout"]] == [243.0]
@@ -56,7 +56,7 @@ def test_a_new_attempt_starts_with_no_calculation(client):
     start(client, "CLM-1005")
     work_out(client, "CLM-1005")
     fail(client, "CLM-1005")
-    client.post("/api/claims/CLM-1005/start", json={"thread_id": "t-2"})
+    client.post("/api/cases/CLM-1005/start", json={"thread_id": "t-2"})
     response = record(client, "CLM-1005")
     assert response.status_code == 422
     assert count(decisions) == 0
@@ -66,12 +66,12 @@ def test_a_new_attempt_starts_with_no_calculation(client):
     )
 
 
-def test_only_a_claim_in_progress_has_its_payout_worked_out(client):
+def test_only_a_case_in_progress_has_its_payout_worked_out(client):
     start(client, "CLM-1005")
     fail(client, "CLM-1005")
     response = work_out(client, "CLM-1005")
     assert response.status_code == 409
-    assert response.json()["detail"] == "Claim CLM-1005 is not in progress"
+    assert response.json()["detail"] == "Case CLM-1005 is not in progress"
 
 
 def test_a_repeated_approval_is_returned_before_its_calculation_is_checked(client):
@@ -84,10 +84,10 @@ def test_a_repeated_approval_is_returned_before_its_calculation_is_checked(clien
     assert again.json() == first
 
 
-def test_a_claim_never_started_has_no_calculation(client):
+def test_a_case_never_started_has_no_calculation(client):
     response = work_out(client, "CLM-1005")
     assert response.status_code == 409
-    assert response.json()["detail"] == "Claim CLM-1005 has not been started"
+    assert response.json()["detail"] == "Case CLM-1005 has not been started"
     assert kept("CLM-1005") == []
 
 
@@ -107,13 +107,13 @@ def test_a_claim_never_started_has_no_calculation(client):
         ({"decision": "refer"}, "a decline or a referral has a payout of zero"),
     ],
 )
-@pytest.mark.parametrize("claim_id", ["CLM-1005", "CLM-9999"])
-def test_a_record_that_falls_short_is_refused_before_the_claim_is_read(
-    client, changes, missing, claim_id
+@pytest.mark.parametrize("case_id", ["CLM-1005", "CLM-9999"])
+def test_a_record_that_falls_short_is_refused_before_the_case_is_read(
+    client, changes, missing, case_id
 ):
     start(client, "CLM-1005")
     work_out(client, "CLM-1005")
-    response = record(client, claim_id, **changes)
+    response = record(client, case_id, **changes)
     assert response.status_code == 422
     assert response.json()["detail"] == f"Claims manual section 14: {missing}"
     assert count(decisions) == 0
@@ -179,12 +179,12 @@ def test_a_sign_off_adds_who_signed_off_and_when(client):
 
 def test_the_record_holds_every_field_the_data_dictionary_names():
     dictionary = (CONTEXT / "data_dictionary.yaml").read_text(encoding="utf-8")
-    [claim] = [
+    [case] = [
         r for r in yaml.safe_load(dictionary)["records"] if r["record"] == "claim"
     ]
     named = {
         field["field"].removeprefix("decision.")
-        for field in claim["fields"]
+        for field in case["fields"]
         if field["field"].startswith("decision.")
     }
     assert named <= set(Decision.model_fields)

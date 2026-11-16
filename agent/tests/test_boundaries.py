@@ -1,5 +1,5 @@
-"""What each part of the agent can reach: the claim agent's API holds nothing of
-the rounds, the scores or the settings, and the improver and the claim agent don't
+"""What each part of the agent can reach: the payroll agent's API holds nothing of
+the rounds, the scores or the settings, and the improver and the payroll agent don't
 import each other's parts."""
 
 import ast
@@ -59,19 +59,19 @@ def names_from(module: str, imported: str) -> set[str]:
     }
 
 
-def test_the_claim_agents_api_has_no_way_to_the_rounds_scores_or_settings():
+def test_the_payroll_agents_api_has_no_way_to_the_rounds_scores_or_settings():
     functions = {name for name, _ in inspect.getmembers(api, inspect.isfunction)}
     assert operations_out_of_reach() & functions == set()
     source = inspect.getsource(api)
     assert [path for path in OUT_OF_REACH if path.removeprefix("/api") in source] == []
 
 
-def test_the_claim_agent_doesnt_import_the_improvers_api():
+def test_the_payroll_agent_doesnt_import_the_improvers_api():
     for module in ("tools", "harness"):
         assert "improver_api" not in imports_of(module)
 
 
-def test_the_improver_doesnt_import_the_claim_agents_harness_or_dispatcher():
+def test_the_improver_doesnt_import_the_payroll_agents_harness_or_dispatcher():
     assert {"harness", "dispatcher"} & imports_of("improver") == set()
 
 
@@ -109,7 +109,7 @@ def test_the_shared_parts_use_only_the_routes_and_the_json():
 
 
 def test_the_apps_terms_and_the_refusals_import_nothing_in_the_agent():
-    """So nothing reaches the claim agent's API, or anything else, through them."""
+    """So nothing reaches the payroll agent's API, or anything else, through them."""
     for module in ("app_terms", "refusals"):
         assert not imports_of(module) & agents_modules(), module
 
@@ -119,7 +119,7 @@ def copilot_modules() -> set[str]:
 
 
 # The parts of the agent the Copilot may use besides its own: the parts shared
-# with the claim agent and the helpers of every part.
+# with the payroll agent and the helpers of every part.
 SHARED = {
     "app_terms",
     "refusals",
@@ -148,22 +148,22 @@ def test_only_the_copilots_api_on_the_app_uses_the_connection():
     assert "call_as" in names_from("copilot.app_api", "connection")
 
 
-def test_nothing_in_the_claim_agent_imports_the_copilot():
+def test_nothing_in_the_payroll_agent_imports_the_copilot():
     for module in agents_modules():
         imported = imports_of(module)
         assert {name for name in imported if name.startswith("copilot")} == set()
 
 
-def test_the_memory_uses_only_agentcore_memory_and_the_claim_agent_uses_it():
+def test_the_memory_uses_only_agentcore_memory_and_the_payroll_agent_uses_it():
     assert imports_of("memory") & agents_modules() == {"agentcore_memory"}
     assert "memory" in imports_of("tools") & imports_of("harness")
     for module in ("improver", "improver_api", "dispatcher", "entrypoint"):
         assert "memory" not in imports_of(module), module
 
 
-def test_a_handlers_answer_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
-    assert imports_of("handler_answer") & agents_modules() == set()
-    assert "handler_answer" in imports_of("harness")
+def test_a_reviewers_answer_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
+    assert imports_of("reviewer_answer") & agents_modules() == set()
+    assert "reviewer_answer" in imports_of("harness")
 
 
 def test_the_heartbeat_uses_nothing_else_in_the_agent():

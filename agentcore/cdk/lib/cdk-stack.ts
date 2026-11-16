@@ -14,7 +14,7 @@ export interface AgentCoreStackProps extends StackProps {
 // The agent's settings that aren't secrets, from agentcore/.env.local beside the credentials'
 // values, or else from the environment agentcore deploy runs in, so nobody's addresses are
 // written into agentcore.json
-const SETTINGS = ['UNDERCOVER_API', 'UNDERCOVER_GATEWAY_URL', 'UNDERCOVER_MEMORY_ID', 'UNDERCOVER_COPILOT_MEMORY_ID'];
+const SETTINGS = ['PAYROLLCHECK_API', 'PAYROLLCHECK_GATEWAY_URL', 'PAYROLLCHECK_MEMORY_ID', 'PAYROLLCHECK_COPILOT_MEMORY_ID'];
 
 /**
  * The stack the AgentCore CLI deploys. Everything declared in agentcore/agentcore.json is
@@ -85,7 +85,7 @@ function stageCode(root: string): string {
     .filter((line) => line && !line.startsWith('#'));
   const pyproject = [
     '[project]',
-    'name = "undercover-agent"',
+    'name = "payrollcheck-agent"',
     'version = "0.1.0"',
     'requires-python = ">=3.12"',
     `dependencies = ${JSON.stringify(packages)}`,

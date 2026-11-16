@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { SUGGESTED_QUESTIONS } from "../copilot";
 
-// What an empty conversation shows: a greeting by the handler's first name, and
+// What an empty conversation shows: a greeting by the reviewer's first name, and
 // a few questions to start from, each sent with a click.
 export function CopilotGreeting({
   name,
@@ -17,7 +17,7 @@ export function CopilotGreeting({
     <div className="greeting">
       <p className="greeting-hello">Hello, {first}.</p>
       <p className="greeting-lead">
-        Ask me about the queue, a claim or the policy wording, or have me do the
+        Ask me about the queue, a case or the policy wording, or have me do the
         work. I work as you, so I can see and do what you can.
       </p>
       <ul className="suggestions" aria-label="Questions to ask">

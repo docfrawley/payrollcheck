@@ -12,7 +12,7 @@ import { NotAllowed } from "../components/NotAllowed";
 import { PageHeader } from "../components/PageHeader";
 import { StateMessage } from "../components/StateMessage";
 import { dateTime, label, money } from "../format";
-import { useHandler } from "../handler";
+import { useReviewer } from "../reviewer";
 import {
   GROUPS,
   SETTING_FIELDS,
@@ -45,7 +45,7 @@ function lastChange(settings: Settings): string {
 }
 
 export function SettingsPage() {
-  // Loaded once, so a refresh never overwrites what a handler is typing. A
+  // Loaded once, so a refresh never overwrites what a reviewer is typing. A
   // save returns the settings as they now stand.
   const { data, error } = useLoad(api.getSettings);
   const [saved, setSaved] = useState<SettingsData>();
@@ -54,7 +54,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        lead="The approval limit and the rules for improving the claim agent."
+        lead="The approval limit and the rules for improving the payroll agent."
       />
       {page ? (
         <SettingsPanels page={page} onSaved={setSaved} />
@@ -69,10 +69,10 @@ function SettingsPanels({
   page,
   onSaved,
 }: Readonly<{ page: SettingsData; onSaved: (page: SettingsData) => void }>) {
-  const handler = useHandler();
+  const reviewer = useReviewer();
   return (
     <div className="column">
-      {handler.can_approve_over_limit ? (
+      {reviewer.can_approve_over_limit ? (
         <SettingsForm current={page.current} onSaved={onSaved} />
       ) : (
         <ReadOnlySettings current={page.current} />
@@ -270,7 +270,7 @@ function ModelsAllowed({ models }: Readonly<{ models: ModelAllowed[] }>) {
     <section className="panel" aria-labelledby="models-title">
       <h2 id="models-title">Models allowed</h2>
       <p className="muted small">
-        The models the claim agent can use, set in data/models.json.
+        The models the payroll agent can use, set in data/models.json.
       </p>
       <div className="table-scroll">
         <table className="table">

@@ -1,4 +1,4 @@
-"""What the claim agent's two routes to its tools share: the targets the tools are
+"""What the payroll agent's two routes to its tools share: the targets the tools are
 on, what a route does, and the Gateway's refusal."""
 
 from enum import StrEnum
@@ -8,15 +8,15 @@ from typing import Any, Protocol, runtime_checkable
 class Target(StrEnum):
     """Where a tool is: the app, or the context layer."""
 
-    APP = "undercover-app"
-    CONTEXT = "undercover-context"
+    APP = "payrollcheck-app"
+    CONTEXT = "payrollcheck-context"
 
 
-# Checkable at run time, since the claim agent's context, which holds a route, is
+# Checkable at run time, since the payroll agent's context, which holds a route, is
 # validated when a tool reads it.
 @runtime_checkable
 class Route(Protocol):
-    """How the claim agent's tools and its payment reach the app and the context
+    """How the payroll agent's tools and its payment reach the app and the context
     layer: through the Gateway, or directly."""
 
     def call(self, target: Target, operation: str, inputs: dict[str, Any]) -> Any:

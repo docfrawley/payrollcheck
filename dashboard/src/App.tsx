@@ -1,8 +1,8 @@
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { PageFrame } from "./components/PageFrame";
-import { RequireHandler } from "./components/RequireHandler";
+import { RequireReviewer } from "./components/RequireReviewer";
 import { StateMessage } from "./components/StateMessage";
-import { ClaimPage } from "./pages/ClaimPage";
+import { CasePage } from "./pages/CasePage";
 import { ConfigurationPage } from "./pages/ConfigurationPage";
 import { EvaluationPage } from "./pages/EvaluationPage";
 import { ImprovementPage } from "./pages/ImprovementPage";
@@ -13,7 +13,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SignInPage } from "./pages/SignInPage";
 import { VersionPage } from "./pages/VersionPage";
 import {
-  CLAIM_PAGE,
+  CASE_PAGE,
   CONFIGURATION,
   EVALUATION_PAGE,
   IMPROVEMENT,
@@ -32,15 +32,15 @@ export function App() {
       <Route path={SIGN_IN} element={<SignInPage />} />
       <Route
         element={
-          <RequireHandler>
+          <RequireReviewer>
             <PageFrame>
               <Outlet />
             </PageFrame>
-          </RequireHandler>
+          </RequireReviewer>
         }
       >
         <Route path={QUEUE} element={<QueuePage />} />
-        <Route path={CLAIM_PAGE} element={<ClaimPage />} />
+        <Route path={CASE_PAGE} element={<CasePage />} />
         <Route path={SCOREBOARD} element={<ScoreboardPage />} />
         <Route path={EVALUATION_PAGE} element={<EvaluationPage />} />
         <Route path={IMPROVEMENT} element={<ImprovementPage />} />

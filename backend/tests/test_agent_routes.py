@@ -1,6 +1,6 @@
 """The app's two routes to the agent: its AgentCore app's /invocations on the laptop,
 with the agent's key, or its runtime on AgentCore Runtime through boto3; and what
-the handler gets when the agent takes the work, refuses it, can't be reached, gives
+the reviewer gets when the agent takes the work, refuses it, can't be reached, gives
 an error answer or doesn't answer in time."""
 
 import json
@@ -23,12 +23,12 @@ from botocore.exceptions import (
 from backend import agent_service, runtime_calls
 from backend.agent_service import NO_ANSWER, NOT_RUNNING
 from backend.tests.agent_answers import answering, raising
-from backend.tests.claim_requests import held, sign_off
+from backend.tests.case_requests import held, sign_off
 from backend.tests.rows import newest_run
 from backend.tests.run_requests import start_dispatch
 from backend.tests.runtime_stand_in import ENDPOINT, runtime_at
 
-ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/undercover_agent-x"
+ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/payrollcheck_agent-x"
 REFUSAL = "A dispatch is running"
 
 
@@ -59,7 +59,7 @@ def test_the_laptop_route_posts_the_payload_to_invocations_with_the_key(
     assert set(request.extensions["timeout"].values()) == {10}
 
 
-def test_the_laptop_route_is_at_undercover_agent(client, agent_answers, monkeypatch):
+def test_the_laptop_route_is_at_payrollcheck_agent(client, agent_answers, monkeypatch):
     sent = []
 
     def accept(request):
@@ -67,7 +67,7 @@ def test_the_laptop_route_is_at_undercover_agent(client, agent_answers, monkeypa
         return httpx.Response(200, json={"accepted": True})
 
     agent_answers(accept)
-    monkeypatch.setenv("UNDERCOVER_AGENT", "http://agent.example.com:9000")
+    monkeypatch.setenv("PAYROLLCHECK_AGENT", "http://agent.example.com:9000")
     assert start_dispatch(client).status_code == 202
     assert sent == ["http://agent.example.com:9000/invocations"]
 
@@ -76,7 +76,7 @@ def test_the_runtime_route_sends_the_payload_to_the_runtime_with_no_key(
     client, runtime, agent_calls
 ):
     assert start_dispatch(client).status_code == 202
-    agent_service.resume_claim("CLM-1001")
+    agent_service.resume_case("CLM-1001")
     first, second = runtime.calls
     assert first["agentRuntimeArn"] == ARN
     assert json.loads(first["payload"]) == {
@@ -93,7 +93,7 @@ FOUR_OPERATIONS = [
     {"operation": "work_run", "run_id": "run-1"},
     {"operation": "work_round", "round_id": "round-1"},
     {"operation": "carry_round_on", "round_id": "round-1", "proposal_id": "proposal-1"},
-    {"operation": "resume_claim", "claim_id": "CLM-1001"},
+    {"operation": "resume_case", "case_id": "CLM-1001"},
 ]
 
 
@@ -101,7 +101,7 @@ def ask_all_four():
     agent_service.work_run("run-1")
     agent_service.work_round("round-1")
     agent_service.carry_round_on("round-1", "proposal-1")
-    agent_service.resume_claim("CLM-1001")
+    agent_service.resume_case("CLM-1001")
 
 
 def test_the_agents_four_operations_on_the_laptop(agent_calls):
@@ -242,11 +242,11 @@ def test_on_runtime_an_answer_neither_accepted_nor_refused_is_an_error(
     assert response.json()["detail"].startswith("The agent couldn't take the work: ")
 
 
-def test_a_sign_off_on_the_runtime_route_asks_to_resume_the_claim(client, runtime):
+def test_a_sign_off_on_the_runtime_route_asks_to_resume_the_case(client, runtime):
     held(client, "CLM-1008", 2240.0)
     assert sign_off(client, "CLM-1008").status_code == 200
     [call] = runtime.calls
     assert json.loads(call["payload"]) == {
-        "operation": "resume_claim",
-        "claim_id": "CLM-1008",
+        "operation": "resume_case",
+        "case_id": "CLM-1008",
     }

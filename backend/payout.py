@@ -1,4 +1,4 @@
-"""UnderCover's payout rules for an approved claim.
+"""UnderCover's payout rules for an approved case.
 
 The rules come from section 10 of the policy wording, the plans and sections 6, 7
 and 10 of the claims manual. The plans come from the payout rules and the approval
@@ -38,7 +38,7 @@ BENEFIT_MAXIMUM = {
 
 @dataclass
 class Limits:
-    """The limits on the lines of a claim under one policy."""
+    """The limits on the lines of a case under one policy."""
 
     per_item: float
     electronics_per_item: float
@@ -46,7 +46,7 @@ class Limits:
 
 
 def needs_sign_off(payout: float, approval_limit: float) -> bool:
-    """Say whether a payout is over the limit, and so needs a handler's sign-off."""
+    """Say whether a payout is over the limit, and so needs a reviewer's sign-off."""
     return payout > approval_limit
 
 
@@ -101,8 +101,8 @@ def benefit_maximum(policy: Policy, plan: Plan, benefit: Benefit) -> float:
 def work_out_payout(
     policy: Policy, plans: Plans, request: PayoutRequest, approval_limit: float
 ) -> Payout:
-    """Work out the payout on an approved claim, step by step, and whether it needs
-    a handler's sign-off."""
+    """Work out the payout on an approved case, step by step, and whether it needs
+    a reviewer's sign-off."""
     plan = next(plan for plan in plans.plans if plan.plan == policy.plan)
     limits = limits_for(policy, plan, plans)
     lines = request.lines

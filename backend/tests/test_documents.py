@@ -1,5 +1,5 @@
 """The documents and the payout rules seeding loads from the context layer's
-files, and the contents of both documents the claim agent's instructions end
+files, and the contents of both documents the payroll agent's instructions end
 with."""
 
 import pytest
@@ -51,12 +51,12 @@ def test_the_payout_rules_are_the_context_layers_plans():
         assert db.execute(select(payout_rules.c.plans)).scalar_one() == plans
 
 
-def test_the_claim_agent_reads_the_contents_of_both_documents(client):
-    claim = client.get("/api/versions/current").json()["instructions"]
-    assert claim.startswith("# UnderCover Agent: working a claim")
-    contents = claim[claim.index("## Contents of the policy wording") :]
+def test_the_payroll_agent_reads_the_contents_of_both_documents(client):
+    case = client.get("/api/versions/current").json()["instructions"]
+    assert case.startswith("# PayrollCheck Agent: working a case")
+    contents = case[case.index("## Contents of the policy wording") :]
     assert "\n3. Trip Delay\n" in contents
     assert "## Contents of the claims manual" in contents
     assert contents.endswith("14. Records\n")
-    assert "Unattended means out of your sight" not in claim
-    assert "Monkeys, gulls, bears, giraffes" not in claim
+    assert "Unattended means out of your sight" not in case
+    assert "Monkeys, gulls, bears, giraffes" not in case

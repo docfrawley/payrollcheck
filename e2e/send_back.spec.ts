@@ -1,17 +1,17 @@
 import { expect, test } from "@playwright/test";
-import { decide, payClaim, resumes, startClaim, takeClaim } from "./api";
+import { decide, payCase, resumes, startCase, takeCase } from "./api";
 
-// A senior handler sends a held decision back with a note on the claim page,
-// and the test, standing in for the agent, takes the claim and decides again.
+// A compliance manager sends a held decision back with a note on the case page,
+// and the test, standing in for the agent, takes the case and decides again.
 
 const NOTE =
   "Meridian Air has already paid 350 dollars for the lost bag, so take it off.";
 
-test("a held claim sent back with a note is decided again", async ({
+test("a held case sent back with a note is decided again", async ({
   page,
   request,
 }) => {
-  await startClaim(request, "CLM-1022", "e2e-8");
+  await startCase(request, "CLM-1022", "e2e-8");
   await decide(request, "CLM-1022", {
     decision: "approve",
     payout: 1350,
@@ -20,7 +20,7 @@ test("a held claim sent back with a note is decided again", async ({
   });
   const resumed = await resumes(request);
 
-  await page.goto("/claims/CLM-1022");
+  await page.goto("/cases/CLM-1022");
   const heading = page.locator(".page-header");
   await expect(heading.getByText("Waiting for sign-off")).toBeVisible();
   await page.getByRole("button", { name: "Send back", exact: true }).click();
@@ -35,22 +35,22 @@ test("a held claim sent back with a note is decided again", async ({
     sentBack.getByText(/^Sent back by Dana Whitfield at /),
   ).toBeVisible();
   await expect(page.locator(".steps > li").last()).toContainText(
-    `Handler's note Sent back by Dana Whitfield: ${NOTE}`,
+    `Reviewer's note Sent back by Dana Whitfield: ${NOTE}`,
   );
   expect(await resumes(request)).toEqual([...resumed, "CLM-1022"]);
 
-  await takeClaim(request, "CLM-1022", null);
+  await takeCase(request, "CLM-1022", null);
   await decide(request, "CLM-1022", {
     decision: "approve",
     payout: 900,
     section: "Section 5, Baggage and Personal Effects",
     reason: "The loss is covered, less what the airline paid.",
   });
-  await payClaim(request, "CLM-1022", 900);
+  await payCase(request, "CLM-1022", 900);
   const decision = page.getByRole("region", { name: "Decision", exact: true });
   await expect(decision.getByText("Paid $900.00")).toBeVisible();
   await expect(heading.getByText("Decided")).toBeVisible();
-  const column = page.locator(".claim-layout .column").last();
+  const column = page.locator(".case-layout .column").last();
   await expect(column.getByRole("heading", { level: 2 })).toHaveText([
     "Decision",
     "Decisions sent back",

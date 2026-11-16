@@ -1,4 +1,4 @@
-"""The judge, Jev, grading the agent's explanation against the handler's reason."""
+"""The judge, Jev, grading the agent's explanation against the reviewer's reason."""
 
 import json
 import logging
@@ -9,7 +9,7 @@ import pytest
 from backend import judge
 from backend.tests.judging import answer
 
-HANDLER = judge.Explanation(
+REVIEWER = judge.Explanation(
     "approve", "The delay was over six hours.", "Policy wording, section 3"
 )
 AGENT = judge.Explanation("approve", "A long delay is covered.", "Section 3")
@@ -23,13 +23,13 @@ def test_the_request(judge_answers):
         return httpx.Response(200, json=answer())
 
     judge_answers(keep)
-    grade = judge.grade(HANDLER, AGENT)
+    grade = judge.grade(REVIEWER, AGENT)
     [request] = requests
     assert str(request.url) == "https://judge.test/api/alpha/decisions"
     body = json.loads(request.content)
     assert body["model"] == "typesafe/jev-1.13"
     assert body["state"] == {
-        "handler": {
+        "reviewer": {
             "decision": "approve",
             "reason": "The delay was over six hours.",
             "reference": "Policy wording, section 3",
@@ -58,7 +58,7 @@ def test_the_letter_is_the_likeliest_level_not_the_score_rounded(judge_answers):
             ),
         )
     )
-    grade = judge.grade(HANDLER, AGENT)
+    grade = judge.grade(REVIEWER, AGENT)
     assert grade is not None
     assert (grade.score, grade.letter) == (1.5, "F")
 
@@ -72,7 +72,7 @@ def test_the_letter_is_the_likeliest_level_not_the_score_rounded(judge_answers):
     ],
     ids=["a timeout", "an error", "no grade"],
 )
-def test_a_claim_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
+def test_a_case_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
     calls = []
 
     def once(request):
@@ -81,6 +81,6 @@ def test_a_claim_the_judge_cant_grade_isnt_graded(judge_answers, caplog, fails):
 
     judge_answers(once)
     with caplog.at_level(logging.ERROR):
-        assert judge.grade(HANDLER, AGENT) is None
+        assert judge.grade(REVIEWER, AGENT) is None
     assert len(calls) == 1
     assert "The judge couldn't grade the explanation" in caplog.text

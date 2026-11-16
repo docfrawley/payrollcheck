@@ -16,7 +16,7 @@ from backend.main import app, handler
 from backend.tests.dashboard_build import INDEX
 
 TRANSACTION_POOLER = "postgresql://postgres.ref:secret@pooler.example.com:6543/db"
-FUNCTION = "undercover-app"
+FUNCTION = "payrollcheck-app"
 
 
 @dataclass
@@ -75,20 +75,20 @@ def through_the_handler(path, headers=None):
 def test_the_handler_answers_without_the_startup_hook(agent_key):
     health = through_the_handler("/api/health")
     assert (health["statusCode"], json.loads(health["body"])) == (200, {"status": "ok"})
-    claims = through_the_handler("/api/claims", {API_KEY_HEADER.lower(): agent_key})
-    assert claims["statusCode"] == 200
-    assert len(json.loads(claims["body"])) == 26
-    assert through_the_handler("/api/claims")["statusCode"] == 401
+    cases = through_the_handler("/api/cases", {API_KEY_HEADER.lower(): agent_key})
+    assert cases["statusCode"] == 200
+    assert len(json.loads(cases["body"])) == 26
+    assert through_the_handler("/api/cases")["statusCode"] == 401
 
 
 def test_the_handler_never_seeds_the_database(tmp_path, monkeypatch):
-    monkeypatch.setenv("UNDERCOVER_DB", str(tmp_path / "empty.db"))
+    monkeypatch.setenv("PAYROLLCHECK_DB", str(tmp_path / "empty.db"))
     assert through_the_handler("/api/health")["statusCode"] == 200
     assert not is_seeded(engine())
 
 
 @pytest.mark.usefixtures("build")
-@pytest.mark.parametrize("path", ["/", "/claims/CLM-1901"])
+@pytest.mark.parametrize("path", ["/", "/cases/CLM-1901"])
 def test_the_handler_serves_the_dashboard(path):
     page = through_the_handler(path)
     assert (page["statusCode"], page["body"]) == (200, INDEX)
@@ -117,7 +117,7 @@ def test_on_lambda_each_request_opens_its_own_connection(
         app, headers={API_KEY_HEADER: agent_key}, raise_server_exceptions=False
     )
     for _ in range(2):
-        assert caller.get("/api/claims").status_code == 500
+        assert caller.get("/api/cases").status_code == 500
     assert [settings["prepare_threshold"] for settings in connections] == [None, None]
     assert {settings["port"] for settings in connections} == {6543}
 

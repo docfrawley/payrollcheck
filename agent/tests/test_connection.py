@@ -19,12 +19,12 @@ def test_the_key_is_read_as_each_request_is_sent(monkeypatch, agent_key):
     )
     monkeypatch.setattr(connection, "backend", stand_in)
     connection.call("GET", "/health")
-    monkeypatch.setenv("UNDERCOVER_API_KEY", "a-key-set-after-the-import")
+    monkeypatch.setenv("PAYROLLCHECK_API_KEY", "a-key-set-after-the-import")
     connection.call("GET", "/health")
     assert sent == [agent_key, "a-key-set-after-the-import"]
 
 
 def test_a_request_without_the_key_says_its_missing(monkeypatch):
-    monkeypatch.delenv("UNDERCOVER_API_KEY")
+    monkeypatch.delenv("PAYROLLCHECK_API_KEY")
     with pytest.raises(RuntimeError, match=re.escape(connection.MISSING_KEY)):
         connection.call("GET", "/health")

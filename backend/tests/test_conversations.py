@@ -1,6 +1,6 @@
-"""The Copilot's conversations in the app: each handler's own, one message at a
+"""The Copilot's conversations in the app: each reviewer's own, one message at a
 time, the Copilot's records of each turn, a turn that stops, the confirmation card
-filled in from the claim, and the handler's answer to it."""
+filled in from the case, and the reviewer's answer to it."""
 
 import json
 import logging
@@ -16,7 +16,7 @@ from sqlalchemy import select
 
 from backend.conversations import (
     ANSWER_FIRST,
-    CLAIM_CHANGED,
+    CASE_CHANGED,
     NO_SUCH_CONFIRMATION,
     STILL_WORKING,
     add_after,
@@ -31,8 +31,8 @@ from backend.database import (
     seed,
 )
 from backend.dependencies import API_KEY_HEADER
-from backend.models import Handler
-from backend.tests.claim_requests import (
+from backend.models import Reviewer
+from backend.tests.case_requests import (
     held,
     record_decision,
     send_back,
@@ -76,13 +76,13 @@ def done(client, conversation):
     finish_turn(client, latest(conversation)["turn_id"])
 
 
-def waiting_on(client, claim_id="CLM-1003", payout=3750.0):
+def waiting_on(client, case_id="CLM-1003", payout=3750.0):
     """A conversation whose turn waits for Dana to confirm a sign-off of a held
     payout, and the turn's id."""
-    held(client, claim_id, payout)
-    conversation = started(client, f"Sign off {claim_id}")
+    held(client, case_id, payout)
+    conversation = started(client, f"Sign off {case_id}")
     turn_id = latest(conversation)["turn_id"]
-    assert pause_turn(client, turn_id, claim_id).status_code == 200
+    assert pause_turn(client, turn_id, case_id).status_code == 200
     return conversation["conversation_id"], turn_id
 
 
@@ -188,7 +188,7 @@ def test_a_message_read_before_another_moved_the_conversation_on_is_refused(
     conversation = started(dashboard)
     conversation_id = conversation["conversation_id"]
     done(dashboard, conversation)
-    dana = Handler(**read(dashboard, "/api/me").json())
+    dana = Reviewer(**read(dashboard, "/api/me").json())
     with engine().connect() as db:
         as_read = owned(db, conversation_id, dana)
     second = latest(send_message(dashboard, conversation_id).json())
@@ -203,8 +203,8 @@ def test_the_copilot_records_its_cards_and_the_turns_answer(dashboard):
     turn_id = latest(conversation)["turn_id"]
     card = start_step(dashboard, turn_id).json()
     assert (card["tool"], card["kind"], card["input"], card["status"]) == (
-        "get_claim",
-        "claims",
+        "get_case",
+        "cases",
         "CLM-1012",
         "working",
     )
@@ -221,12 +221,12 @@ def test_the_copilot_records_its_cards_and_the_turns_answer(dashboard):
         dashboard,
         turn_id,
         card["step_id"],
-        answer='{"claim_id": "CLM-1012"}',
+        answer='{"case_id": "CLM-1012"}',
         sources=[source],
     ).json()
     assert (finished["status"], finished["answer"], finished["sources"]) == (
         "done",
-        '{"claim_id": "CLM-1012"}',
+        '{"case_id": "CLM-1012"}',
         [source],
     )
     refused = start_step(dashboard, turn_id, "start_dispatch", "10").json()
@@ -318,37 +318,37 @@ def test_a_late_record_of_a_stopped_turn_leaves_the_newer_turn_alone(dashboard):
     step_id = start_step(dashboard, old).json()["step_id"]
     times_ago(old, started_at=TWENTY_ONE_MINUTES)
     newer = latest(send_message(dashboard, conversation_id).json())["turn_id"]
-    start_step(dashboard, newer, "list_claims", "")
+    start_step(dashboard, newer, "list_cases", "")
     before = conversation_of(dashboard, conversation_id).json()
     for late in late_records(dashboard, old, step_id):
         assert late.status_code == 409
     after = conversation_of(dashboard, conversation_id).json()
     assert [t["status"] for t in after["turns"]] == ["stopped", "working"]
-    assert [s["tool"] for s in after["turns"][1]["steps"]] == ["list_claims"]
+    assert [s["tool"] for s in after["turns"][1]["steps"]] == ["list_cases"]
     assert after["turns"][1]["status"] == before["turns"][1]["status"]
 
 
-def test_a_pause_fills_the_card_in_from_the_claim(client, dashboard):
-    claim = held(client, "CLM-1003", 3750.0)
+def test_a_pause_fills_the_card_in_from_the_case(client, dashboard):
+    case = held(client, "CLM-1003", 3750.0)
     conversation = started(dashboard, "Sign off CLM-1003")
     turn_id = latest(conversation)["turn_id"]
     paused = pause_turn(dashboard, turn_id).json()
     assert paused["status"] == "waiting_for_confirmation"
     assert paused["confirmation"] == {
-        "claim_id": "CLM-1003",
-        "customer_name": claim["customer_name"],
+        "case_id": "CLM-1003",
+        "subcontractor_name": case["subcontractor_name"],
         "payout": 3750.0,
-        "reason": claim["decision"]["reason"],
+        "reason": case["decision"]["reason"],
     }
     with engine().connect() as db:
         query = select(copilot_turns.c.confirmation).where(
             copilot_turns.c.turn_id == turn_id
         )
         kept = db.execute(query).scalar_one()
-    assert kept["decided_at"] == claim["decision"]["decided_at"]
+    assert kept["decided_at"] == case["decision"]["decided_at"]
 
 
-def test_a_pause_on_a_claim_not_waiting_for_sign_off_or_a_copy_is_refused(
+def test_a_pause_on_a_case_not_waiting_for_sign_off_or_a_copy_is_refused(
     client, dashboard
 ):
     conversation = started(dashboard)
@@ -356,19 +356,19 @@ def test_a_pause_on_a_claim_not_waiting_for_sign_off_or_a_copy_is_refused(
     refused = pause_turn(dashboard, turn_id, "CLM-1001")
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        "Claim CLM-1001 is not waiting for sign-off",
+        "Case CLM-1001 is not waiting for sign-off",
     )
-    copy = create_evaluation(client).json()["claims"][0]["claim_id"]
+    copy = create_evaluation(client).json()["cases"][0]["case_id"]
     held(client, copy, 1500.0)
     refused = pause_turn(dashboard, turn_id, copy)
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        f"Claim {copy} is a copy in an evaluation and can't be signed off",
+        f"Case {copy} is a copy in an evaluation and can't be signed off",
     )
     assert turn_of(dashboard, conversation["conversation_id"])["status"] == "working"
 
 
-def test_the_handlers_answer_carries_the_turn_on(client, dashboard, copilot_calls):
+def test_the_reviewers_answer_carries_the_turn_on(client, dashboard, copilot_calls):
     conversation_id, turn_id = waiting_on(client)
     own = token(DANA)
     response = answer(dashboard, conversation_id, turn_id, "sign_off", bearer(own))
@@ -448,27 +448,27 @@ def test_an_answer_to_a_card_already_canceled_is_refused(
     assert count(payments) == 0
 
 
-def changed_by_a_send_back(client, claim_id="CLM-1003"):
-    """Send a held claim back and decide it again with the same payout and another
+def changed_by_a_send_back(client, case_id="CLM-1003"):
+    """Send a held case back and decide it again with the same payout and another
     reason, as the agent does."""
-    send_back(client, claim_id)
-    take(client, claim_id)
-    calculated(claim_id, 3750.0)
+    send_back(client, case_id)
+    take(client, case_id)
+    calculated(case_id, 3750.0)
     record_decision(
         client,
-        claim_id,
+        case_id,
         decision="approve",
         payout=3750.0,
         reason="The hospital bill is covered, less what the airline paid.",
     )
 
 
-def signed_off_elsewhere(client, claim_id="CLM-1003"):
-    sign_off(client, claim_id)
+def signed_off_elsewhere(client, case_id="CLM-1003"):
+    sign_off(client, case_id)
 
 
 @pytest.mark.parametrize("change", [changed_by_a_send_back, signed_off_elsewhere])
-def test_a_sign_off_for_a_claim_that_changed_is_taken_as_a_cancel(
+def test_a_sign_off_for_a_case_that_changed_is_taken_as_a_cancel(
     client, dashboard, copilot_calls, change
 ):
     conversation_id, turn_id = waiting_on(client)
@@ -479,7 +479,7 @@ def test_a_sign_off_for_a_claim_that_changed_is_taken_as_a_cancel(
     turn = latest(response.json())
     assert (turn["confirmation_answer"], turn["canceled_because"]) == (
         "cancel",
-        CLAIM_CHANGED,
+        CASE_CHANGED,
     )
     assert copilot_calls[-1]["operation"] == "answer_confirmation"
     assert count(payments) == paid
@@ -488,7 +488,7 @@ def test_a_sign_off_for_a_claim_that_changed_is_taken_as_a_cancel(
 
 
 @pytest.mark.parametrize("change", [changed_by_a_send_back, signed_off_elsewhere])
-def test_a_cancel_for_a_claim_that_changed_is_taken(client, dashboard, change):
+def test_a_cancel_for_a_case_that_changed_is_taken(client, dashboard, change):
     conversation_id, turn_id = waiting_on(client)
     change(client)
     turn = latest(answer(dashboard, conversation_id, turn_id, "cancel").json())
@@ -512,7 +512,7 @@ def test_a_turn_stops_20_minutes_after_its_start_or_its_answer(client, dashboard
     assert turn_of(dashboard, conversation_id)["status"] == "stopped"
 
 
-def test_a_turns_seconds_leave_out_the_wait_for_the_handler(client, dashboard):
+def test_a_turns_seconds_leave_out_the_wait_for_the_reviewer(client, dashboard):
     conversation_id, turn_id = waiting_on(client)
     answer(dashboard, conversation_id, turn_id, "cancel")
     times_ago(
@@ -525,7 +525,7 @@ def test_a_turns_seconds_leave_out_the_wait_for_the_handler(client, dashboard):
     assert 11.5 < seconds < 13
 
 
-def test_another_handler_cant_see_or_carry_on_a_conversation(client, dashboard):
+def test_another_reviewer_cant_see_or_carry_on_a_conversation(client, dashboard):
     conversation_id, turn_id = waiting_on(client)
     marcus = [
         conversation_of(dashboard, conversation_id, MARCUS),
@@ -540,7 +540,7 @@ def test_another_handler_cant_see_or_carry_on_a_conversation(client, dashboard):
     assert [response.status_code for response in marcus] == [404] * len(marcus)
 
 
-def test_each_handler_lists_their_own_conversations_newest_first(dashboard):
+def test_each_reviewer_lists_their_own_conversations_newest_first(dashboard):
     first = started(dashboard, "What needs me today?")
     second = started(dashboard, "How did the latest dispatch go?")
     started(dashboard, "What needs Marcus?", MARCUS)
@@ -570,11 +570,11 @@ def test_the_sign_in_is_never_kept(client, dashboard, caplog):
     assert [r for r in caplog.records if own in r.getMessage()] == []
 
 
-def test_the_agents_key_never_stands_in_for_a_handler(dashboard, agent_key):
+def test_the_agents_key_never_stands_in_for_a_reviewer(dashboard, agent_key):
     both = signed_in() | {API_KEY_HEADER: agent_key}
     refused = dashboard.get("/api/settings", headers=both)
     assert refused.status_code == 403
-    assert dashboard.get("/api/claims", headers=both).status_code == 200
+    assert dashboard.get("/api/cases", headers=both).status_code == 200
     assert dashboard.get("/api/settings", headers=signed_in()).status_code == 200
     start = dashboard.post(CONVERSATIONS, json={"message": QUESTION}, headers=both)
     assert start.status_code == 403

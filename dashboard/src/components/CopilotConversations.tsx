@@ -5,7 +5,7 @@ import { dateTime } from "../format";
 import { useLoad } from "../useLoad";
 import { StateMessage } from "./StateMessage";
 
-// The handler's earlier conversations, newest first, each titled with its first
+// The reviewer's earlier conversations, newest first, each titled with its first
 // question, read when the list opens.
 export function CopilotConversations({
   current,

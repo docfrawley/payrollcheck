@@ -2,15 +2,13 @@
 
 from sqlalchemy import update
 
-from backend.database import claims, engine
+from backend.database import cases, engine
 
 
-def leave_waiting(*claim_ids):
-    """Leave every claim but the ones named for a handler, out of the agent's way."""
+def leave_waiting(*case_ids):
+    """Leave every case but the ones named for a reviewer, out of the agent's way."""
     with engine().begin() as db:
-        db.execute(update(claims).values(status="left_for_handler"))
+        db.execute(update(cases).values(status="left_for_reviewer"))
         db.execute(
-            update(claims)
-            .where(claims.c.claim_id.in_(claim_ids))
-            .values(status="waiting")
+            update(cases).where(cases.c.case_id.in_(case_ids)).values(status="waiting")
         )

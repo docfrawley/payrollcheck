@@ -60,29 +60,34 @@ export function PolicyPanel({ policyId }: Readonly<{ policyId: string }>) {
   );
 }
 
-export function HistoryPanel({ customerId }: Readonly<{ customerId: string }>) {
-  const load = useCallback(() => api.getClaimHistory(customerId), [customerId]);
+export function HistoryPanel({
+  subcontractorId,
+}: Readonly<{ subcontractorId: string }>) {
+  const load = useCallback(
+    () => api.getCaseHistory(subcontractorId),
+    [subcontractorId],
+  );
   const { data: history, error } = useLoad(load);
 
   return (
     <section className="panel" aria-labelledby="history-title">
-      <h2 id="history-title">Earlier claims</h2>
+      <h2 id="history-title">Earlier cases</h2>
       {!history && <StateMessage error={error} />}
       {history?.length === 0 && (
-        <StateMessage empty="No earlier claims: this is the customer's first claim with us." />
+        <StateMessage empty="No earlier cases: this is the subcontractor's first case with us." />
       )}
       {history && history.length > 0 && (
         <ul className="history">
-          {history.map((claim) => (
-            <li key={claim.claim_id}>
+          {history.map((caseRecord) => (
+            <li key={caseRecord.case_id}>
               <p className="small muted">
-                <span className="mono">{claim.claim_id}</span>,{" "}
-                {label(claim.claim_type)}, filed {date(claim.filed_on)}
+                <span className="mono">{caseRecord.case_id}</span>,{" "}
+                {label(caseRecord.case_type)}, filed {date(caseRecord.filed_on)}
               </p>
-              <p>{claim.summary}</p>
+              <p>{caseRecord.summary}</p>
               <p className="small">
-                {label(claim.outcome)}, paid{" "}
-                <span className="mono">{money(claim.amount_paid)}</span>
+                {label(caseRecord.outcome)}, paid{" "}
+                <span className="mono">{money(caseRecord.amount_paid)}</span>
               </p>
             </li>
           ))}

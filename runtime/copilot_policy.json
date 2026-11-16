@@ -5,7 +5,7 @@
       "Sid": "CallTheGateway",
       "Effect": "Allow",
       "Action": "bedrock-agentcore:InvokeGateway",
-      "Resource": "arn:aws:bedrock-agentcore:*:*:gateway/undercover-gateway-*"
+      "Resource": "arn:aws:bedrock-agentcore:*:*:gateway/payrollcheck-gateway-*"
     },
     {
       "Sid": "UseTheCopilotsMemory",
@@ -18,7 +18,7 @@
         "bedrock-agentcore:ListMemoryRecords",
         "bedrock-agentcore:GetMemoryRecord"
       ],
-      "Resource": "arn:aws:bedrock-agentcore:*:*:memory/undercover_copilot_memory-*"
+      "Resource": "arn:aws:bedrock-agentcore:*:*:memory/payrollcheck_copilot_memory-*"
     }
   ]
 }

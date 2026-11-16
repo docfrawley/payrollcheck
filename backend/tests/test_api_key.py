@@ -1,6 +1,6 @@
 """The agent identifies itself with an API key on every request: the routes only the
-agent's side calls need it, the reads the dashboard shares take it or a handler's
-sign-in, and the key never stands in for a handler."""
+agent's side calls need it, the reads the dashboard shares take it or a reviewer's
+sign-in, and the key never stands in for a reviewer."""
 
 import re
 
@@ -14,12 +14,12 @@ from backend.dependencies import (
     NEEDS_THE_KEY,
 )
 from backend.main import app
-from backend.tests.claim_requests import decide, start
+from backend.tests.case_requests import decide, start
 from backend.tests.dashboard_reads import read
 from backend.tests.gates import (
     AGENT_OPERATIONS,
-    HANDLER_OPERATIONS,
     OPEN,
+    REVIEWER_OPERATIONS,
     SHARED_READS,
 )
 from backend.tests.round_requests import create_round, propose_change, review
@@ -40,7 +40,7 @@ GATES = {
     "anyone": OPEN,
     "the agent's key": AGENT_OPERATIONS,
     "the key or a sign-in": set(SHARED_READS),
-    "a sign-in": set(HANDLER_OPERATIONS),
+    "a sign-in": set(REVIEWER_OPERATIONS),
 }
 
 
@@ -108,12 +108,12 @@ def test_a_shared_read_takes_the_key_or_a_sign_in(client, dashboard, path):
         )
 
 
-def test_with_no_key_set_handlers_still_work_and_the_agents_routes_refuse(
+def test_with_no_key_set_reviewers_still_work_and_the_agents_routes_refuse(
     dashboard, monkeypatch
 ):
-    monkeypatch.delenv("UNDERCOVER_API_KEY")
+    monkeypatch.delenv("PAYROLLCHECK_API_KEY")
     assert dashboard.get("/api/health").status_code == 200
-    assert len(read(dashboard, "/api/claims").json()) == 26
+    assert len(read(dashboard, "/api/cases").json()) == 26
     for route in AGENT_ROUTES:
         method, path = route.values
         refused = dashboard.request(method, path, headers={API_KEY_HEADER: ""})
@@ -121,7 +121,7 @@ def test_with_no_key_set_handlers_still_work_and_the_agents_routes_refuse(
 
 
 def test_an_empty_key_set_doesnt_match_an_empty_header(dashboard, monkeypatch):
-    monkeypatch.setenv("UNDERCOVER_API_KEY", "")
+    monkeypatch.setenv("PAYROLLCHECK_API_KEY", "")
     refused = dashboard.get("/api/runs/run-1", headers={API_KEY_HEADER: ""})
     assert refused.status_code == 401
 
@@ -131,7 +131,7 @@ def test_a_key_outside_ascii_is_refused_rather_than_raising(dashboard):
     assert dashboard.get("/api/runs/run-1", headers=headers).status_code == 401
 
 
-def test_the_agent_reads_a_review_a_handler_gave(client):
+def test_the_agent_reads_a_review_a_reviewer_gave(client):
     round_id = create_round(client).json()["round_id"]
     proposal_id = propose_change(client, round_id).json()["proposal_id"]
     reviewed = review(client, round_id, proposal_id)

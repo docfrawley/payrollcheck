@@ -10,14 +10,14 @@ import {
   started,
   stopTheWork,
 } from "./api";
-import { HANDLERS } from "./handlers";
+import { REVIEWERS } from "./reviewers";
 
 // Rounds of the improver started as Dana Whitfield and played out through the
 // API as the agent would record them, with each review on the page recorded by
 // the app and reaching the stand-in for the agent.
 
 const RULE = "A stolen phone needs a police report.";
-const INSTRUCTIONS = `# Working a claim\n\n${RULE}\n`;
+const INSTRUCTIONS = `# Working a case\n\n${RULE}\n`;
 
 test.afterEach(async ({ request }) => {
   await stopTheWork(request);
@@ -89,7 +89,7 @@ test("a recipe rejected on the page records its reason and reaches the agent", a
   await waiting.getByRole("button", { name: "Reject" }).click();
   await waiting
     .getByLabel("Why reject it?")
-    .fill("Keep the step that reads the wrong claims");
+    .fill("Keep the step that reads the wrong cases");
   await waiting.getByRole("button", { name: "Reject the recipe" }).click();
   await expect
     .poll(() => started(request))
@@ -100,12 +100,12 @@ test("a recipe rejected on the page records its reason and reaches the agent", a
     });
   expect(await getProposal(request, round, proposal)).toMatchObject({
     review: "rejected",
-    rejection_reason: "Keep the step that reads the wrong claims",
+    rejection_reason: "Keep the step that reads the wrong cases",
   });
 });
 
 test.describe("signed in as Marcus Oyelaran", () => {
-  test.use({ storageState: HANDLERS.marcus.storage });
+  test.use({ storageState: REVIEWERS.marcus.storage });
 
   test("a proposal waiting shows no buttons", async ({ page, request }) => {
     const round = await startRound(request);
@@ -117,7 +117,7 @@ test.describe("signed in as Marcus Oyelaran", () => {
     await expect(waiting.getByText(RULE)).toBeVisible();
     await expect(
       waiting.getByText(
-        "Only a handler who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
+        "Only a reviewer who can sign off payouts over $1,000.00 can approve or reject the improver's proposals. Marcus Oyelaran can't.",
       ),
     ).toBeVisible();
     await expect(waiting.getByRole("button")).toHaveCount(0);

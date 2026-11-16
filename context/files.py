@@ -21,7 +21,7 @@ TITLES: dict[DocumentName, str] = {
 GLOSSARY = "glossary.yaml"
 DATA_DICTIONARY = "data_dictionary.yaml"
 PLANS = "plans.yaml"
-CLAIM_RULES = "claim_rules.yaml"
+CASE_RULES = "claim_rules.yaml"
 REFERENCE_DATA = "reference_data.yaml"
 # A document's front matter, its source and version, sits between two lines of ---.
 FRONT_MATTER = "---\n"
@@ -90,7 +90,7 @@ def read_document(name: DocumentName) -> Document:
 
 FILES = {
     file: read_yaml(file)
-    for file in (GLOSSARY, DATA_DICTIONARY, PLANS, CLAIM_RULES, REFERENCE_DATA)
+    for file in (GLOSSARY, DATA_DICTIONARY, PLANS, CASE_RULES, REFERENCE_DATA)
 }
 DOCUMENTS = {name: read_document(name) for name in TITLES}
 
@@ -134,9 +134,9 @@ def get_plan(plan: PlanName) -> dict[str, Any]:
     }
 
 
-def get_claim_rules() -> dict[str, Any]:
-    """The rules claims operations applies to every claim."""
-    return {"rules": FILES[CLAIM_RULES]["rules"], "sources": sources_of(CLAIM_RULES)}
+def get_case_rules() -> dict[str, Any]:
+    """The rules claims operations applies to every case."""
+    return {"rules": FILES[CASE_RULES]["rules"], "sources": sources_of(CASE_RULES)}
 
 
 def search_reference_data(query: str) -> dict[str, Any]:

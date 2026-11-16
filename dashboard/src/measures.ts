@@ -19,10 +19,10 @@ export const MEASURES: {
     show: (m) => (m.grade === null ? NOT_GRADED : grade(m.grade)),
   },
   {
-    label: "Model cost per claim",
-    show: (m) => modelCost(m.model_cost_per_claim),
+    label: "Model cost per case",
+    show: (m) => modelCost(m.model_cost_per_case),
   },
-  { label: "Time per claim", show: (m) => duration(m.seconds_per_claim) },
+  { label: "Time per case", show: (m) => duration(m.seconds_per_case) },
   {
     label: "Run time",
     show: (m) =>

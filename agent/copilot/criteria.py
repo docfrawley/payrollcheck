@@ -1,5 +1,5 @@
 """The three success criteria we agreed when the pilot started, checked in code:
-an evaluation of the whole held-out set, started with our settings' claim agents
+an evaluation of the whole held-out set, started with our settings' payroll agents
 and waited for, its measures, our accuracy objective, and the app's count of
 payouts over the limit, then the table of figures and one line on whether all
 three are met. Every figure is worked out here, never by the model."""
@@ -60,7 +60,7 @@ STRAIGHT_THROUGH = percent(STRAIGHT_THROUGH_TARGET)
 
 
 def start(sign_in: str, agents: int) -> str:
-    """Start an evaluation of the whole held-out set with the claim agents given,
+    """Start an evaluation of the whole held-out set with the payroll agents given,
     and return its run's id, or raise the app's refusal."""
     return app_api.start_evaluation(sign_in, HELD_OUT, False, agents)["run_id"]
 
@@ -107,7 +107,7 @@ def rows(figures: Figures | str, objective: float, over: dict[str, Any]) -> list
         ),
         Row(
             "Over the limit",
-            "Every payout over the approval limit signed off by a handler",
+            "Every payout over the approval limit signed off by a reviewer",
             over_the_limit,
             signed_off == paid,
         ),
@@ -142,7 +142,7 @@ def evaluated(sign_in: str, agents: int) -> Figures | str:
 
 
 def check(sign_in: str) -> str:
-    """Check the three criteria as the handler signed in and give the answer."""
+    """Check the three criteria as the reviewer signed in and give the answer."""
     settings = app_api.get_settings(sign_in)["current"]
     figures = evaluated(sign_in, settings["agents"])
     over = app_api.count_payouts_over_limit(sign_in)

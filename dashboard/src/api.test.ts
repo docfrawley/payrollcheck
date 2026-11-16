@@ -8,20 +8,20 @@ import {
   conversation,
 } from "./copilotTesting";
 import { TOKEN, endSession, freshAccessToken } from "./fakeAuth";
-import { Refusal, claim, stubApi } from "./testing";
+import { Refusal, caseRecord, stubApi } from "./testing";
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 it("reads the backend's JSON", async () => {
-  stubApi({ "GET /api/claims/CLM-1002": claim });
-  expect((await api.getClaim("CLM-1002")).summary).toBe(claim.summary);
+  stubApi({ "GET /api/cases/CLM-1002": caseRecord });
+  expect((await api.getCase("CLM-1002")).summary).toBe(caseRecord.summary);
 });
 
 it("raises the backend's reason for refusing", async () => {
-  stubApi({ "GET /api/claims/CLM-1002": new Refusal(409, "Not now") });
-  await expect(api.getClaim("CLM-1002")).rejects.toEqual(
+  stubApi({ "GET /api/cases/CLM-1002": new Refusal(409, "Not now") });
+  await expect(api.getCase("CLM-1002")).rejects.toEqual(
     new ApiError(409, "Not now"),
   );
 });
@@ -45,10 +45,10 @@ it("falls back to a general message when the body isn't JSON", async () => {
 
 it("sends the session's access token with every request", async () => {
   const fetchMock = stubApi({
-    "GET /api/claims/CLM-1002": claim,
-    "POST /api/claims/CLM-1002/sign-off": claim,
+    "GET /api/cases/CLM-1002": caseRecord,
+    "POST /api/cases/CLM-1002/sign-off": caseRecord,
   });
-  await api.getClaim("CLM-1002");
+  await api.getCase("CLM-1002");
   await api.signOff("CLM-1002");
   const headers = fetchMock.mock.calls.map(([, init]) =>
     new Headers(init?.headers).get("Authorization"),
@@ -58,8 +58,8 @@ it("sends the session's access token with every request", async () => {
 
 it("sends no token when no one is signed in", async () => {
   endSession();
-  const fetchMock = stubApi({ "GET /api/claims/CLM-1002": claim });
-  await api.getClaim("CLM-1002");
+  const fetchMock = stubApi({ "GET /api/cases/CLM-1002": caseRecord });
+  await api.getCase("CLM-1002");
   const [[, init]] = fetchMock.mock.calls;
   expect(new Headers(init?.headers).has("Authorization")).toBe(false);
 });

@@ -2,17 +2,17 @@ import { expect, test } from "@playwright/test";
 import type { DecisionKind } from "../dashboard/src/api";
 import {
   finishRun,
-  payClaim,
+  payCase,
   decide,
   recordModelCall,
   recordWorkTime,
-  startClaim,
+  startCase,
   startEvaluation,
   stopTheWork,
 } from "./api";
 
-// This test starts an evaluation of the held-out set's tiny claims as Dana
-// Whitfield, which the app creates, then stands in for the agent and its claim
+// This test starts an evaluation of the held-out set's tiny cases as Dana
+// Whitfield, which the app creates, then stands in for the agent and its case
 // agents, playing it out through the API, and checks the Scoreboard and the
 // evaluation's page. Its copies are its own.
 
@@ -24,19 +24,19 @@ test("the Scoreboard shows an evaluation played out through the API", async ({
   page,
   request,
 }) => {
-  const { run_id, number, claims } = await startEvaluation(
+  const { run_id, number, cases } = await startEvaluation(
     request,
     "held_out",
     true,
     5,
   );
   const copyOf = (original: string) => `${original}-E${String(number)}`;
-  expect(claims).toHaveLength(5);
+  expect(cases).toHaveLength(5);
 
-  for (const { claim_id } of claims) {
-    await startClaim(request, claim_id, `e2e-${claim_id}`);
-    await recordModelCall(request, claim_id, run_id, 0.0125);
-    await recordWorkTime(request, claim_id, run_id, 40);
+  for (const { case_id } of cases) {
+    await startCase(request, case_id, `e2e-${case_id}`);
+    await recordModelCall(request, case_id, run_id, 0.0125);
+    await recordWorkTime(request, case_id, run_id, 40);
   }
   const decideCopy = (
     original: string,
@@ -50,7 +50,7 @@ test("the Scoreboard shows an evaluation played out through the API", async ({
       reason: `The agent's reason on ${original}.`,
     });
   const pay = (original: string, amount: number) =>
-    payClaim(request, copyOf(original), amount);
+    payCase(request, copyOf(original), amount);
   await decideCopy("CLM-1104", "approve", 250);
   await pay("CLM-1104", 250);
   await decideCopy("CLM-1106", "approve", 300);
@@ -80,7 +80,7 @@ test("the Scoreboard shows an evaluation played out through the API", async ({
   await expect(page.getByText(/judge cost/)).toContainText(
     "judge cost $0.0001",
   );
-  const scored = page.getByRole("region", { name: "Claims" });
+  const scored = page.getByRole("region", { name: "Cases" });
   for (const original of ["CLM-1104", "CLM-1106", "CLM-1110", "CLM-1112"]) {
     const row = scored.getByRole("row", { name: new RegExp(copyOf(original)) });
     await expect(row.getByText("B", { exact: true })).toBeVisible();
@@ -108,7 +108,7 @@ test("the Scoreboard shows an evaluation played out through the API", async ({
   ).toContainText("No decision");
 
   await scored.getByRole("link", { name: copyOf("CLM-1112") }).click();
-  await expect(page).toHaveURL(`/claims/${copyOf("CLM-1112")}`);
+  await expect(page).toHaveURL(`/cases/${copyOf("CLM-1112")}`);
   await expect(
     page.getByText("A copy of CLM-1112 in an evaluation"),
   ).toBeVisible();

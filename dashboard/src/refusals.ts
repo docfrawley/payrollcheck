@@ -1,5 +1,5 @@
 // How a refusal from the backend reads: its status, and its reason as a
-// sentence a handler can act on.
+// sentence a reviewer can act on.
 
 export const REQUEST_FAILED = "The request failed";
 
@@ -22,7 +22,7 @@ function isInputErrors(detail: unknown): detail is InputError[] {
   );
 }
 
-// The backend's reason for refusing, as a sentence a handler can act on.
+// The backend's reason for refusing, as a sentence a reviewer can act on.
 export function reasonFor(detail: unknown): string {
   if (typeof detail === "string") return detail;
   if (isInputErrors(detail))

@@ -1,5 +1,5 @@
-"""The route the agents' tools take to the context layer, and the claim agent's to
-the app: the Gateway when UNDERCOVER_GATEWAY_URL is set, or else the direct route.
+"""The route the agents' tools take to the context layer, and the payroll agent's to
+the app: the Gateway when PAYROLLCHECK_GATEWAY_URL is set, or else the direct route.
 It is the one module that knows both."""
 
 from agent import direct, gateway

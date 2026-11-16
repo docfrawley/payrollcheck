@@ -5,17 +5,17 @@ import { useAction } from "../useAction";
 import { FormError } from "./FormError";
 import { ReasonForm } from "./ReasonForm";
 
-// Sends a held decision back to the agent with a note, as the handler signed
-// in: a button that opens the note, which the handler must write.
+// Sends a held decision back to the agent with a note, as the reviewer signed
+// in: a button that opens the note, which the reviewer must write.
 export function SendBackForm({
-  claimId,
+  caseId,
   onSentBack,
-}: Readonly<{ claimId: string; onSentBack: () => void }>) {
+}: Readonly<{ caseId: string; onSentBack: () => void }>) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const formId = useId();
   const { run, sending, error } = useAction(() =>
-    api.sendBack(claimId, note.trim()).then(onSentBack),
+    api.sendBack(caseId, note.trim()).then(onSentBack),
   );
 
   return (
@@ -36,7 +36,7 @@ export function SendBackForm({
         <ReasonForm
           id={formId}
           label="What should the agent look at again?"
-          hint={`The agent reads your note as a senior handler's review and decides again. Up to ${NOTE_LENGTH.toLocaleString("en-US")} characters.`}
+          hint={`The agent reads your note as a compliance manager's review and decides again. Up to ${NOTE_LENGTH.toLocaleString("en-US")} characters.`}
           submitLabel={
             <>
               <Undo2 />

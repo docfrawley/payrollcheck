@@ -1,4 +1,4 @@
-"""Checking a handler's sign-in: an access token from Supabase Auth, signed with one
+"""Checking a reviewer's sign-in: an access token from Supabase Auth, signed with one
 of the project's public keys."""
 
 import os

@@ -31,8 +31,8 @@ from agent.agentcore_app import (
 from agent.checkpoints import Pool, open_checkpoint_pool
 from agent.connection import Refused, api_key
 from agent.console import show_reports
-from agent.handler_answer import SENT_BACK, answer_of
-from agent.harness import claim_graphs, paused
+from agent.harness import paused, payroll_graphs
+from agent.reviewer_answer import SENT_BACK, answer_of
 from agent.work import (
     Workers,
     carry_the_round_on,
@@ -44,11 +44,11 @@ from agent.work import (
 RUN_NOT_RUNNING = "Run {run_id} isn't running"
 ROUND_NOT_OPEN = "Round {number} isn't open"
 NO_REVIEW = "Proposal {proposal_id} has no review"
-NOT_PAUSED = "Claim {claim_id} isn't paused for a handler"
-NO_ANSWER = "Claim {claim_id} has no answer from a handler yet"
+NOT_PAUSED = "Case {case_id} isn't paused for a reviewer"
+NO_ANSWER = "Case {case_id} has no answer from a reviewer yet"
 NOT_READY = "The agent couldn't get ready: {error}"
 # The agent's credentials in AgentCore Identity on Runtime.
-CREDENTIALS = ("OPENROUTER_API_KEY", "UNDERCOVER_API_KEY", "DATABASE_URL")
+CREDENTIALS = ("OPENROUTER_API_KEY", "PAYROLLCHECK_API_KEY", "DATABASE_URL")
 NEEDS_THE_KEY = "This needs the agent's API key"
 
 
@@ -71,22 +71,22 @@ class CarryRoundOn(Operation):
     proposal_id: str
 
 
-class ResumeClaim(Operation):
-    operation: Literal["resume_claim"]
-    claim_id: str
+class ResumeCase(Operation):
+    operation: Literal["resume_case"]
+    case_id: str
 
 
 Payload = Annotated[
-    Health | WorkRun | WorkRound | CarryRoundOn | ResumeClaim,
+    Health | WorkRun | WorkRound | CarryRoundOn | ResumeCase,
     Field(discriminator="operation"),
 ]
 PAYLOADS: TypeAdapter[Payload] = TypeAdapter(Payload)
 
 
 def workers_on(pool: Pool) -> Workers:
-    """The claim agents and the improver, on the process's checkpoint pool."""
+    """The payroll agents and the improver, on the process's checkpoint pool."""
     return Workers(
-        partial(claim_graphs, pool=pool),
+        partial(payroll_graphs, pool=pool),
         improver.improver_model,
         PostgresSaver(pool),
     )
@@ -137,12 +137,12 @@ def take_run(request: WorkRun, workers: Workers) -> None:
     run = api.get_run(request.run_id)
     if run["status"] != app_terms.RUNNING:
         raise Refusal(RUN_NOT_RUNNING.format(run_id=request.run_id))
-    in_background(app, "run", partial(work_the_run, run, workers.claim_agents))
+    in_background(app, "run", partial(work_the_run, run, workers.payroll_agents))
 
 
 def take_round(request: WorkRound, workers: Workers) -> None:
     """Work a round the app created: its first evaluations, then the improver
-    until it waits for a handler or ends."""
+    until it waits for a reviewer or ends."""
     round = open_round(request.round_id)
     in_background(app, "round", partial(work_the_round, round, workers))
 
@@ -157,20 +157,20 @@ def carry_round_on(request: CarryRoundOn, workers: Workers) -> None:
     in_background(app, "round", partial(carry_the_round_on, round, start, workers))
 
 
-def resume_claim(request: ResumeClaim, workers: Workers) -> None:
-    """Resume a paused claim with its handler's answer, beside any other work,
-    taking a sent-back claim first."""
-    claim_id = request.claim_id
-    claim = api.get_claim(claim_id)
-    agent = workers.claim_agents(api.get_current_version(), None)()
-    if not paused(claim, agent):
-        raise Refusal(NOT_PAUSED.format(claim_id=claim_id))
-    answer = answer_of(claim)
+def resume_case(request: ResumeCase, workers: Workers) -> None:
+    """Resume a paused case with its reviewer's answer, beside any other work,
+    taking a sent-back case first."""
+    case_id = request.case_id
+    case = api.get_case(case_id)
+    agent = workers.payroll_agents(api.get_current_version(), None)()
+    if not paused(case, agent):
+        raise Refusal(NOT_PAUSED.format(case_id=case_id))
+    answer = answer_of(case)
     if answer is None:
-        raise Refusal(NO_ANSWER.format(claim_id=claim_id))
+        raise Refusal(NO_ANSWER.format(case_id=case_id))
     if answer["answer"] == SENT_BACK:
-        api.take_claim(claim_id, None)
-    in_background(app, "resume", partial(resume_telling_the_app, claim_id, agent))
+        api.take_case(case_id, None)
+    in_background(app, "resume", partial(resume_telling_the_app, case_id, agent))
 
 
 def start(request: Payload, workers: Workers) -> dict[str, Any]:
@@ -184,8 +184,8 @@ def start(request: Payload, workers: Workers) -> dict[str, Any]:
             take_round(request, workers)
         case CarryRoundOn():
             carry_round_on(request, workers)
-        case ResumeClaim():
-            resume_claim(request, workers)
+        case ResumeCase():
+            resume_case(request, workers)
     return ACCEPTED
 
 
@@ -201,5 +201,5 @@ def invoke(payload: Any, context: RequestContext) -> dict[str, Any]:
         return start(request, workers)
     except Refusal as refusal:
         return {"refused": str(refusal)}
-    except Refused as refused:  # the app's refusal, such as a claim it doesn't know
+    except Refused as refused:  # the app's refusal, such as a case it doesn't know
         return {"refused": refused.detail}

@@ -1,4 +1,4 @@
-"""The claim agent's tools, the app's operations it calls on its route, the context
+"""The payroll agent's tools, the app's operations it calls on its route, the context
 layer's lookups both agents have, and the search of its memory, and the context and
 state they read."""
 
@@ -20,14 +20,14 @@ from agent.routes import Route, Target
 
 
 @dataclass
-class ClaimContext:
-    """The claim a claim agent is working on, its policy and customer, the run it
+class PayrollContext:
+    """The case a payroll agent is working on, its policy and subcontractor, the run it
     works in, if any, the route its tools take, and who its decisions are made by."""
 
-    claim_id: str
+    case_id: str
     run_id: str | None
     policy_id: str
-    customer_id: str
+    subcontractor_id: str
     route: Route
     decided_by: str
 
@@ -38,10 +38,10 @@ def keep_last(_: Any, new: Any) -> Any:
     return new
 
 
-class ClaimState(TypedDict):
-    """What the claim graph keeps for one claim, saved after every step: the check
+class PayrollState(TypedDict):
+    """What the payroll graph keeps for one case, saved after every step: the check
     for hidden instructions' result, its reason and instructions_found, empty until
-    the check has run, and the decision and the claim's status as the backend
+    the check has run, and the decision and the case's status as the backend
     recorded them, empty until then."""
 
     messages: Annotated[list[AnyMessage], add_messages]
@@ -51,58 +51,60 @@ class ClaimState(TypedDict):
     status: Annotated[str, keep_last]
 
 
-# What the claim agent never reads of a claim: the decisions handlers sent back,
-# whose notes reach its model only as a handler's message.
+# What the payroll agent never reads of a case: the decisions reviewers sent back,
+# whose notes reach its model only as a reviewer's message.
 UNREAD = "sent_back_decisions"
 
 
-def claim_as_read(claim: dict[str, Any]) -> str:
-    """A claim in full, as the claim agent reads it, which is also what the check for
+def case_as_read(case: dict[str, Any]) -> str:
+    """A case in full, as the payroll agent reads it, which is also what the check for
     hidden instructions reads."""
-    return as_json({field: value for field, value in claim.items() if field != UNREAD})
+    return as_json({field: value for field, value in case.items() if field != UNREAD})
 
 
-def on_app(runtime: ToolRuntime[ClaimContext], operation: str, **inputs: Any) -> Any:
-    """Call one of the app's operations on the claim agent's route."""
+def on_app(runtime: ToolRuntime[PayrollContext], operation: str, **inputs: Any) -> Any:
+    """Call one of the app's operations on the payroll agent's route."""
     return runtime.context.route.call(Target.APP, operation, inputs)
 
 
-# A step a tool gives as its artifact, which the harness records on the claim: its
+# A step a tool gives as its artifact, which the harness records on the case: its
 # kind, its content and the context files it came from.
 Step = tuple[api.StepKind, str, api.Sources]
 
 
 @tool
-def get_claim(runtime: ToolRuntime[ClaimContext]) -> str:
-    """Get your claim in full: the story, the items claimed and the documents."""
-    return claim_as_read(
-        on_app(runtime, "get_claim", claim_id=runtime.context.claim_id)
-    )
+def get_case(runtime: ToolRuntime[PayrollContext]) -> str:
+    """Get your case in full: the story, the items claimed and the documents."""
+    return case_as_read(on_app(runtime, "get_case", case_id=runtime.context.case_id))
 
 
 @tool
-def get_policy(runtime: ToolRuntime[ClaimContext]) -> str:
-    """Get your claim's policy: the plan, add-ons, purchase date, trip and travelers."""
+def get_policy(runtime: ToolRuntime[PayrollContext]) -> str:
+    """Get your case's policy: the plan, add-ons, purchase date, trip and travelers."""
     policy_id = runtime.context.policy_id
     return as_json(on_app(runtime, "get_policy", policy_id=policy_id))
 
 
 @tool
-def get_claim_history(runtime: ToolRuntime[ClaimContext]) -> str:
-    """Get your customer's earlier claims, with the outcome and the amount paid."""
-    customer_id = runtime.context.customer_id
-    return as_json(on_app(runtime, "get_claim_history", customer_id=customer_id))
+def get_case_history(runtime: ToolRuntime[PayrollContext]) -> str:
+    """Get your subcontractor's earlier cases, with the outcome and the amount paid."""
+    subcontractor_id = runtime.context.subcontractor_id
+    return as_json(
+        on_app(runtime, "get_case_history", subcontractor_id=subcontractor_id)
+    )
 
 
 @tool(response_format="content_and_artifact")
-def search_memory(query: Query, runtime: ToolRuntime[ClaimContext]) -> tuple[str, Step]:
-    """Search what we remember about this claim's customer from their earlier claims."""
+def search_memory(
+    query: Query, runtime: ToolRuntime[PayrollContext]
+) -> tuple[str, Step]:
+    """Search what we remember about this case's subcontractor from earlier cases."""
     context = runtime.context
     try:
         found = memory.recall(
             cast(BaseStore, runtime.store),
-            context.customer_id,
-            context.claim_id,
+            context.subcontractor_id,
+            context.case_id,
             query,
         )
     except UNREACHABLE as error:
@@ -119,22 +121,22 @@ def what_was_found(query: str, found: list[str]) -> str:
 
 @tool
 def calculate_payout(
-    benefit: Annotated[api.Benefit, "The benefit the claim is paid under"],
+    benefit: Annotated[api.Benefit, "The benefit the case is paid under"],
     lines: Annotated[
         list[api.Line],
-        "The covered items and expenses, one for each line of the claim, with any "
+        "The covered items and expenses, one for each line of the case, with any "
         "excluded ones left out",
     ],
     paid_by_others: Annotated[
         float, "What a carrier, hotel or anyone else has paid or refunded, or 0"
     ],
-    runtime: ToolRuntime[ClaimContext],
+    runtime: ToolRuntime[PayrollContext],
 ) -> str:
-    """Work out the payout on your claim with UnderCover's payout rules."""
+    """Work out the payout on your case with UnderCover's payout rules."""
     payout = on_app(
         runtime,
         "calculate_payout",
-        claim_id=runtime.context.claim_id,
+        case_id=runtime.context.case_id,
         benefit=benefit,
         lines=[line.model_dump() for line in lines],
         paid_by_others=paid_by_others,
@@ -148,41 +150,41 @@ def record_decision(
     payout: Annotated[float, "In US dollars, and 0 for a decline or a referral"],
     section: Annotated[str, "The sections of the wording and the manual relied on"],
     reason: Annotated[str, "Two or three plain sentences for a colleague"],
-    runtime: ToolRuntime[ClaimContext],
+    runtime: ToolRuntime[PayrollContext],
 ) -> Command:
-    """Record the decision on your claim, once, which ends your work on it."""
-    claim = on_app(
+    """Record the decision on your case, once, which ends your work on it."""
+    case = on_app(
         runtime,
         "record_decision",
-        claim_id=runtime.context.claim_id,
+        case_id=runtime.context.case_id,
         decision=decision,
         payout=payout,
         section=section,
         reason=reason,
         decided_by=runtime.context.decided_by,
     )
-    message = ToolMessage(claim_as_read(claim), tool_call_id=runtime.tool_call_id)
+    message = ToolMessage(case_as_read(case), tool_call_id=runtime.tool_call_id)
     update = {
         "messages": [message],
-        "decision": claim["decision"],
-        "status": claim["status"],
+        "decision": case["decision"],
+        "status": case["status"],
     }
     return Command(update=update)
 
 
 APP_TOOLS = [
-    get_claim,
+    get_case,
     get_policy,
-    get_claim_history,
+    get_case_history,
     calculate_payout,
     record_decision,
 ]
-CLAIM_TOOLS = APP_TOOLS + CONTEXT_TOOLS
+PAYROLL_TOOLS = APP_TOOLS + CONTEXT_TOOLS
 
 
-def claim_tools(remembers: bool) -> list[BaseTool]:
-    """The claim agent's tools, with a search of its memory when it has one."""
-    return CLAIM_TOOLS + [search_memory] if remembers else CLAIM_TOOLS
+def payroll_tools(remembers: bool) -> list[BaseTool]:
+    """The payroll agent's tools, with a search of its memory when it has one."""
+    return PAYROLL_TOOLS + [search_memory] if remembers else PAYROLL_TOOLS
 
 
 # The target each tool calls, by which a route names a call to it.

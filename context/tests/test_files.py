@@ -38,11 +38,11 @@ def test_an_unknown_term_gets_the_terms_the_glossary_defines():
 
 
 def test_a_records_fields():
-    claim = files.describe_fields("claim")
-    fields = [field["field"] for field in claim["fields"]]
+    case = files.describe_fields("claim")
+    fields = [field["field"] for field in case["fields"]]
     assert "decision.manual_version" in fields
-    assert claim["sources"][0]["file"] == "data_dictionary.yaml"
-    assert claim["sources"][0]["owner"] == "Data governance"
+    assert case["sources"][0]["file"] == "data_dictionary.yaml"
+    assert case["sources"][0]["owner"] == "Data governance"
     assert files.describe_fields("previous_claim")["record"] == "previous_claim"
 
 
@@ -65,8 +65,8 @@ def test_a_plan_with_its_deductible_and_the_add_ons():
     ]
 
 
-def test_the_claim_rules():
-    rules = files.get_claim_rules()
+def test_the_case_rules():
+    rules = files.get_case_rules()
     assert [rule["rule"] for rule in rules["rules"]] == [
         "filing_window",
         "pre_existing_look_back",
@@ -152,7 +152,7 @@ def test_the_files_are_read_once_at_import(monkeypatch):
     files.lookup_term("unattended")
     files.describe_fields("policy")
     files.get_plan("first")
-    files.get_claim_rules()
+    files.get_case_rules()
     files.search_reference_data("strike")
     files.search_documents("strike")
     files.read_section("policy_wording", 1)

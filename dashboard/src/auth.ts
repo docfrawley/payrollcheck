@@ -10,7 +10,7 @@ const supabase = createClient(
 
 export const WRONG_PASSWORD = "The email or password is wrong.";
 
-// Signs a handler in, or throws Supabase's reason for refusing.
+// Signs a reviewer in, or throws Supabase's reason for refusing.
 export async function signIn(email: string, password: string): Promise<void> {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error)
@@ -19,7 +19,7 @@ export async function signIn(email: string, password: string): Promise<void> {
     );
 }
 
-// Signs the handler out of this browser only.
+// Signs the reviewer out of this browser only.
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut({ scope: "local" });
 }
@@ -47,7 +47,7 @@ export async function freshAccessToken(): Promise<string | undefined> {
   return renewed.session?.access_token;
 }
 
-// Tells the callback whether a handler is signed in, at once and again on each
+// Tells the callback whether a reviewer is signed in, at once and again on each
 // sign-in and sign-out, until the function it returns is called.
 export function followSession(
   callback: (signedIn: boolean) => void,

@@ -73,7 +73,7 @@ it("shows a version's diff and its instructions, read only", async () => {
   expect(changes.getByText("Decline a phone left unattended.").tagName).toBe(
     "INS",
   );
-  expect(changes.getByText("Read the claim.").tagName).toBe("SPAN");
+  expect(changes.getByText("Read the case.").tagName).toBe("SPAN");
   expect(document.querySelectorAll(".diff-gap")).toHaveLength(1);
   const instructions = within(
     screen.getByRole("region", { name: "Instructions" }),

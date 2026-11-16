@@ -7,7 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { Claim, Evaluation } from "./api";
+import type { Case, Evaluation } from "./api";
 import { Check } from "./components/Judging";
 import {
   finishedEvaluation as finished,
@@ -16,7 +16,7 @@ import {
 import {
   Refusal,
   type Routes,
-  claim,
+  caseRecord,
   history,
   panel,
   policy,
@@ -62,9 +62,9 @@ it("lists the evaluations in the backend's order, with their measures", async ()
     rows.map((row) => within(row).getAllByRole("link")[0].textContent),
   ).toEqual(["Evaluation #9", "Evaluation #7"]);
   const [newest, older] = rows.map((row) => within(row));
-  expect(newest.getByText("Held-out set, 5 claims")).toBeDefined();
+  expect(newest.getByText("Held-out set, 5 cases")).toBeDefined();
   expect(newest.getByText("Running")).toBeDefined();
-  expect(older.getByText("Evaluation set, 25 claims")).toBeDefined();
+  expect(older.getByText("Evaluation set, 25 cases")).toBeDefined();
   expect(older.getByText("openai/gpt-6-luna")).toBeDefined();
   for (const shown of [
     "80%",
@@ -80,7 +80,7 @@ it("lists the evaluations in the backend's order, with their measures", async ()
   expect(older.getByText("2 min 41 s")).toBeDefined();
   expect(newest.queryByText("2 min 41 s")).toBeNull();
   expect(
-    older.getByText(/Oct 3, .*, version 1, 25 claim agents at once/),
+    older.getByText(/Oct 3, .*, version 1, 25 payroll agents at once/),
   ).toBeDefined();
   const link = older.getByRole("link", { name: "Evaluation #7" });
   expect(link.getAttribute("href")).toBe("/scoreboard/run-7");
@@ -100,14 +100,14 @@ it("starts an evaluation with the choices made", async () => {
   });
   const form = await panel("Start an evaluation");
   const set = form.getByRole("combobox", { name: "Set" });
-  const claims = form.getByRole("combobox", { name: "Claims" });
-  const agents = form.getByRole("combobox", { name: "Claim agents at once" });
+  const cases = form.getByRole("combobox", { name: "Cases" });
+  const agents = form.getByRole("combobox", { name: "Payroll agents at once" });
   expect(
-    [set, claims, agents].map((c) => (c as HTMLSelectElement).value),
+    [set, cases, agents].map((c) => (c as HTMLSelectElement).value),
   ).toEqual(["evaluation", "all", "3"]);
 
   fireEvent.change(set, { target: { value: "held_out" } });
-  fireEvent.change(claims, { target: { value: "tiny" } });
+  fireEvent.change(cases, { target: { value: "tiny" } });
   fireEvent.change(agents, { target: { value: "5" } });
   fireEvent.click(form.getByRole("button", { name: "Start an evaluation" }));
   await waitFor(() => {
@@ -127,7 +127,7 @@ it.each([
   expect((await form.findByRole("alert")).textContent).toBe(detail);
 });
 
-it("shows an evaluation's claims beside the handlers' decisions", async () => {
+it("shows an evaluation's cases beside the reviewers' decisions", async () => {
   stubApi({ "GET /api/evaluations/run-9": scored });
   renderAt("/scoreboard/run-9");
   expect(
@@ -142,13 +142,13 @@ it("shows an evaluation's claims beside the handlers' decisions", async () => {
   expect(measures.getByText(/judge cost/).textContent).toContain(
     "Model cost $0.3125 and judge cost $0.0005.",
   );
-  const rows = (await panel("Claims")).getAllByRole("row").slice(1);
+  const rows = (await panel("Cases")).getAllByRole("row").slice(1);
   const [right, held, undecided] = rows.map((row) => within(row));
   expect(right.getByText("Right").className).toBe("chip score-right");
   expect(right.getByText("B").className).toBe("chip grade-B");
   expect(right.getByText("2.20")).toBeDefined();
   const column = (name: string) =>
-    within(screen.getByRole("region", { name: "Claims" }))
+    within(screen.getByRole("region", { name: "Cases" }))
       .getAllByRole("columnheader")
       .findIndex((header) => header.textContent === name);
   const cells = right.getAllByRole("cell");
@@ -164,7 +164,7 @@ it("shows an evaluation's claims beside the handlers' decisions", async () => {
   expect(undecided.getByText("Declined")).toBeDefined();
   expect(undecided.getByText("Miss")).toBeDefined();
   const link = right.getByRole("link", { name: "CLM-1104-E9" });
-  expect(link.getAttribute("href")).toBe("/claims/CLM-1104-E9");
+  expect(link.getAttribute("href")).toBe("/cases/CLM-1104-E9");
 });
 
 it("says when an evaluation doesn't exist", async () => {
@@ -178,9 +178,9 @@ it("says when an evaluation doesn't exist", async () => {
 });
 
 it("shows a copy's evaluation, and no sign-off for a held copy", async () => {
-  const heldCopy: Claim = {
-    ...claim,
-    claim_id: "CLM-1112-E9",
+  const heldCopy: Case = {
+    ...caseRecord,
+    case_id: "CLM-1112-E9",
     status: "waiting_for_sign_off",
     thread_id: "t-1",
     attempts: 1,
@@ -195,7 +195,7 @@ it("shows a copy's evaluation, and no sign-off for a held copy", async () => {
       },
       section: "Section 5",
       reason: "The loss is covered.",
-      decided_by: "UnderCover Agent, version 1",
+      decided_by: "PayrollCheck Agent, version 1",
       decided_at: "2026-10-03T17:03:00+00:00",
       manual_version: "2026.2",
       signed_off_by: null,
@@ -204,12 +204,12 @@ it("shows a copy's evaluation, and no sign-off for a held copy", async () => {
     },
   };
   stubApi({
-    "GET /api/claims/CLM-1112-E9": heldCopy,
-    "GET /api/claims/CLM-1112-E9/steps": [],
+    "GET /api/cases/CLM-1112-E9": heldCopy,
+    "GET /api/cases/CLM-1112-E9/steps": [],
     "GET /api/policies/POL-2002": policy,
-    "GET /api/customers/CUS-3002/claims": history,
+    "GET /api/subcontractors/CUS-3002/cases": history,
   });
-  renderAt("/claims/CLM-1112-E9");
+  renderAt("/cases/CLM-1112-E9");
   const note = await screen.findByText(/A copy of/);
   expect(note.textContent).toBe("A copy of CLM-1112 in an evaluation");
   const link = within(note).getByRole("link", { name: "evaluation" });
@@ -224,7 +224,7 @@ it("shows a copy's evaluation, and no sign-off for a held copy", async () => {
 });
 
 it("links to the Scoreboard from the header", async () => {
-  stubApi({ "GET /api/claims": [summary], "GET /api/dispatches/latest": null });
+  stubApi({ "GET /api/cases": [summary], "GET /api/dispatches/latest": null });
   renderAt("/");
   const link = await screen.findByRole("link", { name: "Scoreboard" });
   expect(link.getAttribute("href")).toBe("/scoreboard");
