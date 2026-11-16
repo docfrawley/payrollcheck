@@ -748,8 +748,19 @@ class Evaluation(RunDetails):
     measures: Measures
 
 
+class Criterion(BaseModel):
+    """One of the success criteria, with its figure and whether it's met."""
+
+    title: str
+    figure: str
+    met: bool
+
+
 class ScoredEvaluation(Evaluation):
     cases: list[ScoredCase]
+    success_criteria: list[Criterion] | None = Field(
+        description="On a whole development-set evaluation, the success criteria"
+    )
 
 
 class Accepted(BaseModel):

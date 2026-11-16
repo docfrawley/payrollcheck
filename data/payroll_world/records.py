@@ -1,12 +1,14 @@
 """A world and its cases as the files seeding loads, and the world's registrations
 as the context layer's registry and apprentice files."""
 
+from collections.abc import Iterable
 from typing import Any
 
 from context.sources import SYNTHETIC
 from data.payroll_world.cases import SeededSet
 from data.payroll_world.corruptions import Label
 from data.payroll_world.lifecycle import Case
+from data.payroll_world.manifest import Decoy
 from data.payroll_world.reference import source
 from data.payroll_world.world import World
 
@@ -136,13 +138,18 @@ def label_record(label: Label) -> dict[str, Any]:
     }
 
 
-def labels_record(seeded: SeededSet) -> dict[str, Any]:
+def labels_record(seeded: SeededSet, decoys: Iterable[Decoy]) -> dict[str, Any]:
     """The ground-truth labels: every exception a perfect review finds, by case,
-    and the cases it flags for a hidden instruction."""
+    the cases it flags for a hidden instruction, and the decoys, clean payrolls
+    that look wrong, each with its kind."""
     return {
         "notice": SYNTHETIC,
         "exceptions": [label_record(label) for label in seeded.labels],
         "screening_flags": list(seeded.screening_flags),
+        "decoys": [
+            {"case_id": decoy.case, "kind": decoy.kind}
+            for decoy in sorted(decoys, key=lambda decoy: decoy.case)
+        ],
     }
 
 

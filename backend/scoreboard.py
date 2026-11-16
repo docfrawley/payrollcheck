@@ -12,6 +12,7 @@ from backend.database import (
     SCREENING,
     case_view,
     cases,
+    decoys,
     exceptions,
     labels,
     model_calls,
@@ -23,6 +24,7 @@ from backend.grading import grades_of, judge_costs
 from backend.lookups import round_numbers
 from backend.models import (
     LABELLED_SET,
+    EvaluationSet,
     ExceptionStatus,
     LabelledSet,
     Measures,
@@ -34,6 +36,7 @@ from backend.models import (
     ScoredEvaluation,
     VersionScores,
 )
+from backend.success_criteria import success_criteria
 from backend.views import to_summary
 
 # The labels of every labelled case, by set and case, the expected screening flags
@@ -239,6 +242,7 @@ def scored_evaluation(
         size=len(scored),
         measures=scoring.measures(scored, model_cost, seconds),
         cases=scored,
+        success_criteria=None,
     )
 
 
@@ -267,6 +271,25 @@ def score_all(
 def score(db: Connection, row: RowMapping, expected: Expected) -> ScoredEvaluation:
     """Score one evaluation, as score_all does."""
     return score_all(db, [row], expected)[0]
+
+
+def decoys_of(db: Connection, labelled_set: LabelledSet) -> dict[str, str]:
+    """A labelled set's decoys, the kind of each by case."""
+    query = select(decoys.c.case_id, decoys.c.kind).where(
+        decoys.c.labelled_set == labelled_set
+    )
+    return {case_id: kind for case_id, kind in db.execute(query)}
+
+
+def with_success_criteria(db: Connection, row: RowMapping) -> ScoredEvaluation:
+    """One evaluation scored, with the success criteria on a finished whole
+    development-set evaluation, where the business measures them."""
+    scored = score(db, row, expected_labels(db))
+    whole = row["evaluation_set"] == EvaluationSet.DEVELOPMENT
+    if not whole or row["status"] != RunStatus.FINISHED:
+        return scored
+    found = success_criteria(scored, decoys_of(db, LabelledSet.DEVELOPMENT))
+    return scored.model_copy(update={"success_criteria": found})
 
 
 def average(measures: list[Measures]) -> Measures | None:

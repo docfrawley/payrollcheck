@@ -313,6 +313,15 @@ labels = Table(
     Column("expected_shortfall_cents", Integer),
 )
 SCREENING = "screening"
+# Each labelled set's decoys, clean payrolls that look wrong, with their kinds,
+# which only the scoring reads, for the success criteria.
+decoys = Table(
+    "decoys",
+    metadata,
+    Column("labelled_set", Text, primary_key=True),
+    Column("case_id", Text, primary_key=True),
+    Column("kind", Text, nullable=False),
+)
 steps = Table(
     "steps",
     metadata,

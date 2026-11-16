@@ -9,7 +9,13 @@ import type {
 } from "../dashboard/src/api";
 import type { Source } from "../dashboard/src/sources";
 import { REVIEWERS, signedInAs } from "./reviewers";
-import { EVALUATIONS, evaluationPath, roundPath, runPath } from "./paths";
+import {
+  EVALUATIONS,
+  evaluationPath,
+  roundEvaluationsPath,
+  roundPath,
+  runPath,
+} from "./paths";
 import { AGENT_KEY_HEADERS, AGENT_STAND_IN } from "./servers";
 
 // Stands in for the agent and its payroll agents, with one function for each
@@ -244,6 +250,15 @@ export const recordRunCases = (
 export const finishRun = (request: Request, runId: string) =>
   send(request, "POST", `${runPath(runId)}/finish`);
 
+// A round's next evaluation, on the set the app chooses, as the agent asks for it.
+export async function createRoundEvaluation(
+  request: Request,
+  roundId: string,
+): Promise<{ run_id: string }> {
+  const response = await send(request, "POST", roundEvaluationsPath(roundId));
+  return (await response.json()) as { run_id: string };
+}
+
 // A round of the improver, started by Dana Whitfield and played out as the
 // agent would record it.
 export async function startRound(request: Request): Promise<string> {
@@ -273,7 +288,10 @@ export async function getRound(
 
 // The first case the round's results hold, as the improver would cite it, or
 // none when they hold none.
-async function citedIn(request: Request, roundId: string): Promise<string[]> {
+export async function citedIn(
+  request: Request,
+  roundId: string,
+): Promise<string[]> {
   const response = await request.get(`${roundPath(roundId)}/results`, {
     headers: AGENT_KEY_HEADERS,
   });

@@ -36,7 +36,7 @@ def test_ten_cases_one_for_each_check_family_a_hidden_instruction_and_a_decoy():
 
 
 def test_the_tiny_labels_are_the_development_labels_for_its_cases():
-    development = labels_record(SEEDED)
+    development = labels_record(SEEDED, MANIFEST.decoys.values())
     cases = TINY["cases"]
     assert TINY["exceptions"] == [
         label for label in development["exceptions"] if label["case_id"] in cases

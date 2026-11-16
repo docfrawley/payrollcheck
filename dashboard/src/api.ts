@@ -320,8 +320,17 @@ export interface Evaluation extends RunDetails {
   measures: Measures;
 }
 
+// One of the success criteria, with its figure and whether it's met.
+export interface Criterion {
+  title: string;
+  figure: string;
+  met: boolean;
+}
+
 export interface ScoredEvaluation extends Evaluation {
   cases: ScoredCase[];
+  // On a whole development-set evaluation, the success criteria.
+  success_criteria: Criterion[] | null;
 }
 
 export interface Accepted {

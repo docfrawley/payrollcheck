@@ -167,6 +167,7 @@ export const scoredEvaluation: ScoredEvaluation = {
   number: 9,
   evaluation_set: "tiny",
   size: 3,
+  success_criteria: null,
   cases: [
     scoredCopy,
     {

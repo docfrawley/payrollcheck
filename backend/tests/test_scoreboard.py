@@ -123,3 +123,19 @@ def test_the_list_takes_as_many_queries_for_three_evaluations_as_for_one(
         fail_run(client, create_evaluation(client, "tiny").json()["run_id"])
     assert len(evaluations(client)) == 3
     assert queries_for_the_list(client) == one
+
+
+def test_a_development_evaluation_shows_the_success_criteria_and_a_tiny_one_none(
+    client, played_out
+):
+    run, *_ = played_out
+    unfinished = create_evaluation(client, "development").json()["run_id"]
+    assert get_evaluation(client, unfinished)["success_criteria"] is None
+    fail_run(client, unfinished)
+    criteria = get_evaluation(client, run["run_id"])["success_criteria"]
+    assert [c["met"] for c in criteria] == [False, False, True, False]
+    assert criteria[2]["figure"] == "2 false exceptions"
+    for other in ("tiny", "held_out"):
+        run_id = create_evaluation(client, other).json()["run_id"]
+        client.post(f"/api/runs/{run_id}/finish")
+        assert get_evaluation(client, run_id)["success_criteria"] is None

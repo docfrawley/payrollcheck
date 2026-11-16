@@ -321,5 +321,47 @@
     "PC-0704",
     "PC-0913",
     "PC-1205"
+  ],
+  "decoys": [
+    {
+      "case_id": "PC-0415",
+      "kind": "no_work_week"
+    },
+    {
+      "case_id": "PC-0501",
+      "kind": "rate_increase_week"
+    },
+    {
+      "case_id": "PC-0702",
+      "kind": "later_determination"
+    },
+    {
+      "case_id": "PC-0803",
+      "kind": "daily_overtime"
+    },
+    {
+      "case_id": "PC-0811",
+      "kind": "saturday_overtime"
+    },
+    {
+      "case_id": "PC-1003",
+      "kind": "cash_in_lieu"
+    },
+    {
+      "case_id": "PC-1102",
+      "kind": "apprentice_at_level"
+    },
+    {
+      "case_id": "PC-1109",
+      "kind": "name_variant"
+    },
+    {
+      "case_id": "PC-1202",
+      "kind": "classification_note"
+    },
+    {
+      "case_id": "PC-1206",
+      "kind": "corrected_resubmission"
+    }
   ]
 }

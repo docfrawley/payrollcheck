@@ -67,10 +67,10 @@ from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
 from backend.scoreboard import (
     cases_of,
     expected_labels,
-    score,
     score_all,
     seconds_between,
     to_run_case,
+    with_success_criteria,
 )
 from backend.stops import stop_runs
 
@@ -438,7 +438,7 @@ def list_evaluations(db: Database) -> list[Evaluation]:
 )
 def get_evaluation(run_id: str, db: Database) -> ScoredEvaluation:
     """Get one evaluation with its measures and its copies beside their labels."""
-    return score(db, evaluation_row(db, run_id), expected_labels(db))
+    return with_success_criteria(db, evaluation_row(db, run_id))
 
 
 @router.post(

@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import {
+  citedIn,
+  createRoundEvaluation,
   createVersion,
+  finishRun,
   getProposal,
   getRound,
   nextStarted,
@@ -44,7 +47,19 @@ test("a change approved on the page reaches the agent, and the round moves on", 
   request,
 }) => {
   const round = await startRound(request);
-  const proposal = await recordChangeProposal(request, round, INSTRUCTIONS);
+  // The round's first evaluation, finished with nothing raised, so its results
+  // hold the development set's misses for the change to cite.
+  const { run_id } = await createRoundEvaluation(request, round);
+  await finishRun(request, run_id);
+  const caseIds = await citedIn(request, round);
+  expect(caseIds).toHaveLength(1);
+  const proposal = await recordChangeProposal(
+    request,
+    round,
+    INSTRUCTIONS,
+    { rounding_tolerance_cents: 2 },
+    caseIds,
+  );
   await page.goto("/");
   await page
     .getByRole("navigation", { name: "Main" })
@@ -56,6 +71,11 @@ test("a change approved on the page reaches the agent, and the round moves on", 
     name: "A change is waiting for approval",
   });
   await expect(waiting.getByText(RULE)).toBeVisible();
+  await expect(
+    waiting.getByText("rounding tolerance", { exact: false }),
+  ).toHaveText("rounding tolerance $0.00 to $0.02");
+  const cited = waiting.getByRole("link", { name: caseIds[0] });
+  await expect(cited).toHaveAttribute("href", `/cases/${caseIds[0]}`);
   await waiting.getByRole("button", { name: "Approve" }).click();
   const dialog = page.getByRole("dialog", { name: "Approve the change?" });
   await dialog.getByRole("button", { name: "Approve the change" }).click();

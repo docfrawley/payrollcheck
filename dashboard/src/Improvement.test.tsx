@@ -159,6 +159,13 @@ it("shows a change waiting and approves that proposal", async () => {
   ).toBeDefined();
   expect(proposal.getByText("openai/gpt-6-luna")).toBeDefined();
   expect(proposal.getByText("google/gemini-3.5-flash-lite")).toBeDefined();
+  expect(proposal.getByText(/rounding tolerance/).textContent).toBe(
+    "rounding tolerance $0.00 to $0.02",
+  );
+  expect(
+    proposal.getByRole("link", { name: "PC-0311" }).getAttribute("href"),
+  ).toBe("/cases/PC-0311");
+  expect(proposal.getByRole("link", { name: "PC-1210" })).toBeDefined();
 
   fireEvent.click(proposal.getByRole("button", { name: "Approve" }));
   expect(sent(fetchMock, APPROVAL)).toHaveLength(0);
@@ -323,9 +330,16 @@ it("lists the rounds with their scores, verdicts, reviews and cost", async () =>
   const cells = within(row).getAllByRole("cell");
   const column = (name: string) =>
     headings.findIndex((heading) => heading.textContent === name);
-  const catchRate = cells[column("Held-out catch rate")];
-  expect(catchRate.textContent).toBe("60% to None");
-  expect(catchRate.className).toContain("num");
+  const scores = within(cells[column("Held-out scores")]);
+  expect(scores.getByText("Catch rate").nextSibling?.textContent).toBe(
+    "60% to None",
+  );
+  expect(scores.getByText("False per 100").nextSibling?.textContent).toBe(
+    "2.0 to None",
+  );
+  expect(scores.getByText("Notice score").nextSibling?.textContent).toBe(
+    "Not graded to None",
+  );
   expect(cells[column("Verdict")].textContent).toBe("Kept catch rate improved");
   const reviews = details.textContent;
   expect(reviews).toContain(

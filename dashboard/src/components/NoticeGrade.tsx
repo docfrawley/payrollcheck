@@ -25,7 +25,7 @@ export function NoticeGrade({
   return (
     <>
       Score <span className="mono">{notice.score.toFixed(2)}</span>
-      <dl className="rubric" aria-label="The judge's points">
+      <dl className="scores" aria-label="The judge's points">
         {POINTS.map(({ point, label }) => (
           <div key={point}>
             <dt>{label}</dt>

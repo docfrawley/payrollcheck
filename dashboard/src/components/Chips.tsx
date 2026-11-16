@@ -91,6 +91,15 @@ export function LabelResultChip({
   );
 }
 
+// Whether a success criterion is met.
+export function MetChip({ met }: Readonly<{ met: boolean }>) {
+  return met ? (
+    <span className="chip score-caught">Met</span>
+  ) : (
+    <span className="chip score-missed">Not met</span>
+  );
+}
+
 // Whether an exception the agent raised matched a label.
 export function MatchedChip({ matched }: Readonly<{ matched: boolean }>) {
   return matched ? (

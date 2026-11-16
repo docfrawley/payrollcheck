@@ -299,6 +299,7 @@ def modules_using(table: str) -> set[str]:
 
 def test_only_seeding_and_scoring_reach_the_labels():
     assert modules_using("labels") == {"seeding", "scoreboard"}
+    assert modules_using("decoys") == {"seeding", "scoreboard"}
     assert "overrides" not in modules_using("labelled_cases")
 
 

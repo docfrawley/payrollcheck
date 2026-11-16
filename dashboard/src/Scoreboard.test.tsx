@@ -314,3 +314,37 @@ it("shows a stopped evaluation as stopped, with no run time", async () => {
   );
   expect(measures.getByText("Stopped by Dana Whitfield")).toBeDefined();
 });
+
+it("shows the success criteria on a development evaluation, and none on a tiny one", async () => {
+  stubApi({
+    "GET /api/evaluations/run-9": {
+      ...scored,
+      evaluation_set: "development",
+      success_criteria: [
+        {
+          title: "At least 41 seeded errors caught",
+          figure: "43 of 45 caught",
+          met: true,
+        },
+        {
+          title: "No more than 5 false exceptions",
+          figure: "6 false exceptions",
+          met: false,
+        },
+      ],
+    },
+  });
+  renderAt("/scoreboard/run-9");
+  const criteria = await panel("Success criteria");
+  const [first, second] = criteria.getAllByRole("listitem");
+  expect(within(first).getByText("Met").className).toBe("chip score-caught");
+  expect(first.textContent).toContain("43 of 45 caught");
+  expect(within(second).getByText("Not met").className).toBe(
+    "chip score-missed",
+  );
+  cleanup();
+  stubApi({ "GET /api/evaluations/run-9": scored });
+  renderAt("/scoreboard/run-9");
+  await panel("Measures");
+  expect(screen.queryByRole("region", { name: "Success criteria" })).toBeNull();
+});
