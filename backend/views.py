@@ -23,6 +23,7 @@ from backend.models import (
     Worker,
 )
 from backend.rule_codes import CHECKS
+from backend.scope import Scope
 
 
 def to_summary(row: RowMapping) -> CaseSummary:
@@ -75,9 +76,9 @@ def notice_of(db: Connection, case_id: str, submission_no: int) -> Notice | None
     return None if row is None else Notice(**row)
 
 
-def case_in_full(db: Connection, case_id: str) -> Case:
+def case_in_full(db: Connection, case_id: str, scope: Scope) -> Case:
     """One case in full, as the API shows it, or raise a 404."""
-    row = find_case(db, case_id)
+    row = find_case(db, case_id, scope)
     found = submissions_of(db, case_id)
     thread_id = row["thread_id"]
     return Case(

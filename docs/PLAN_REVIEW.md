@@ -204,25 +204,25 @@ Success criteria:
 - The Copilot needs no change: its `app_api.py` already sends the reviewer's sign-in.
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_scope.py --no-cov` passes:
+- [x] `uv run pytest backend/tests/test_scope.py --no-cov` passes:
   - **every id route:** for every route the route table lists with a case, project or subcontractor id, Priya gets a 404 with the not-found message for one on PRJ-01, identical to an unknown id's
   - **a new route fails:** a route added with a new id parameter, outside both of the test's lists, fails the test (shown by a test that registers one on a throwaway app)
-- [ ] The queue filters by scope:
+- [x] The queue filters by scope:
   - Marcus's `list_cases` has only PRJ-01 and PRJ-02 cases
   - Priya's only PRJ-03
   - Dana's all 207
   - the agent's key all 207
-- [ ] The other lists filter by scope:
+- [x] The other lists filter by scope:
   - `list_projects`
   - `find_subcontractors` (Priya's has only subcontractors on PRJ-03)
   - `get_subcontractor`'s projects and cases
   - `list_subcontractors`
   - an upload to PRJ-01 as Priya answers 404 "Project PRJ-01 not found"
-- [ ] Evaluation copies are open to every reviewer: Priya opens a copy of a PRJ-01 case and of a held-out case, and neither appears in her queue.
-- [ ] The agent's key reads a case, its history, project and subcontractors on any project, held-out ones included. It's refused with a 403 on Sign off and Send back.
-- [ ] `uv run pytest agent/tests/test_copilot.py --no-cov`: the Copilot, signed in as Marcus, gets not found for PC-1217 (road resurfacing), and that refusal goes back to its model.
-- [ ] vitest: Priya on `/cases/PC-1201` sees the case's not-found page.
-- [ ] `npm run check` green. Reviewed, findings fixed, committed.
+- [x] Evaluation copies are open to every reviewer: Priya opens a copy of a PRJ-01 case and of a held-out case, and neither appears in her queue.
+- [x] The agent's key reads a case, its history, project and subcontractors on any project, held-out ones included. It's refused with a 403 on Sign off and Send back.
+- [x] `uv run pytest agent/tests/test_copilot.py --no-cov`: the Copilot, signed in as Marcus, gets not found for PC-1217 (road resurfacing), and that refusal goes back to its model.
+- [x] vitest: Priya on `/cases/PC-1201` sees the case's not-found page.
+- [x] `npm run check` green. Reviewed, findings fixed, committed.
 
 ### Phase 3: overrides and the sign-off rule
 

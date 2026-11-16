@@ -260,8 +260,8 @@ test.describe("signed in as Marcus Oyelaran", () => {
   test.use({ storageState: REVIEWERS.marcus.storage });
 
   test("any reviewer can sign off a case", async ({ page, request }) => {
-    await checkClean(request, "PC-1222");
-    await page.goto("/cases/PC-1222");
+    await checkClean(request, "PC-1207");
+    await page.goto("/cases/PC-1207");
     await expect(
       page.getByLabel("Signed in").getByText("Marcus Oyelaran"),
     ).toBeVisible();

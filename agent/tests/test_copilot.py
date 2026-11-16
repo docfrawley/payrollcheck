@@ -429,3 +429,18 @@ def test_a_sign_in_that_runs_out_partway_leaves_the_turn_for_the_app_to_stop(
     [card] = turn["steps"]
     assert (turn["status"], card["status"]) == ("working", "working")
     assert len(copilot.model.prompts) == 1
+
+
+def test_a_case_outside_the_reviewers_projects_isnt_found(copilot: Copilot):
+    """Marcus's sign-in sees only his projects: PC-1217 is on the road
+    resurfacing, Priya's, so the app answers as if it didn't exist."""
+    copilot.model = stub(call("get_case", case_id="PC-1217"), "I can't find it.")
+    [turn] = copilot.ask("What's on PC-1217?", email=MARCUS)["turns"]
+    [card] = turn["steps"]
+    assert (card["tool"], card["status"], card["reason"]) == (
+        "get_case",
+        "refused",
+        "Case PC-1217 not found",
+    )
+    refusal = copilot.model.prompts[1][-1]
+    assert refusal.text == "Refused: Case PC-1217 not found"

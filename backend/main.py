@@ -31,7 +31,6 @@ from backend.dependencies import (
     Database,
     ReviewerOrAgent,
     SignedIn,
-    SignedInReviewer,
 )
 from backend.history import payroll_history
 from backend.improvement import router as improvement
@@ -61,6 +60,7 @@ from backend.projects import router as projects
 from backend.reports import record_report
 from backend.round_state import round_row, why_no_case_starts
 from backend.runs import router as runs
+from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
 from backend.seeding import seed
 from backend.steps import add_step
 from backend.subcontractors import router as subcontractors_router
@@ -110,8 +110,8 @@ def move_case(
 
 
 def in_progress(db: Connection, case_id: str) -> RowMapping:
-    """A case's row if it is in progress, or raise a 404 or a 409."""
-    case = find_case(db, case_id)
+    """A case's row if it is in progress, for the agent, or raise a 404 or a 409."""
+    case = find_case(db, case_id, EVERYTHING)
     if case["status"] != Status.IN_PROGRESS:
         raise HTTPException(409, NOT_IN_PROGRESS.format(case_id=case_id))
     return case
@@ -124,10 +124,12 @@ def move_on(db: Connection, case_id: str, new: Status, **columns: Any) -> None:
         raise HTTPException(409, NOT_IN_PROGRESS.format(case_id=case_id))
 
 
-def awaiting_review(db: Connection, case_id: str, answered: str) -> RowMapping:
+def awaiting_review(
+    db: Connection, case_id: str, scope: Scope, answered: str
+) -> RowMapping:
     """A case a reviewer can answer: its row, or raise a 404, or a 409 for an
     evaluation's copy, which nobody answers, or a case not awaiting review."""
-    case = find_case(db, case_id)
+    case = find_case(db, case_id, scope)
     if case["evaluation_id"] is not None:
         raise HTTPException(409, A_COPY.format(case_id=case_id, answered=answered))
     if case["status"] != Status.AWAITING_REVIEW:
@@ -135,7 +137,9 @@ def awaiting_review(db: Connection, case_id: str, answered: str) -> RowMapping:
     return case
 
 
-def review(db: Connection, case_id: str, outcome: Status, reviewer: Reviewer) -> Case:
+def review(
+    db: Connection, case_id: str, outcome: Status, reviewer: Reviewer, scope: Scope
+) -> Case:
     """Move a case awaiting review to the reviewer's outcome, for the first of two
     answers at the same moment, or raise a 409."""
     decided = move_case(
@@ -148,12 +152,12 @@ def review(db: Connection, case_id: str, outcome: Status, reviewer: Reviewer) ->
     )
     if not decided:
         raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
-    return case_in_full(db, case_id)
+    return case_in_full(db, case_id, scope)
 
 
 def started_thread(db: Connection, case_id: str) -> str:
     """Return the thread of a case that has been started, or raise a 404 or a 409."""
-    thread_id = find_case(db, case_id)["thread_id"]
+    thread_id = find_case(db, case_id, EVERYTHING)["thread_id"]
     if thread_id is None:
         raise HTTPException(409, NOT_STARTED.format(case_id=case_id))
     return thread_id
@@ -182,30 +186,26 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/cases", operation_id="list_cases", dependencies=[ReviewerOrAgent])
-def list_cases(db: Database) -> list[CaseSummary]:
-    """List every case in the queue, in id order, leaving out evaluations' copies."""
-    query = case_view.where(cases.c.evaluation_id.is_(None))
+@app.get("/api/cases", operation_id="list_cases")
+def list_cases(db: Database, scope: ScopedOrAgent) -> list[CaseSummary]:
+    """List the cases in the queue in scope, in id order, leaving out the copies."""
+    query = case_view.where(cases.c.evaluation_id.is_(None), cases_in(scope))
     rows = db.execute(query.order_by(cases.c.case_id)).mappings()
     return [to_summary(row) for row in rows]
 
 
-@app.get(
-    "/api/cases/{case_id}", operation_id="get_case", dependencies=[ReviewerOrAgent]
-)
-def get_case(case_id: str, db: Database) -> Case:
+@app.get("/api/cases/{case_id}", operation_id="get_case")
+def get_case(case_id: str, db: Database, scope: ScopedOrAgent) -> Case:
     """Get a case in full: its submissions, workers, exceptions, findings and notice."""
-    return case_in_full(db, case_id)
+    return case_in_full(db, case_id, scope)
 
 
-@app.get(
-    "/api/cases/{case_id}/history",
-    operation_id="get_payroll_history",
-    dependencies=[ReviewerOrAgent],
-)
-def get_payroll_history(case_id: str, db: Database) -> PayrollHistory:
+@app.get("/api/cases/{case_id}/history", operation_id="get_payroll_history")
+def get_payroll_history(
+    case_id: str, db: Database, scope: ScopedOrAgent
+) -> PayrollHistory:
     """Get the earlier weeks' payrolls of record of the case's subcontractor."""
-    return payroll_history(db, find_case(db, case_id))
+    return payroll_history(db, find_case(db, case_id, scope))
 
 
 @app.get(
@@ -229,7 +229,7 @@ def get_signed_in_reviewer(reviewer: SignedIn) -> Reviewer:
 )
 def start_case(case_id: str, request: StartRequest, db: Database) -> Case:
     """Start work on a Received case, which moves it to In progress, only once."""
-    case = find_case(db, case_id)
+    case = find_case(db, case_id, EVERYTHING)
     if case["evaluation_id"]:
         refuse_a_round_that_cant_go_on(db, case["evaluation_id"])
     started = move_case(
@@ -242,7 +242,7 @@ def start_case(case_id: str, request: StartRequest, db: Database) -> Case:
     )
     if not started:
         raise HTTPException(409, NOT_RECEIVED.format(case_id=case_id))
-    return case_in_full(db, case_id)
+    return case_in_full(db, case_id, EVERYTHING)
 
 
 @app.post(
@@ -302,14 +302,10 @@ def record_work_time(case_id: str, request: WorkTimeRequest, db: Database) -> Wo
     return WorkTime(**db.execute(query).mappings().one())
 
 
-@app.get(
-    "/api/cases/{case_id}/steps",
-    operation_id="list_steps",
-    dependencies=[SignedInReviewer],
-)
-def list_steps(case_id: str, db: Database) -> list[Step]:
+@app.get("/api/cases/{case_id}/steps", operation_id="list_steps")
+def list_steps(case_id: str, db: Database, scope: Scoped) -> list[Step]:
     """List the steps of the agent's work on a case, in order."""
-    find_case(db, case_id)
+    find_case(db, case_id, scope)
     query = select(steps).where(steps.c.case_id == case_id).order_by(steps.c.step_id)
     return [Step(**row) for row in db.execute(query).mappings()]
 
@@ -343,7 +339,7 @@ def record_screening_flag(
         screening_flag=True,
         screening_reason=request.reason,
     )
-    return case_in_full(db, case_id)
+    return case_in_full(db, case_id, EVERYTHING)
 
 
 @app.post(
@@ -358,7 +354,7 @@ def record_exception_report(
     case = in_progress(db, case_id)
     move_on(db, case_id, Status.AWAITING_REVIEW)
     record_report(db, case, request)
-    return case_in_full(db, case_id)
+    return case_in_full(db, case_id, EVERYTHING)
 
 
 @app.post(
@@ -373,13 +369,15 @@ def fail_case(case_id: str, request: FailureRequest, db: Database) -> Case:
         move_on(db, case_id, Status.RECEIVED)
     error = NewStep(kind="error", content=request.reason, sources=[])
     add_step(db, case_id, case["thread_id"], error)
-    return case_in_full(db, case_id)
+    return case_in_full(db, case_id, EVERYTHING)
 
 
 @app.post("/api/cases/{case_id}/sign-off", operation_id="sign_off_case")
-def sign_off_case(case_id: str, reviewer: SignedIn, db: Database) -> Case:
+def sign_off_case(
+    case_id: str, reviewer: SignedIn, scope: Scoped, db: Database
+) -> Case:
     """Sign off a case awaiting review with no open exceptions, which accepts it."""
-    case = awaiting_review(db, case_id, "signed off")
+    case = awaiting_review(db, case_id, scope, "signed off")
     query = select(func.count()).where(
         exceptions.c.case_id == case_id,
         exceptions.c.submission_no == case["latest_submission_no"],
@@ -392,14 +390,16 @@ def sign_off_case(case_id: str, reviewer: SignedIn, db: Database) -> Case:
             case_id=case_id, count=still_open, exceptions=exceptions_
         )
         raise HTTPException(409, message)
-    return review(db, case_id, Status.ACCEPTED, reviewer)
+    return review(db, case_id, Status.ACCEPTED, reviewer, scope)
 
 
 @app.post("/api/cases/{case_id}/send-back", operation_id="send_back_case")
-def send_back_case(case_id: str, reviewer: SignedIn, db: Database) -> Case:
+def send_back_case(
+    case_id: str, reviewer: SignedIn, scope: Scoped, db: Database
+) -> Case:
     """Send a case awaiting review back to its subcontractor, as Returned to sub."""
-    awaiting_review(db, case_id, "sent back")
-    return review(db, case_id, Status.RETURNED_TO_SUB, reviewer)
+    awaiting_review(db, case_id, scope, "sent back")
+    return review(db, case_id, Status.RETURNED_TO_SUB, reviewer, scope)
 
 
 # After every route, so the dashboard's build only answers what no route does.

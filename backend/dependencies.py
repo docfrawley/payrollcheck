@@ -104,14 +104,15 @@ def reviewer_or_agent(
         HTTPAuthorizationCredentials | None, Depends(optional_bearer)
     ],
     db: Database,
-) -> None:
-    """Let through a request with the agent's key or a signed-in reviewer's token, and
-    refuse one with neither with a 401."""
+) -> Reviewer | None:
+    """Let through a request with the agent's key, returning no reviewer, or a
+    signed-in reviewer's token, returning the reviewer, and refuse one with neither
+    with a 401."""
     if api_key.is_the_agents(key):
-        return
+        return None
     if credentials is None:
         raise HTTPException(401, NEEDS_A_SIGN_IN_OR_THE_KEY, headers=BEARER_CHALLENGE)
-    reviewer_with(credentials.credentials, db)
+    return reviewer_with(credentials.credentials, db)
 
 
 # The gates of the routes that don't take the reviewer as a parameter, for a
@@ -122,6 +123,10 @@ AgentKey = Depends(the_agent)
 ReviewerOrAgent = Depends(reviewer_or_agent)
 SignedInReviewer = Depends(signed_in_reviewer)
 SignedIn = Annotated[Reviewer, Depends(signed_in_reviewer)]
+# Who is calling a route both the dashboard and the agent call, for a route that
+# needs to know: the reviewer signed in, or none for the agent. A route that only
+# needs the gate takes ReviewerOrAgent.
+Caller = Annotated[Reviewer | None, Depends(reviewer_or_agent)]
 # The signed-in reviewer's own token, for a route that passes it on to the Copilot.
 SignIn = Annotated[str, Depends(sign_in_of)]
 
