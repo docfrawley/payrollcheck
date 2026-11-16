@@ -14,6 +14,7 @@ from agent.tests.stubs import agent_on
 from backend.dependencies import API_KEY_HEADER
 from backend.main import app
 from backend.tests.run_requests import create_dispatch, create_evaluation
+from backend.tests.sign_in import DANA
 
 
 @contextmanager
@@ -25,11 +26,11 @@ def the_app() -> Iterator[TestClient]:
         yield caller
 
 
-def new_dispatch(agents=3):
+def new_dispatch(agents=3, email=DANA):
     """Start a dispatch as a reviewer does, which the app creates, and return it as
     the agent reads it."""
     with the_app() as caller:
-        return create_dispatch(caller, agents).json()
+        return create_dispatch(caller, agents, email).json()
 
 
 def new_evaluation(evaluation_set="tiny", agents=5):
@@ -39,9 +40,10 @@ def new_evaluation(evaluation_set="tiny", agents=5):
         return create_evaluation(caller, evaluation_set, agents).json()
 
 
-def dispatch(model, saver=None, agents=3):
-    """Work a new dispatch with payroll graphs on the model, which share a saver as
-    they share the database in the agent, and return its report lines."""
+def dispatch(model, saver=None, agents=3, email=DANA):
+    """Work a new dispatch, started by the reviewer with this email, with payroll
+    graphs on the model, which share a saver as they share the database in the
+    agent, and return its report lines."""
     saver = saver or InMemorySaver()
     work = partial(harness.work_in_run, new_agent=partial(agent_on, model, saver))
-    return dispatcher.work_run(new_dispatch(agents), work)
+    return dispatcher.work_run(new_dispatch(agents, email), work)

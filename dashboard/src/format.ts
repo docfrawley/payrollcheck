@@ -3,13 +3,12 @@ import type {
   RoundStage,
   RoundStatus,
   RoundSummary,
-  ExceptionStatus,
   RunStatus,
-  Severity,
   Status,
   Verdict,
   VersionStatus,
 } from "./api";
+import type { ExceptionStatus, OverrideKind, Severity } from "./exceptions";
 import type { Source } from "./sources";
 
 const dollars = new Intl.NumberFormat("en-US", {
@@ -133,6 +132,12 @@ export const exceptionStatusLabels: Record<ExceptionStatus, string> = {
   superseded: "Superseded",
 };
 
+export const overrideLabels: Record<OverrideKind, string> = {
+  dismissed: "Dismissed",
+  added: "Added",
+  restored: "Restored",
+};
+
 export const severityLabels: Record<Severity, string> = {
   high: "High",
   medium: "Medium",
@@ -207,4 +212,12 @@ export const evaluationSetLabels: Record<EvaluationSet, string> = {
 
 export function evaluationSetName(set: EvaluationSet, size: number): string {
   return `${evaluationSetLabels[set]}, ${String(size)} ${size === 1 ? "payroll" : "payrolls"}`;
+}
+
+// A shortfall typed in dollars, in whole cents, or undefined for one that
+// isn't an amount above zero.
+export function shortfallInCents(dollars: string): number | undefined {
+  if (!/^\d+(\.\d{1,2})?$/.test(dollars.trim())) return undefined;
+  const amount = Math.round(Number(dollars) * 100);
+  return amount > 0 ? amount : undefined;
 }

@@ -2308,3 +2308,129 @@ fieldset.panel legend + * {
     transition: none;
   }
 }
+
+/* Who overrode an exception, when and why, under it. */
+.override-log {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.override-log .small {
+  color: var(--muted);
+}
+
+/* Dismiss or Restore under an exception, on its own inset. */
+.exception > .button,
+.exception > .reason-form {
+  margin-top: 10px;
+}
+
+.exception > .button {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+/* The fields of an exception a reviewer adds, one under another. */
+.add-exception {
+  display: grid;
+  gap: 4px 12px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+}
+
+.add-exception label {
+  font-size: 0.87rem;
+}
+
+.add-exception select,
+.add-exception input,
+.add-exception textarea {
+  font: inherit;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: var(--inset);
+  color: var(--ink);
+}
+
+@container (max-width: 520px) {
+  .add-exception {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The notice to the subcontractor, edited in place. */
+.notice-editor {
+  display: grid;
+  gap: 6px;
+}
+
+.notice-editor label {
+  font-size: 0.87rem;
+  color: var(--muted);
+}
+
+.notice-editor textarea {
+  font: inherit;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--inset);
+  color: var(--ink);
+  resize: vertical;
+  max-width: 75ch;
+}
+
+/* A notice sent to the subcontractor, as the email it would be. */
+.email {
+  background: var(--inset);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.email + .email {
+  margin-top: 12px;
+}
+
+.email-head {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 0 0 8px;
+}
+
+.email-head div {
+  display: contents;
+}
+
+.email-head dt {
+  color: var(--muted);
+  font-size: 0.87rem;
+}
+
+.email-head dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.email .notice {
+  background: var(--panel);
+}
+
+.email details {
+  margin-top: 8px;
+}
+
+/* A submission's exceptions, under its heading, the latest first. */
+.exception-group + .exception-group {
+  margin-top: 16px;
+}
+
+.exception-group h3 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}

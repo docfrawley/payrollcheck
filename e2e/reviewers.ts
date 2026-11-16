@@ -19,6 +19,12 @@ export const REVIEWERS = {
     email: "marcus.oyelaran@payrollcheck.example",
     storage: "e2e/.auth/marcus.json",
   },
+  priya: {
+    reviewer_id: "HND-03",
+    name: "Priya Raman",
+    email: "priya.raman@payrollcheck.example",
+    storage: "e2e/.auth/priya.json",
+  },
 };
 
 // Signs a reviewer in through the Auth stand-in, as the dashboard does, and

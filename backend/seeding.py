@@ -24,6 +24,7 @@ from backend.database import (
     models_allowed,
     now,
     on_postgres,
+    project_reviewers,
     projects,
     recipes,
     reviewers,
@@ -57,6 +58,8 @@ LABEL_FILES = {
     LabelledSet.DEVELOPMENT: "evals/development_labels.json",
     LabelledSet.HELD_OUT: "evals/held_out_labels.json",
 }
+# What reviewers.json says for a person who reviews every project.
+ALL_PROJECTS = "all"
 TINY_LABELS = "evals/tiny_labels.json"
 PAYROLLS = "payrolls"
 # The statuses the generator writes, as the app keeps them.
@@ -350,6 +353,27 @@ def seed_first_version(connection: Connection) -> None:
     )
 
 
+def reviewer_row(person: dict[str, Any]) -> dict[str, Any]:
+    """A reviewer's row, without the projects they review."""
+    return {key: value for key, value in person.items() if key != "projects"}
+
+
+def seed_assignments(
+    connection: Connection, people: list[dict[str, Any]], world: World
+) -> None:
+    """Who reviews which of our projects: the projects each person lists, or every
+    one for ALL_PROJECTS."""
+    ours = [project["project_id"] for project in world.world["projects"]]
+    rows = [
+        {"reviewer_id": person["reviewer_id"], "project_id": project_id}
+        for person in people
+        for project_id in (
+            ours if person["projects"] == ALL_PROJECTS else person["projects"]
+        )
+    ]
+    connection.execute(insert(project_reviewers), rows)
+
+
 def rebuild(connection: Connection, on_postgres_: bool) -> None:
     """Drop every table, of this version and earlier ones, and make them afresh."""
     if on_postgres_:
@@ -372,9 +396,10 @@ def seed(db: Engine) -> dict[str, int]:
         rebuild(connection, on_postgres(db.url))
         seed_settings(connection, development.world["business_date"])
         seed_models_allowed(connection)
-        connection.execute(insert(reviewers), people)
+        connection.execute(insert(reviewers), [reviewer_row(r) for r in people])
         seed_records(connection, development)
         seed_records(connection, held_out)
+        seed_assignments(connection, people, development)
         queue = seed_queue(connection, development)
         found = seed_labelled_set(connection, development, LabelledSet.DEVELOPMENT)
         held = seed_labelled_set(connection, held_out, LabelledSet.HELD_OUT)

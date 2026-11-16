@@ -21,11 +21,16 @@ from agent.routes import Route
 SEARCH_MEMORY = "search_memory"
 # A search needs a word to look for.
 Words = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+# How many payroll agents a start the reviewer didn't size works at once, as the
+# queue page first offers. The settings' number is the improver's, which only the
+# compliance manager reads.
+FIRST_CHOICE = 3
 Agents = Annotated[
-    int | None,
+    int,
     Field(
-        description="How many payroll agents work at once, or null for the number in "
-        "our settings"
+        description="How many payroll agents work at once, from 1 to 25",
+        ge=1,
+        le=25,
     ),
 ]
 
@@ -98,13 +103,6 @@ def get_settings(runtime: ToolRuntime[CopilotContext]) -> str:
     return as_json(app_api.get_settings(sign_in_of(runtime)))
 
 
-def agents_or_settings(sign_in: str, agents: int | None) -> int:
-    """The payroll agents the reviewer asked for, or the number in our settings."""
-    if agents is not None:
-        return agents
-    return app_api.get_settings(sign_in)["current"]["agents"]
-
-
 def started(run: dict[str, Any]) -> str:
     """What the model is told of a run it started: its id and number."""
     return as_json({"run_id": run["run_id"], "number": run["number"]})
@@ -124,10 +122,11 @@ def wait_for_run(run_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
 
 
 @tool
-def start_dispatch(agents: Agents, runtime: ToolRuntime[CopilotContext]) -> str:
+def start_dispatch(
+    runtime: ToolRuntime[CopilotContext], agents: Agents = FIRST_CHOICE
+) -> str:
     """Start a dispatch of the queue with the payroll agents at once given."""
-    sign_in = sign_in_of(runtime)
-    return started(app_api.start_dispatch(sign_in, agents_or_settings(sign_in, agents)))
+    return started(app_api.start_dispatch(sign_in_of(runtime), agents))
 
 
 @tool
@@ -136,14 +135,11 @@ def start_evaluation(
         EvaluationSet,
         "The development set, the held-out set, or the development set's tiny cases",
     ],
-    agents: Agents,
     runtime: ToolRuntime[CopilotContext],
+    agents: Agents = FIRST_CHOICE,
 ) -> str:
     """Start an evaluation of one of our labelled sets, or the tiny set."""
-    sign_in = sign_in_of(runtime)
-    run = app_api.start_evaluation(
-        sign_in, evaluation_set, agents_or_settings(sign_in, agents)
-    )
+    run = app_api.start_evaluation(sign_in_of(runtime), evaluation_set, agents)
     return started(run)
 
 

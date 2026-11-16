@@ -22,7 +22,7 @@ from backend.database import (
     run_cases,
     runs,
 )
-from backend.dependencies import AgentKey, Database, ReviewerOrAgent, SignedInReviewer
+from backend.dependencies import AgentKey, Database, SignedInReviewer
 from backend.lookups import (
     CASE_NOT_FOUND,
     RUN_NOT_FOUND,
@@ -61,10 +61,10 @@ from backend.round_state import (
     tried_version,
     why_no_case_starts,
 )
+from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
 from backend.scoreboard import (
     cases_of,
     expected_labels,
-    model_cost_of,
     score,
     score_all,
     seconds_between,
@@ -80,16 +80,43 @@ UNFINISHED = {Status.IN_PROGRESS, Status.RECEIVED}
 router = APIRouter()
 
 
-def find_run(db: Connection, run_id: str) -> Run:
-    """Return one run with its cases, its model cost and its time, or raise a 404."""
+def find_run(db: Connection, run_id: str, scope: Scope) -> Run:
+    """Return one run as its caller may see it, or raise a 404: the run's cases in
+    their scope, with those cases' model cost, the summary of them, and how many it
+    worked on other projects. Its time is the run's own, from start to finish. The
+    agent's key and the compliance manager see the whole run."""
     row = run_row(db, run_id)
-    return Run(
-        **row,
-        model_cost=model_cost_of(db, run_id),
-        seconds=seconds_between(row["started_at"], row["finished_at"]),
-        round_number=round_number(db, row["round_id"]),
-        cases=[to_run_case(case) for case in cases_of(db, run_id)],
+    worked = cases_of(db, run_id)
+    in_scope = set(
+        db.execute(
+            select(run_cases.c.case_id)
+            .join(cases, cases.c.case_id == run_cases.c.case_id)
+            .where(run_cases.c.run_id == run_id, cases_in(scope))
+        ).scalars()
     )
+    seen = [case for case in worked if case["case_id"] in in_scope]
+    return Run.model_validate(
+        dict(row)
+        | {
+            "summary": summary_in_scope(row["summary"], seen),
+            # Every model call is a case's, so its cases' costs add up to the run's.
+            "model_cost": sum(case["model_cost"] for case in seen),
+            "seconds": seconds_between(row["started_at"], row["finished_at"]),
+            "round_number": round_number(db, row["round_id"]),
+            "cases": [to_run_case(case) for case in seen],
+            "other_projects": len(worked) - len(seen),
+        }
+    )
+
+
+def summary_in_scope(
+    summary: dict[str, list[str]] | None, seen: list[RowMapping]
+) -> dict[str, list[str]] | None:
+    """A dispatch's summary, of the cases its caller sees."""
+    if summary is None:
+        return None
+    ids = {case["case_id"] for case in seen}
+    return {part: [c for c in cases if c in ids] for part, cases in summary.items()}
 
 
 def running_run(db: Connection, run_id: str) -> RowMapping:
@@ -161,7 +188,7 @@ def evaluation_of(db: Connection, fields: dict[str, Any], version: RowMapping) -
     """Record a new evaluation on a version, with a Received copy of each case."""
     row = new_run(db, RunKind.EVALUATION, fields, version)
     put_cases(db, row["run_id"], make_copies(db, row))
-    return find_run(db, row["run_id"])
+    return find_run(db, row["run_id"], EVERYTHING)
 
 
 def set_size(db: Connection, evaluation_set: EvaluationSet) -> int:
@@ -295,7 +322,7 @@ def record_run_cases(run_id: str, request: RunCasesRequest, db: Database) -> Run
     if missing:
         raise HTTPException(404, CASE_NOT_FOUND.format(case_id=min(missing)))
     put_cases(db, run_id, request.case_ids)
-    return find_run(db, run_id)
+    return find_run(db, run_id, EVERYTHING)
 
 
 @router.post(
@@ -305,7 +332,7 @@ def finish_run(run_id: str, db: Database) -> Run:
     """Finish a run: a dispatch gets its summary, an evaluation its finish or a stop."""
     row = run_row(db, run_id)
     if row["status"] == RunStatus.STOPPED:
-        return find_run(db, run_id)
+        return find_run(db, run_id, EVERYTHING)
     if row["status"] != RunStatus.RUNNING:
         raise HTTPException(409, NOT_RUNNING.format(run_id=run_id))
     if row["kind"] == RunKind.DISPATCH:
@@ -314,15 +341,13 @@ def finish_run(run_id: str, db: Database) -> Run:
         end_cut_short(db, row, because)
     else:
         mark_finished(db, run_id, None)
-    return find_run(db, run_id)
+    return find_run(db, run_id, EVERYTHING)
 
 
-@router.get(
-    "/api/runs/{run_id}", operation_id="get_run", dependencies=[ReviewerOrAgent]
-)
-def get_run(run_id: str, db: Database) -> Run:
+@router.get("/api/runs/{run_id}", operation_id="get_run")
+def get_run(run_id: str, db: Database, scope: ScopedOrAgent) -> Run:
     """Get a run with its cases, for the agent to work it or a reviewer to follow it."""
-    return find_run(db, run_id)
+    return find_run(db, run_id, scope)
 
 
 @router.post(
@@ -334,7 +359,7 @@ def record_run_heartbeat(run_id: str, db: Database) -> Run:
     """Record that the agent is still working a run."""
     run_row(db, run_id)
     db.execute(update(runs).where(runs.c.run_id == run_id).values(heard_at=now()))
-    return find_run(db, run_id)
+    return find_run(db, run_id, EVERYTHING)
 
 
 @router.post(
@@ -344,7 +369,7 @@ def fail_run(run_id: str, request: FailureRequest, db: Database) -> Run:
     """Stop a run whose work failed, with what went wrong, if it's still running."""
     run_row(db, run_id)
     stop_runs(db, request.reason, runs.c.run_id == run_id)
-    return find_run(db, run_id)
+    return find_run(db, run_id, EVERYTHING)
 
 
 def ask_to_work(db: Connection, run_id: str) -> None:
@@ -357,12 +382,8 @@ def ask_to_work(db: Connection, run_id: str) -> None:
     )
 
 
-@router.get(
-    "/api/dispatches/latest",
-    operation_id="get_latest_dispatch",
-    dependencies=[SignedInReviewer],
-)
-def get_latest_dispatch(db: Database) -> Run | None:
+@router.get("/api/dispatches/latest", operation_id="get_latest_dispatch")
+def get_latest_dispatch(db: Database, scope: Scoped) -> Run | None:
     """Get the newest dispatch with its cases, cost, time and summary, or nothing."""
     query = (
         select(runs.c.run_id)
@@ -371,7 +392,7 @@ def get_latest_dispatch(db: Database) -> Run | None:
         .limit(1)
     )
     run_id = db.execute(query).scalar_one_or_none()
-    return None if run_id is None else find_run(db, run_id)
+    return None if run_id is None else find_run(db, run_id, scope)
 
 
 @router.post(

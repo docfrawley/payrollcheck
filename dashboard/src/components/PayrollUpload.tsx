@@ -6,7 +6,8 @@ import { statusLabels } from "../format";
 import { CaseLink } from "./CaseLink";
 
 // Uploads a subcontractor's payroll CSV to the project on their behalf, which
-// creates its Received case, or shows why the app refused it.
+// creates its Received case, or reopens the case a correction is for, or
+// shows why the app refused it.
 export function PayrollUpload({
   project,
 }: Readonly<{ project: ProjectInFull }>) {
@@ -14,13 +15,13 @@ export function PayrollUpload({
     project.subcontractors.at(0)?.subcontractor_id ?? "",
   );
   const [file, setFile] = useState<File>();
-  const [created, setCreated] = useState<Case>();
+  const [uploaded, setUploaded] = useState<Case>();
 
   async function upload() {
     if (!file) return;
-    setCreated(undefined);
+    setUploaded(undefined);
     const content = await file.text();
-    setCreated(
+    setUploaded(
       await api.uploadPayroll(
         project.project_id,
         subcontractorId,
@@ -72,10 +73,10 @@ export function PayrollUpload({
           />
         </label>
       </ActionForm>
-      {created && (
+      {uploaded && (
         <p role="status">
-          Uploaded as <CaseLink caseId={created.case_id} />,{" "}
-          {statusLabels[created.status]}.
+          Uploaded as <CaseLink caseId={uploaded.case_id} />,{" "}
+          {statusLabels[uploaded.status]}.
         </p>
       )}
     </section>

@@ -1,21 +1,27 @@
 import { expect, test } from "@playwright/test";
 import { recordCheckFindings, recordExceptionReport, startCase } from "./api";
+import { REVIEWERS } from "./reviewers";
 import { AGENT_KEY_HEADERS } from "./servers";
 
-// A reviewer sends a case with an open exception back to its subcontractor on
-// the case page, which returns it to the sub with its exception still open and
-// its notice drafted.
+// A reviewer edits the agent's draft notice on the case page and sends the case
+// back with it, which returns it to the sub with its exception still open and
+// shows the notice as the email the outbox recorded.
 
 const NOTICE = "Please pay Kim Dimitrov the base rate in the determination.";
+const EDITED = `${NOTICE} Line 1 is $2.00 an hour short.`;
+// The subcontractor's payroll contact, at an example domain.
+const SUBCONTRACTORS_CONTACT = /^payroll@.*\.example$/;
 
-test("a case with an exception is sent back to the subcontractor", async ({
+test.use({ storageState: REVIEWERS.marcus.storage });
+
+test("Marcus edits the notice and sends the case back with it", async ({
   page,
   request,
 }) => {
-  await startCase(request, "PC-1224", "e2e-8");
+  await startCase(request, "PC-1215", "e2e-8");
   const [candidate] = await recordCheckFindings(
     request,
-    "PC-1224",
+    "PC-1215",
     "check_rates",
     [
       {
@@ -29,23 +35,27 @@ test("a case with an exception is sent back to the subcontractor", async ({
       },
     ],
   );
-  await recordExceptionReport(request, "PC-1224", {
+  await recordExceptionReport(request, "PC-1215", {
     raised: [candidate.candidate_id],
     notice: NOTICE,
   });
   // The agent's key never takes a reviewer's actions.
-  const byTheAgent = await request.post("/api/cases/PC-1224/send-back", {
+  const byTheAgent = await request.post("/api/cases/PC-1215/send-back", {
     headers: AGENT_KEY_HEADERS,
   });
   expect(byTheAgent.ok()).toBe(false);
 
-  await page.goto("/cases/PC-1224");
+  await page.goto("/cases/PC-1215");
   const heading = page.locator(".page-header");
   await expect(heading.getByText("Awaiting review")).toBeVisible();
-  const review = page.getByRole("region", { name: "Review" });
-  await review.getByRole("button", { name: "Send back" }).click();
+  const notice = page.getByRole("region", { name: "Send-back notice" });
+  const text = notice.getByLabel("The notice to the subcontractor");
+  await expect(text).toHaveValue(NOTICE);
+  await text.fill(EDITED);
+  await notice.getByRole("button", { name: "Send back" }).click();
 
   await expect(heading.getByText("Returned to sub")).toBeVisible();
+  const review = page.getByRole("region", { name: "Review" });
   await expect(
     review.getByText(/^Sent back to the subcontractor on /),
   ).toBeVisible();
@@ -55,12 +65,14 @@ test("a case with an exception is sent back to the subcontractor", async ({
       .getByRole("region", { name: "Exceptions" })
       .getByText("Open, submission 1"),
   ).toBeVisible();
-  await expect(
-    page.getByRole("region", { name: "Send-back notice" }).getByText(NOTICE),
-  ).toBeVisible();
+  const email = page.getByRole("region", { name: "Sent to the subcontractor" });
+  await expect(email.getByText(SUBCONTRACTORS_CONTACT)).toBeVisible();
+  await expect(email.getByText(/^Certified payroll PC-1215, /)).toBeVisible();
+  await expect(email.getByText(/^Marcus Oyelaran </)).toBeVisible();
+  await expect(email.getByText(EDITED)).toBeVisible();
 
   await page.goto("/");
   await expect(
-    page.getByRole("row", { name: /PC-1224/ }).getByText("Returned to sub"),
+    page.getByRole("row", { name: /PC-1215/ }).getByText("Returned to sub"),
   ).toBeVisible();
 });

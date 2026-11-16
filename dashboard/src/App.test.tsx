@@ -4,6 +4,7 @@ import { TRY_AGAIN } from "./components/StateMessage";
 import {
   Refusal,
   caseRecord,
+  priya,
   renderAt,
   sent,
   stubApi,
@@ -107,6 +108,17 @@ it("says when a case doesn't exist, and stops asking for it", async () => {
   await vi.advanceTimersByTimeAsync(5000);
   expect(sent(fetchMock, "GET /api/cases/PC-9999")).toHaveLength(1);
   vi.useRealTimers();
+});
+
+it("shows a case outside the reviewer's projects as not found, as the backend answers", async () => {
+  stubApi({
+    "GET /api/me": priya,
+    "GET /api/cases/PC-1201": new Refusal(404, "Case PC-1201 not found"),
+  });
+  renderAt("/cases/PC-1201");
+  expect(
+    await screen.findByText("Case not found. Choose one from the queue."),
+  ).toBeDefined();
 });
 
 it("shows other errors loading a case", async () => {

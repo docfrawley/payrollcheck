@@ -65,10 +65,15 @@ function DispatchDetails({ dispatch }: Readonly<{ dispatch: Run }>) {
           The next dispatch carries on its cases.
         </p>
       )}
-      {dispatch.cases.length > 0 ? (
-        <RunCases cases={dispatch.cases} />
-      ) : (
+      {dispatch.cases.length > 0 && <RunCases cases={dispatch.cases} />}
+      {dispatch.cases.length === 0 && dispatch.other_projects === 0 && (
         <StateMessage empty="No cases in this dispatch: the queue had none Received or in progress when it started." />
+      )}
+      {dispatch.other_projects > 0 && (
+        <p className="muted">
+          {dispatch.cases.length > 0 ? "And " : ""}
+          {casesOnOtherProjects(dispatch.other_projects)}.
+        </p>
       )}
       {dispatch.summary && <Summary summary={dispatch.summary} />}
     </>
@@ -163,4 +168,8 @@ function CaseLine({
       ))}
     </li>
   );
+}
+
+function casesOnOtherProjects(count: number): string {
+  return `${String(count)} ${count === 1 ? "case" : "cases"} on other projects`;
 }

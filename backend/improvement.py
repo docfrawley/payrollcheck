@@ -27,7 +27,6 @@ from backend.database import (
 from backend.dependencies import (
     AgentKey,
     Database,
-    SignedInReviewer,
     compliance_manager,
 )
 from backend.diffs import diff
@@ -110,6 +109,7 @@ NOT_WAITING = "Proposal {proposal_id} isn't waiting for a reviewer: it was {revi
 
 router = APIRouter()
 
+SeesRounds = Depends(compliance_manager("see the improver's rounds and recipes"))
 StartsRounds = Annotated[Reviewer, Depends(compliance_manager("start a round"))]
 StopsRounds = Annotated[Reviewer, Depends(compliance_manager("stop a round"))]
 REVIEWING = "approve or reject the improver's proposals"
@@ -868,7 +868,7 @@ def finish_round(round_id: str, db: Database) -> RoundForTheAgent:
 
 
 @router.get(
-    "/api/improvement", operation_id="get_improvement", dependencies=[SignedInReviewer]
+    "/api/improvement", operation_id="get_improvement", dependencies=[SeesRounds]
 )
 def get_improvement(db: Database) -> Improvement:
     """Get the open or newest round in full, every round, and the recipe's versions."""
@@ -878,7 +878,7 @@ def get_improvement(db: Database) -> Improvement:
 @router.get(
     "/api/improvement/recipes/{number}",
     operation_id="get_recipe",
-    dependencies=[SignedInReviewer],
+    dependencies=[SeesRounds],
 )
 def get_recipe(number: int, db: Database) -> RecipeDetails:
     """Get one version of the improver's recipe, with its diff from the one before."""

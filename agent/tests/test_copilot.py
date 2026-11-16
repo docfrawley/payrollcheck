@@ -69,12 +69,12 @@ def test_the_model_knows_who_it_works_for(copilot: Copilot):
     copilot.ask("Hello")
     [system, *_] = copilot.model.prompts[0]
     assert isinstance(system, SystemMessage)
-    assert "You work for Dana Whitfield, Compliance Manager," in system.text
+    assert "You work for Dana Whitfield, the compliance manager," in system.text
     assert "You never sign off a case or send one back" in system.text
     copilot.model = stub("Hello, Marcus.")
     copilot.ask("Hello", email=MARCUS)
     [system, *_] = copilot.model.prompts[0]
-    assert "You work for Marcus Oyelaran, Reviewer," in system.text
+    assert "You work for Marcus Oyelaran, a compliance reviewer," in system.text
 
 
 def test_a_refusal_goes_back_to_the_model(copilot: Copilot):
@@ -102,17 +102,17 @@ def run_started(client, copilot: Copilot) -> dict:
     return run
 
 
-def test_starts_with_the_agents_asked_for_or_the_settings(client, copilot: Copilot):
+def test_starts_with_the_agents_asked_for_or_three(client, copilot: Copilot):
     copilot.model = stub(call("start_dispatch", agents=10), "Started.")
     copilot.ask("Work the queue with 10 agents")
     run = run_started(client, copilot)
     assert (run["kind"], run["agents"]) == ("dispatch", 10)
-    copilot.model = stub(call("start_dispatch", agents=None), "Started.")
-    copilot.ask("Work the queue")
-    assert run_started(client, copilot)["agents"] == 25
+    copilot.model = stub(call("start_dispatch"), "Started.")
+    copilot.ask("Work the queue", email=MARCUS)
+    assert run_started(client, copilot)["agents"] == 3
     for evaluation_set in ("development", "held_out", "tiny"):
         copilot.model = stub(
-            call("start_evaluation", evaluation_set=evaluation_set, agents=None),
+            call("start_evaluation", evaluation_set=evaluation_set),
             "Started.",
         )
         copilot.ask(f"Evaluate the {evaluation_set} set")
@@ -120,7 +120,7 @@ def test_starts_with_the_agents_asked_for_or_the_settings(client, copilot: Copil
         assert (run["kind"], run["evaluation_set"], run["agents"]) == (
             "evaluation",
             evaluation_set,
-            25,
+            3,
         )
 
 
@@ -128,7 +128,7 @@ def test_an_evaluation_of_no_such_set_goes_back_to_the_model(copilot: Copilot):
     [start_evaluation] = [t for t in COPILOT_TOOLS if t.name == "start_evaluation"]
     assert set(start_evaluation.args) == {"evaluation_set", "agents"}
     copilot.model = stub(
-        call("start_evaluation", evaluation_set="everything", agents=None),
+        call("start_evaluation", evaluation_set="everything", agents=3),
         "Which set?",
     )
     [turn] = copilot.ask("Evaluate everything")["turns"]
@@ -429,3 +429,18 @@ def test_a_sign_in_that_runs_out_partway_leaves_the_turn_for_the_app_to_stop(
     [card] = turn["steps"]
     assert (turn["status"], card["status"]) == ("working", "working")
     assert len(copilot.model.prompts) == 1
+
+
+def test_a_case_outside_the_reviewers_projects_isnt_found(copilot: Copilot):
+    """Marcus's sign-in sees only his projects: PC-1217 is on the road
+    resurfacing, Priya's, so the app answers as if it didn't exist."""
+    copilot.model = stub(call("get_case", case_id="PC-1217"), "I can't find it.")
+    [turn] = copilot.ask("What's on PC-1217?", email=MARCUS)["turns"]
+    [card] = turn["steps"]
+    assert (card["tool"], card["status"], card["reason"]) == (
+        "get_case",
+        "refused",
+        "Case PC-1217 not found",
+    )
+    refusal = copilot.model.prompts[1][-1]
+    assert refusal.text == "Refused: Case PC-1217 not found"

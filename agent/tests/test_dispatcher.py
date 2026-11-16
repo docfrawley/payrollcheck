@@ -22,6 +22,8 @@ from backend.tests.case_requests import sign_off
 from backend.tests.dashboard_reads import steps_of
 from backend.tests.rows import run_heard
 from backend.tests.run_requests import latest_dispatch
+from backend.tests.sign_in import DANA, MARCUS, PRIYA, signed_in
+from backend.tests.uploads import seeded_payroll, upload
 
 
 def tries_on(model, case_id):
@@ -272,3 +274,64 @@ def test_a_dispatch_with_nothing_to_work_finishes(client):
     finished = latest_dispatch(client)
     assert (finished["status"], finished["cases"]) == ("finished", [])
     assert finished["summary"]["unfinished"] == []
+
+
+def test_a_reopened_case_is_worked_afresh_on_a_new_thread(client):
+    """A correction uploaded after the agent's report puts the case back as a first
+    attempt, which the next dispatch starts on a thread of its own, never carrying
+    the old one on."""
+    leave_received("PC-1206")
+    dispatch(stub(*work()))
+    first = case_of(client, "PC-1206")
+    assert (first["status"], first["attempts"]) == ("awaiting_review", 1)
+    reopened = upload(client, "PRJ-01", "SUB-06", seeded_payroll("PC-1206"))
+    assert reopened.json()["status"] == "received"
+    dispatch(stub(*work()))
+    again = case_of(client, "PC-1206")
+    assert (again["status"], again["attempts"], again["latest_submission_no"]) == (
+        "awaiting_review",
+        1,
+        first["latest_submission_no"] + 1,
+    )
+    assert again["thread_id"] not in (None, first["thread_id"])
+    screenings = [s for s in steps_of(client, "PC-1206") if s["kind"] == "screening"]
+    assert [s["thread_id"] for s in screenings] == [
+        first["thread_id"],
+        again["thread_id"],
+    ]
+
+
+def test_a_dispatch_marcus_starts_works_the_whole_queue_and_shows_him_his_own(
+    client,
+):
+    """The week-12 wave's 22 Received cases are on all three projects; Marcus sees
+    his two projects' cases, with their cost and time, and a count of the rest."""
+    received = [
+        line["case_id"]
+        for line in client.get("/api/cases").json()
+        if line["status"] == "received"
+    ]
+    assert len(received) == 22
+    lines = dispatch(swarm({case_id: work() for case_id in received}), email=MARCUS)
+    assert len(lines) == 22
+    mine = read_as(client, MARCUS)
+    whole = read_as(client, DANA)
+    assert len(whole["cases"]) == 22
+    assert whole["other_projects"] == 0
+    road = {c["case_id"] for c in whole["cases"] if c["project_id"] == "PRJ-03"}
+    assert {c["project_id"] for c in mine["cases"]} == {"PRJ-01", "PRJ-02"}
+    assert mine["other_projects"] == len(road) > 0
+    assert len(mine["cases"]) + mine["other_projects"] == 22
+    assert mine["model_cost"] == pytest.approx(
+        sum(c["model_cost"] for c in mine["cases"])
+    )
+    assert all(c["seconds"] > 0 for c in mine["cases"])
+    summary = mine["summary"]
+    assert road.isdisjoint(case for part in summary.values() for case in part)
+    run = client.get(f"/api/runs/{mine['run_id']}", headers=signed_in(PRIYA)).json()
+    assert {c["project_id"] for c in run["cases"]} == {"PRJ-03"}
+    assert run["other_projects"] == 22 - len(road)
+
+
+def read_as(client, email):
+    return client.get("/api/dispatches/latest", headers=signed_in(email)).json()

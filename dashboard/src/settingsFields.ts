@@ -140,7 +140,7 @@ export function fromInput(unit: Unit, input: string): number {
 }
 
 // A setting as the page shows it, with its unit.
-export function shown(unit: Unit, value: number): string {
+function shown(unit: Unit, value: number): string {
   if (unit === "dollars") return money(value);
   if (unit === "percent") return `${toInput(unit, value)}%`;
   return String(value);

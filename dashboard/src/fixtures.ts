@@ -42,6 +42,7 @@ export const runningDispatch: Run = {
   seconds: null,
   summary: null,
   model_cost: 0.0125,
+  other_projects: 0,
   cases: [
     {
       ...waitingInRun,

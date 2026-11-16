@@ -104,22 +104,22 @@ test("a recipe rejected on the page records its reason and reaches the agent", a
   });
 });
 
-test.describe("signed in as Marcus Oyelaran", () => {
-  test.use({ storageState: REVIEWERS.marcus.storage });
+test.describe("signed in as Priya Raman", () => {
+  test.use({ storageState: REVIEWERS.priya.storage });
 
-  test("a proposal waiting shows no buttons", async ({ page, request }) => {
+  test("the Improvement page is the compliance manager's", async ({
+    page,
+    request,
+  }) => {
     const round = await startRound(request);
     await recordChangeProposal(request, round, INSTRUCTIONS);
     await page.goto("/improvement");
-    const waiting = page.getByRole("region", {
-      name: "A change is waiting for approval",
-    });
-    await expect(waiting.getByText(RULE)).toBeVisible();
     await expect(
-      waiting.getByText(
-        "Only the compliance manager can approve or reject the improver's proposals. Marcus Oyelaran can't.",
+      page.getByText(
+        "Only the compliance manager can see the improver's rounds and recipes. Priya Raman can't.",
       ),
     ).toBeVisible();
-    await expect(waiting.getByRole("button")).toHaveCount(0);
+    await expect(page.getByText(RULE)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
   });
 });

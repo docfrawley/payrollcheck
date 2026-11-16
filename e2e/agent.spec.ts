@@ -240,28 +240,45 @@ test("a clean case is signed off on the dashboard, which accepts it", async ({
   await expect(review.getByRole("button")).toHaveCount(0);
 });
 
-test("a sign-off is refused while an exception is open, with the reason", async ({
-  page,
-  request,
-}) => {
-  await checkWithAnException(request, "PC-1221");
-  await page.goto("/cases/PC-1221");
-  const review = page.getByRole("region", { name: "Review" });
-  await review.getByRole("button", { name: "Sign off" }).click();
-  await expect(review.getByRole("alert")).toHaveText(
-    /^Case PC-1221 has 1 open exception/,
-  );
-  await expect(
-    page.locator(".page-header").getByText("Awaiting review"),
-  ).toBeVisible();
-});
-
 test.describe("signed in as Marcus Oyelaran", () => {
   test.use({ storageState: REVIEWERS.marcus.storage });
 
+  test("a reviewer dismisses an exception with a reason, then signs off", async ({
+    page,
+    request,
+  }) => {
+    await checkWithAnException(request, "PC-1213");
+    await page.goto("/cases/PC-1213");
+    const review = page.getByRole("region", { name: "Review" });
+    const signOff = review.getByRole("button", { name: "Sign off" });
+    await expect(signOff).toHaveAttribute("aria-disabled", "true");
+    await expect(
+      review.getByText(
+        "Sign off waits until nothing is open: dismiss the open exception with a reason first.",
+      ),
+    ).toBeVisible();
+    const exception = page
+      .getByRole("region", { name: "Exceptions" })
+      .getByRole("listitem")
+      .first();
+    await exception.getByRole("button", { name: "Dismiss" }).click();
+    await exception
+      .getByLabel("Why dismiss it?")
+      .fill("Paid in full on the corrected check");
+    await exception.getByRole("button", { name: "Dismiss" }).click();
+    await expect(
+      exception.getByRole("list", { name: "Overrides" }),
+    ).toContainText("Dismissed by Marcus Oyelaran");
+    await expect(signOff).toHaveAttribute("aria-disabled", "false");
+    await signOff.click();
+    await expect(
+      page.locator(".page-header").getByText("Accepted"),
+    ).toBeVisible();
+  });
+
   test("any reviewer can sign off a case", async ({ page, request }) => {
-    await checkClean(request, "PC-1222");
-    await page.goto("/cases/PC-1222");
+    await checkClean(request, "PC-1207");
+    await page.goto("/cases/PC-1207");
     await expect(
       page.getByLabel("Signed in").getByText("Marcus Oyelaran"),
     ).toBeVisible();

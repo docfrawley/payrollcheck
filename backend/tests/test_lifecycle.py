@@ -44,7 +44,7 @@ def test_a_start_moves_a_received_case_in_progress_once(client):
 def test_two_starts_that_both_read_it_received_start_it_once(client, monkeypatch):
     as_read = committed_case(CASE)
     assert start(client, CASE).status_code == 200
-    monkeypatch.setattr(main, "find_case", lambda db, case_id: as_read)
+    monkeypatch.setattr(main, "find_case", lambda db, case_id, scope: as_read)
     assert start(client, CASE, thread_id="t-2").status_code == 409
     started = committed_case(CASE)
     assert (started["thread_id"], started["attempts"]) == ("t-1", 1)
@@ -136,8 +136,8 @@ def test_sign_off_is_refused_while_an_exception_is_open(dashboard, client):
     refused = sign_off(dashboard, CASE)
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        "Case PC-1201 has 1 open exception, so it can't be signed off: send it "
-        "back to its subcontractor",
+        "Case PC-1201 has 1 open exception, so it can't be signed off: dismiss "
+        "each with a reason, or send it back to its subcontractor",
     )
     assert committed_case(CASE)["status"] == "awaiting_review"
 
@@ -176,7 +176,7 @@ def test_two_sign_offs_at_once_accept_the_case_once(dashboard, client, monkeypat
     awaiting_review(client, CASE)
     as_read = committed_case(CASE)
     assert sign_off(dashboard, CASE).status_code == 200
-    monkeypatch.setattr(main, "find_case", lambda db, case_id: as_read)
+    monkeypatch.setattr(main, "find_case", lambda db, case_id, scope: as_read)
     second = sign_off(dashboard, CASE)
     assert (second.status_code, second.json()["detail"]) == (
         409,

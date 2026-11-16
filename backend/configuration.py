@@ -43,6 +43,7 @@ router = APIRouter()
 # reasoning. No version, proposal or setting changes it.
 SCREENING_MODEL = ("openai/gpt-6-luna", "none")
 
+SeesTheSettings = Depends(compliance_manager("see the settings"))
 ChangesTheSettings = Annotated[
     Reviewer, Depends(compliance_manager("change the settings"))
 ]
@@ -144,7 +145,7 @@ def get_version_details(number: int, db: Database) -> VersionDetails:
 
 
 @router.get(
-    "/api/settings", operation_id="get_settings", dependencies=[SignedInReviewer]
+    "/api/settings", operation_id="get_settings", dependencies=[SeesTheSettings]
 )
 def get_settings(db: Database) -> SettingsPage:
     """Get the settings in force, every change with who made it, and the models."""

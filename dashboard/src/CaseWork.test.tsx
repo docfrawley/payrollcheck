@@ -22,7 +22,6 @@ import { dateTime } from "./format";
 import {
   Refusal,
   caseRecord,
-  marcus,
   panel,
   sent,
   submission,
@@ -271,13 +270,24 @@ it("shows an exception on a worker with no line, and medium and low severities",
 it("says when a case has no exceptions and no notice", async () => {
   showCase(clean);
   expect((await panel("Exceptions")).getByText("No exceptions.")).toBeDefined();
+  const notice = await panel("Send-back notice");
   expect(
-    (await panel("Send-back notice")).getByText("No notice drafted."),
-  ).toBeDefined();
+    notice.getByLabelText("The notice to the subcontractor"),
+  ).toHaveProperty("value", "");
+  expect(
+    notice
+      .getByRole("button", { name: "Send back" })
+      .getAttribute("aria-disabled"),
+  ).toBe("true");
   expect(
     (await reviewPanel()).getByText(
       "The payroll agent has checked this payroll and it's waiting for a reviewer.",
     ),
+  ).toBeDefined();
+  cleanup();
+  showCase({ ...clean, status: "accepted" });
+  expect(
+    (await panel("Send-back notice")).getByText("No notice drafted."),
   ).toBeDefined();
 });
 
@@ -419,33 +429,25 @@ it("lets a reviewer sign off a clean case, which accepts it", async () => {
   expect((await panel("Case")).getByText("HND-01")).toBeDefined();
 });
 
-it("lets any reviewer send a case back to the subcontractor", async () => {
-  const { routes, fetchMock } = showCase(awaiting);
-  routes["GET /api/me"] = marcus;
+it("keeps Sign off disabled while an exception is open", async () => {
+  const { fetchMock } = showCase(awaiting);
   const review = await reviewPanel();
-  const returned: Case = {
-    ...awaiting,
-    status: "returned_to_sub",
-    reviewed_by: "HND-02",
-    reviewed_on: "2026-11-23",
-  };
-  routes["POST /api/cases/PC-1201/send-back"] = returned;
-  routes["GET /api/cases/PC-1201"] = returned;
-  fireEvent.click(await review.findByRole("button", { name: "Send back" }));
-
+  const signOff = review.getByRole("button", { name: "Sign off" });
+  expect(signOff.getAttribute("aria-disabled")).toBe("true");
   expect(
-    await review.findByText("Sent back to the subcontractor on Nov 23, 2026."),
+    review.getByText(
+      "Sign off waits until nothing is open: dismiss the 2 open exceptions with a reason first.",
+    ),
   ).toBeDefined();
-  expect(sent(fetchMock, "POST /api/cases/PC-1201/send-back")).toEqual([
-    undefined,
-  ]);
+  fireEvent.click(signOff);
+  expect(sent(fetchMock, "POST /api/cases/PC-1201/sign-off")).toHaveLength(0);
 });
 
 it("shows why a sign-off was refused", async () => {
-  const { routes } = showCase(awaiting);
+  const { routes } = showCase(clean);
   const review = await reviewPanel();
   const refused =
-    "Case PC-1201 has 2 open exceptions, so it can't be signed off: send it back to its subcontractor";
+    "Case PC-1201 has 1 open exception, so it can't be signed off: dismiss each with a reason, or send it back to its subcontractor";
   routes["POST /api/cases/PC-1201/sign-off"] = new Refusal(409, refused);
   fireEvent.click(review.getByRole("button", { name: "Sign off" }));
   expect((await review.findByRole("alert")).textContent).toBe(refused);

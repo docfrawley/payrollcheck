@@ -1,5 +1,13 @@
 import { freshAccessToken } from "./auth";
 import { post, request, send } from "./connection";
+import type {
+  ExceptionRecord,
+  NewException,
+  Override,
+  RuleEntry,
+  Severity,
+} from "./exceptions";
+import type { Notice, OutboxRecord } from "./notices";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
 
@@ -12,11 +20,6 @@ export const statuses = [
   "returned_to_sub",
 ] as const;
 export type Status = (typeof statuses)[number];
-export type Severity = "high" | "medium" | "low";
-export type ExceptionStatus = "open" | "dismissed" | "superseded";
-// What raised an exception: a check tool's finding, the payroll agent's own
-// judgment with no check behind it, or a reviewer.
-export type ExceptionSource = "check" | "agent" | "reviewer";
 export type StepKind =
   | "screening"
   // A check tool's findings, which the app records itself.
@@ -99,24 +102,6 @@ export interface Worker {
 }
 
 // One rule breach found in a submission.
-export interface ExceptionRecord {
-  exception_id: number;
-  submission_no: number;
-  rule: string;
-  severity: Severity;
-  worker_id: string | null;
-  line_no: number | null;
-  expected: string;
-  actual: string;
-  shortfall_cents: number | null;
-  citation: string;
-  raised_by: string;
-  source: ExceptionSource;
-  // The check's finding it raises.
-  candidate_id: number | null;
-  status: ExceptionStatus;
-}
-
 // A check tool's finding on the current attempt.
 export interface Candidate {
   candidate_id: number;
@@ -131,13 +116,6 @@ export interface Candidate {
   shortfall_cents: number | null;
   citation: string;
   dismissed_because: string | null;
-}
-
-export interface Notice {
-  submission_no: number;
-  draft: string;
-  drafted_by: string;
-  drafted_at: string;
 }
 
 export interface Case extends CaseSummary {
@@ -160,6 +138,10 @@ export interface Case extends CaseSummary {
   checks_run: string[];
   // The latest submission's draft.
   notice: Notice | null;
+  // Oldest first.
+  overrides: Override[];
+  // Newest first.
+  sent_notices: OutboxRecord[];
 }
 
 export interface Project {
@@ -186,12 +168,13 @@ export interface ProjectInFull extends Project {
   subcontractors: Engagement[];
 }
 
+export type Role = "reviewer" | "compliance_manager";
+
 export interface Reviewer {
   reviewer_id: string;
   name: string;
-  role: string;
+  role: Role;
   email: string;
-  can_approve_over_limit: boolean;
 }
 
 export interface Step {
@@ -250,7 +233,10 @@ export interface RunDetails {
 export interface Run extends RunDetails {
   evaluation_set: EvaluationSet | null;
   summary: DispatchSummary | null;
+  // Those in the reviewer's scope.
   cases: RunCase[];
+  // Its cases on projects outside the reviewer's scope.
+  other_projects: number;
 }
 
 export interface Measures {
@@ -518,6 +504,8 @@ const askTheCopilot = (path: string, body: object) =>
 
 const CASES = "/api/cases";
 const casePath = (caseId: string) => `${CASES}/${encodeURIComponent(caseId)}`;
+const exceptionPath = (caseId: string, exceptionId: number) =>
+  `${casePath(caseId)}/exceptions/${String(exceptionId)}`;
 const PROJECTS = "/api/projects";
 const projectPath = (projectId: string) =>
   `${PROJECTS}/${encodeURIComponent(projectId)}`;
@@ -571,6 +559,15 @@ export const api = {
     post<Accepted>(EVALUATIONS, { evaluation_set: evaluationSet, agents }),
   signOffCase: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
   sendBackCase: (caseId: string) => post<Case>(`${casePath(caseId)}/send-back`),
+  saveNotice: (caseId: string, text: string) =>
+    send<Case>("PUT", `${casePath(caseId)}/notice`, { text }),
+  listRules: () => request<RuleEntry[]>("/api/rules"),
+  dismissException: (caseId: string, exceptionId: number, reason: string) =>
+    post<Case>(`${exceptionPath(caseId, exceptionId)}/dismissal`, { reason }),
+  restoreException: (caseId: string, exceptionId: number, reason: string) =>
+    post<Case>(`${exceptionPath(caseId, exceptionId)}/restoration`, { reason }),
+  addException: (caseId: string, exception: NewException) =>
+    post<Case>(`${casePath(caseId)}/exceptions`, exception),
   getImprovement: () => request<Improvement>(IMPROVEMENT),
   getRecipe: (number: string) =>
     request<RecipeDetails>(

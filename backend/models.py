@@ -22,6 +22,14 @@ class Status(StrEnum):
     RETURNED_TO_SUB = "returned_to_sub"
 
 
+class Role(StrEnum):
+    """What a person may do: a reviewer works the cases on their own projects, and
+    the compliance manager every project, the improver's rounds and the settings."""
+
+    REVIEWER = "reviewer"
+    COMPLIANCE_MANAGER = "compliance_manager"
+
+
 class ExceptionSource(StrEnum):
     """What raised an exception: a check tool's finding, the payroll agent's own
     judgment with no check behind it, or a reviewer."""
@@ -35,6 +43,15 @@ class ExceptionStatus(StrEnum):
     OPEN = "open"
     DISMISSED = "dismissed"
     SUPERSEDED = "superseded"
+
+
+class OverrideKind(StrEnum):
+    """A reviewer's correction of an exception report: an exception dismissed, one
+    added, or a dismissal undone."""
+
+    DISMISSED = "dismissed"
+    ADDED = "added"
+    RESTORED = "restored"
 
 
 class RunKind(StrEnum):
@@ -265,11 +282,79 @@ class ExceptionRecord(BaseModel):
     status: ExceptionStatus
 
 
-class Notice(BaseModel):
+class Override(BaseModel):
+    """A reviewer's override of an exception, never edited or deleted."""
+
+    override_id: int
+    exception_id: int
     submission_no: int
-    draft: str
-    drafted_by: str
-    drafted_at: str
+    kind: OverrideKind
+    reviewer_id: str
+    reviewer_name: str
+    reason: str
+    created_at: str
+
+
+class OverrideRequest(BaseModel):
+    reason: Text = Field(description="Why, for the log")
+
+
+class NewException(BaseModel):
+    """An exception a reviewer adds: a rule from the catalogue, the worker and line
+    for a worker's rule, the shortfall in cents for a rule that carries money, and
+    why."""
+
+    rule: RuleCode
+    worker_id: str | None
+    line_no: int | None
+    expected: Text
+    actual: Text
+    shortfall_cents: int | None
+    reason: Text
+
+
+class RuleEntry(BaseModel):
+    """A rule of the catalogue, as the dashboard's form to add an exception offers
+    it."""
+
+    rule: RuleCode
+    check: CheckName
+    severity: Severity
+    money: bool
+    worker: bool = Field(description="Found on a worker's line, not the payroll")
+
+
+class Notice(BaseModel):
+    """A submission's send-back notice: the agent's draft, if it wrote one, and the
+    reviewer's edit, both kept, and who sent it and when."""
+
+    submission_no: int
+    draft: str | None
+    drafted_by: str | None
+    drafted_at: str | None
+    edited_text: str | None
+    edited_by: str | None
+    edited_at: str | None
+    sent_by: str | None
+    sent_at: str | None
+
+
+class NoticeRequest(BaseModel):
+    text: Text = Field(description="The notice to the subcontractor, as edited")
+
+
+class OutboxRecord(BaseModel):
+    """A notice sent to a subcontractor's payroll contact, with the agent's draft of
+    it, if it wrote one."""
+
+    outbox_id: int
+    submission_no: int
+    to_address: str
+    subject: str
+    body: str
+    sent_by: str
+    sent_at: str
+    draft: str | None
 
 
 class CaseSummary(BaseModel):
@@ -301,6 +386,8 @@ class Case(CaseSummary):
     candidates: list[Candidate] = Field(description="The current attempt's")
     checks_run: list[CheckName] = Field(description="By the current attempt")
     notice: Notice | None = Field(description="The latest submission's draft")
+    overrides: list[Override] = Field(description="Oldest first")
+    sent_notices: list[OutboxRecord] = Field(description="Newest first")
 
 
 class UploadRequest(BaseModel):
@@ -329,9 +416,8 @@ class PayrollHistory(BaseModel):
 class Reviewer(BaseModel):
     reviewer_id: str
     name: str
-    role: str
+    role: Role
     email: str
-    can_approve_over_limit: bool
 
 
 class Source(BaseModel):
@@ -532,7 +618,8 @@ class RunDetails(BaseModel):
 class Run(RunDetails):
     evaluation_set: EvaluationSet | None
     summary: DispatchSummary | None
-    cases: list[RunCase]
+    cases: list[RunCase] = Field(description="Those in the caller's scope")
+    other_projects: int = Field(description="Its cases on projects outside the scope")
 
 
 class StartEvaluationRequest(StartDispatchRequest):

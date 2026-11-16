@@ -25,17 +25,22 @@ export class Refusal {
 const dana: Reviewer = {
   reviewer_id: "HND-01",
   name: "Dana Whitfield",
-  role: "Compliance Manager",
+  role: "compliance_manager",
   email: "dana.whitfield@payrollcheck.example",
-  can_approve_over_limit: true,
 };
 
 export const marcus: Reviewer = {
   reviewer_id: "HND-02",
   name: "Marcus Oyelaran",
-  role: "Reviewer",
+  role: "reviewer",
   email: "marcus.oyelaran@payrollcheck.example",
-  can_approve_over_limit: false,
+};
+
+export const priya: Reviewer = {
+  reviewer_id: "HND-03",
+  name: "Priya Raman",
+  role: "reviewer",
+  email: "priya.raman@payrollcheck.example",
 };
 
 const startingSettings: Settings = {
@@ -205,4 +210,6 @@ export const caseRecord: Case = {
   candidates: [],
   checks_run: [],
   notice: null,
+  overrides: [],
+  sent_notices: [],
 };

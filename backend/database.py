@@ -71,7 +71,14 @@ reviewers = Table(
     Column("name", Text, nullable=False),
     Column("role", Text, nullable=False),
     Column("email", Text, nullable=False, unique=True),
-    Column("can_approve_over_limit", Boolean, nullable=False),
+)
+# The projects each reviewer reviews, which make their scope: every project for the
+# compliance manager.
+project_reviewers = Table(
+    "project_reviewers",
+    metadata,
+    Column("reviewer_id", Text, ForeignKey("reviewers.reviewer_id"), primary_key=True),
+    Column("project_id", Text, ForeignKey("projects.project_id"), primary_key=True),
 )
 projects = Table(
     "projects",
@@ -227,34 +234,55 @@ exceptions = Table(
     Column("candidate_id", Integer, ForeignKey("candidates.candidate_id")),
     Column("status", Text, nullable=False),
 )
-# A reviewer's dismissal or addition of an exception. Stage 4 fills it.
+# A reviewer's dismissal, addition or restoring of an exception, never edited or
+# deleted, read by date for the improver.
 overrides = Table(
     "overrides",
     metadata,
     Column("override_id", Integer, primary_key=True),
-    Column("exception_id", Integer, ForeignKey("exceptions.exception_id")),
+    Column(
+        "exception_id",
+        Integer,
+        ForeignKey("exceptions.exception_id"),
+        nullable=False,
+    ),
     Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
     Column("submission_no", Integer, nullable=False),
     Column("kind", Text, nullable=False),
     Column("reviewer_id", Text, ForeignKey("reviewers.reviewer_id"), nullable=False),
     Column("reason", Text, nullable=False),
-    Column("created_at", Text, nullable=False),
+    Column("created_at", Text, nullable=False, index=True),
 )
-# Each submission's send-back notice: the agent's draft, and from stage 4 the
-# reviewer's edit and who sent it.
+# Each submission's send-back notice: the agent's draft, if it wrote one, the
+# reviewer's edit, both kept, and who sent it and when.
 notices = Table(
     "notices",
     metadata,
     Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
     Column("submission_no", Integer, primary_key=True, autoincrement=False),
-    Column("draft", Text, nullable=False),
-    Column("drafted_by", Text, nullable=False),
-    Column("drafted_at", Text, nullable=False),
+    Column("draft", Text),
+    Column("drafted_by", Text),
+    Column("drafted_at", Text),
     Column("edited_text", Text),
     Column("edited_by", Text),
     Column("edited_at", Text),
     Column("sent_by", Text),
     Column("sent_at", Text),
+)
+# Each notice sent to a subcontractor, one for each submission: no real email is
+# sent, and this is the record of it.
+outbox = Table(
+    "outbox",
+    metadata,
+    Column("outbox_id", Integer, primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
+    Column("submission_no", Integer, nullable=False),
+    Column("to_address", Text, nullable=False),
+    Column("subject", Text, nullable=False),
+    Column("body", Text, nullable=False),
+    Column("sent_by", Text, nullable=False),
+    Column("sent_at", Text, nullable=False),
+    UniqueConstraint("case_id", "submission_no"),
 )
 # The labelled sets' cases, out of the queue, with their submissions as the
 # generator wrote them, and their labels: the answer key only scoring reads.

@@ -1,7 +1,8 @@
 // A case as the backend gives it to the case page, with its exceptions, its
 // notice and the agent's steps, for the page's tests.
 
-import type { Case, ExceptionRecord, Step } from "./api";
+import type { Case, Step } from "./api";
+import type { ExceptionRecord } from "./exceptions";
 import type { Source } from "./sources";
 import { caseRecord, panel, renderAt, type Routes, stubApi } from "./testing";
 
@@ -64,6 +65,15 @@ export const unsigned: ExceptionRecord = {
   candidate_id: 4,
 };
 
+// A notice nobody has edited or sent.
+const notEdited = {
+  edited_text: null,
+  edited_by: null,
+  edited_at: null,
+  sent_by: null,
+  sent_at: null,
+};
+
 // A case the agent checked, with two open exceptions and its draft notice.
 export const awaiting: Case = {
   ...caseRecord,
@@ -79,6 +89,7 @@ export const awaiting: Case = {
     draft: "Please correct Kim Dimitrov's base rate and sign the payroll.",
     drafted_by: "PayrollCheck Agent, version 1",
     drafted_at: checkedAt,
+    ...notEdited,
   },
 };
 
@@ -87,6 +98,7 @@ const cleanNotice = {
   draft: "",
   drafted_by: "PayrollCheck Agent, version 1",
   drafted_at: checkedAt,
+  ...notEdited,
 };
 
 // A case the agent checked and found clean.

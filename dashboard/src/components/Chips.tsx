@@ -3,11 +3,11 @@ import type {
   LabelMatch,
   RoundStatus,
   RunStatus,
-  Severity,
   Status,
   Verdict,
   VersionStatus,
 } from "../api";
+import type { Severity } from "../exceptions";
 import {
   roundLabels,
   runLabels,

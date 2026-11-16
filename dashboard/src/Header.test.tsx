@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { renderAt, stubApi } from "./testing";
+import { priya, renderAt, stubApi } from "./testing";
 
 afterEach(() => {
   cleanup();
@@ -77,4 +77,24 @@ it("shows the header and nav while the reviewer loads", async () => {
   expect(await screen.findByRole("navigation", { name: "Main" })).toBeDefined();
   expect(screen.getByText("Loading...")).toBeDefined();
   expect(screen.queryByLabelText("Signed in")).toBeNull();
+});
+
+it("shows a reviewer no Improvement or Settings, and their role, with Appearance in their menu", async () => {
+  stubApi({ ...QUEUE_ROUTES, "GET /api/me": priya });
+  renderAt("/");
+  const who = within(await screen.findByLabelText("Signed in"));
+  const nav = within(screen.getByRole("navigation", { name: "Main" }));
+  expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual([
+    "Queue",
+    "Projects",
+    "Scoreboard",
+    "Configuration",
+  ]);
+  fireEvent.click(who.getByRole("button", { name: "Account" }));
+  expect(who.getAllByText("Reviewer")).toHaveLength(2);
+  expect(who.queryByRole("link", { name: "Settings" })).toBeNull();
+  fireEvent.click(who.getByRole("link", { name: "Appearance" }));
+  expect(
+    await screen.findByRole("heading", { name: "Appearance", level: 1 }),
+  ).toBeDefined();
 });

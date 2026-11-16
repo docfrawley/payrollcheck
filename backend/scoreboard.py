@@ -131,11 +131,6 @@ def model_costs(db: Connection, run_ids: list[str]) -> dict[str, float]:
     return costs
 
 
-def model_cost_of(db: Connection, run_id: str) -> float:
-    """Return one run's model cost in all, as model_costs does."""
-    return model_costs(db, [run_id])[run_id]
-
-
 def expected_labels(db: Connection) -> Expected:
     """Every label, by set and case, in one query."""
     found: Expected = {}

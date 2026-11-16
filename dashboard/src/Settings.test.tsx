@@ -10,7 +10,7 @@ import type { SettingsPage } from "./api";
 import {
   wholeText,
   Refusal,
-  marcus,
+  priya,
   panel,
   renderAt,
   sent,
@@ -155,18 +155,23 @@ it("shows why the backend refused a setting", async () => {
   );
 });
 
-it("shows the settings read only to a reviewer who can't change them", async () => {
-  stubApi({ "GET /api/settings": settings, "GET /api/me": marcus });
+it("shows a reviewer only the appearance, with why they can't see the settings", async () => {
+  const fetchMock = stubApi({ "GET /api/me": priya });
   renderAt("/settings");
   expect(
     await screen.findByText(
       wholeText(
-        "Only the compliance manager can change the settings. Marcus Oyelaran can't.",
+        "Only the compliance manager can see the settings. Priya Raman can't.",
       ),
     ),
   ).toBeDefined();
+  expect(
+    screen.getByRole("heading", { name: "Appearance", level: 1 }),
+  ).toBeDefined();
+  expect(screen.getByRole("group", { name: "Appearance" })).toBeDefined();
   expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   expect(screen.queryByRole("spinbutton")).toBeNull();
+  expect(sent(fetchMock, "GET /api/settings")).toHaveLength(0);
 });
 
 it("keeps the appearance chosen in this browser", async () => {

@@ -1,6 +1,7 @@
 """Finding a case, a project, a run, a version, the settings and the models
 allowed, and the messages for what isn't found, which more than one of the
-backend's modules need."""
+backend's modules need. A case or a project outside the caller's scope isn't
+found, with the same message as one that doesn't exist."""
 
 from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, func, select
@@ -16,6 +17,7 @@ from backend.database import (
     versions,
 )
 from backend.models import ModelAllowed, Settings, Verdict
+from backend.scope import Scope, cases_in, projects_in
 
 RUN_NOT_FOUND = "Run {run_id} not found"
 CASE_NOT_FOUND = "Case {case_id} not found"
@@ -23,18 +25,20 @@ VERSION_NOT_FOUND = "Version {number} not found"
 PROJECT_NOT_FOUND = "Project {project_id} not found"
 
 
-def find_case(db: Connection, case_id: str) -> RowMapping:
-    """Return one case's row, or raise a 404."""
-    query = case_view.where(cases.c.case_id == case_id)
+def find_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
+    """Return one case's row in the scope, or raise a 404."""
+    query = case_view.where(cases.c.case_id == case_id, cases_in(scope))
     row = db.execute(query).mappings().first()
     if row is None:
         raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))
     return row
 
 
-def project_row(db: Connection, project_id: str) -> RowMapping:
-    """Return one project's row, or raise a 404."""
-    query = select(projects).where(projects.c.project_id == project_id)
+def project_row(db: Connection, project_id: str, scope: Scope) -> RowMapping:
+    """Return one project's row in the scope, or raise a 404."""
+    query = select(projects).where(
+        projects.c.project_id == project_id, projects_in(scope)
+    )
     row = db.execute(query).mappings().first()
     if row is None:
         raise HTTPException(404, PROJECT_NOT_FOUND.format(project_id=project_id))

@@ -10,6 +10,7 @@ import pytest
 from backend.database import cases
 from backend.dependencies import API_KEY_HEADER
 from backend.seeding import DATA
+from backend.tests import uploads
 from backend.tests.rows import count, everything_recorded
 from backend.tests.sign_in import MARCUS, signed_in
 from data.payroll_world.template import CERTIFICATION
@@ -50,14 +51,12 @@ def no_work_week(text):
 
 
 def upload(client, content, file_name="PC-1214-1.csv", project=PROJECT, **given):
-    body = {
-        "subcontractor_id": given.get("subcontractor_id", SUBCONTRACTOR),
-        "file_name": file_name,
-        "content": content,
-    }
-    headers = given.get("headers") or signed_in()
-    path = f"/api/projects/{project}/payrolls"
-    return client.post(path, json=body, headers=headers)
+    """PC-1214's arrival, or whatever a test gives, on the municipal building."""
+    subcontractor_id = given.get("subcontractor_id", SUBCONTRACTOR)
+    payroll = (file_name, content)
+    return uploads.upload(
+        client, project, subcontractor_id, payroll, given.get("headers")
+    )
 
 
 REFUSED = [
@@ -173,31 +172,14 @@ def test_the_uploaded_case_is_in_the_queue_as_its_reviewer_uploaded_it(dashboard
     assert case["submissions"][0]["uploaded_by"] == "HND-02"
 
 
-def test_a_second_upload_for_the_week_is_refused_naming_the_case(dashboard):
+def test_a_second_upload_for_the_week_is_the_cases_next_submission(dashboard):
+    """test_reopening.py has what a correction does to the case."""
     upload(dashboard, ARRIVAL)
-    before = everything_recorded()
     again = upload(dashboard, edited(ARRIVAL, "fein", ""))
-    assert (again.status_code, again.json()["detail"]) == (
-        409,
-        "Case PC-1214 already holds SUB-06's payroll on PRJ-02 for the week ending "
-        "2026-11-22",
-    )
-    assert everything_recorded() == before
-
-
-def test_an_upload_for_a_week_a_seeded_case_holds_is_refused(dashboard):
-    payroll = (DATA / "development" / "payrolls" / "PC-1201-1.csv").read_text(
-        encoding="utf-8"
-    )
-    refused = upload(
-        dashboard,
-        payroll,
-        file_name="PC-1201-1.csv",
-        project="PRJ-01",
-        subcontractor_id="SUB-01",
-    )
-    assert refused.json()["detail"].startswith("Case PC-1201 already holds")
-    assert refused.status_code == 409
+    assert again.status_code == 201
+    case = again.json()
+    assert (case["case_id"], case["latest_submission_no"]) == ("PC-1214", 2)
+    assert [s["submission_no"] for s in case["submissions"]] == [1, 2]
 
 
 def test_an_upload_with_the_agents_key_is_refused(client, agent_key):
