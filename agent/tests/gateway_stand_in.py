@@ -4,8 +4,8 @@ API document, sent to the test backend with the agent's key, which the Gateway's
 credential provider holds, and the app's refusals come back as tool errors with the
 app's answer. payrollcheck-context___<tool> is each of the context layer's tools,
 answered by the context layer's own server, its refusals as tool errors. Its
-Policy refuses a payment over $1,000, and any tool a test names, with an MCP
-error, as the Gateway's Policy does. It keeps each call's name, its inputs and
+Policy refuses any tool a test names, with an MCP error, as the Gateway's Policy
+does. It keeps each call's name, its inputs and
 whether it was signed with SigV4 for bedrock-agentcore."""
 
 import os
@@ -33,9 +33,7 @@ from backend.dependencies import API_KEY_HEADER
 from backend.main import app
 from context.server import build_server
 
-PAY_CASE = f"{Target.APP}{SEPARATOR}pay_case"
 CONTEXT = f"{Target.CONTEXT}{SEPARATOR}"
-LIMIT = 1000.0
 DENIED = "Tool Execution Denied: Tool call not allowed due to policy enforcement"
 SIGNED_FOR = f"/{SERVICE}/aws4_request"
 
@@ -157,8 +155,7 @@ class GatewayStandIn:
         return types.ServerResult(types.CallToolResult(content=[text], isError=refused))
 
     def policy_refuses(self, name: str, inputs: dict[str, Any]) -> bool:
-        over_the_limit = name == PAY_CASE and inputs["amount"] > LIMIT
-        return over_the_limit or name in self.refused
+        return name in self.refused
 
     async def look_up(self, tool: str, inputs: dict[str, Any]) -> types.CallToolResult:
         """Answer one of the context layer's tools with the context layer's own

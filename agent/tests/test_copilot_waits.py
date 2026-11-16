@@ -11,10 +11,17 @@ from agent import connection
 from agent.copilot import waiting
 from agent.tests.copilot_driver import Copilot, started_run
 from agent.tests.stubs import call, stub
-from backend.tests.case_requests import decide, fail, held, pay, send_back, start
+from backend.tests.case_requests import (
+    awaiting_review,
+    fail,
+    finding,
+    flag,
+    report,
+    start,
+)
 from backend.tests.run_requests import fail_run, finish, record_cases, run_path
 
-SUMMARY = "CLM-1003 is held for your sign-off and CLM-1018 was referred."
+SUMMARY = "PC-1201 has an exception to review and PC-1202 is clean."
 
 
 @pytest.fixture(autouse=True)
@@ -48,14 +55,13 @@ def test_the_wait_for_a_dispatch(client, copilot: Copilot, agent_calls, monkeypa
 
     def play_the_dispatch_out():
         run_id = started_run(agent_calls)
-        record_cases(client, run_id, "CLM-1003", "CLM-1018")
+        record_cases(client, run_id, "PC-1201", "PC-1202")
         while not [s for _, s, _ in reads.sent if s == f"/runs/{run_id}"]:
             time.sleep(0.01)
         conversation = copilot.read(copilot.last_payload()["conversation_id"])
         working.append(conversation["turns"][-1]["steps"][-1])
-        held(client, "CLM-1003", 3750.0)
-        start(client, "CLM-1018")
-        decide(client, "CLM-1018", "refer", 0)
+        awaiting_review(client, "PC-1201", finding())
+        awaiting_review(client, "PC-1202")
         finish(client, run_id)
 
     dispatch = threading.Thread(target=play_the_dispatch_out)
@@ -74,14 +80,20 @@ def test_the_wait_for_a_dispatch(client, copilot: Copilot, agent_calls, monkeypa
     assert (turn["answer"], turn["model_calls"]) == (SUMMARY, 3)
     went = json.loads(copilot.model.prompts[2][-1].text)
     assert went["status"] == "finished"
-    assert went["summary"]["waiting_for_sign_off"] == [
-        {"case_id": "CLM-1003", "payout": 3750.0}
-    ]
+    assert went["summary"] == {
+        "with_exceptions": ["PC-1201"],
+        "clean": ["PC-1202"],
+        "flagged": [],
+        "agent_failed": [],
+        "unfinished": [],
+    }
     assert went["needs_a_reviewer"] == {
-        "held_for_sign_off": [{"case_id": "CLM-1003", "payout": 3750.0}],
-        "referred": ["CLM-1018"],
-        "left_for_a_reviewer": [],
-        "sent_back_not_taken_up": [],
+        "awaiting_review": [
+            {"case_id": "PC-1201", "open_exceptions": 1, "shortfall_cents": 32},
+            {"case_id": "PC-1202", "open_exceptions": 0, "shortfall_cents": 0},
+        ],
+        "screening_flagged": [],
+        "agent_failed": [],
     }
     run_reads = [h for _, path, h in reads.sent if path.startswith("/runs/")]
     assert len(run_reads) > 1
@@ -90,24 +102,40 @@ def test_the_wait_for_a_dispatch(client, copilot: Copilot, agent_calls, monkeypa
 
 
 def test_what_needs_a_reviewer(client, copilot: Copilot):
-    held(client, "CLM-1008", 2240.0)
-    send_back(client, "CLM-1008")
+    """The cases awaiting review, with those the screening flagged and those the
+    agent failed twice apart; a case received, failed once or returned isn't
+    listed."""
+    awaiting_review(client, "PC-1201", finding(), finding(worker_id="W-002"))
+    awaiting_review(client, "PC-1202")
+    start(client, "PC-1203")
+    flag(client, "PC-1203")
     for _ in range(2):
-        start(client, "CLM-1001")
-        fail(client, "CLM-1001")
-    start(client, "CLM-1002")
-    decide(client, "CLM-1002", "approve", 420.0)
-    pay(client, "CLM-1002", 420.0)
-    copilot.model = stub(call("what_needs_a_reviewer"), "Two cases need you.")
+        start(client, "PC-1204")
+        fail(client, "PC-1204")
+    start(client, "PC-1205")
+    fail(client, "PC-1205")
+    copilot.model = stub(call("what_needs_a_reviewer"), "Four cases need you.")
     [turn] = copilot.ask("What needs me today?")["turns"]
     assert [(c["tool"], c["kind"]) for c in turn["steps"]] == [
         ("what_needs_a_reviewer", "cases")
     ]
     assert json.loads(copilot.model.prompts[1][-1].text) == {
-        "held_for_sign_off": [],
-        "referred": [],
-        "left_for_a_reviewer": ["CLM-1001"],
-        "sent_back_not_taken_up": ["CLM-1008"],
+        "awaiting_review": [
+            {"case_id": "PC-1201", "open_exceptions": 2, "shortfall_cents": 64},
+            {"case_id": "PC-1202", "open_exceptions": 0, "shortfall_cents": 0},
+        ],
+        "screening_flagged": ["PC-1203"],
+        "agent_failed": ["PC-1204"],
+    }
+
+
+def test_nothing_needs_a_reviewer_in_the_seeded_queue(copilot: Copilot):
+    copilot.model = stub(call("what_needs_a_reviewer"), "Nothing needs you.")
+    copilot.ask("What needs me today?")
+    assert json.loads(copilot.model.prompts[1][-1].text) == {
+        "awaiting_review": [],
+        "screening_flagged": [],
+        "agent_failed": [],
     }
 
 
@@ -138,18 +166,21 @@ def test_the_wait_for_an_evaluation_gives_its_measures(
         run_id = started_run(agent_calls)
         for copy in client.get(run_path(run_id)).json()["cases"]:
             start(client, copy["case_id"])
-            decide(client, copy["case_id"], "refer", 0)
+            report(client, copy["case_id"])
         finish(client, run_id)
 
     evaluation = threading.Thread(target=play_the_evaluation_out)
     evaluation.start()
     copilot.model = stub(
-        call("start_evaluation", evaluation_set="held_out", tiny=True, agents=5),
+        call("start_evaluation", evaluation_set="tiny", agents=5),
         wait_for_the_run,
         "Done.",
     )
-    copilot.ask("Evaluate the held-out set's tiny cases")
+    copilot.ask("Evaluate the tiny set")
     evaluation.join(10)
     went = json.loads(copilot.model.prompts[2][-1].text)
     assert (went["kind"], went["status"]) == ("evaluation", "finished")
-    assert went["measures"]["straight_through"] == 0
+    measures = went["measures"]
+    assert (measures["catch_rate"], measures["caught"]) == (0, 0)
+    assert measures["labels"] > 0
+    assert measures["false_exceptions"] == 0

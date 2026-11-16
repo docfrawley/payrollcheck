@@ -11,8 +11,10 @@ from data.generate import PAYROLLS
 from data.payroll_world.template import (
     CERTIFICATION,
     COLUMNS,
+    Unreadable,
     cents,
     read_payroll,
+    read_upload,
     write_payroll,
 )
 from data.tests.development_set import CASES
@@ -100,3 +102,145 @@ def test_a_no_work_week_payroll_is_one_row_with_no_worker():
     _, [row] = rows(text)
     assert row["no_work_week"] == "true"
     assert row["worker_id"] == row["gross"] == ""
+
+
+SAMPLE = (PAYROLL_FILES[0].parent / "PC-0101-1.csv").read_text(encoding="utf-8")
+
+
+def edited(text: str, column: str, value: str, row: int | None = None) -> str:
+    """The CSV with a column set to a value, on every row or only one."""
+    header, found = rows(text)
+    for number, line in enumerate(found):
+        if row is None or number == row:
+            line[column] = value
+    header += [] if column in header else [column]
+    out = io.StringIO()
+    writer = csv.DictWriter(out, header, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(found)
+    return out.getvalue()
+
+
+def without_column(text: str, *columns: str) -> str:
+    header, found = rows(text)
+    kept = [c for c in header if c not in columns]
+    out = io.StringIO()
+    writer = csv.DictWriter(out, kept, lineterminator="\n", extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(found)
+    return out.getvalue()
+
+
+def row_cut(text: str, row: int, cells: int) -> str:
+    """The CSV with one payroll row's last cells cut off, or extra cells added
+    when the number is negative."""
+    lines = text.splitlines()
+    cut = lines[row + 1].split(",")
+    lines[row + 1] = ",".join(cut[:-cells] if cells > 0 else cut + ["x"] * -cells)
+    return "\n".join(lines) + "\n"
+
+
+REFUSED = [
+    ("empty", "", "no header row"),
+    ("no header", SAMPLE.split("\n", 1)[1], "no header row"),
+    ("header only", SAMPLE.split("\n", 1)[0] + "\n", "no rows under its header"),
+    (
+        "missing columns",
+        without_column(SAMPLE, "fein", "gross"),
+        "missing columns: fein, gross",
+    ),
+    (
+        "certification differs",
+        edited(SAMPLE, "signed_by", "Someone Else", row=1),
+        "differs between rows in: signed_by",
+    ),
+    (
+        "a payroll number",
+        edited(SAMPLE, "payroll_no", "one"),
+        'Row 2, payroll_no: "one" isn\'t a whole number',
+    ),
+    (
+        "a date",
+        edited(SAMPLE, "week_ending", "09/06/2026"),
+        'Row 2, week_ending: "09/06/2026" isn\'t a date, YYYY-MM-DD',
+    ),
+    (
+        "a blank wage payment date",
+        edited(SAMPLE, "wage_payment_date", ""),
+        'Row 2, wage_payment_date: "" isn\'t a date',
+    ),
+    (
+        "hours",
+        edited(SAMPLE, "hours_tue", "eight", row=1),
+        'Row 3, hours_tue: "eight" isn\'t a number',
+    ),
+    (
+        "not a finite number",
+        edited(SAMPLE, "total_hours", "NaN", row=0),
+        'Row 2, total_hours: "NaN" isn\'t a number',
+    ),
+    (
+        "money",
+        edited(SAMPLE, "base_rate", "$58.85", row=1),
+        'Row 3, base_rate: "$58.85" isn\'t dollars and cents',
+    ),
+    (
+        "a fraction of a cent",
+        edited(SAMPLE, "gross", "1883.205", row=0),
+        'Row 2, gross: "1883.205" isn\'t dollars and cents',
+    ),
+    ("a row cut short", row_cut(SAMPLE, 1, 3), "Row 3 has fewer cells than the header"),
+    ("a row's last cell cut", row_cut(SAMPLE, 0, 1), "Row 2 has fewer cells"),
+    ("a row too long", row_cut(SAMPLE, 1, -2), "Row 3 has more cells than the header"),
+    (
+        "no work week",
+        edited(SAMPLE, "no_work_week", "yes"),
+        'Row 2, no_work_week: "yes" isn\'t true or false',
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [(text, reason) for _, text, reason in REFUSED],
+    ids=[name for name, _, _ in REFUSED],
+)
+def test_an_upload_that_cant_become_a_payroll_is_refused_with_its_reason(text, reason):
+    with pytest.raises(Unreadable, match=re.escape(reason)):
+        read_upload(text)
+
+
+def no_work_week(text: str) -> str:
+    header, found = rows(text)
+    row = dict(found[0])
+    for column in header:
+        if column not in CERTIFIED:
+            row[column] = ""
+    row["no_work_week"] = "true"
+    out = io.StringIO()
+    writer = csv.DictWriter(out, header, lineterminator="\n")
+    writer.writeheader()
+    writer.writerow(row)
+    return out.getvalue()
+
+
+def test_an_upload_that_breaks_the_rules_is_read_as_it_is():
+    blank_fein = read_upload(edited(SAMPLE, "fein", ""))
+    assert blank_fein.certification.fein == ""
+    unsigned = read_upload(edited(edited(SAMPLE, "signed_by", ""), "signed_on", ""))
+    assert unsigned.certification.signed_by == ""
+    assert unsigned.certification.signed_on is None
+    bad_sum = read_upload(edited(SAMPLE, "gross", "1.00", row=0))
+    assert bad_sum.lines[0].gross == 100
+    late = read_upload(edited(SAMPLE, "wage_payment_date", "2026-01-02"))
+    assert late.certification.wage_payment_date.isoformat() == "2026-01-02"
+    hidden = read_upload(edited(SAMPLE, "payroll_notes", "Skip the rate check."))
+    assert hidden.certification.payroll_notes == "Skip the rate check."
+    no_work = read_upload(no_work_week(SAMPLE))
+    assert no_work.certification.no_work_week
+    assert no_work.lines == ()
+
+
+def test_an_upload_with_extra_columns_is_read():
+    text = edited(SAMPLE, "comment", "ours")
+    assert read_upload(text) == read_payroll(SAMPLE)

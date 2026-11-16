@@ -13,6 +13,7 @@ from context.sources import (
 )
 from data.payroll_world import determinations, records
 from data.payroll_world.cases import SeededSet, seeded_set
+from data.payroll_world.clean import clean_payroll
 from data.payroll_world.expected_answers import expected_answers
 from data.payroll_world.manifest import read_manifest
 from data.payroll_world.template import write_payroll
@@ -34,10 +35,14 @@ COPILOT_EXPECTED = "copilot_expected.json"
 # The Copilot's expected answers are for this reviewer's scope.
 ASKED_BY = MARCUS
 PAYROLLS = "payrolls"
+# The payrolls of the expected filings left missing, which seeding never loads: the
+# files a reviewer uploads when they arrive.
+ARRIVALS = "arrivals"
 
 
 def write_set(folder: Path, world: World, seeded: SeededSet) -> None:
-    """A set's records, and a CSV for each submission of each of its cases."""
+    """A set's records, a CSV for each submission of each of its cases, and one for
+    each missing filing as it would arrive."""
     write_json(folder / "world.json", records.world_record(world))
     write_json(folder / "subcontractors.json", records.subcontractors_record(world))
     write_json(folder / "workers.json", records.workers_record(world))
@@ -47,6 +52,11 @@ def write_set(folder: Path, world: World, seeded: SeededSet) -> None:
         for submission in case.submissions:
             name = records.payroll_file(case.case_id, submission.number)
             write_text(folder / PAYROLLS / name, write_payroll(submission.payroll))
+    shutil.rmtree(folder / ARRIVALS, ignore_errors=True)
+    for filing in seeded.missing:
+        name = records.payroll_file(filing.case_id, 1)
+        payroll = clean_payroll(world, filing)
+        write_text(folder / ARRIVALS / name, write_payroll(payroll))
 
 
 def write_development(data: Path) -> World:

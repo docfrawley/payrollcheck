@@ -26,12 +26,7 @@ import {
   savedOpen,
   waitingFor,
 } from "../copilot";
-import {
-  type ConfirmationAnswer,
-  type Conversation,
-  latestTurn,
-  stillWorking,
-} from "../conversation";
+import { type Conversation, latestTurn, stillWorking } from "../conversation";
 import { ReviewerContext } from "../reviewer";
 import { ApiError } from "../refusals";
 import { useAction } from "../useAction";
@@ -249,7 +244,6 @@ function ConversationPane({
   instead?: ReactNode;
 }>) {
   const [started, setStarted] = useState<Conversation>();
-  const [answered, setAnswered] = useState<string>();
   const { conversation, error, reload, show } = useConversation(
     chosen,
     started,
@@ -265,7 +259,7 @@ function ConversationPane({
     if (gone) saveConversation(reviewer.reviewer_id, undefined);
   }, [gone, reviewer.reviewer_id]);
 
-  // What the app gives back for a message or an answer shows at once. When it
+  // What the app gives back for a message shows at once. When it
   // refuses, the conversation is read again, as the turn may have failed, with why.
   async function showOrReread(sending: Promise<Conversation>) {
     try {
@@ -283,13 +277,6 @@ function ConversationPane({
       onStarted(first.conversation_id);
     } else await showOrReread(api.sendMessage(conversationId, text));
   });
-  const answer = useAction(
-    async (turnId: string, given: ConfirmationAnswer) => {
-      if (conversationId === undefined) return;
-      setAnswered(turnId);
-      await showOrReread(api.answerConfirmation(conversationId, turnId, given));
-    },
-  );
 
   function body() {
     if (conversationId === undefined)
@@ -306,15 +293,7 @@ function ConversationPane({
     return (
       <ol className="turns" aria-label="Conversation">
         {conversation.turns.map((turn) => (
-          <CopilotTurn
-            key={turn.turn_id}
-            turn={turn}
-            onAnswer={(turnId, given) => {
-              void answer.run(turnId, given);
-            }}
-            answering={answer.sending}
-            answerError={turn.turn_id === answered ? answer.error : undefined}
-          />
+          <CopilotTurn key={turn.turn_id} turn={turn} />
         ))}
       </ol>
     );

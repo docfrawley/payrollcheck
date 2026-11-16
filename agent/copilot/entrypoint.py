@@ -1,5 +1,5 @@
 """The Copilot as an AgentCore app: one entrypoint takes each payload the app sends,
-a turn or the answer to a confirmation, checks with the app who is signed in and
+a turn, checks with the app who is signed in and
 which turn it is before it answers, keeps one turn at a time for each conversation
 in its process, and hands the turn to turns.py on a thread of its own, which its
 /ping reports as busy until it ends. npm run dev serves it on 127.0.0.1:8081, and
@@ -38,7 +38,6 @@ log = logging.getLogger(__name__)
 
 NOT_READY = "The Copilot couldn't get ready: {error}"
 STILL_WORKING = "Conversation {conversation_id} already has a turn working"
-NO_ANSWER = "Turn {turn_id} has no answer to its confirmation yet"
 # The Copilot's credentials in AgentCore Identity on Runtime: the project holds
 # three, and the Copilot needs two.
 CREDENTIALS = ("OPENROUTER_API_KEY", "DATABASE_URL")
@@ -58,16 +57,7 @@ class TakeTurn(Operation):
     sign_in: SignIn
 
 
-class AnswerConfirmation(Operation):
-    operation: Literal["answer_confirmation"]
-    conversation_id: str
-    turn_id: str
-    sign_in: SignIn
-
-
-Payload = Annotated[
-    Health | TakeTurn | AnswerConfirmation, Field(discriminator="operation")
-]
+Payload = Annotated[Health | TakeTurn, Field(discriminator="operation")]
 PAYLOADS: TypeAdapter[Payload] = TypeAdapter(Payload)
 
 
@@ -137,7 +127,7 @@ def hand_on(turn: turns.Turn, work: Callable[[], None]) -> None:
     in_background(app, "turn", then_release)
 
 
-def checked(request: TakeTurn | AnswerConfirmation) -> turns.Turn:
+def checked(request: TakeTurn) -> turns.Turn:
     """The turn the app asks for, checked with the app before any model call."""
     return turns.the_turn(request.sign_in, request.conversation_id, request.turn_id)
 
@@ -148,17 +138,6 @@ def take_turn(request: TakeTurn, pool: Pool) -> None:
     hand_on(turn, partial(turns.take_turn, turn, saver_on(pool)))
 
 
-def answer_confirmation(request: AnswerConfirmation, pool: Pool) -> None:
-    """Carry a paused turn on with the answer the app recorded, refusing a turn with
-    no answer recorded or a conversation with no sign-off waiting."""
-    turn = checked(request)
-    if turn.record["confirmation_answer"] is None:
-        raise Refusal(NO_ANSWER.format(turn_id=turn.turn_id))
-    saver = saver_on(pool)
-    turns.check_paused(turn, saver)
-    hand_on(turn, partial(turns.answer_confirmation, turn, saver))
-
-
 def start(request: Payload, pool: Pool) -> dict[str, Any]:
     """Hand an operation its work, and answer that the Copilot took it."""
     match request:
@@ -166,8 +145,6 @@ def start(request: Payload, pool: Pool) -> dict[str, Any]:
             return HEALTHY
         case TakeTurn():
             take_turn(request, pool)
-        case AnswerConfirmation():
-            answer_confirmation(request, pool)
     return ACCEPTED
 
 

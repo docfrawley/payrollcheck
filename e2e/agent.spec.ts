@@ -1,214 +1,273 @@
 import { expect, test } from "@playwright/test";
 import {
-  askToPay,
-  payCase,
-  decide,
+  type Request,
+  CHECKS,
+  recordCheckFindings,
+  recordExceptionReport,
   recordStep,
   startCase,
-  started,
 } from "./api";
 import { REVIEWERS } from "./reviewers";
 
-// These tests stand in for the agent by calling the API through the
-// dashboard's proxy, and watch the case page update without a reload.
+// These tests stand in for the payroll agent by calling the API through the
+// dashboard's proxy, and watch the case page update without a reload. Each
+// works a week-12 case no other test touches.
 
-test("the case page shows the agent at work", async ({ page, request }) => {
-  await page.goto("/cases/CLM-1003");
-  const heading = page.locator(".page-header");
-  await expect(heading.getByText("Waiting")).toBeVisible();
-  await expect(page.getByText(/No steps yet/)).toBeVisible();
+const BASE_SHORT = {
+  rule: "rate.base_short",
+  worker_id: "W-001",
+  line_no: 1,
+  expected: "$60.85 an hour",
+  actual: "$58.85 an hour",
+  shortfall_cents: 6400,
+  citation: "The rate determination in force on the project's award date",
+};
 
-  await startCase(request, "CLM-1003", "e2e-1");
-  await recordStep(
-    request,
-    "CLM-1003",
-    "screening",
-    "No instructions found. The case describes a medical bill in Lisbon.",
-  );
-  await recordStep(
-    request,
-    "CLM-1003",
-    "tool_call",
-    'get_case(case_id="CLM-1003")',
-  );
-  await recordStep(
-    request,
-    "CLM-1003",
-    "tool_result",
-    'get_case: {"case_id":"CLM-1003"}',
-  );
-  await expect(heading.getByText("In progress")).toBeVisible();
-  await expect(
-    page.getByText("The agent is working on this case."),
-  ).toBeVisible();
-  await expect(page.getByText('get_case(case_id="CLM-1003")')).toBeVisible();
-  const steps = page.locator(".steps > li");
-  await expect(steps.first()).toHaveText(
-    /Security check No instructions found\. The case describes a medical bill/,
-  );
-  await expect(
-    page.getByText('get_case: {"case_id":"CLM-1003"}').first(),
-  ).toBeVisible();
+// Works a case to Awaiting review with no exceptions, every check finding
+// nothing.
+async function checkClean(request: Request, caseId: string) {
+  await startCase(request, caseId, `e2e-${caseId}`);
+  for (const check of CHECKS) await recordCheckFindings(request, caseId, check);
+  await recordExceptionReport(request, caseId);
+}
 
-  await decide(request, "CLM-1003", {
-    decision: "approve",
-    payout: 500,
-    section: "Section 7, Emergency Medical",
-    reason: "The treatment was necessary and covered.",
+// Works a case to Awaiting review with one base rate short, raised from the
+// rates check's finding, and a draft notice.
+async function checkWithAnException(request: Request, caseId: string) {
+  await startCase(request, caseId, `e2e-${caseId}`);
+  const [candidate] = await recordCheckFindings(
+    request,
+    caseId,
+    "check_rates",
+    [BASE_SHORT],
+  );
+  await recordExceptionReport(request, caseId, {
+    raised: [candidate.candidate_id],
+    notice: "Please pay W-001 the base rate in the determination.",
   });
-  const decision = page.locator("section", {
-    has: page.getByRole("heading", { name: "Decision" }),
-  });
-  await expect(decision.getByText("Approved")).toBeVisible();
-  await expect(heading.getByText("In progress")).toBeVisible();
-  await payCase(request, "CLM-1003", 500);
-  await recordStep(
-    request,
-    "CLM-1003",
-    "message",
-    "Approved and paid $500.00.",
-  );
-  await expect(heading.getByText("Decided")).toBeVisible();
-  await expect(decision.getByText("Paid $500.00")).toBeVisible();
-  await expect(page.getByText("Approved and paid $500.00.")).toBeVisible();
-});
+}
 
-test("the case page shows every kind of step, the context used and the whole record", async ({
+test("the case page shows the agent at work and its report", async ({
   page,
   request,
 }) => {
-  const manual = {
-    file: "claims_manual.md",
-    system: "Claims operations",
-    owner: "Head of claims operations",
-    reviewed: "2026-09-01",
-  };
-  await page.goto("/cases/CLM-1006");
+  await page.goto("/cases/PC-1203");
+  const heading = page.locator(".page-header");
+  await expect(heading.getByText("Received")).toBeVisible();
   await expect(page.getByText(/No steps yet/)).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Submission 1" }).getByRole("table"),
+  ).toBeVisible();
 
-  await startCase(request, "CLM-1006", "e2e-steps");
+  await startCase(request, "PC-1203", "e2e-1");
   await recordStep(
     request,
-    "CLM-1006",
-    "lookup",
-    "Claims manual, section 9: Repeat claims",
-    [manual],
+    "PC-1203",
+    "screening",
+    "No instructions found. The notes are about hours.",
   );
-  await recordStep(request, "CLM-1006", "lookup", 'Reference data: "zeppelin"');
-  await recordStep(
+  await expect(heading.getByText("In progress")).toBeVisible();
+  await expect(
+    page.getByText("The payroll agent is checking this payroll."),
+  ).toBeVisible();
+  await recordCheckFindings(request, "PC-1203", "check_form");
+  const [candidate] = await recordCheckFindings(
     request,
-    "CLM-1006",
-    "memory_search",
-    '"earlier cases"\n- CLM-1005 was approved for $243.00.',
-  );
-  await recordStep(
-    request,
-    "CLM-1006",
-    "refusal",
-    "record_decision: Refused with status 422: Claims manual section 14",
+    "PC-1203",
+    "check_rates",
+    [BASE_SHORT],
   );
   const steps = page.locator(".steps > li");
   await expect(steps).toHaveText([
-    /Looked up Claims manual, section 9: Repeat claims.*owned by the Head of claims operations, reviewed Sep 1, 2026/,
-    /Looked up Reference data: "zeppelin"/,
-    /Searched memory "earlier cases"\s+- CLM-1005 was approved for \$243\.00\./,
-    /Refused record_decision: Refused with status 422/,
+    /Screening No instructions found\. The notes are about hours\./,
+    /Checked check_form: Nothing found/,
+    /Checked check_rates: 1 found/,
   ]);
-  const used = page.locator("section", {
-    has: page.getByRole("heading", { name: "Context used" }),
-  });
-  await expect(used.getByRole("heading", { level: 3 })).toHaveText([
-    "claims_manual.md",
-    "Found nothing",
-  ]);
-  await expect(
-    used.getByText(
-      "Claims operations, owned by the Head of claims operations, reviewed Sep 1, 2026",
-    ),
-  ).toBeVisible();
 
-  await decide(request, "CLM-1006", {
-    decision: "approve",
-    payout: 243,
-    section: "Section 6, Emergency Medical",
-    reason: "The hospital bill is covered.",
-  });
+  await recordStep(request, "PC-1203", "tool_call", "get_project()");
   await recordStep(
     request,
-    "CLM-1006",
-    "memory_save",
-    "Case CLM-1006: Food poisoning in Porto",
+    "PC-1203",
+    "tool_result",
+    'get_project: {"project_id":"PRJ-01"}',
   );
-  await expect(steps.last()).toHaveText(
-    /Saved to memory Case CLM-1006: Food poisoning in Porto/,
-  );
-  const decision = page.locator("section", {
-    has: page.getByRole("heading", { name: "Decision" }),
+  await recordExceptionReport(request, "PC-1203", {
+    raised: [candidate.candidate_id],
+    notice: "Please pay W-001 the base rate in the determination.",
   });
-  await expect(decision.getByRole("row").last()).toHaveText("Payout$243.00");
+  await recordStep(request, "PC-1203", "message", "One exception, reported.");
+  await expect(heading.getByText("Awaiting review")).toBeVisible();
+  await expect(page.getByText("One exception, reported.")).toBeVisible();
+  const exceptions = page.getByRole("region", { name: "Exceptions" });
+  await expect(exceptions.getByText("rate.base_short")).toBeVisible();
+  await expect(exceptions.getByText("High")).toBeVisible();
+  await expect(exceptions.getByText("$64.00")).toBeVisible();
+  await expect(exceptions.getByText(BASE_SHORT.citation)).toBeVisible();
   await expect(
-    decision.getByText(/^Decided by PayrollCheck Agent, version 1 at /),
+    page
+      .getByRole("region", { name: "Send-back notice" })
+      .getByText("Please pay W-001 the base rate in the determination."),
   ).toBeVisible();
   await expect(
-    decision.getByText("Claims manual version 2026.2"),
-  ).toBeVisible();
+    page.getByRole("region", { name: "Review" }).getByText(/^1 open exception/),
+  ).toHaveText("1 open exception, $64.00 short.");
 });
 
-test("a sign-off on the dashboard pays the held payout and asks the agent to resume the case", async ({
+test("the case page shows the agent's judgment beside the checks' findings", async ({
   page,
   request,
 }) => {
-  await startCase(request, "CLM-1020", "e2e-2");
-  await decide(request, "CLM-1020", {
-    decision: "approve",
-    payout: 1350,
-    section: "Section 5, Baggage and Personal Effects",
-    reason: "The loss is covered.",
-  });
-  const refused = await askToPay(request, "CLM-1020", 1350);
-  expect(refused.status()).toBe(403);
-  const before = await started(request);
-
-  await page.goto("/cases/CLM-1020");
-  const heading = page.locator(".page-header");
-  await expect(heading.getByText("Waiting for sign-off")).toBeVisible();
-  await expect(page.getByRole("combobox")).toHaveCount(0);
-  await page.getByRole("button", { name: "Sign off" }).click();
-  await expect(heading.getByText("Decided")).toBeVisible();
-  await expect(
-    page.getByText(/^Paid \$1,350\.00, signed off by Dana Whitfield at /),
-  ).toBeVisible();
-  await expect(page.getByText(/Waiting for the agent/)).toHaveCount(0);
-  expect(await started(request)).toEqual([
-    ...before,
-    { operation: "resume_case", case_id: "CLM-1020" },
+  await startCase(request, "PC-1204", "e2e-judgment");
+  await recordCheckFindings(request, "PC-1204", "check_form");
+  const [rate] = await recordCheckFindings(request, "PC-1204", "check_rates", [
+    BASE_SHORT,
   ]);
+  const [change] = await recordCheckFindings(
+    request,
+    "PC-1204",
+    "check_classification",
+    [
+      {
+        rule: "classification.changed",
+        worker_id: "W-002",
+        line_no: 2,
+        expected: "Electrician Journeyman",
+        actual: "Electrician Foreman",
+        shortfall_cents: null,
+        citation: "Last week's payroll",
+      },
+    ],
+  );
+  const reason = "The line note explains the move to foreman this week.";
+  await recordExceptionReport(request, "PC-1204", {
+    raised: [rate.candidate_id],
+    dismissed: [{ candidate_id: change.candidate_id, reason }],
+    added: [
+      {
+        rule: "form.project_mismatch",
+        worker_id: null,
+        line_no: null,
+        expected: "Lincoln School renovation",
+        actual: "Lincoln Middle School",
+        shortfall_cents: null,
+        citation: "Our project and subcontractor records",
+      },
+    ],
+    notice: "Please pay W-001 the base rate and name the project as awarded.",
+  });
+
+  await page.goto("/cases/PC-1204");
+  const checks = page.getByRole("region", { name: "Checks and judgment" });
+  await expect(checks.locator(".check")).toHaveText([
+    "check_form Nothing found",
+    "check_contractor_registration Nothing found",
+    /^check_rates.*rate\.base_short W-001, line 1, \$64\.00 short.*Raised as an exception$/,
+    "check_overtime Nothing found",
+    "check_arithmetic Nothing found",
+    "check_apprentices Nothing found",
+    "check_timeliness Nothing found",
+    new RegExp(`^check_classification.*Dismissed: ${reason}$`),
+  ]);
+  await expect(
+    checks.getByText(
+      "Raised with no check behind it: Our project and subcontractor records",
+    ),
+  ).toBeVisible();
+  const own = page
+    .getByRole("region", { name: "Exceptions" })
+    .getByRole("listitem")
+    .filter({ hasText: "form.project_mismatch" });
+  await expect(own.getByText("Agent's own judgment")).toBeVisible();
+});
+
+test("the case page shows each submission, every kind of step and the context used", async ({
+  page,
+  request,
+}) => {
+  const rates = {
+    file: "rate_determinations.yaml",
+    system: "NJDOL prevailing wage rate determinations, as we record them",
+    owner: "Compliance manager",
+    reviewed: "2026-09-01",
+  };
+  await page.goto("/cases/PC-1206");
+  await expect(page.getByRole("heading", { level: 2 })).toContainText([
+    "Submission 2",
+    "Submission 1",
+  ]);
+
+  await startCase(request, "PC-1206", "e2e-steps");
+  await recordStep(
+    request,
+    "PC-1206",
+    "lookup",
+    "Wage rate: Middlesex, electrician",
+    [rates],
+  );
+  await recordStep(request, "PC-1206", "lookup", 'Glossary: "zeppelin"');
+  await recordStep(
+    request,
+    "PC-1206",
+    "refusal",
+    "record_exception_report: Refused with status 422: No candidate has this shortfall",
+  );
+  const steps = page.locator(".steps > li");
+  await expect(steps).toHaveText([
+    /Looked up Wage rate: Middlesex, electrician.*owned by Compliance manager, reviewed Sep 1, 2026/,
+    /Looked up Glossary: "zeppelin"/,
+    /Refused record_exception_report: Refused with status 422/,
+  ]);
+  const used = page.getByRole("region", { name: "Context used" });
+  await expect(used.getByRole("heading", { level: 3 })).toHaveText([
+    "rate_determinations.yaml",
+    "Found nothing",
+  ]);
+});
+
+test("a clean case is signed off on the dashboard, which accepts it", async ({
+  page,
+  request,
+}) => {
+  await checkClean(request, "PC-1220");
+  await page.goto("/cases/PC-1220");
+  const heading = page.locator(".page-header");
+  await expect(heading.getByText("Awaiting review")).toBeVisible();
+  const review = page.getByRole("region", { name: "Review" });
+  await expect(review.getByText("No open exceptions.")).toBeVisible();
+  await review.getByRole("button", { name: "Sign off" }).click();
+  await expect(heading.getByText("Accepted")).toBeVisible();
+  await expect(review.getByText(/^Signed off on /)).toBeVisible();
+  await expect(review.getByRole("button")).toHaveCount(0);
+});
+
+test("a sign-off is refused while an exception is open, with the reason", async ({
+  page,
+  request,
+}) => {
+  await checkWithAnException(request, "PC-1221");
+  await page.goto("/cases/PC-1221");
+  const review = page.getByRole("region", { name: "Review" });
+  await review.getByRole("button", { name: "Sign off" }).click();
+  await expect(review.getByRole("alert")).toHaveText(
+    /^Case PC-1221 has 1 open exception/,
+  );
+  await expect(
+    page.locator(".page-header").getByText("Awaiting review"),
+  ).toBeVisible();
 });
 
 test.describe("signed in as Marcus Oyelaran", () => {
   test.use({ storageState: REVIEWERS.marcus.storage });
 
-  test("a held payout says why he can't sign it off", async ({
-    page,
-    request,
-  }) => {
-    await startCase(request, "CLM-1024", "e2e-7");
-    await decide(request, "CLM-1024", {
-      decision: "approve",
-      payout: 1350,
-      section: "Section 5, Baggage and Personal Effects",
-      reason: "The loss is covered.",
-    });
-
-    await page.goto("/cases/CLM-1024");
+  test("any reviewer can sign off a case", async ({ page, request }) => {
+    await checkClean(request, "PC-1222");
+    await page.goto("/cases/PC-1222");
     await expect(
       page.getByLabel("Signed in").getByText("Marcus Oyelaran"),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Sign off" }).click();
     await expect(
-      page.getByText(
-        "Only a reviewer who can sign off payouts over $1,000.00 can sign this off or send it back. Marcus Oyelaran can't.",
-      ),
+      page.locator(".page-header").getByText("Accepted"),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign off" })).toHaveCount(0);
   });
 });

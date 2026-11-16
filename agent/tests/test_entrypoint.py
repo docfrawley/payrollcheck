@@ -9,7 +9,6 @@ import socket
 import sys
 import threading
 import time
-from functools import partial
 from typing import cast
 
 import pytest
@@ -19,7 +18,6 @@ from agent import (
     api,
     checkpoints,
     entrypoint,
-    harness,
     heartbeat,
     improver_api,
     work,
@@ -29,7 +27,6 @@ from agent.tests.dispatching import (
     new_dispatch,
     new_evaluation,
 )
-from agent.tests.held import StopAtThePause, hold, resume_case
 from agent.tests.invoking import (
     ACCEPTED,
     HEALTH,
@@ -37,10 +34,9 @@ from agent.tests.invoking import (
     work_round,
     work_run,
 )
-from agent.tests.queue_setup import leave_waiting
-from agent.tests.records import case_of, model_calls_of, work_times_of
-from agent.tests.stubs import agent_on, approve, decide, stub, swarm
-from backend.tests.case_requests import sign_off
+from agent.tests.queue_setup import leave_received
+from agent.tests.stubs import stub, swarm
+from agent.tests.stubs import work as work_on_it
 from backend.tests.dashboard_reads import evaluations
 from backend.tests.round_requests import (
     create_round,
@@ -104,7 +100,7 @@ def test_on_runtime_the_first_request_fetches_each_credential_once(
 
 
 def test_on_runtime_a_request_needs_no_key(on_runtime, serve):
-    leave_waiting()
+    leave_received()
     agent = serve(stub())
     accepted = agent.invoke(work_run(new_dispatch()["run_id"]), headers={})
     assert (accepted.status_code, accepted.json()) == (200, ACCEPTED)
@@ -169,7 +165,7 @@ def test_off_runtime_a_payload_it_cant_read_without_the_key_is_refused(serve):
 
 UNKNOWN = (
     "Unknown operation: it must be one of 'health', 'work_run', 'work_round', "
-    "'carry_round_on', 'resume_case'"
+    "'carry_round_on'"
 )
 
 
@@ -189,7 +185,7 @@ UNKNOWN = (
         ),
         ({"operation": "carry_round_on", "round_id": "round-1"}, "proposal_id: "
          "Field required"),
-        ({"operation": "resume_case"}, "case_id: Field required"),
+        ({"operation": "resume_case", "case_id": "PC-1205"}, UNKNOWN),
     ],
 )  # fmt: skip
 def test_a_payload_it_cant_read_gets_a_400_saying_why(serve, payload, error):
@@ -199,9 +195,9 @@ def test_a_payload_it_cant_read_gets_a_400_saying_why(serve, payload, error):
 
 
 def test_work_a_dispatch_the_app_created(client, serve):
-    ids = ["CLM-1001", "CLM-1003", "CLM-1004"]
-    leave_waiting(*ids)
-    scripts = {case_id: decide("refer", 0) for case_id in ids}
+    ids = ["PC-1205", "PC-1206", "PC-1207"]
+    leave_received(*ids)
+    scripts = {case_id: work_on_it() for case_id in ids}
     model = swarm(scripts, pause=0.05, fill=2)
     agent = serve(model)
     response = agent.invoke(work_run(new_dispatch(2)["run_id"]))
@@ -210,21 +206,19 @@ def test_work_a_dispatch_the_app_created(client, serve):
     dispatch = latest_dispatch(client)
     assert (dispatch["status"], dispatch["agents"]) == ("finished", 2)
     assert (dispatch["version"], dispatch["model"]) == (1, "openai/gpt-6-luna")
-    assert [c["status"] for c in dispatch["cases"]] == ["decided"] * 3
+    assert [c["status"] for c in dispatch["cases"]] == ["awaiting_review"] * 3
     assert model.most_at_once == 2
 
 
-TINY_HELD_OUT = ["CLM-1104", "CLM-1106", "CLM-1110", "CLM-1112", "CLM-1114"]
-
-
 def test_work_an_evaluation_the_app_created(client, serve):
-    model = swarm({f"{c}-E1": decide("refer", 0) for c in TINY_HELD_OUT})
+    run = new_evaluation()
+    model = swarm({copy["case_id"]: work_on_it() for copy in run["cases"]})
     agent = serve(model)
-    assert agent.invoke(work_run(new_evaluation()["run_id"])).json() == ACCEPTED
+    assert agent.invoke(work_run(run["run_id"])).json() == ACCEPTED
     [evaluation] = evaluations(client)
     assert (evaluation["status"], evaluation["size"], evaluation["agents"]) == (
         "finished",
-        5,
+        10,
         5,
     )
 
@@ -232,7 +226,7 @@ def test_work_an_evaluation_the_app_created(client, serve):
 def test_ping_is_busy_while_work_goes_on_and_healthy_once_it_ends(
     client, serve, held_run
 ):
-    leave_waiting()
+    leave_received()
     agent = serve(stub())
     assert agent.ping() == "Healthy"
     run_id = new_dispatch()["run_id"]
@@ -244,31 +238,8 @@ def test_ping_is_busy_while_work_goes_on_and_healthy_once_it_ends(
     assert latest_dispatch(client)["status"] == "finished"
 
 
-@pytest.mark.filterwarnings("error::pytest.PytestUnhandledThreadExceptionWarning")
-def test_a_resume_that_raised_is_logged_and_its_task_completed(
-    client, serve, monkeypatch, caplog
-):
-    saver = InMemorySaver()
-    hold(saver=saver)
-    sign_off(client, "CLM-1003")
-    raised = threading.Event()
-
-    def broken(case_id, agent):
-        raised.set()
-        raise RuntimeError("The backend is unreachable")
-
-    monkeypatch.setattr(work, "resume", broken)
-    agent = serve(stub(), saver)
-    # Its answer waits until /ping says Healthy, once the task is completed.
-    assert resume_case(agent, "CLM-1003").json() == ACCEPTED
-    assert raised.is_set()
-    [logged] = [r for r in caplog.records if r.name == work.log.name]
-    assert logged.getMessage() == "The resume of CLM-1003 stopped"
-    assert "The backend is unreachable" in str(logged.exc_info[1])
-
-
 def test_the_agent_keeps_no_one_at_a_time_itself(client, serve, held_run):
-    leave_waiting()
+    leave_received()
     agent = serve(stub())
     first = new_dispatch()["run_id"]
     second = another_running_dispatch()
@@ -338,7 +309,7 @@ def test_a_run_whose_context_layer_isnt_answering_stops_with_one_line(
 ):
     agent = serve(stub())
 
-    def down(version, kind):
+    def down(version):
         raise ConnectionError("The context layer isn't answering at http://x/mcp")
 
     entrypoint.ready.get().payroll_agents = down
@@ -361,8 +332,8 @@ def test_getting_ready_stops_nothing(client, workers_from, fresh_agent):
 
 def test_a_dispatch_works_on_the_version_the_app_gave_it(client, serve):
     add_version("Version 2's instructions", verdict="kept")
-    leave_waiting("CLM-1001")
-    model = swarm({"CLM-1001": decide("refer", 0)})
+    leave_received("PC-1205")
+    model = swarm({"PC-1205": work_on_it()})
     assert serve(model).invoke(work_run(new_dispatch()["run_id"])).json() == ACCEPTED
 
     dispatch = latest_dispatch(client)
@@ -372,15 +343,15 @@ def test_a_dispatch_works_on_the_version_the_app_gave_it(client, serve):
         "minimal",
     )
     version_2 = client.get("/api/versions/2").json()["instructions"]
-    assert version_2.startswith("Version 2's instructions\n")
+    assert version_2 == "Version 2's instructions"
     assert [prompt[0].content for prompt in model.prompts] == [version_2] * 2
 
 
 def test_a_run_keeps_its_version_when_another_is_kept_meanwhile(client, serve):
-    leave_waiting("CLM-1001")
+    leave_received("PC-1205")
     run_id = new_dispatch()["run_id"]
     add_version("Version 2's instructions", verdict="kept")
-    model = swarm({"CLM-1001": decide("refer", 0)})
+    model = swarm({"PC-1205": work_on_it()})
     assert serve(model).invoke(work_run(run_id)).json() == ACCEPTED
     version_1 = client.get("/api/versions/1").json()["instructions"]
     assert [prompt[0].content for prompt in model.prompts] == [version_1] * 2
@@ -389,15 +360,11 @@ def test_a_run_keeps_its_version_when_another_is_kept_meanwhile(client, serve):
 def test_the_workers_are_built_on_the_processs_pool(monkeypatch):
     pool = cast(checkpoints.Pool, object())
     monkeypatch.setattr(
-        entrypoint, "payroll_graphs", lambda version, kind, pool: (version, kind, pool)
+        entrypoint, "payroll_graphs", lambda version, pool: (version, pool)
     )
     monkeypatch.setattr(entrypoint, "PostgresSaver", lambda on: ("saver", on))
     workers = entrypoint.workers_on(pool)
-    assert workers.payroll_agents({"number": 2}, "evaluation") == (
-        {"number": 2},
-        "evaluation",
-        pool,
-    )
+    assert workers.payroll_agents({"number": 2}) == ({"number": 2}, pool)
     assert workers.saver == ("saver", pool)
 
 
@@ -409,7 +376,6 @@ def heard(monkeypatch):
     told = []
     for module, name in (
         (api, "record_run_heartbeat"),
-        (api, "record_case_heartbeat"),
         (improver_api, "record_round_heartbeat"),
     ):
         real = getattr(module, name)
@@ -438,7 +404,7 @@ def heard_while_working(agent, held, heard, payload):
 
 
 def test_the_app_hears_from_a_run_while_it_works(client, serve, held_run, heard):
-    leave_waiting()
+    leave_received()
     run_id = new_dispatch()["run_id"]
     assert heard_while_working(serve(stub()), held_run, heard, work_run(run_id)) > 2
     assert set(heard) == {run_id}
@@ -452,18 +418,6 @@ def test_the_app_hears_from_a_round_while_it_works(client, serve, held_run, hear
     assert set(heard) == {round_id}
 
 
-def test_the_app_hears_from_a_resume_while_it_works(client, serve, monkeypatch, heard):
-    saver = InMemorySaver()
-    hold(saver=saver)
-    sign_off(client, "CLM-1003")
-    held = HeldWork()
-    monkeypatch.setattr(work, "resume", held.work)
-    agent = serve(stub(), saver)
-    payload = {"operation": "resume_case", "case_id": "CLM-1003"}
-    assert heard_while_working(agent, held, heard, payload) > 2
-    assert set(heard) == {"CLM-1003"}
-
-
 class HeldWork:
     """Work held open until the test releases it."""
 
@@ -473,79 +427,3 @@ class HeldWork:
     def work(self, *args):
         self.working.set()
         self.release.wait(5)
-
-
-def built_on(saver, built):
-    """Payroll agents on a stub model, sharing a saver, that keep the version and the
-    kind of run each was built for."""
-
-    def payroll_agents(version, kind):
-        built.append((version["number"], kind))
-        return partial(agent_on, stub(), saver, version)
-
-    return payroll_agents
-
-
-def test_a_signed_off_case_is_resumed_in_the_background(client, serve):
-    add_version("Version 2's instructions", verdict="kept")
-    saver = InMemorySaver()
-    hold(saver=saver)
-    sign_off(client, "CLM-1003")
-    calls, times = model_calls_of("CLM-1003"), work_times_of("CLM-1003")
-    agent, built = serve(stub(), saver), []
-    entrypoint.ready.get().payroll_agents = built_on(saver, built)
-    response = resume_case(agent, "CLM-1003")
-    assert (response.status_code, response.json()) == (200, ACCEPTED)
-    assert built == [(2, None)]
-    case = case_of(client, "CLM-1003")
-    assert case["status"] == "decided"
-    assert not harness.paused(case, agent_on(stub(), saver))
-    assert work_times_of("CLM-1003")[: len(times)] == times
-    [resumed] = work_times_of("CLM-1003")[len(times) :]
-    assert resumed["run_id"] is None
-    # A sign-off has already paid the case, so the resume calls no model.
-    assert model_calls_of("CLM-1003") == calls
-
-
-def test_resume_case_refuses_a_case_that_isnt_paused_with_an_answer(client, serve):
-    saver = StopAtThePause()
-    with pytest.raises(KeyboardInterrupt):
-        hold("CLM-1002", 1350.0, saver)
-    sign_off(client, "CLM-1002")
-    hold(saver=saver)
-    harness.work_case("CLM-1001", None, agent_on(stub(*decide("decline", 0)), saver))
-    run_id = new_evaluation("evaluation")["run_id"]
-    copy = agent_on(stub(*approve("CLM-1020", 1240.0)), saver, pauses=False)
-    harness.work_in_run("CLM-1020-E1", run_id, lambda: copy)
-
-    agent = serve(stub(), saver)
-    for case_id, reason in [
-        ("CLM-1003", "Case CLM-1003 has no answer from a reviewer yet"),
-        ("CLM-1001", "Case CLM-1001 isn't paused for a reviewer"),
-        ("CLM-1020-E1", "Case CLM-1020-E1 isn't paused for a reviewer"),
-        ("CLM-1002", "Case CLM-1002 isn't paused for a reviewer"),
-        ("CLM-9999", "Case CLM-9999 not found"),
-    ]:
-        refused = resume_case(agent, case_id)
-        assert (refused.status_code, refused.json()) == (200, {"refused": reason})
-    assert case_of(client, "CLM-1003")["status"] == "waiting_for_sign_off"
-
-
-def test_a_resume_is_accepted_while_a_dispatch_is_running(client, serve, held_run):
-    leave_waiting("CLM-1003")
-    saver = InMemorySaver()
-    hold(saver=saver)
-    sign_off(client, "CLM-1003")
-    agent = serve(stub(), saver)
-    run_id = new_dispatch()["run_id"]
-    assert agent.invoke(work_run(run_id), wait=False).json() == ACCEPTED
-    assert held_run.working.wait(5)
-
-    resumed = agent.invoke(
-        {"operation": "resume_case", "case_id": "CLM-1003"}, wait=False
-    )
-    assert resumed.json() == ACCEPTED
-    held_run.release.set()
-    agent.settle()
-    assert not harness.paused(case_of(client, "CLM-1003"), agent_on(stub(), saver))
-    assert latest_dispatch(client)["status"] == "finished"

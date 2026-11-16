@@ -86,7 +86,7 @@ function RoundEvaluations({ round }: Readonly<{ round: RoundView }>) {
             <th>Version</th>
             <th>Set</th>
             <th>Status</th>
-            <th className="num">Accuracy</th>
+            <th className="num">Catch rate</th>
           </tr>
         </thead>
         <tbody>
@@ -104,7 +104,7 @@ function RoundEvaluations({ round }: Readonly<{ round: RoundView }>) {
               <td>
                 <RunChip status={evaluation.status} />
               </td>
-              <td className="num">{percent(evaluation.measures.accuracy)}</td>
+              <td className="num">{percent(evaluation.measures.catch_rate)}</td>
             </tr>
           ))}
         </tbody>

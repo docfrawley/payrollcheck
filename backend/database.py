@@ -1,91 +1,42 @@
-"""The PayrollCheck database, seeded from the business data in data/, and the plans
-and the documents from the context layer's files in context/.
+"""The PayrollCheck database: its tables, the views the API reads cases through,
+and where it is. backend/seeding.py fills it from data/.
 
 The same tables and queries serve Postgres on Supabase, when DATABASE_URL is set, and
 SQLite otherwise, as in the tests.
 """
 
-import json
 import os
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
-from typing import Any, NamedTuple
 
 from sqlalchemy import (
     JSON,
     Boolean,
     Column,
-    Connection,
     Engine,
     Float,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     Table,
     Text,
     UniqueConstraint,
     create_engine,
-    insert,
+    func,
     inspect,
     select,
 )
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.pool import NullPool
-from sqlalchemy.schema import CreateSchema, DropSchema
 
-from backend import context_files
-from backend.free_models import model_or_free, models_or_free
-from backend.models import (
-    EvaluationSet,
-    ModelAllowed,
-    SettingsValues,
-    Status,
-    Verdict,
-)
+from backend.models import ExceptionStatus
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
-CLAIMS_MANUAL = "claims_manual"
-DOCUMENTS = {"policy_wording": "Policy wording", CLAIMS_MANUAL: "Claims manual"}
-INSTRUCTIONS = Path(__file__).resolve().parent / "instructions"
-# Version 1 is kept from the start, so the current version is the newest kept.
-FIRST_VERSION = {
-    "number": 1,
-    "reason": "The payroll agent as the claims team built it",
-    "proposed_by": "The claims team",
-    "verdict": Verdict.KEPT,
-    "verdict_reason": "the first version",
-}
-# The model version 1 of the payroll agent is on, with no reasoning, so a higher
-# reasoning effort is an improvement to find, unless a student is on a free model.
-FIRST_MODEL = ("openai/gpt-6-luna", "none")
-FIRST_RECIPE = {
-    "number": 1,
-    "recipe": (INSTRUCTIONS / "recipe.md").read_text(encoding="utf-8"),
-    "reason": "The lab's first recipe, which tries the models and reasoning efforts "
-    "not yet tried, then adds a rule for each mistake",
-    "proposed_by": "The claims team",
-}
-HELD_OUT_CASES = "evals/held_out_claims.json"
 SCHEMA = "payrollcheck"
 CONNECTIONS = 4
 CONNECTION_WAIT = 120
-# Tables of earlier versions, dropped before the others, since on Postgres a foreign
-# key of theirs would stop the tables they refer to being dropped.
-RETIRED = ["todos"]
-# The schema of an earlier version, under the product's old name, dropped with all it
-# holds, the checkpointer's tables included.
-RETIRED_SCHEMA = "undercover"
-# The keys of the records in data/ that the app calls by other names.
-RECORD_KEYS = {
-    "claim_id": "case_id",
-    "claim_type": "case_type",
-    "previous_claims": "previous_cases",
-    "customer_id": "subcontractor_id",
-    "customer_since": "subcontractor_since",
-    "handler_id": "reviewer_id",
-}
 
 metadata = MetaData()
 
@@ -94,19 +45,15 @@ settings = Table(
     "settings",
     metadata,
     Column("number", Integer, primary_key=True, autoincrement=False),
-    Column("approval_limit", Float, nullable=False),
     Column("objectives", JSON, nullable=False),
     Column("noise", JSON, nullable=False),
     Column("tolerance", JSON, nullable=False),
     Column("spending_limit", Float, nullable=False),
     Column("agents", Integer, nullable=False),
+    # The app's today, or none for the real date.
+    Column("business_date", Text),
     Column("changed_by", Text),
     Column("changed_at", Text, nullable=False),
-)
-payout_rules = Table(
-    "payout_rules",
-    metadata,
-    Column("plans", JSON, nullable=False),
 )
 models_allowed = Table(
     "models_allowed",
@@ -117,16 +64,6 @@ models_allowed = Table(
     Column("input_price", Float, nullable=False),
     Column("output_price", Float, nullable=False),
 )
-documents = Table(
-    "documents",
-    metadata,
-    Column("name", Text, primary_key=True),
-    Column("position", Integer, nullable=False),
-    Column("title", Text, nullable=False),
-    Column("text", Text, nullable=False),
-    # The version in the document's front matter, such as the manual's 2026.2.
-    Column("version", Text, nullable=False),
-)
 reviewers = Table(
     "reviewers",
     metadata,
@@ -136,18 +73,60 @@ reviewers = Table(
     Column("email", Text, nullable=False, unique=True),
     Column("can_approve_over_limit", Boolean, nullable=False),
 )
+projects = Table(
+    "projects",
+    metadata,
+    Column("project_id", Text, primary_key=True),
+    Column("name", Text, nullable=False),
+    Column("county", Text, nullable=False),
+    Column("location", Text, nullable=False),
+    Column("public_body", Text, nullable=False),
+    Column("contract_no", Text, nullable=False),
+    Column("award_date", Text, nullable=False),
+    # The held-out world's records, which only its evaluations' copies read.
+    Column("held_out", Boolean, nullable=False),
+)
 subcontractors = Table(
     "subcontractors",
     metadata,
     Column("subcontractor_id", Text, primary_key=True),
-    Column("name", Text, nullable=False),
-    Column("record", JSON, nullable=False),
+    Column("legal_name", Text, nullable=False),
+    Column("fein", Text, nullable=False),
+    Column("registration_no", Text, nullable=False),
+    Column("contact_name", Text, nullable=False),
+    Column("contact_email", Text, nullable=False),
+    Column("held_out", Boolean, nullable=False),
 )
-policies = Table(
-    "policies",
+# The subcontractors on each project, with their engagement windows and the number
+# of the pair, which a case's id carries.
+engagements = Table(
+    "engagements",
     metadata,
-    Column("policy_id", Text, primary_key=True),
-    Column("record", JSON, nullable=False),
+    Column("project_id", Text, ForeignKey("projects.project_id"), primary_key=True),
+    Column(
+        "subcontractor_id",
+        Text,
+        ForeignKey("subcontractors.subcontractor_id"),
+        primary_key=True,
+    ),
+    Column("pair", Integer, nullable=False),
+    Column("first_week_ending", Text, nullable=False),
+    Column("last_week_ending", Text, nullable=False),
+)
+workers = Table(
+    "workers",
+    metadata,
+    Column("worker_id", Text, primary_key=True),
+    Column("name", Text, nullable=False),
+    Column(
+        "subcontractor_id",
+        Text,
+        ForeignKey("subcontractors.subcontractor_id"),
+        nullable=False,
+    ),
+    Column("craft", Text, nullable=False),
+    Column("classification", Text, nullable=False),
+    Column("held_out", Boolean, nullable=False),
 )
 cases = Table(
     "cases",
@@ -159,91 +138,153 @@ cases = Table(
         ForeignKey("subcontractors.subcontractor_id"),
         nullable=False,
     ),
-    Column("record", JSON, nullable=False),
+    Column("project_id", Text, ForeignKey("projects.project_id"), nullable=False),
+    Column("week_ending", Text, nullable=False),
     Column("status", Text, nullable=False),
+    Column("screening_flag", Boolean, nullable=False),
+    Column("screening_reason", Text),
+    Column("agent_failed", Boolean, nullable=False),
+    Column("latest_submission_no", Integer, nullable=False),
     Column("thread_id", Text),
     Column("attempts", Integer, nullable=False),
     Column("evaluation_id", Text, ForeignKey("runs.run_id")),
     Column("copy_of", Text),
-    # When the agent last said a resume was working on the case.
-    Column("resume_heard_at", Text),
+    # Who decided a case in the history, and when.
+    Column("reviewed_by", Text),
+    Column("reviewed_on", Text),
 )
-held_out_cases = Table(
-    "held_out_cases",
-    metadata,
-    Column("case_id", Text, primary_key=True),
-    Column("record", JSON, nullable=False),
+# One case for a subcontractor, project and week in the queue; an evaluation's copy
+# sits beside its original.
+Index(
+    "one_case_a_week",
+    cases.c.subcontractor_id,
+    cases.c.project_id,
+    cases.c.week_ending,
+    unique=True,
+    sqlite_where=cases.c.evaluation_id.is_(None),
+    postgresql_where=cases.c.evaluation_id.is_(None),
 )
-reviewer_decisions = Table(
-    "reviewer_decisions",
-    metadata,
-    Column("evaluation_set", Text, primary_key=True),
-    Column("case_id", Text, primary_key=True),
-    Column("decision", Text, nullable=False),
-    Column("payout", Float, nullable=False),
-    Column("tiny", Boolean, nullable=False),
-    Column("reason", Text, nullable=False),
-    Column("reference", Text, nullable=False),
-)
-decisions = Table(
-    "decisions",
+submissions = Table(
+    "submissions",
     metadata,
     Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
-    Column("decision", Text, nullable=False),
-    Column("payout", Float, nullable=False),
-    Column("section", Text, nullable=False),
-    Column("reason", Text, nullable=False),
-    Column("decided_at", Text, nullable=False),
-    # Who or what made the decision, and the claims manual's version in force.
-    Column("decided_by", Text, nullable=False),
-    Column("manual_version", Text, nullable=False),
-    # An approval's calculation, its lines and its payout, and none otherwise.
-    Column("calculation", JSON),
-    # The approval limit in force when the decision was recorded.
-    Column("approval_limit", Float, nullable=False),
-    Column("signed_off_by", Text),
-    Column("signed_off_at", Text),
-    # Why the Gateway refused to pay an approval, which then waits for sign-off.
-    Column("gateway_refusal", Text),
-)
-# The decisions reviewers sent back to the agent, each with its note, who sent it
-# back and when.
-sent_back_decisions = Table(
-    "sent_back_decisions",
-    metadata,
-    Column("sent_back_id", Integer, primary_key=True),
-    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
-    Column("decision", Text, nullable=False),
-    Column("payout", Float, nullable=False),
-    Column("calculation", JSON),
-    Column("section", Text, nullable=False),
-    Column("reason", Text, nullable=False),
-    Column("decided_by", Text, nullable=False),
-    Column("decided_at", Text, nullable=False),
-    Column("manual_version", Text, nullable=False),
-    Column("gateway_refusal", Text),
-    Column("note", Text, nullable=False),
-    Column("sent_back_by", Text, nullable=False),
-    Column("sent_back_at", Text, nullable=False),
-)
-# Each case's latest calculation of its payout, on the thread of the attempt it was
-# made in, which an approval in that attempt must match.
-calculations = Table(
-    "calculations",
-    metadata,
-    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
-    Column("thread_id", Text, nullable=False),
+    Column("submission_no", Integer, primary_key=True, autoincrement=False),
+    Column("uploaded_by", Text, nullable=False),
+    Column("uploaded_at", Text, nullable=False),
+    Column("received_on", Text, nullable=False),
+    Column("file_name", Text, nullable=False),
+    Column("payroll_no", Integer, nullable=False),
+    Column("wage_payment_date", Text, nullable=False),
+    Column("certification", JSON, nullable=False),
     Column("lines", JSON, nullable=False),
-    Column("payout", Float, nullable=False),
-    Column("calculated_at", Text, nullable=False),
 )
-payments = Table(
-    "payments",
+# A check tool's findings for the attempt on a thread, which an exception with a
+# shortfall must match.
+candidates = Table(
+    "candidates",
+    metadata,
+    Column("candidate_id", Integer, primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False, index=True),
+    Column("thread_id", Text, nullable=False),
+    Column("submission_no", Integer, nullable=False),
+    Column("check", Text, nullable=False),
+    Column("rule", Text, nullable=False),
+    Column("severity", Text, nullable=False),
+    Column("worker_id", Text),
+    Column("line_no", Integer),
+    Column("expected", Text, nullable=False),
+    Column("actual", Text, nullable=False),
+    Column("shortfall_cents", Integer),
+    Column("citation", Text, nullable=False),
+    Column("dismissed_because", Text),
+)
+# The checks each attempt ran, whether or not they found anything.
+check_runs = Table(
+    "check_runs",
     metadata,
     Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
-    Column("amount", Float, nullable=False),
-    Column("paid_at", Text, nullable=False),
+    Column("thread_id", Text, primary_key=True),
+    Column("check", Text, primary_key=True),
 )
+exceptions = Table(
+    "exceptions",
+    metadata,
+    Column("exception_id", Integer, primary_key=True),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False, index=True),
+    Column("submission_no", Integer, nullable=False),
+    Column("rule", Text, nullable=False),
+    Column("severity", Text, nullable=False),
+    Column("worker_id", Text),
+    Column("line_no", Integer),
+    Column("expected", Text, nullable=False),
+    Column("actual", Text, nullable=False),
+    Column("shortfall_cents", Integer),
+    Column("citation", Text, nullable=False),
+    Column("raised_by", Text, nullable=False),
+    # What raised it: a check tool's finding, the payroll agent's own judgment, or
+    # a reviewer.
+    Column("source", Text, nullable=False),
+    Column("candidate_id", Integer, ForeignKey("candidates.candidate_id")),
+    Column("status", Text, nullable=False),
+)
+# A reviewer's dismissal or addition of an exception. Stage 4 fills it.
+overrides = Table(
+    "overrides",
+    metadata,
+    Column("override_id", Integer, primary_key=True),
+    Column("exception_id", Integer, ForeignKey("exceptions.exception_id")),
+    Column("case_id", Text, ForeignKey("cases.case_id"), nullable=False),
+    Column("submission_no", Integer, nullable=False),
+    Column("kind", Text, nullable=False),
+    Column("reviewer_id", Text, ForeignKey("reviewers.reviewer_id"), nullable=False),
+    Column("reason", Text, nullable=False),
+    Column("created_at", Text, nullable=False),
+)
+# Each submission's send-back notice: the agent's draft, and from stage 4 the
+# reviewer's edit and who sent it.
+notices = Table(
+    "notices",
+    metadata,
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
+    Column("submission_no", Integer, primary_key=True, autoincrement=False),
+    Column("draft", Text, nullable=False),
+    Column("drafted_by", Text, nullable=False),
+    Column("drafted_at", Text, nullable=False),
+    Column("edited_text", Text),
+    Column("edited_by", Text),
+    Column("edited_at", Text),
+    Column("sent_by", Text),
+    Column("sent_at", Text),
+)
+# The labelled sets' cases, out of the queue, with their submissions as the
+# generator wrote them, and their labels: the answer key only scoring reads.
+labelled_cases = Table(
+    "labelled_cases",
+    metadata,
+    Column("labelled_set", Text, primary_key=True),
+    Column("case_id", Text, primary_key=True),
+    Column("project_id", Text, nullable=False),
+    Column("subcontractor_id", Text, nullable=False),
+    Column("week_ending", Text, nullable=False),
+    Column("tiny", Boolean, nullable=False),
+    Column("submissions", JSON, nullable=False),
+    # How many of its submissions it had before anyone reviewed it, which an
+    # evaluation's copy holds: a history case's first, and a waiting case's all.
+    Column("before_review", Integer, nullable=False),
+)
+labels = Table(
+    "labels",
+    metadata,
+    Column("label_id", Integer, primary_key=True),
+    Column("labelled_set", Text, nullable=False),
+    Column("case_id", Text, nullable=False),
+    # A rule code, or SCREENING for an expected screening flag.
+    Column("rule", Text, nullable=False),
+    Column("worker_id", Text),
+    Column("line_no", Integer),
+    Column("expected_shortfall_cents", Integer),
+)
+SCREENING = "screening"
 steps = Table(
     "steps",
     metadata,
@@ -336,6 +377,8 @@ versions = Table(
     Column("created_at", Text, nullable=False),
     Column("verdict", Text),
     Column("verdict_reason", Text),
+    # The check tools' tunable parameters, such as the rounding tolerance.
+    Column("parameters", JSON, nullable=False),
 )
 runs = Table(
     "runs",
@@ -349,7 +392,6 @@ runs = Table(
     Column("model", Text, nullable=False),
     Column("reasoning_effort", Text, nullable=False),
     Column("evaluation_set", Text),
-    Column("tiny", Boolean),
     Column("status", Text, nullable=False),
     Column("started_at", Text, nullable=False),
     Column("finished_at", Text),
@@ -368,19 +410,6 @@ locks = Table(
     Column("taken_at", Text),
 )
 AGENTS_WORK = "the agent's work"
-# The judge's grade of each copy in an evaluation, empty when it couldn't grade it.
-grades = Table(
-    "grades",
-    metadata,
-    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
-    Column("run_id", Text, ForeignKey("runs.run_id"), nullable=False),
-    Column("score", Float),
-    Column("letter", Text),
-    Column("same_grounds", Float),
-    Column("same_section", Float),
-    Column("cost", Float, nullable=False),
-    Column("graded_at", Text, nullable=False),
-)
 run_cases = Table(
     "run_cases",
     metadata,
@@ -424,9 +453,8 @@ conversations = Table(
     Column("turns", Integer, nullable=False),
     Column("created_at", Text, nullable=False),
 )
-# Each message to the Copilot and its answer: where the turn stands, how it ended,
-# and the card of a sign-off waiting for the reviewer's confirmation, with the held
-# decision's decided_at, and the reviewer's answer.
+# Each message to the Copilot and its answer: where the turn stands and how it
+# ended.
 copilot_turns = Table(
     "copilot_turns",
     metadata,
@@ -441,16 +469,11 @@ copilot_turns = Table(
     Column("message", Text, nullable=False),
     Column("status", Text, nullable=False),
     Column("started_at", Text, nullable=False),
-    Column("paused_at", Text),
-    Column("answered_at", Text),
     Column("finished_at", Text),
     Column("answer", Text),
     Column("model_calls", Integer),
     Column("cost", Float),
     Column("failure", Text),
-    Column("confirmation", JSON),
-    Column("confirmation_answer", Text),
-    Column("canceled_because", Text),
     UniqueConstraint("conversation_id", "number"),
 )
 # The cards of a turn: each tool the Copilot called, what was asked and what came
@@ -476,52 +499,6 @@ copilot_steps = Table(
     Column("sources", JSON, nullable=False),
     Column("started_at", Text, nullable=False),
     Column("finished_at", Text),
-)
-
-
-class LabeledSet(NamedTuple):
-    """A set of cases our reviewers have decided: the table its cases are kept in,
-    and the file in data/evals/ with the reviewers' decisions, which only seeding
-    reads."""
-
-    cases: Table
-    decisions: str
-
-
-LABELED_SETS = {
-    EvaluationSet.EVALUATION: LabeledSet(cases, "evals/decisions.json"),
-    EvaluationSet.HELD_OUT: LabeledSet(held_out_cases, "evals/held_out_decisions.json"),
-}
-
-case_view = (
-    select(
-        cases.c.case_id,
-        cases.c.record,
-        cases.c.status,
-        cases.c.thread_id,
-        cases.c.attempts,
-        cases.c.evaluation_id,
-        cases.c.copy_of,
-        cases.c.resume_heard_at,
-        subcontractors.c.name.label("subcontractor_name"),
-        decisions.c.decision,
-        decisions.c.payout,
-        decisions.c.section,
-        decisions.c.reason,
-        decisions.c.decided_at,
-        decisions.c.decided_by,
-        decisions.c.manual_version,
-        decisions.c.calculation,
-        decisions.c.approval_limit,
-        decisions.c.signed_off_by,
-        decisions.c.signed_off_at,
-        decisions.c.gateway_refusal,
-        payments.c.amount,
-        payments.c.paid_at,
-    )
-    .join(subcontractors, subcontractors.c.subcontractor_id == cases.c.subcontractor_id)
-    .outerjoin(decisions, decisions.c.case_id == cases.c.case_id)
-    .outerjoin(payments, payments.c.case_id == cases.c.case_id)
 )
 
 
@@ -606,176 +583,32 @@ def is_seeded(db: Engine) -> bool:
     return inspect(db).has_table("cases")
 
 
-def with_our_names(value: Any) -> Any:
-    """Give the keys of a record in data/ the app's names, leaving every value as it
-    is: the records keep the words of the claims platform they came from."""
-    if isinstance(value, dict):
-        return {RECORD_KEYS.get(k, k): with_our_names(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [with_our_names(v) for v in value]
-    return value
-
-
-def load(name: str) -> Any:
-    """Read one of the JSON files in data/, with its keys under the app's names."""
-    return with_our_names(json.loads((DATA / name).read_text(encoding="utf-8")))
-
-
-def queue_records(name: str) -> list[dict[str, Any]]:
-    """Read the queue's records of one kind: those in data/ and the security team's
-    in data/security/, whose reviewer's decision is never seeded."""
-    return load(name) + load(f"security/{name}")
-
-
-def waiting_case(record: dict[str, Any], **columns: Any) -> dict[str, Any]:
-    """Return the row of a case waiting in the queue, never started, with any other
-    columns given."""
-    return {
-        "case_id": record["case_id"],
-        "subcontractor_id": record["subcontractor_id"],
-        "record": record,
-        "status": Status.WAITING,
-        "thread_id": None,
-        "attempts": 0,
-    } | columns
-
-
-def seed(db: Engine) -> dict[str, int]:
-    """Build the tables afresh from data/ and count what they hold."""
-    company = load("company.json")
-    reviewer_rows = load("reviewers.json")
-    subcontractor_rows = queue_records("customers.json")
-    policy_rows = queue_records("policies.json")
-    case_rows = queue_records("claims.json")
-    with db.begin() as connection:
-        if on_postgres(db.url):
-            connection.execute(DropSchema(RETIRED_SCHEMA, cascade=True, if_exists=True))
-            connection.execute(CreateSchema(SCHEMA, if_not_exists=True))
-        for name in RETIRED:
-            Table(name, MetaData()).drop(connection, checkfirst=True)
-        metadata.drop_all(connection)
-        metadata.create_all(connection)
-        seed_settings(connection, company["payout_approval_limit"])
-        connection.execute(insert(payout_rules).values(plans=context_files.plans()))
-        seed_models_allowed(connection)
-        seed_documents(connection)
-        connection.execute(
-            insert(reviewers),
-            [
-                {
-                    "reviewer_id": h["reviewer_id"],
-                    "name": h["name"],
-                    "role": h["role"],
-                    "email": h["email"],
-                    "can_approve_over_limit": h["can_approve_over_limit"],
-                }
-                for h in reviewer_rows
-            ],
-        )
-        connection.execute(
-            insert(subcontractors),
-            [
-                {
-                    "subcontractor_id": c["subcontractor_id"],
-                    "name": c["name"],
-                    "record": c,
-                }
-                for c in subcontractor_rows
-            ],
-        )
-        connection.execute(
-            insert(policies),
-            [{"policy_id": p["policy_id"], "record": p} for p in policy_rows],
-        )
-        connection.execute(insert(cases), [waiting_case(c) for c in case_rows])
-        seed_first_version(connection)
-        connection.execute(insert(recipes).values(**FIRST_RECIPE, created_at=now()))
-        connection.execute(insert(locks).values(name=AGENTS_WORK))
-        labeled = seed_evaluations(connection)
-    return {
-        "cases": len(case_rows),
-        "policies": len(policy_rows),
-        "subcontractors": len(subcontractor_rows),
-        "reviewers": len(reviewer_rows),
-    } | labeled
-
-
-def seed_documents(connection: Connection) -> None:
-    """Store the policy wording and the claims manual from the context layer's
-    files, each with its version."""
-    rows = []
-    for position, (name, title) in enumerate(DOCUMENTS.items()):
-        text, version = context_files.document(name)
-        rows.append(
-            {
-                "name": name,
-                "position": position,
-                "title": title,
-                "text": text,
-                "version": version,
-            }
-        )
-    connection.execute(insert(documents), rows)
-
-
-def seed_settings(connection: Connection, approval_limit: float) -> None:
-    """Store the first settings: the approval limit, and the rest from
-    data/improvement.json, checked as the settings page checks a change."""
-    values = SettingsValues(approval_limit=approval_limit, **load("improvement.json"))
-    connection.execute(
-        insert(settings).values(number=1, **values.model_dump(), changed_at=now())
+# The open exceptions on each case's latest submission: how many, and the shortfall.
+open_on_latest = (
+    select(
+        exceptions.c.case_id,
+        func.count().label("open_exceptions"),
+        func.coalesce(func.sum(exceptions.c.shortfall_cents), 0).label("shortfall"),
     )
-
-
-def seed_models_allowed(connection: Connection) -> None:
-    """Store the models the payroll agent may use, from data/models.json, or the free
-    model alone for students on free models."""
-    listed = [ModelAllowed(**model) for model in load("models.json")]
-    connection.execute(
-        insert(models_allowed),
-        [
-            model.model_dump() | {"position": position}
-            for position, model in enumerate(models_or_free(listed))
-        ],
+    .join(cases, cases.c.case_id == exceptions.c.case_id)
+    .where(
+        exceptions.c.status == ExceptionStatus.OPEN,
+        exceptions.c.submission_no == cases.c.latest_submission_no,
     )
-
-
-def seed_first_version(connection: Connection) -> None:
-    """Make version 1 of the payroll agent's configuration, from its instructions file,
-    on GPT-6 Luna with no reasoning, or the free model for students on free
-    models."""
-    model, reasoning_effort = model_or_free(*FIRST_MODEL)
-    connection.execute(
-        insert(versions).values(
-            **FIRST_VERSION,
-            instructions=(INSTRUCTIONS / "payroll.md").read_text(encoding="utf-8"),
-            model=model,
-            reasoning_effort=reasoning_effort,
-            created_at=now(),
-        )
+    .group_by(exceptions.c.case_id)
+    .subquery()
+)
+# A case as the queue lists it: its row, its subcontractor's and project's names
+# and its open exceptions.
+case_view = (
+    select(
+        cases,
+        subcontractors.c.legal_name.label("subcontractor_name"),
+        projects.c.name.label("project_name"),
+        func.coalesce(open_on_latest.c.open_exceptions, 0).label("open_exceptions"),
+        func.coalesce(open_on_latest.c.shortfall, 0).label("shortfall_cents"),
     )
-
-
-def seed_evaluations(connection: Connection) -> dict[str, int]:
-    """Store the held-out cases, out of the queue, and the reviewers' decisions on
-    both labeled sets, and count them."""
-    held_out = load(HELD_OUT_CASES)
-    connection.execute(
-        insert(held_out_cases),
-        [{"case_id": c["case_id"], "record": c} for c in held_out],
-    )
-    rows = [
-        {
-            "evaluation_set": evaluation_set,
-            "case_id": d["case_id"],
-            "decision": d["decision"],
-            "payout": d["payout"],
-            "tiny": d["tiny"],
-            "reason": d["reason"],
-            "reference": d["reference"],
-        }
-        for evaluation_set, labeled in LABELED_SETS.items()
-        for d in load(labeled.decisions)
-    ]
-    connection.execute(insert(reviewer_decisions), rows)
-    return {"held_out_cases": len(held_out), "reviewer_decisions": len(rows)}
+    .join(subcontractors, subcontractors.c.subcontractor_id == cases.c.subcontractor_id)
+    .join(projects, projects.c.project_id == cases.c.project_id)
+    .outerjoin(open_on_latest, open_on_latest.c.case_id == cases.c.case_id)
+)

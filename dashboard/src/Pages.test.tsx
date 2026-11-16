@@ -4,6 +4,8 @@ import { endSession } from "./fakeAuth";
 import {
   configuration,
   finishedEvaluation,
+  municipal,
+  project,
   runningDispatch,
   scoredEvaluation,
   versionDetails,
@@ -16,15 +18,8 @@ import {
   improvement,
   open,
 } from "./improvementTesting";
-import {
-  caseRecord,
-  history,
-  policy,
-  renderAt,
-  type Routes,
-  stubApi,
-  summary,
-} from "./testing";
+import { awaiting } from "./caseTesting";
+import { caseRecord, renderAt, type Routes, stubApi, summary } from "./testing";
 
 // What every page has in common: a page header with its title and a line on
 // what the page is for, and tables whose numbers are right-aligned.
@@ -43,14 +38,14 @@ const PAGES: [string, Routes][] = [
     },
   ],
   [
-    "/cases/CLM-1002",
+    "/cases/PC-1201",
     {
-      "GET /api/cases/CLM-1002": caseRecord,
-      "GET /api/cases/CLM-1002/steps": [],
-      "GET /api/policies/POL-2002": policy,
-      "GET /api/subcontractors/CUS-3002/cases": history,
+      "GET /api/cases/PC-1201": awaiting,
+      "GET /api/cases/PC-1201/steps": [],
     },
   ],
+  ["/projects", { "GET /api/projects": [municipal] }],
+  ["/projects/PRJ-02", { "GET /api/projects/PRJ-02": project }],
   ["/scoreboard", { "GET /api/evaluations": [finishedEvaluation] }],
   ["/scoreboard/run-9", { "GET /api/evaluations/run-9": scoredEvaluation }],
   [
@@ -60,9 +55,7 @@ const PAGES: [string, Routes][] = [
         { ...open, waiting: change },
         {
           rounds: [open, finishedRound],
-          versions_tried: [
-            { number: 2, verdict: "kept", accuracy: 0.72, grade: 1.9 },
-          ],
+          versions_tried: [{ number: 2, verdict: "kept", catch_rate: 0.72 }],
         },
       ),
     },
@@ -76,14 +69,14 @@ const PAGES: [string, Routes][] = [
   ["/settings", {}],
 ];
 
-// A number with its unit, such as $1,150.00, 64%, 2.20 or 40 s, and the words
+// A number with its unit, such as $1,150.00, 64%, 32.00 or 40 s, and the words
 // a numeric column shows in place of a number. A bare whole number is an id,
 // such as a version's, and reads from the left.
 const NUMBERS = [/^[+−-]?\$[\d,.]+/, /^[\d.]+%/, /^\d+\.\d+/, /^\d+ (?:s|min)/];
 const IN_PLACE_OF_A_NUMBER = new Set([
   "",
   "None",
-  "Not graded",
+  "None caught",
   "Not finished",
 ]);
 const isNumber = (text: string) => NUMBERS.some((number) => number.test(text));
@@ -144,7 +137,7 @@ const EMPTY_STATES: [string, Routes, RegExp][] = [
   [
     "/",
     { "GET /api/cases": [summary], "GET /api/dispatches/latest": null },
-    /^No dispatch yet\. Start one to work the waiting cases\.$/,
+    /^No dispatch yet\. Start one to check the Received cases\.$/,
   ],
   [
     "/scoreboard",
@@ -152,12 +145,10 @@ const EMPTY_STATES: [string, Routes, RegExp][] = [
     /^No evaluations yet\. Start one above/,
   ],
   [
-    "/cases/CLM-1002",
+    "/cases/PC-1201",
     {
-      "GET /api/cases/CLM-1002": caseRecord,
-      "GET /api/cases/CLM-1002/steps": [],
-      "GET /api/policies/POL-2002": policy,
-      "GET /api/subcontractors/CUS-3002/cases": [],
+      "GET /api/cases/PC-1201": caseRecord,
+      "GET /api/cases/PC-1201/steps": [],
     },
     /^No steps yet\. They appear here as the agent works/,
   ],
@@ -185,7 +176,7 @@ it.each(EMPTY_STATES)(
 
 it("marks the Queue in the header on a case's page", async () => {
   stubApi(PAGES[1][1]);
-  renderAt("/cases/CLM-1002");
+  renderAt("/cases/PC-1201");
   const nav = within(await screen.findByRole("navigation", { name: "Main" }));
   await waitFor(() => {
     expect(

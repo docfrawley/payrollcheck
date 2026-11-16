@@ -23,7 +23,11 @@ from backend.verdict import STOPPED_BEFORE_VERDICT
 ROUND_NOT_FOUND = "Round {round_id} not found"
 NOT_OPEN = "Round {number} is {status}"
 # A version's evaluations: once on the evaluation set and twice on the held-out set.
-EVALUATIONS = [EvaluationSet.EVALUATION, EvaluationSet.HELD_OUT, EvaluationSet.HELD_OUT]
+EVALUATIONS = [
+    EvaluationSet.DEVELOPMENT,
+    EvaluationSet.HELD_OUT,
+    EvaluationSet.HELD_OUT,
+]
 
 
 def round_row(db: Connection, round_id: str) -> RowMapping:

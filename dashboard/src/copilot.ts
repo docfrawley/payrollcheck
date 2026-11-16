@@ -20,16 +20,12 @@ import { modelCost } from "./format";
 export const CARD_KINDS: Record<CardKind, { icon: LucideIcon; label: string }> =
   {
     cases: { icon: FileText, label: "Cases" },
-    subcontractors: { icon: Users, label: "Subcontractors and policies" },
+    subcontractors: { icon: Users, label: "Subcontractors and projects" },
     context: { icon: BookOpen, label: "The context layer" },
     work: { icon: Bot, label: "The agent's work" },
     memory: { icon: Brain, label: "Memory" },
     action: { icon: Zap, label: "Action" },
   };
-
-// The Copilot's step that signs off a case, whose card shows how a sign-off
-// the reviewer confirmed went.
-export const SIGN_OFF = "sign_off_case";
 
 // What this browser remembers of the sidebar for each reviewer: whether it is
 // open, and the conversation open in it.
@@ -72,7 +68,6 @@ export const MESSAGE_LENGTH = 4000;
 export const OVERLAY = "(width < 1100px)";
 export const ASK = "Ask the Copilot";
 export const STILL_WORKING = "The Copilot is working on your message";
-export const ANSWER_FIRST = "Answer the confirmation first";
 export const OPENING = "Opening the conversation";
 export const STOPPED =
   "This turn stopped before it finished. Send a new message to carry on.";
@@ -81,22 +76,19 @@ export const NO_CONVERSATIONS =
 export const SUGGESTED_QUESTIONS = [
   "What needs me today?",
   "How did the latest dispatch go?",
-  "Are we meeting the success criteria we agreed?",
-  "What does the policy wording say about baggage delays?",
+  "Which cases have a screening flag?",
+  "What do the filing rules say about late payrolls?",
 ];
 
 // Why the message box can't take a message yet, if it can't.
 export function waitingFor(conversation?: Conversation): string | undefined {
   const status = latestTurn(conversation)?.status;
-  if (status === "working") return STILL_WORKING;
-  if (status === "waiting_for_confirmation") return ANSWER_FIRST;
-  return undefined;
+  return status === "working" ? STILL_WORKING : undefined;
 }
 
 // Where the latest turn stands, as a screen reader is told it.
 export const TURN_STATES: Record<TurnStatus, string> = {
   working: "The Copilot is working",
-  waiting_for_confirmation: "Waiting for your confirmation",
   done: "The Copilot answered",
   failed: "The Copilot couldn't finish",
   stopped: "The Copilot stopped",
@@ -111,48 +103,4 @@ export function smallPrint(turn: CopilotTurn): string {
     modelCost(turn.cost ?? 0),
     `${String(seconds)} ${seconds === 1 ? "second" : "seconds"}`,
   ].join(", ");
-}
-
-export const SIGNING_OFF = "Signing off";
-export const PAID = "Signed off and paid";
-export const NOT_SIGNED_OFF = "Not signed off";
-export const CANCELED = "Canceled";
-export const NOT_KNOWN = "Not known";
-export const NEVER_BEGAN = "The Copilot stopped before it signed off.";
-export const MAY_HAVE_PAID =
-  "The Copilot stopped while signing off, so its page says whether it was paid.";
-
-export interface Outcome {
-  tone: "pending" | "paid" | "canceled" | "refused" | "unknown";
-  text: string;
-  reason?: string | null;
-}
-
-// How a confirmation the reviewer answered went, read from the turn's own card
-// for the sign-off, the first after the answer, as a turn signs off once: paid
-// only once that card is done, never on an answer of Sign off alone; not signed
-// off when the app refused it or it never began; and not known when it began
-// but the turn ended without its result, since it may have paid.
-export function outcomeOf(turn: CopilotTurn): Outcome {
-  if (turn.confirmation_answer === "cancel")
-    return { tone: "canceled", text: CANCELED, reason: turn.canceled_because };
-  const answeredAt = turn.answered_at ?? "";
-  const signOff = turn.steps.find(
-    (step) => step.tool === SIGN_OFF && step.started_at >= answeredAt,
-  );
-  if (signOff?.status === "done") return { tone: "paid", text: PAID };
-  if (signOff?.status === "refused")
-    return { tone: "refused", text: NOT_SIGNED_OFF, reason: signOff.reason };
-  if (turn.status === "working") return { tone: "pending", text: SIGNING_OFF };
-  if (signOff)
-    return {
-      tone: "unknown",
-      text: NOT_KNOWN,
-      reason: signOff.reason ?? MAY_HAVE_PAID,
-    };
-  return {
-    tone: "refused",
-    text: NOT_SIGNED_OFF,
-    reason: turn.failure ?? NEVER_BEGAN,
-  };
 }

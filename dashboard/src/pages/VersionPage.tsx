@@ -4,7 +4,7 @@ import { api, type VersionDetails } from "../api";
 import { VersionChip } from "../components/Chips";
 import { DiffView } from "../components/DiffView";
 import { Approval } from "../components/Approval";
-import { HeldOutAccuracy, HeldOutGrade } from "../components/HeldOutAccuracy";
+import { HeldOutCatchRate } from "../components/HeldOutCatchRate";
 import { PageHeader } from "../components/PageHeader";
 import { StateMessage } from "../components/StateMessage";
 import { VersionChanges } from "../components/VersionChanges";
@@ -57,10 +57,7 @@ export function VersionPage() {
         </section>
         <section className="panel" aria-labelledby="instructions-title">
           <h2 id="instructions-title">Instructions</h2>
-          <p className="muted small">
-            The payroll agent's system prompt, followed by the policy wording
-            and the claims manual.
-          </p>
+          <p className="muted small">The payroll agent's system prompt.</p>
           <pre className="instructions">{version.instructions}</pre>
         </section>
       </div>
@@ -98,15 +95,9 @@ function VersionFacts({ version }: Readonly<{ version: VersionDetails }>) {
           </dd>
         </div>
         <div>
-          <dt>Held-out accuracy</dt>
+          <dt>Held-out catch rate</dt>
           <dd>
-            <HeldOutAccuracy scores={version.scores} />
-          </dd>
-        </div>
-        <div>
-          <dt>Held-out grade</dt>
-          <dd>
-            <HeldOutGrade scores={version.scores} />
+            <HeldOutCatchRate scores={version.scores} />
           </dd>
         </div>
         <div className="fact-wide">

@@ -58,7 +58,7 @@ test.describe("signed in as Marcus Oyelaran", () => {
     await page.goto("/settings");
     await expect(
       page.getByText(
-        "Only a reviewer who can sign off payouts over $1,000.00 can change the settings. Marcus Oyelaran can't.",
+        "Only the compliance manager can change the settings. Marcus Oyelaran can't.",
       ),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);

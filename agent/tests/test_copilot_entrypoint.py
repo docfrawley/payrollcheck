@@ -19,20 +19,12 @@ from agent import connection
 from agent.copilot import turns
 from agent.tests.copilot_driver import Copilot
 from agent.tests.credentials import CREDENTIALS
-from agent.tests.invoking import (
-    ACCEPTED,
-    HEALTH,
-    SETTLE,
-    answer_confirmation,
-    take_turn,
-)
+from agent.tests.invoking import ACCEPTED, HEALTH, SETTLE, take_turn
 from agent.tests.local_server import serving
-from agent.tests.records import payments_of
 from agent.tests.stubs import call, stub
 from backend import copilot_service
-from backend.tests.case_requests import held
+from backend.tests.case_requests import awaiting_review, finding
 from backend.tests.copilot_requests import (
-    answer,
     conversation_of,
     finish_turn,
     latest,
@@ -242,9 +234,7 @@ def test_a_turn_it_wont_take(copilot: Copilot, copilot_app, held_turns):
     app.settle()
 
 
-UNKNOWN = (
-    "Unknown operation: it must be one of 'health', 'take_turn', 'answer_confirmation'"
-)
+UNKNOWN = "Unknown operation: it must be one of 'health', 'take_turn'"
 NOT_A_SIGN_IN = "sign_in: String should match pattern '^[A-Za-z0-9_.-]+$'"
 
 
@@ -252,12 +242,15 @@ NOT_A_SIGN_IN = "sign_in: String should match pattern '^[A-Za-z0-9_.-]+$'"
     ("payload", "error"),
     [
         ({"operation": "dance-secret"}, UNKNOWN),
+        ({"operation": "answer_confirmation", "conversation_id": "c",
+          "turn_id": "t", "sign_in": "secret-token"},
+         UNKNOWN),
         ({"operation": "take_turn", "conversation_id": "c", "turn_id": "t"},
          "sign_in: Field required"),
         ({"operation": "take_turn", "conversation_id": "c", "turn_id": "t",
           "sign_in": "secret-token", "extra": "secret-value"},
          "extra: Extra inputs are not permitted"),
-        ({"operation": "answer_confirmation", "conversation_id": "c",
+        ({"operation": "take_turn", "conversation_id": "c",
           "turn_id": "t", "sign_in": 7},
          "sign_in: Input should be a valid string"),
         ({"operation": "take_turn", "conversation_id": "c", "turn_id": "t",
@@ -273,68 +266,7 @@ def test_a_payload_it_cant_read_gets_a_400_without_its_values(
     assert "secret" not in refused.text
 
 
-def test_an_answer_resumes_the_paused_conversation(
-    client, copilot: Copilot, copilot_app
-):
-    held(client, "CLM-1003", 3750.0)
-    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
-    app = copilot_app()
-    assert app.invoke(a_turn(copilot, "Sign off CLM-1003")).json() == ACCEPTED
-    conversation_id = copilot.last_payload()["conversation_id"]
-    turn_id = latest(copilot.read(conversation_id))["turn_id"]
-    copilot.model = stub("Signed off and paid.")
-    copilot.answer_in_the_app(conversation_id, turn_id, "sign_off")
-    payload = copilot.last_payload()
-    assert payload["operation"] == "answer_confirmation"
-    assert copilot_app().invoke(payload).json() == ACCEPTED
-    assert latest(copilot.read(conversation_id))["answer"] == "Signed off and paid."
-    assert len(payments_of("CLM-1003")) == 1
-
-
-def test_an_answer_with_none_recorded_or_nothing_paused_is_refused(
-    client, copilot: Copilot, copilot_app, monkeypatch
-):
-    app = copilot_app()
-    payload = a_turn(copilot)
-    early = answer_confirmation(
-        payload["conversation_id"], payload["turn_id"], payload["sign_in"]
-    )
-    assert app.invoke(early).json() == {
-        "refused": f"Turn {payload['turn_id']} has no answer to its confirmation yet"
-    }
-    held(client, "CLM-1003", 3750.0)
-    copilot.model = stub(call("sign_off_case", case_id="CLM-1003"))
-    app.invoke(a_turn(copilot, "Sign off CLM-1003"))
-    conversation_id = copilot.last_payload()["conversation_id"]
-    turn_id = latest(copilot.read(conversation_id))["turn_id"]
-    copilot.answer_in_the_app(conversation_id, turn_id, "sign_off")
-    elsewhere = copilot_app()
-    monkeypatch.setattr(
-        elsewhere.module, "saver_on", lambda pool: type(copilot.saver)()
-    )
-    assert elsewhere.invoke(copilot.last_payload()).json() == {
-        "refused": "No sign-off is waiting for an answer in this conversation"
-    }
-
-
-def test_a_pause_in_one_process_is_answered_in_another(
-    client, copilot: Copilot, copilot_app
-):
-    held(client, "CLM-1008", 2240.0)
-    copilot.model = stub(call("sign_off_case", case_id="CLM-1008"))
-    first = copilot_app()
-    first.invoke(a_turn(copilot, "Sign off CLM-1008"))
-    conversation_id = copilot.last_payload()["conversation_id"]
-    turn_id = latest(copilot.read(conversation_id))["turn_id"]
-    copilot.answer_in_the_app(conversation_id, turn_id, "sign_off")
-    copilot.model = stub("Paid.")
-    second = copilot_app()
-    assert second.module is not first.module
-    assert second.invoke(copilot.last_payload()).json() == ACCEPTED
-    [payment] = payments_of("CLM-1008")
-    assert payment["amount"] == 2240.0
-    decision = client.get("/api/cases/CLM-1008").json()["decision"]
-    assert decision["signed_off_by"] == "Dana Whitfield"
+ANSWER = "PC-1201 has one open exception: a base rate $0.32 short."
 
 
 def ended(dashboard, conversation_id):
@@ -361,7 +293,7 @@ def test_the_app_and_the_copilot_on_the_laptop_end_to_end(
     )
     monkeypatch.setattr(copilot_service, "copilot", real)
     app = copilot_app()
-    held(client, "CLM-1008", 2240.0)
+    awaiting_review(client, "PC-1201", finding())
     own = token(DANA)
     with serving(app.module.app) as address:
         monkeypatch.setenv(copilot_service.COPILOT, address)
@@ -369,21 +301,18 @@ def test_the_app_and_the_copilot_on_the_laptop_end_to_end(
         started_one = start_conversation(dashboard, access_token=own)
         conversation_id = started_one.json()["conversation_id"]
         assert ended(dashboard, conversation_id)["answer"] == "Nothing needs you."
-        copilot.model = stub(call("sign_off_case", case_id="CLM-1008"), "Paid.")
-        headers = bearer(own)
+        copilot.model = stub(call("get_case", case_id="PC-1201"), ANSWER)
         sent = dashboard.post(
             f"/api/copilot/conversations/{conversation_id}/messages",
-            json={"message": "Sign off CLM-1008"},
-            headers=headers,
+            json={"message": "Why does PC-1201 need me?"},
+            headers=bearer(own),
         )
         assert sent.status_code == 202
-        paused = ended(dashboard, conversation_id)
-        assert paused["status"] == "waiting_for_confirmation"
-        answer(dashboard, conversation_id, paused["turn_id"], "sign_off", headers)
-        assert ended(dashboard, conversation_id)["answer"] == "Paid."
-    assert [p["amount"] for p in payments_of("CLM-1008")] == [2240.0]
-    decision = client.get("/api/cases/CLM-1008").json()["decision"]
-    assert decision["signed_off_by"] == "Dana Whitfield"
+        answered = ended(dashboard, conversation_id)
+        assert (answered["status"], answered["answer"]) == ("done", ANSWER)
+        assert [(c["tool"], c["input"]) for c in answered["steps"]] == [
+            ("get_case", "PC-1201")
+        ]
     assert sent_headers
     for headers in sent_headers:
         assert "authorization" not in headers

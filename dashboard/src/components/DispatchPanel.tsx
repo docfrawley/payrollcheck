@@ -6,12 +6,11 @@ import {
   dateTime,
   duration,
   modelCost,
-  money,
   stoppedBecause,
   time,
 } from "../format";
 import { REFRESH_MS, useLoad } from "../useLoad";
-import { DecisionChip, RunChip, StatusChip } from "./Chips";
+import { CaseFlags, RunChip, StatusChip } from "./Chips";
 import { CaseLink } from "./CaseLink";
 import { StateMessage } from "./StateMessage";
 import { ActionForm } from "./ActionForm";
@@ -36,7 +35,7 @@ export function DispatchPanel() {
       </ActionForm>
       {dispatch === undefined && <StateMessage error={error} />}
       {dispatch === null && (
-        <StateMessage empty="No dispatch yet. Start one to work the waiting cases." />
+        <StateMessage empty="No dispatch yet. Start one to check the Received cases." />
       )}
       {dispatch && <DispatchDetails dispatch={dispatch} />}
     </section>
@@ -69,7 +68,7 @@ function DispatchDetails({ dispatch }: Readonly<{ dispatch: Run }>) {
       {dispatch.cases.length > 0 ? (
         <RunCases cases={dispatch.cases} />
       ) : (
-        <StateMessage empty="No cases in this dispatch: the queue had none waiting or in progress when it started." />
+        <StateMessage empty="No cases in this dispatch: the queue had none Received or in progress when it started." />
       )}
       {dispatch.summary && <Summary summary={dispatch.summary} />}
     </>
@@ -84,9 +83,10 @@ function RunCases({ cases }: Readonly<{ cases: RunCase[] }>) {
           <tr>
             <th>Case</th>
             <th>Subcontractor</th>
-            <th>State</th>
-            <th>Decision</th>
-            <th className="num">Payout</th>
+            <th>Project</th>
+            <th>Status</th>
+            <th className="num">Open exceptions</th>
+            <th>Flags</th>
             <th>Started</th>
             <th className="num">Time</th>
             <th className="num">Model cost</th>
@@ -99,16 +99,18 @@ function RunCases({ cases }: Readonly<{ cases: RunCase[] }>) {
                 <CaseLink caseId={caseRecord.case_id} />
               </td>
               <td>{caseRecord.subcontractor_name}</td>
+              <td>{caseRecord.project_name}</td>
               <td>
                 <StatusChip status={caseRecord.status} />
               </td>
-              <td>
-                {caseRecord.decision && (
-                  <DecisionChip decision={caseRecord.decision} />
-                )}
-              </td>
               <td className="num mono">
-                {caseRecord.payout !== null && money(caseRecord.payout)}
+                {caseRecord.open_exceptions > 0 && caseRecord.open_exceptions}
+              </td>
+              <td className="nowrap">
+                <CaseFlags
+                  screeningFlag={caseRecord.screening_flag}
+                  agentFailed={caseRecord.agent_failed}
+                />
               </td>
               <td className="nowrap">
                 {caseRecord.started_at && time(caseRecord.started_at)}
@@ -124,27 +126,21 @@ function RunCases({ cases }: Readonly<{ cases: RunCase[] }>) {
 }
 
 function Summary({ summary }: Readonly<{ summary: DispatchSummary }>) {
-  const held = summary.waiting_for_sign_off.map(({ case_id, payout }) => ({
-    case_id,
-    note: money(payout),
-  }));
-  const only = (ids: string[]) => ids.map((case_id) => ({ case_id }));
+  const awaiting = summary.with_exceptions.length + summary.clean.length;
   return (
     <div className="dispatch-summary">
       <h3 id="dispatch-summary-title">When it finished</h3>
       <ul aria-labelledby="dispatch-summary-title">
         <li>
-          {summary.approved} approved, {summary.declined} declined and{" "}
-          {summary.referred} referred.
+          {awaiting} awaiting review: {summary.with_exceptions.length} with
+          exceptions and {summary.clean.length} clean.
         </li>
-        <CaseLine label="Waiting for sign-off" cases={held} />
-        <CaseLine
-          label="Left for a reviewer"
-          cases={only(summary.left_for_reviewer)}
-        />
+        <CaseLine label="With exceptions" cases={summary.with_exceptions} />
+        <CaseLine label="Flagged by the screening" cases={summary.flagged} />
+        <CaseLine label="Failed by the agent" cases={summary.agent_failed} />
         <CaseLine
           label="Left for the next dispatch"
-          cases={only(summary.unfinished)}
+          cases={summary.unfinished}
         />
       </ul>
     </div>
@@ -154,16 +150,15 @@ function Summary({ summary }: Readonly<{ summary: DispatchSummary }>) {
 function CaseLine({
   label,
   cases,
-}: Readonly<{ label: string; cases: { case_id: string; note?: string }[] }>) {
+}: Readonly<{ label: string; cases: string[] }>) {
   if (cases.length === 0) return null;
   return (
     <li>
       {label}:{" "}
-      {cases.map(({ case_id, note }, index) => (
-        <Fragment key={case_id}>
+      {cases.map((caseId, index) => (
+        <Fragment key={caseId}>
           {index > 0 && ", "}
-          <CaseLink caseId={case_id} />
-          {note && <span className="mono"> {note}</span>}
+          <CaseLink caseId={caseId} />
         </Fragment>
       ))}
     </li>

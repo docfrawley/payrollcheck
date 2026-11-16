@@ -5,6 +5,7 @@ import {
   CASE_PAGE,
   CONFIGURATION,
   IMPROVEMENT,
+  PROJECTS,
   QUEUE,
   SCOREBOARD,
 } from "../paths";
@@ -36,6 +37,7 @@ export function Header() {
           >
             Queue
           </Link>
+          <NavLink to={PROJECTS}>Projects</NavLink>
           <NavLink to={SCOREBOARD}>Scoreboard</NavLink>
           <NavLink to={IMPROVEMENT}>Improvement</NavLink>
           <NavLink to={CONFIGURATION}>Configuration</NavLink>

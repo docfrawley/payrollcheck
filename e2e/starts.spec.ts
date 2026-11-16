@@ -44,12 +44,7 @@ test("an evaluation started on the Scoreboard reaches the agent", async ({
   await page.getByRole("link", { name: "Scoreboard" }).click();
   await expect(page).toHaveURL("/scoreboard");
   const form = page.getByRole("region", { name: "Start an evaluation" });
-  await form
-    .getByRole("combobox", { name: "Set" })
-    .selectOption("Held-out set");
-  await form
-    .getByRole("combobox", { name: "Cases" })
-    .selectOption("The five tiny cases");
+  await form.getByRole("combobox", { name: "Set" }).selectOption("Tiny set");
   await form
     .getByRole("combobox", { name: "Payroll agents at once" })
     .selectOption("5");
@@ -64,8 +59,7 @@ test("an evaluation started on the Scoreboard reaches the agent", async ({
   const run = await getRun(request, String(payload.run_id));
   expect(run).toMatchObject({
     kind: "evaluation",
-    evaluation_set: "held_out",
-    tiny: true,
+    evaluation_set: "tiny",
     agents: 5,
     status: "running",
   });

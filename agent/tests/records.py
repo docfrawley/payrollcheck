@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from backend.database import engine, model_calls, payments, work_times
+from backend.database import engine, model_calls, work_times
 
 
 def case_of(client, case_id):
@@ -23,7 +23,3 @@ def model_calls_of(case_id):
 
 def work_times_of(case_id):
     return rows_of(work_times, case_id)
-
-
-def payments_of(case_id):
-    return rows_of(payments, case_id)

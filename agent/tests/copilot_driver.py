@@ -1,5 +1,5 @@
-"""The Copilot as the tests drive it: a reviewer sends a message, or answers a
-confirmation, through the app as the sidebar does; the app asks the stand-in for the
+"""The Copilot as the tests drive it: a reviewer sends a message through the app as
+the sidebar does; the app asks the stand-in for the
 Copilot, which keeps the payload; and the test has the Copilot work that turn as
 its entry point would, with the sign-in the app passed on, on a stub model, saving
 its state in memory."""
@@ -18,12 +18,11 @@ from agent.copilot import turns
 from agent.copilot.graph import copilot_graph
 from agent.tests.stubs import StubModel, stub
 from backend.tests.copilot_requests import (
-    answer,
     conversation_of,
     send_message,
     start_conversation,
 )
-from backend.tests.sign_in import DANA, signed_in
+from backend.tests.sign_in import DANA
 
 # How long a test waits for the Copilot to start a run.
 WAIT_FOR_A_START = 10
@@ -64,26 +63,6 @@ class Copilot:
         assert sent.status_code == 202, sent.json()
         turns.take_turn(self.turn(), self.saver)
         return self.read(self.last_payload()["conversation_id"], email)
-
-    def answer(self, conversation_id: str, given: str, email=DANA):
-        """Answer the conversation's confirmation as a reviewer, have the Copilot
-        carry the turn on, and return the conversation."""
-        turn_id = self.read(conversation_id, email)["turns"][-1]["turn_id"]
-        self.answer_in_the_app(conversation_id, turn_id, given, email)
-        self.carry_on()
-        return self.read(conversation_id, email)
-
-    def answer_in_the_app(self, conversation_id, turn_id, given, email=DANA) -> None:
-        """Answer a turn's confirmation as a reviewer, which the app records."""
-        answered = answer(
-            self.dashboard, conversation_id, turn_id, given, signed_in(email)
-        )
-        assert answered.status_code == 202, answered.json()
-
-    def carry_on(self) -> None:
-        """Have the Copilot carry on the turn the app last asked about with the
-        answer the app recorded."""
-        turns.answer_confirmation(self.turn(), self.saver)
 
     def graph_state(self, conversation_id: str) -> StateSnapshot:
         """The conversation's graph's saved state."""

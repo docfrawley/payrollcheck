@@ -1,104 +1,118 @@
-import pytest
+"""The strict scoring on hand-made exceptions: a rule in the same family isn't a
+catch, a shortfall a cent out is caught but wrong, a flagged decoy is false and so
+is every exception on a flagged copy, with measures worked out by hand."""
 
-from backend.models import CaseGrade, DecisionKind, Letter, ScoredCase, Status
-from backend.scoring import Answer, answer_of, is_right, measures, mistake_cost
+from backend import scoring
+from backend.models import ScoredCase, Status
+from backend.scoring import Label, Raised
 
-APPROVE, DECLINE, REFER = DecisionKind.APPROVE, DecisionKind.DECLINE, DecisionKind.REFER
-
-
-@pytest.mark.parametrize(
-    ("answer", "expected", "cost"),
-    [
-        (Answer(APPROVE, 420), Answer(APPROVE, 420), 0),
-        (Answer(DECLINE, 0), Answer(DECLINE, 0), 0),
-        (Answer(REFER, 0), Answer(REFER, 0), 0),
-        (Answer(DECLINE, 0), Answer(APPROVE, 420), 1500),
-        (Answer(DECLINE, 0), Answer(REFER, 0), 1500),
-        (Answer(APPROVE, 1240), Answer(DECLINE, 0), 1240),
-        (Answer(APPROVE, 300), Answer(REFER, 0), 300),
-        (Answer(REFER, 0), Answer(APPROVE, 825), 50),
-        (Answer(REFER, 0), Answer(DECLINE, 0), 50),
-        (Answer(APPROVE, 1240), Answer(APPROVE, 240), 1000),
-        (Answer(APPROVE, 200), Answer(APPROVE, 250), 50),
-    ],
-)
-def test_the_cost_of_a_mistake(answer, expected, cost):
-    assert mistake_cost(answer, expected) == cost
+SHORT = Label("rate.base_short", "W-001", 1, 3200)
+LATE = Label("timeliness.late", None, None, None)
 
 
-def test_a_payout_within_a_dollar_is_right():
-    expected = Answer(APPROVE, 250)
-    assert is_right(Answer(APPROVE, 250.99), expected)
-    assert is_right(Answer(APPROVE, 249.01), expected)
-    assert not is_right(Answer(APPROVE, 251.01), expected)
-    assert not is_right(Answer(DECLINE, 0), Answer(REFER, 0))
+def raised(
+    rule: str = "rate.base_short",
+    worker: str | None = "W-001",
+    shortfall: int | None = 3200,
+    number: int = 1,
+) -> Raised:
+    return Raised(number, rule, worker, 1, shortfall)
 
 
-def test_a_case_the_agent_didnt_decide_counts_as_a_referral():
-    assert answer_of(None, None) == Answer(REFER, 0)
-    assert answer_of(APPROVE, 420) == Answer(APPROVE, 420)
+def results(labels, found, flagged=False):
+    matches, exceptions = scoring.match_copy(labels, found, flagged)
+    return [m.result for m in matches], [e.matched for e in exceptions]
 
 
-def scored(agent, reviewer, seconds, grade=None):
-    """A copy decided as the agent did, beside the reviewer's decision."""
-    (decision, payout), (reviewer_decision, reviewer_payout) = agent, reviewer
-    answer, expected = (
-        answer_of(decision, payout),
-        Answer(reviewer_decision, reviewer_payout),
+def test_a_label_is_caught_by_its_rule_and_worker_to_the_cent():
+    assert results([SHORT], [raised()]) == (["caught"], [True])
+
+
+def test_another_rule_in_the_same_family_is_not_a_catch():
+    found = [raised(rule="rate.fringe_short")]
+    assert results([SHORT], found) == (["missed"], [False])
+
+
+def test_another_worker_is_not_a_catch_and_the_line_isnt_compared():
+    assert results([SHORT], [raised(worker="W-002")]) == (["missed"], [False])
+    other_line = Raised(1, "rate.base_short", "W-001", 7, 3200)
+    assert results([SHORT], [other_line]) == (["caught"], [True])
+
+
+def test_a_shortfall_a_cent_out_is_caught_but_wrong():
+    assert results([SHORT], [raised(shortfall=3201)]) == (["shortfall_wrong"], [True])
+
+
+def test_a_rule_about_the_payroll_matches_with_no_worker():
+    assert results([LATE], [raised("timeliness.late", None, None)]) == (
+        ["caught"],
+        [True],
     )
+
+
+def test_an_exception_on_a_decoy_is_false():
+    assert results([], [raised()]) == ([], [False])
+
+
+def test_every_exception_on_a_flagged_copy_is_false():
+    assert results([SHORT], [raised()], flagged=True) == (["missed"], [False])
+
+
+def scored(labels, found, flagged=False, screening=False, seconds=10.0):
+    matches, exceptions = scoring.match_copy(labels, found, flagged)
     return ScoredCase(
-        case_id="CLM-1104-E1",
-        subcontractor_name="Ada Lovelace",
-        case_type="baggage",
-        summary="A suitcase",
-        amount_claimed=300,
-        submitted_on="2026-08-14",
-        status=Status.DECIDED if decision else Status.WAITING,
-        decision=decision,
-        payout=payout,
-        resuming=False,
+        case_id="PC-0101-E1",
+        project_id="PRJ-01",
+        project_name="Lincoln School renovation",
+        subcontractor_id="SUB-01",
+        subcontractor_name="Garden State Electric LLC",
+        week_ending="2026-09-06",
+        status=Status.AWAITING_REVIEW,
+        screening_flag=flagged,
+        agent_failed=False,
+        open_exceptions=len(found),
+        shortfall_cents=0,
         started_at=None,
         seconds=seconds,
-        model_cost=0.01,
-        copy_of="CLM-1104",
-        reason=None,
-        section=None,
-        reviewer_decision=reviewer_decision,
-        reviewer_payout=reviewer_payout,
-        right=is_right(answer, expected),
-        mistake_cost=mistake_cost(answer, expected),
-        grade=grade,
+        model_cost=0,
+        copy_of="PC-0101",
+        labels=matches,
+        exceptions=exceptions,
+        screening_expected=screening,
+        screening_found=flagged,
+        misses=sum(m.result == "missed" for m in matches),
+        false_exceptions=scoring.false_count(exceptions, flagged, screening),
     )
 
 
-def test_the_measures_of_an_evaluation():
+def test_an_evaluations_measures_as_worked_out_by_hand():
     cases = [
-        scored((APPROVE, 420), (APPROVE, 420), 30),
-        scored((APPROVE, 500), (APPROVE, 420), 50),
-        scored((DECLINE, 0), (REFER, 0), 40),
-        scored((None, None), (APPROVE, 100), 0),
+        scored([SHORT, LATE], [raised(), raised("timeliness.late", None, None, 2)]),
+        scored([SHORT], [raised(shortfall=3100)]),
+        scored([LATE], []),
+        scored([], [raised()], flagged=True, screening=True),
+        scored([], [raised(rule="arithmetic.gross")]),
     ]
-    result = measures(cases, model_cost=0.08, run_seconds=95)
-    assert result.decision_accuracy == 0.5
-    assert result.accuracy == 0.25
-    assert result.cost_of_mistakes == 80 + 1500 + 50
-    assert result.straight_through == 0.75
-    assert result.model_cost_per_case == pytest.approx(0.02)
-    assert result.seconds_per_case == 30
-    assert result.run_seconds == 95
-    assert result.grade is None
+    measures = scoring.measures(cases, model_cost=0.05, run_seconds=30.0)
+    # 3 of the 4 exception labels caught, one of the two money labels with the
+    # wrong shortfall, the flagged decoy's and the gross exceptions false.
+    assert (measures.caught, measures.labels, measures.catch_rate) == (3, 4, 0.75)
+    assert measures.shortfall_accuracy == 0.5
+    assert (measures.false_exceptions, measures.false_per_100) == (2, 40.0)
+    assert (measures.screening_caught, measures.screening_expected) == (1, 1)
+    assert measures.model_cost_per_case == 0.01
+    assert (measures.seconds_per_case, measures.run_seconds) == (10.0, 30.0)
 
 
-def grade_of(score):
-    return CaseGrade(
-        score=score, letter=Letter.B, same_grounds=1, same_section=1, cost=0
-    )
+def test_with_no_money_caught_the_shortfall_accuracy_is_none():
+    measures = scoring.measures([scored([LATE], [])], 0, None)
+    assert (measures.catch_rate, measures.shortfall_accuracy) == (0.0, None)
 
 
-def test_the_grade_averages_the_cases_the_judge_graded():
-    cases = [
-        scored((APPROVE, 420), (APPROVE, 420), 30, grade_of(3.0)),
-        scored((APPROVE, 420), (APPROVE, 420), 30, grade_of(1.5)),
-        scored((APPROVE, 420), (APPROVE, 420), 30),
-    ]
-    assert measures(cases, model_cost=0, run_seconds=None).grade == 2.25
+def test_a_flagged_decoy_is_a_false_exception():
+    decoy = scored([], [], flagged=True, screening=False)
+    expected = scored([], [], flagged=True, screening=True)
+    assert (decoy.false_exceptions, expected.false_exceptions) == (1, 0)
+    measures = scoring.measures([decoy, expected], 0, None)
+    assert (measures.screening_caught, measures.screening_expected) == (1, 1)
+    assert measures.false_exceptions == 1

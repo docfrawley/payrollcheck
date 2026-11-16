@@ -1,6 +1,6 @@
-"""A round's spending limit: its improver's calls, its evaluations' model calls and
-the judge, an estimate before a version's evaluations, and no new case once the
-limit is spent."""
+"""A round's spending limit: its improver's calls and its evaluations' model calls,
+an estimate before a version's evaluations, and no new case once the limit is
+spent."""
 
 from backend.tests.case_requests import record_call, start
 from backend.tests.round_requests import (
@@ -32,7 +32,7 @@ def test_an_evaluation_the_round_cant_afford_is_refused(client):
     refused = round_evaluation(client, round_id)
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        "The evaluations could cost about $0.15, and $0.10 of the round's limit "
+        "The evaluations could cost about $0.81, and $0.10 of the round's limit "
         "is left",
     )
     verdict = client.post(f"{round_path(round_id)}/verdict").json()
@@ -52,9 +52,10 @@ def test_a_model_with_no_runs_is_estimated_by_its_prices(client):
         reasoning_effort="minimal",
     )
     refused = round_evaluation(client, round_id)
-    # Five times Luna's cost a case: Gemini's output price is five times Luna's.
+    # Five times Luna's cost a case, on the 403 cases of the three evaluations:
+    # Gemini's output price is five times Luna's.
     assert refused.json()["detail"] == (
-        "The evaluations could cost about $0.75, and $0.50 of the round's limit is left"
+        "The evaluations could cost about $4.03, and $0.50 of the round's limit is left"
     )
 
 
@@ -72,7 +73,7 @@ def test_no_new_case_starts_once_the_limit_is_spent(client):
         409,
         "Round 1 has spent its limit of $0.50",
     )
-    assert client.get(f"/api/cases/{second}").json()["status"] == "waiting"
+    assert client.get(f"/api/cases/{second}").json()["status"] == "received"
     assert finish(client, run["run_id"]).json()["status"] == "stopped"
     assert get_evaluation(client, run["run_id"])["status"] == "stopped"
     verdict = client.post(f"{round_path(round_id)}/verdict").json()

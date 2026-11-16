@@ -1,11 +1,11 @@
 import { MOST_AGENTS } from "./components/AgentsChoice";
 import type { Settings, SettingsValues } from "./api";
-import { grade, money } from "./format";
+import { money } from "./format";
 
 // How the Settings page shows each setting: its group, its label, its unit and
-// its limits. Accuracy and the fractions of cost and time are kept from 0 to 1
-// and typed as percentages.
-export type Unit = "dollars" | "percent" | "grade" | "agents";
+// its limits. The catch rate and the fractions of cost and time are kept from
+// 0 to 1 and typed as percentages.
+export type Unit = "dollars" | "percent" | "agents";
 
 export interface SettingField {
   id: string;
@@ -28,12 +28,10 @@ export const UNITS: Record<
 > = {
   dollars: { prefix: "$", min: 0.01, step: 0.01 },
   percent: { suffix: "%", min: 0, step: 0.1 },
-  grade: { suffix: "of 3", min: 0, step: 0.01 },
   agents: { min: 1, step: 1 },
 };
 
 export const settingGroups = [
-  "approval",
   "objectives",
   "noise",
   "tolerance",
@@ -43,17 +41,13 @@ export const settingGroups = [
 export type SettingGroup = (typeof settingGroups)[number];
 
 export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
-  approval: {
-    title: "Approval",
-    lead: "Payouts over the limit wait for a compliance manager's sign-off. A new limit applies to later decisions only.",
-  },
   objectives: {
     title: "Objectives on the held-out set",
     lead: "The lowest scores a new version of the payroll agent can have and be kept.",
   },
   noise: {
     title: "Noise",
-    lead: "The smallest improvement that counts. Accuracy and grade are in points; cost and time are a share of the old value.",
+    lead: "The smallest improvement that counts. The catch rate is in points; cost and time are a share of the old value.",
   },
   tolerance: {
     title: "Tolerance",
@@ -61,7 +55,7 @@ export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
   },
   spending: {
     title: "Spending",
-    lead: "The most one round of the improver can spend, including its evaluations and the judge.",
+    lead: "The most one round of the improver can spend, including its evaluations.",
   },
   evaluations: {
     title: "The improver's evaluations",
@@ -72,8 +66,7 @@ export const GROUPS: Record<SettingGroup, { title: string; lead: string }> = {
 type Measure = keyof SettingsValues["noise"];
 
 const MEASURES: { measure: Measure; label: string; unit: Unit }[] = [
-  { measure: "accuracy", label: "Accuracy", unit: "percent" },
-  { measure: "grade", label: "Grade", unit: "grade" },
+  { measure: "catch_rate", label: "Catch rate", unit: "percent" },
   { measure: "cost_per_case", label: "Model cost per case", unit: "percent" },
   { measure: "seconds_per_case", label: "Time per case", unit: "percent" },
 ];
@@ -95,38 +88,16 @@ function measureFields(group: "noise" | "tolerance"): SettingField[] {
 
 export const SETTING_FIELDS: SettingField[] = [
   {
-    id: "approval_limit",
-    group: "approval",
-    label: "Approval limit",
-    name: "Approval limit",
-    unit: "dollars",
-    get: (values) => values.approval_limit,
-    set: (values, value) => ({ ...values, approval_limit: value }),
-  },
-  {
-    id: "objectives.accuracy",
+    id: "objectives.catch_rate",
     group: "objectives",
-    label: "Accuracy at least",
-    name: "Accuracy objective",
+    label: "Catch rate at least",
+    name: "Catch rate objective",
     unit: "percent",
     max: 100,
-    get: (values) => values.objectives.accuracy,
+    get: (values) => values.objectives.catch_rate,
     set: (values, value) => ({
       ...values,
-      objectives: { ...values.objectives, accuracy: value },
-    }),
-  },
-  {
-    id: "objectives.grade",
-    group: "objectives",
-    label: "Grade at least",
-    name: "Grade objective",
-    unit: "grade",
-    max: 3,
-    get: (values) => values.objectives.grade,
-    set: (values, value) => ({
-      ...values,
-      objectives: { ...values.objectives, grade: value },
+      objectives: { ...values.objectives, catch_rate: value },
     }),
   },
   ...measureFields("noise"),
@@ -152,8 +123,8 @@ export const SETTING_FIELDS: SettingField[] = [
   },
 ];
 
-// A setting as a reviewer types it: dollars to the cent, grades as they are,
-// and shares as percentages to a tenth.
+// A setting as a reviewer types it: dollars to the cent, and shares as
+// percentages to a tenth.
 export function toInput(unit: Unit, value: number): string {
   if (unit === "dollars") return value.toFixed(2);
   if (unit === "percent") return String(Math.round(value * 1000) / 10);
@@ -165,7 +136,6 @@ export function fromInput(unit: Unit, input: string): number {
   const value = Number(input);
   if (unit === "dollars") return Math.round(value * 100) / 100;
   if (unit === "percent") return Math.round(value * 10) / 1000;
-  if (unit === "grade") return Math.round(value * 100) / 100;
   return Math.round(value);
 }
 
@@ -173,7 +143,6 @@ export function fromInput(unit: Unit, input: string): number {
 export function shown(unit: Unit, value: number): string {
   if (unit === "dollars") return money(value);
   if (unit === "percent") return `${toInput(unit, value)}%`;
-  if (unit === "grade") return `${grade(value)} of 3`;
   return String(value);
 }
 
@@ -188,15 +157,16 @@ export function inputsOf(values: SettingsValues): Inputs {
   );
 }
 
-// The settings alone, without who changed them and when.
+// The settings alone, without who changed them and when. The business date
+// isn't shown and is carried through a save unchanged.
 function valuesOnly(settings: Settings): SettingsValues {
   return {
-    approval_limit: settings.approval_limit,
     objectives: settings.objectives,
     noise: settings.noise,
     tolerance: settings.tolerance,
     spending_limit: settings.spending_limit,
     agents: settings.agents,
+    business_date: settings.business_date,
   };
 }
 

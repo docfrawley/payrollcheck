@@ -32,24 +32,18 @@ afterEach(() => {
 const finished: Run = {
   ...running,
   status: "finished",
-  finished_at: "2026-10-03T17:04:54+00:00",
+  finished_at: "2026-11-23T17:04:54+00:00",
   seconds: 161,
   cases: running.cases.map((caseRecord) => ({
     ...caseRecord,
-    status: "decided",
-    decision: "refer",
-    payout: 0,
+    status: "awaiting_review",
   })),
   summary: {
-    approved: 3,
-    declined: 1,
-    referred: 1,
-    waiting_for_sign_off: [
-      { case_id: "CLM-1008", payout: 2240 },
-      { case_id: "CLM-1011", payout: 1150 },
-    ],
-    left_for_reviewer: ["CLM-1016"],
-    unfinished: ["CLM-1012"],
+    with_exceptions: ["PC-1201", "PC-1205"],
+    clean: ["PC-1202", "PC-1203", "PC-1204"],
+    flagged: ["PC-1208"],
+    agent_failed: ["PC-1216"],
+    unfinished: ["PC-1212"],
   },
 };
 
@@ -64,7 +58,7 @@ function showQueue(dispatch: Run | null) {
 }
 
 const dispatchPanel = () => panel("Dispatch");
-const NO_DISPATCH = /^No dispatch yet\. Start one to work the waiting cases/;
+const NO_DISPATCH = /^No dispatch yet\. Start one to check the Received cases/;
 
 const started = (fetchMock: ReturnType<typeof stubApi>) =>
   sent(fetchMock, "POST /api/dispatches");
@@ -87,16 +81,16 @@ it("shows a running dispatch with its cases", async () => {
   const rows = panel.getAllByRole("row").slice(1);
   expect(
     rows.map((row) => within(row).getAllByRole("cell")[0].textContent),
-  ).toEqual(["CLM-1001", "CLM-1014", "CLM-1013"]);
+  ).toEqual(["PC-1201", "PC-1202", "PC-1203"]);
   const first = within(rows[0]);
-  expect(first.getByText("Decided")).toBeDefined();
-  expect(first.getByText("Approved")).toBeDefined();
-  expect(first.getByText("$420.00")).toBeDefined();
+  expect(first.getByText("Awaiting review")).toBeDefined();
+  expect(first.getByText("Lincoln School renovation")).toBeDefined();
+  expect(first.getByText("2")).toBeDefined();
   expect(first.getByText("41 s")).toBeDefined();
   expect(within(rows[1]).getByText("In progress")).toBeDefined();
-  expect(within(rows[2]).getByText("Waiting")).toBeDefined();
-  const link = first.getByRole("link", { name: "CLM-1001" });
-  expect(link.getAttribute("href")).toBe("/cases/CLM-1001");
+  expect(within(rows[2]).getByText("Received")).toBeDefined();
+  const link = first.getByRole("link", { name: "PC-1201" });
+  expect(link.getAttribute("href")).toBe("/cases/PC-1201");
   expect(panel.queryByText("When it finished")).toBeNull();
 });
 
@@ -109,13 +103,14 @@ it("shows a finished dispatch with its summary", async () => {
     .getAllByRole("listitem")
     .map((line) => line.textContent);
   expect(lines).toEqual([
-    "3 approved, 1 declined and 1 referred.",
-    "Waiting for sign-off: CLM-1008 $2,240.00, CLM-1011 $1,150.00",
-    "Left for a reviewer: CLM-1016",
-    "Left for the next dispatch: CLM-1012",
+    "5 awaiting review: 2 with exceptions and 3 clean.",
+    "With exceptions: PC-1201, PC-1205",
+    "Flagged by the screening: PC-1208",
+    "Failed by the agent: PC-1216",
+    "Left for the next dispatch: PC-1212",
   ]);
-  const held = panel.getByRole("link", { name: "CLM-1011" });
-  expect(held.getAttribute("href")).toBe("/cases/CLM-1011");
+  const flagged = panel.getByRole("link", { name: "PC-1208" });
+  expect(flagged.getAttribute("href")).toBe("/cases/PC-1208");
 });
 
 it("shows a stopped dispatch", async () => {
@@ -152,12 +147,12 @@ it("follows a dispatch as it works", async () => {
 
   routes["GET /api/dispatches/latest"] = { ...running, cases: [waiting] };
   await act(() => vi.advanceTimersByTimeAsync(REFRESH_MS));
-  expect(panel.getByText("Waiting")).toBeDefined();
+  expect(panel.getByText("Received")).toBeDefined();
 
   routes["GET /api/dispatches/latest"] = finished;
   await act(() => vi.advanceTimersByTimeAsync(REFRESH_MS));
   expect(panel.getByText("Finished")).toBeDefined();
-  expect(panel.queryByText("Waiting")).toBeNull();
+  expect(panel.queryByText("Received")).toBeNull();
 });
 
 function startWith(agents: string) {

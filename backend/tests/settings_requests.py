@@ -1,13 +1,10 @@
 """Requests the backend's tests send to change the settings."""
 
-from backend.database import load
+from backend.seeding import load
 from backend.tests.sign_in import DANA, signed_in
 
-# The settings as seeded, from data/company.json and data/improvement.json.
-STARTING = {
-    "approval_limit": load("company.json")["payout_approval_limit"],
-    **load("improvement.json"),
-}
+# The settings as seeded, from data/improvement.json, with the business date.
+STARTING = {**load("improvement.json"), "business_date": "2026-11-23"}
 
 
 def change_settings(client, email=DANA, **values):

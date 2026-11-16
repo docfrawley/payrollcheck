@@ -1,7 +1,7 @@
-"""Working a turn of a conversation, and the reviewer's answer to its confirmation:
-the turn checked with the app first, then its model, graph and context built, any
-tool call a stopped turn left open closed, the graph run on the conversation's
-thread, and the app told how the turn ended: answered, paused or failed."""
+"""Working a turn of a conversation: the turn checked with the app first, then its
+model, graph and context built, any tool call a stopped turn left open closed, the
+graph run on the conversation's thread, and the app told how the turn ended:
+answered or failed."""
 
 import logging
 from collections.abc import Callable
@@ -12,7 +12,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.types import Command, StateSnapshot
+from langgraph.types import StateSnapshot
 
 from agent import tool_route
 from agent.console import describe
@@ -25,10 +25,9 @@ log = logging.getLogger(__name__)
 
 STOPPED_STEP = "This step stopped before it finished"
 NOT_THE_TURN = "Turn {turn_id} isn't the conversation's latest working turn"
-NOTHING_TO_RESUME = "No sign-off is waiting for an answer in this conversation"
 NO_ANSWER = "The Copilot finished without an answer"
 
-Start = Callable[[CopilotGraph, RunnableConfig], dict[str, Any] | Command]
+Start = Callable[[CopilotGraph, RunnableConfig], dict[str, Any]]
 
 
 class NotThisTurn(Exception):
@@ -93,12 +92,7 @@ def left_open(graph: CopilotGraph, config: RunnableConfig) -> list[ToolMessage]:
 
 
 def tell_the_app(turn: Turn, saved: StateSnapshot) -> None:
-    """Tell the app how the turn ended: paused on a case, once the interrupt is
-    saved, or answered, with its model calls and their cost."""
-    if saved.interrupts:
-        case_id = saved.interrupts[0].value["case_id"]
-        app_api.pause_turn(turn.sign_in, turn.turn_id, case_id)
-        return
+    """Tell the app the turn's answer, with its model calls and their cost."""
     values = saved.values
     answer = values["messages"][-1].text
     if not answer:
@@ -138,39 +132,5 @@ def take_turn(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
     def start(graph: CopilotGraph, config: RunnableConfig) -> dict[str, Any]:
         message = HumanMessage(turn.record["message"])
         return {"messages": [*left_open(graph, config), message]}
-
-    work(turn, start, saver)
-
-
-def resume_of(record: dict[str, Any]) -> dict[str, Any]:
-    """The reviewer's answer to the confirmation, read from the app's record of the
-    turn: Sign off, Cancel, or a Sign off the app took as a Cancel because the
-    case changed."""
-    answer: dict[str, Any] = {"answer": record["confirmation_answer"]}
-    if record["canceled_because"]:
-        answer["changed"] = True
-    return answer
-
-
-def waits_for_an_answer(graph: CopilotGraph, config: RunnableConfig) -> bool:
-    """Say whether the conversation's graph is paused for the reviewer's answer to a
-    confirmation."""
-    return bool(graph.get_state(config).interrupts)
-
-
-def check_paused(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
-    """Refuse a turn whose conversation has no sign-off waiting for an answer."""
-    graph = copilot_graph(copilot_model(turn.sign_in), saver, None)
-    if not waits_for_an_answer(graph, thread_of(turn.conversation_id)):
-        raise NotThisTurn(NOTHING_TO_RESUME)
-
-
-def answer_confirmation(turn: Turn, saver: BaseCheckpointSaver[Any]) -> None:
-    """Carry a paused turn on with the reviewer's answer to its confirmation."""
-
-    def start(graph: CopilotGraph, config: RunnableConfig) -> Command:
-        if not waits_for_an_answer(graph, config):
-            raise NotThisTurn(NOTHING_TO_RESUME)
-        return Command(resume=resume_of(turn.record))
 
     work(turn, start, saver)

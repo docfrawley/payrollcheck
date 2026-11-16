@@ -11,7 +11,7 @@ from agent import __main__ as cli
 from agent import checkpoints, harness
 from agent.connection import Refused
 from agent.tests.records import case_of
-from agent.tests.stubs import agent_on, approve, passes, stub
+from agent.tests.stubs import passes, stub, work
 from backend.tests.versions import add_version
 
 
@@ -96,7 +96,8 @@ def test_a_pool_that_cant_reach_the_database_gives_up_as_it_opens(monkeypatch):
 
 VERSION = {
     "number": 2,
-    "instructions": "Decide the case.",
+    "instructions": "Check the payroll.",
+    "parameters": {"rounding_tolerance_cents": 0},
     "model": "google/gemini-3.5-flash-lite",
     "reasoning_effort": "minimal",
 }
@@ -106,16 +107,15 @@ def test_each_payroll_graph_has_a_saver_of_its_own(fakes, monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
     built = []
 
-    def payroll_graph(llm, screener, saver, instructions, traits):
-        built.append((llm, screener, saver, instructions, traits.pauses))
+    def payroll_graph(llm, screener, saver, instructions):
+        built.append((llm, screener, saver, instructions))
 
     monkeypatch.setattr(harness, "payroll_graph", payroll_graph)
     with checkpoints.checkpoint_pool() as pool:
-        new_agent = harness.payroll_graphs(VERSION, None, pool)
+        new_agent = harness.payroll_graphs(VERSION, pool)
         new_agent()
         new_agent()
     [first, second] = built
-    assert first[4] is second[4] is True
     assert first[0] is second[0]
     assert first[0].model_name == "google/gemini-3.5-flash-lite"
     assert first[1] is second[1]
@@ -123,7 +123,7 @@ def test_each_payroll_graph_has_a_saver_of_its_own(fakes, monkeypatch):
         "openai/gpt-6-luna",
         "none",
     )
-    assert first[3] == second[3] == "Decide the case."
+    assert first[3] == second[3] == "Check the payroll."
     assert first[2] is not second[2]
     assert {first[2].pool, second[2].pool} == {pool}
     assert [saver.set_up for saver in FakeSaver.made] == [True, False, False]
@@ -135,71 +135,54 @@ def test_command_line_works_one_case(monkeypatch, capsys):
     monkeypatch.setattr(cli, "checkpoint_pool", lambda: nullcontext(pool))
     add_version("Version 2's instructions", verdict="kept")
 
-    def payroll_graphs(version, kind, on):
-        built.append((version["number"], kind, on))
+    def payroll_graphs(version, on):
+        built.append((version["number"], on))
         return lambda: "graph"
 
     monkeypatch.setattr(cli, "payroll_graphs", payroll_graphs)
     worked = []
     monkeypatch.setattr(cli, "work_case", lambda *args: worked.append(args))
-    cli.main(["CLM-1001"])
-    assert built == [(2, None, pool)]
-    assert worked == [("CLM-1001", None, "graph")]
+    cli.main(["PC-1205"])
+    assert built == [(2, pool)]
+    assert worked == [("PC-1205", None, "graph")]
 
     def refuse(case_id, run_id, agent):
-        raise Refused(409, f"Case {case_id} is not waiting")
+        raise Refused(409, f"Case {case_id} is not Received")
 
     monkeypatch.setattr(cli, "work_case", refuse)
     with pytest.raises(SystemExit) as refused:
-        cli.main(["CLM-1003"])
+        cli.main(["PC-1206"])
     assert refused.value.code == 1
     assert capsys.readouterr().err == (
-        "CLM-1003  not started: 409: Case CLM-1003 is not waiting\n"
+        "PC-1206  not started: 409: Case PC-1206 is not Received\n"
     )
 
 
-@pytest.mark.parametrize(
-    ("kind", "pauses"), [(None, True), ("dispatch", True), ("evaluation", False)]
-)
-def test_only_an_evaluations_payroll_graphs_dont_pause(
-    fakes, monkeypatch, kind, pauses
+def test_a_case_worked_on_the_command_line_reaches_awaiting_review(
+    client, monkeypatch, capsys
 ):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-    built = []
-    monkeypatch.setattr(
-        harness, "payroll_graph", lambda *args: built.append(args[4].pauses)
-    )
-    with checkpoints.checkpoint_pool() as pool:
-        harness.payroll_graphs(VERSION, kind, pool)()
-    assert built == [pauses]
-
-
-def test_a_case_worked_on_the_command_line_pauses_like_a_dispatchs(client, monkeypatch):
-    saver = InMemorySaver()
-    model = stub(*approve("CLM-1003", 3750.0))
+    model = stub(*work())
     monkeypatch.setattr(cli, "checkpoint_pool", lambda: nullcontext(object()))
-    monkeypatch.setattr(harness, "PostgresSaver", lambda pool: saver)
+    monkeypatch.setattr(harness, "PostgresSaver", lambda pool: InMemorySaver())
     monkeypatch.setattr(
         harness, "model", lambda named: model if "instructions" in named else passes()
     )
-    cli.main(["CLM-1003"])
-    case = case_of(client, "CLM-1003")
-    assert case["status"] == "waiting_for_sign_off"
-    assert harness.paused(case, agent_on(stub(), saver))
+    cli.main(["PC-1206"])
+    assert case_of(client, "PC-1206")["status"] == "awaiting_review"
 
 
 def test_command_line_says_when_the_context_layer_isnt_answering(monkeypatch, capsys):
     monkeypatch.setattr(cli, "checkpoint_pool", lambda: nullcontext(object()))
 
-    def down(version, kind, pool):
+    def down(version, pool):
         raise ConnectionError("The context layer isn't answering at http://x/mcp")
 
     monkeypatch.setattr(cli, "payroll_graphs", down)
     with pytest.raises(SystemExit) as stopped:
-        cli.main(["CLM-1001"])
+        cli.main(["PC-1205"])
     assert stopped.value.code == 1
     assert capsys.readouterr().err == (
-        "CLM-1001  not started: The context layer isn't answering at http://x/mcp\n"
+        "PC-1205  not started: The context layer isn't answering at http://x/mcp\n"
     )
 
 

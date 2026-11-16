@@ -5,7 +5,7 @@ from datetime import date
 
 import pytest
 
-from context import payroll_files
+from context import payroll_files, wage_rules
 from context.sources import SYNTHETIC, Refused
 
 
@@ -45,9 +45,14 @@ def test_the_wage_rate_before_and_after_the_pre_listed_increase():
     assert after["row"]["effective"] == "2026-10-01"
     assert after["row"]["total_cents"] == 9650
     assert after["sources"] == [RATE_SOURCE]
-    assert after["apprentice_ratio"] == {"apprentices": 2, "journeymen": 3}
-    assert after["overtime_rules"][0]["when"] == "daily_over"
-    assert len(after["apprentice_schedule"]) == 5
+    craft = after["craft_rules"]
+    assert craft["craft"] == "electrician"
+    assert craft["name"] == "Electrician"
+    assert craft["statewide"] is False
+    assert craft["apprentice_ratio"] == {"apprentices": 2, "journeymen": 3}
+    assert craft["overtime_rules"][0]["when"] == "daily_over"
+    assert len(craft["apprentice_schedule"]) == 5
+    assert wage_rules.craft_rules(craft) == payroll_files.RATES.crafts["electrician"]
 
 
 def test_a_later_determination_isnt_returned_for_an_earlier_award():

@@ -2,7 +2,7 @@ import { AgentCoreApplication, type AgentCoreApplicationProps } from '@aws/agent
 import { CfnResource, Stack, Validations, type StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { execFileSync } from 'child_process';
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join, relative, sep } from 'path';
 import { parseEnv } from 'util';
 
@@ -14,7 +14,7 @@ export interface AgentCoreStackProps extends StackProps {
 // The agent's settings that aren't secrets, from agentcore/.env.local beside the credentials'
 // values, or else from the environment agentcore deploy runs in, so nobody's addresses are
 // written into agentcore.json
-const SETTINGS = ['PAYROLLCHECK_API', 'PAYROLLCHECK_GATEWAY_URL', 'PAYROLLCHECK_MEMORY_ID', 'PAYROLLCHECK_COPILOT_MEMORY_ID'];
+const SETTINGS = ['PAYROLLCHECK_API', 'PAYROLLCHECK_GATEWAY_URL', 'PAYROLLCHECK_COPILOT_MEMORY_ID'];
 
 /**
  * The stack the AgentCore CLI deploys. Everything declared in agentcore/agentcore.json is
@@ -63,9 +63,14 @@ function useRuntimeV2(stack: Stack): void {
   }
 }
 
+// The context layer's files the agent's check tools import: the one rate logic, which uses
+// nothing else.
+const CONTEXT_FILES = ['__init__.py', 'wage_rules.py'];
+
 /**
  * Stage the runtime's code for the zip build: the entry point from runtime/, the agent from
- * agent/ without its tests, and a pyproject.toml listing pyproject.toml's runtime group at
+ * agent/ without its tests, the context layer's rate logic its check tools compute with
+ * (CONTEXT_FILES), and a pyproject.toml listing pyproject.toml's runtime group at
  * uv.lock's versions, since the build installs what a pyproject.toml lists and reads no lock.
  * The folder sits outside agentcore/.cache/<runtime>/, where the build installs the packages.
  */
@@ -74,6 +79,10 @@ function stageCode(root: string): string {
   rmSync(staged, { recursive: true, force: true });
   copyCode(join(root, 'runtime'), staged);
   copyCode(join(root, 'agent'), join(staged, 'agent'));
+  mkdirSync(join(staged, 'context'));
+  for (const file of CONTEXT_FILES) {
+    cpSync(join(root, 'context', file), join(staged, 'context', file));
+  }
   const exported = execFileSync(
     'uv',
     ['export', '--only-group', 'runtime', '--no-hashes', '--no-emit-project', '--no-header', '--no-annotate'],

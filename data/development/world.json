@@ -64,6 +64,7 @@
       "subcontractors": [
         {
           "subcontractor_id": "SUB-01",
+          "pair": 1,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",
@@ -71,6 +72,7 @@
         },
         {
           "subcontractor_id": "SUB-02",
+          "pair": 2,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",
@@ -78,6 +80,7 @@
         },
         {
           "subcontractor_id": "SUB-03",
+          "pair": 3,
           "first_week": 2,
           "last_week": 12,
           "first_week_ending": "2026-09-13",
@@ -85,6 +88,7 @@
         },
         {
           "subcontractor_id": "SUB-04",
+          "pair": 4,
           "first_week": 5,
           "last_week": 12,
           "first_week_ending": "2026-10-04",
@@ -92,6 +96,7 @@
         },
         {
           "subcontractor_id": "SUB-05",
+          "pair": 5,
           "first_week": 6,
           "last_week": 12,
           "first_week_ending": "2026-10-11",
@@ -99,6 +104,7 @@
         },
         {
           "subcontractor_id": "SUB-06",
+          "pair": 6,
           "first_week": 2,
           "last_week": 12,
           "first_week_ending": "2026-09-13",
@@ -106,6 +112,7 @@
         },
         {
           "subcontractor_id": "SUB-07",
+          "pair": 7,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",
@@ -113,6 +120,7 @@
         },
         {
           "subcontractor_id": "SUB-08",
+          "pair": 8,
           "first_week": 6,
           "last_week": 12,
           "first_week_ending": "2026-10-11",
@@ -132,6 +140,7 @@
       "subcontractors": [
         {
           "subcontractor_id": "SUB-01",
+          "pair": 9,
           "first_week": 2,
           "last_week": 12,
           "first_week_ending": "2026-09-13",
@@ -139,6 +148,7 @@
         },
         {
           "subcontractor_id": "SUB-02",
+          "pair": 10,
           "first_week": 3,
           "last_week": 12,
           "first_week_ending": "2026-09-20",
@@ -146,6 +156,7 @@
         },
         {
           "subcontractor_id": "SUB-03",
+          "pair": 11,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",
@@ -153,6 +164,7 @@
         },
         {
           "subcontractor_id": "SUB-04",
+          "pair": 12,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",
@@ -160,6 +172,7 @@
         },
         {
           "subcontractor_id": "SUB-05",
+          "pair": 13,
           "first_week": 4,
           "last_week": 12,
           "first_week_ending": "2026-09-27",
@@ -167,6 +180,7 @@
         },
         {
           "subcontractor_id": "SUB-06",
+          "pair": 14,
           "first_week": 9,
           "last_week": 12,
           "first_week_ending": "2026-11-01",
@@ -174,6 +188,7 @@
         },
         {
           "subcontractor_id": "SUB-07",
+          "pair": 15,
           "first_week": 3,
           "last_week": 12,
           "first_week_ending": "2026-09-20",
@@ -181,6 +196,7 @@
         },
         {
           "subcontractor_id": "SUB-08",
+          "pair": 16,
           "first_week": 2,
           "last_week": 12,
           "first_week_ending": "2026-09-13",
@@ -200,6 +216,7 @@
       "subcontractors": [
         {
           "subcontractor_id": "SUB-01",
+          "pair": 17,
           "first_week": 8,
           "last_week": 12,
           "first_week_ending": "2026-10-25",
@@ -207,6 +224,7 @@
         },
         {
           "subcontractor_id": "SUB-02",
+          "pair": 18,
           "first_week": 8,
           "last_week": 12,
           "first_week_ending": "2026-10-25",
@@ -214,6 +232,7 @@
         },
         {
           "subcontractor_id": "SUB-03",
+          "pair": 19,
           "first_week": 9,
           "last_week": 12,
           "first_week_ending": "2026-11-01",
@@ -221,6 +240,7 @@
         },
         {
           "subcontractor_id": "SUB-04",
+          "pair": 20,
           "first_week": 9,
           "last_week": 12,
           "first_week_ending": "2026-11-01",
@@ -228,6 +248,7 @@
         },
         {
           "subcontractor_id": "SUB-05",
+          "pair": 21,
           "first_week": 9,
           "last_week": 12,
           "first_week_ending": "2026-11-01",
@@ -235,6 +256,7 @@
         },
         {
           "subcontractor_id": "SUB-06",
+          "pair": 22,
           "first_week": 9,
           "last_week": 12,
           "first_week_ending": "2026-11-01",
@@ -242,6 +264,7 @@
         },
         {
           "subcontractor_id": "SUB-07",
+          "pair": 23,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",
@@ -249,6 +272,7 @@
         },
         {
           "subcontractor_id": "SUB-08",
+          "pair": 24,
           "first_week": 1,
           "last_week": 12,
           "first_week_ending": "2026-09-06",

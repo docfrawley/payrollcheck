@@ -69,11 +69,6 @@ def finish_turn(
     return call_as(sign_in, "POST", f"/copilot/turns/{turn_id}/finish", json=body)
 
 
-def pause_turn(sign_in: str, turn_id: str, case_id: str) -> dict[str, Any]:
-    body = {"case_id": case_id}
-    return call_as(sign_in, "POST", f"/copilot/turns/{turn_id}/pause", json=body)
-
-
 def fail_turn(sign_in: str, turn_id: str, reason: str) -> dict[str, Any]:
     body = {"reason": reason}
     return call_as(sign_in, "POST", f"/copilot/turns/{turn_id}/failure", json=body)
@@ -89,10 +84,6 @@ def get_case(sign_in: str, case_id: str) -> dict[str, Any]:
 
 def list_steps(sign_in: str, case_id: str) -> list[dict[str, Any]]:
     return call_as(sign_in, "GET", f"/cases/{case_id}/steps")
-
-
-def get_policy(sign_in: str, policy_id: str) -> dict[str, Any]:
-    return call_as(sign_in, "GET", f"/policies/{policy_id}")
 
 
 def find_subcontractors(sign_in: str, name: str) -> list[dict[str, Any]]:
@@ -124,20 +115,7 @@ def start_dispatch(sign_in: str, agents: int) -> dict[str, Any]:
 
 
 def start_evaluation(
-    sign_in: str, evaluation_set: EvaluationSet, tiny: bool, agents: int
+    sign_in: str, evaluation_set: EvaluationSet, agents: int
 ) -> dict[str, Any]:
-    body = {"evaluation_set": evaluation_set, "tiny": tiny, "agents": agents}
+    body = {"evaluation_set": evaluation_set, "agents": agents}
     return call_as(sign_in, "POST", "/evaluations", json=body)
-
-
-def send_back_case(sign_in: str, case_id: str, note: str) -> dict[str, Any]:
-    body = {"note": note}
-    return call_as(sign_in, "POST", f"/cases/{case_id}/send-back", json=body)
-
-
-def sign_off_case(sign_in: str, case_id: str) -> dict[str, Any]:
-    return call_as(sign_in, "POST", f"/cases/{case_id}/sign-off")
-
-
-def count_payouts_over_limit(sign_in: str) -> dict[str, Any]:
-    return call_as(sign_in, "GET", "/payouts/over-limit")

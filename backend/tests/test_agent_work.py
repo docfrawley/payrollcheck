@@ -16,7 +16,6 @@ from backend import agent_work
 from backend.database import engine, locks, proposals, rounds, runs
 from backend.round_state import round_row, stop
 from backend.tests.agent_answers import broken, refusing_with, slow, unreachable
-from backend.tests.case_requests import NOTE, held, send_back, sign_off
 from backend.tests.round_requests import (
     approve,
     create_round,
@@ -28,7 +27,6 @@ from backend.tests.round_requests import (
     stop_round,
 )
 from backend.tests.rows import (
-    committed_case,
     count,
     newest_run,
     round_heard,
@@ -98,7 +96,7 @@ def test_an_evaluation_is_created_with_its_copies(client, agent_calls):
     [asked] = agent_calls
     evaluation = run_of(client, asked["run_id"])
     assert (evaluation["kind"], evaluation["status"]) == ("evaluation", "running")
-    assert [c["case_id"][-3:] for c in evaluation["cases"]] == ["-E1"] * 5
+    assert [c["case_id"][-3:] for c in evaluation["cases"]] == ["-E1"] * 10
 
 
 def test_a_round_is_created_and_a_review_recorded_before_the_agent_is_asked(
@@ -366,16 +364,11 @@ def test_a_request_that_asks_the_agent_holds_one_connection_at_a_time(
 ):
     round_id = create_round(client).json()["round_id"]
     proposal_id = propose_change(client, round_id).json()["proposal_id"]
-    held(client, "CLM-1008", 2240.0)
-    held(client, "CLM-1002", 1350.0)
     connections_held["most"] = 0
     assert approve(client, round_id, proposal_id).status_code == 202
-    assert sign_off(client, "CLM-1008").status_code == 200
-    assert send_back(client, "CLM-1002", NOTE).status_code == 200
     stop_round(client, round_id)
     assert start_dispatch(client).status_code == 202
     assert connections_held["most"] == 1
-    assert committed_case("CLM-1008")["status"] == "decided"
 
 
 def test_stopping_a_round_stops_its_running_evaluation(client):

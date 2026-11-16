@@ -79,9 +79,15 @@ def agents_modules() -> set[str]:
     return {path.stem for path in AGENT.glob("*.py")}
 
 
-def test_the_check_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
-    assert imports_of("screening") & agents_modules() == set()
+def test_the_screening_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
+    assert imports_of("screening") & agents_modules() == {"json_text"}
     assert "screening" in imports_of("harness")
+
+
+def test_the_check_inputs_are_fetched_on_the_route_and_the_harness_uses_them():
+    used = imports_of("check_inputs") & agents_modules()
+    assert used == {"app_operations", "context_tools", "routes"}
+    assert {"check_inputs", "checks"} <= imports_of("harness")
 
 
 ROUTE_MODULES = {"routes", "gateway", "direct", "mcp_tools"}
@@ -154,16 +160,9 @@ def test_nothing_in_the_payroll_agent_imports_the_copilot():
         assert {name for name in imported if name.startswith("copilot")} == set()
 
 
-def test_the_memory_uses_only_agentcore_memory_and_the_payroll_agent_uses_it():
-    assert imports_of("memory") & agents_modules() == {"agentcore_memory"}
-    assert "memory" in imports_of("tools") & imports_of("harness")
-    for module in ("improver", "improver_api", "dispatcher", "entrypoint"):
-        assert "memory" not in imports_of(module), module
-
-
-def test_a_reviewers_answer_uses_nothing_else_in_the_agent_and_the_harness_uses_it():
-    assert imports_of("reviewer_answer") & agents_modules() == set()
-    assert "reviewer_answer" in imports_of("harness")
+def test_the_payroll_agent_has_no_memory_and_no_pause():
+    assert {"memory", "reviewer_answer"} & agents_modules() == set()
+    assert "interrupt" not in (AGENT / "harness.py").read_text(encoding="utf-8")
 
 
 def test_the_heartbeat_uses_nothing_else_in_the_agent():
@@ -184,3 +183,30 @@ def test_the_copilots_memory_uses_only_agentcore_memory():
     assert theirs == {"agentcore_memory"}
     for module in copilot_modules() - {"copilot.graph", "copilot.turns"}:
         assert "copilot.memory" not in imports_of(module), module
+
+
+def imported_names(path: Path) -> set[str]:
+    """Every module a file imports, with a package's modules imported from it."""
+    names: set[str] = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            names |= {alias.name for alias in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            names.add(node.module)
+            names |= {f"{node.module}.{alias.name}" for alias in node.names}
+    return names
+
+
+def test_the_check_tools_import_the_rate_logic_and_nothing_else_of_ours():
+    ours = ("agent", "context", "data", "backend")
+    imported = {
+        name
+        for path in (AGENT / "checks").glob("*.py")
+        for name in imported_names(path)
+        if name.split(".")[0] in ours and not name.startswith("agent.checks")
+    }
+    rate_logic = {"context", "context.wage_rules"}
+    assert {name for name in imported if name not in rate_logic} == {
+        name for name in imported if name.startswith("context.wage_rules.")
+    }
+    assert "context.wage_rules" in imported

@@ -14,13 +14,21 @@ from agent.copilot.tools import COPILOT_TOOLS, KINDS
 from agent.gateway import GATEWAY_URL
 from agent.tests.copilot_driver import Copilot
 from agent.tests.stubs import USAGE, call, stub
-from backend.tests.case_requests import held
+from backend.tests.case_requests import awaiting_review, finding
 from backend.tests.copilot_requests import latest, started
 from backend.tests.run_requests import another_running_dispatch, fail_run, run_path
 from backend.tests.sign_in import DANA, MARCUS, OTHER_KEY, token
 
-WHY = "Why does CLM-1003 need me?"
-ANSWER = "CLM-1003 is held for your sign-off at $3,750.00."
+WHY = "Why does PC-1201 need me?"
+ANSWER = "PC-1201 has one open exception: a base rate $0.32 short."
+TERM = "No Work Week"
+RATE = {
+    "craft": "electrician",
+    "classification": "journeyman",
+    "county": "Middlesex",
+    "award_date": "2026-04-15",
+    "work_date": "2026-11-23",
+}
 
 
 def cards_of(turn):
@@ -28,24 +36,30 @@ def cards_of(turn):
 
 
 def test_the_loop(client, copilot: Copilot):
-    held(client, "CLM-1003", 3750.0)
+    awaiting_review(client, "PC-1201", finding())
     copilot.model = stub(
-        call("get_case", case_id="CLM-1003"),
-        call("list_steps", case_id="CLM-1003"),
-        call("read_section", document="claims_manual", number=6),
+        call("get_case", case_id="PC-1201"),
+        call("list_steps", case_id="PC-1201"),
+        call("lookup_payroll_term", term=TERM),
         ANSWER,
     )
     conversation = copilot.ask(WHY)
     [turn] = conversation["turns"]
     assert cards_of(turn) == [
-        ("get_case", "CLM-1003", "done"),
-        ("list_steps", "CLM-1003", "done"),
-        ("read_section", "claims_manual 6", "done"),
+        ("get_case", "PC-1201", "done"),
+        ("list_steps", "PC-1201", "done"),
+        ("lookup_payroll_term", TERM, "done"),
     ]
     assert all(card["finished_at"] and card["seconds"] >= 0 for card in turn["steps"])
     [source] = turn["steps"][2]["sources"]
     assert set(source) == {"file", "system", "owner", "reviewed"}
-    assert source["file"].startswith("claims_manual")
+    assert source["file"] == "payroll_glossary.yaml"
+    case = json.loads(copilot.model.prompts[1][-1].text)
+    assert (case["case_id"], case["status"], case["open_exceptions"]) == (
+        "PC-1201",
+        "awaiting_review",
+        1,
+    )
     assert (turn["status"], turn["answer"], turn["model_calls"]) == ("done", ANSWER, 4)
     assert turn["cost"] == pytest.approx(4 * USAGE["cost"])
 
@@ -55,13 +69,12 @@ def test_the_model_knows_who_it_works_for(copilot: Copilot):
     copilot.ask("Hello")
     [system, *_] = copilot.model.prompts[0]
     assert isinstance(system, SystemMessage)
-    assert "Dana Whitfield, Compliance Manager" in system.text
-    assert "They can sign off payouts over the approval limit." in system.text
+    assert "You work for Dana Whitfield, Compliance Manager," in system.text
+    assert "You never sign off a case or send one back" in system.text
     copilot.model = stub("Hello, Marcus.")
     copilot.ask("Hello", email=MARCUS)
     [system, *_] = copilot.model.prompts[0]
-    assert "Marcus Oyelaran, Reviewer" in system.text
-    assert "They can't sign off payouts over the approval limit" in system.text
+    assert "You work for Marcus Oyelaran, Reviewer," in system.text
 
 
 def test_a_refusal_goes_back_to_the_model(copilot: Copilot):
@@ -97,60 +110,47 @@ def test_starts_with_the_agents_asked_for_or_the_settings(client, copilot: Copil
     copilot.model = stub(call("start_dispatch", agents=None), "Started.")
     copilot.ask("Work the queue")
     assert run_started(client, copilot)["agents"] == 25
+    for evaluation_set in ("development", "held_out", "tiny"):
+        copilot.model = stub(
+            call("start_evaluation", evaluation_set=evaluation_set, agents=None),
+            "Started.",
+        )
+        copilot.ask(f"Evaluate the {evaluation_set} set")
+        run = run_started(client, copilot)
+        assert (run["kind"], run["evaluation_set"], run["agents"]) == (
+            "evaluation",
+            evaluation_set,
+            25,
+        )
+
+
+def test_an_evaluation_of_no_such_set_goes_back_to_the_model(copilot: Copilot):
+    [start_evaluation] = [t for t in COPILOT_TOOLS if t.name == "start_evaluation"]
+    assert set(start_evaluation.args) == {"evaluation_set", "agents"}
     copilot.model = stub(
-        call("start_evaluation", evaluation_set="held_out", tiny=True, agents=None),
-        "Started.",
+        call("start_evaluation", evaluation_set="everything", agents=None),
+        "Which set?",
     )
-    copilot.ask("Evaluate the held-out set's tiny cases")
-    run = run_started(client, copilot)
-    assert (run["kind"], run["evaluation_set"], run["tiny"], run["agents"]) == (
-        "evaluation",
-        "held_out",
-        True,
-        25,
-    )
-
-
-NOTE = "Check the hotel receipts again."
-
-
-def test_a_send_back_as_the_reviewer_who_asks(client, copilot: Copilot, agent_calls):
-    held(client, "CLM-1008", 2240.0)
-    copilot.model = stub(
-        call("send_back_case", case_id="CLM-1008", note=NOTE), "Sent back."
-    )
-    [turn] = copilot.ask("Send CLM-1008 back")["turns"]
-    assert cards_of(turn) == [("send_back_case", f"CLM-1008 {NOTE}", "done")]
-    [sent_back] = client.get("/api/cases/CLM-1008").json()["sent_back_decisions"]
-    assert (sent_back["note"], sent_back["sent_back_by"]) == (NOTE, "Dana Whitfield")
-    assert agent_calls[-1] == {"operation": "resume_case", "case_id": "CLM-1008"}
-    held(client, "CLM-1011", 1150.0)
-    copilot.model = stub(
-        call("send_back_case", case_id="CLM-1011", note=NOTE), "I can't."
-    )
-    [turn] = copilot.ask("Send CLM-1011 back", email=MARCUS)["turns"]
+    [turn] = copilot.ask("Evaluate everything")["turns"]
     [card] = turn["steps"]
-    assert (card["status"], card["reason"]) == (
-        "refused",
-        "Only a reviewer who can sign off payouts over $1,000.00 can send this back. "
-        "Marcus Oyelaran can't.",
-    )
+    assert (card["tool"], card["status"]) == ("start_evaluation", "refused")
+    assert "'development', 'held_out' or 'tiny'" in card["reason"]
 
 
 def test_one_tool_at_a_time_in_order(client, copilot: Copilot):
-    held(client, "CLM-1003", 3750.0)
+    awaiting_review(client, "PC-1201", finding())
     calls = [
-        call("get_case", case_id="CLM-1003"),
-        call("get_policy", policy_id="POL-2003"),
-        call("lookup_term", term="Trip Delay"),
+        call("get_case", case_id="PC-1201"),
+        call("get_subcontractor", subcontractor_id="SUB-01"),
+        call("lookup_payroll_term", term=TERM),
     ]
     together = AIMessage(content="", tool_calls=[c.tool_calls[0] for c in calls])
     copilot.model = stub(together, ANSWER)
     [turn] = copilot.ask(WHY)["turns"]
     assert [card["tool"] for card in turn["steps"]] == [
         "get_case",
-        "get_policy",
-        "lookup_term",
+        "get_subcontractor",
+        "lookup_payroll_term",
     ]
     for before, after in itertools.pairwise(turn["steps"]):
         assert before["finished_at"] <= after["started_at"]
@@ -204,6 +204,15 @@ def test_a_failed_turn_and_a_message_after_it(copilot: Copilot, monkeypatch):
     assert calls <= answered
 
 
+def test_a_last_reply_with_no_text_fails_the_turn(copilot: Copilot):
+    copilot.model = stub(AIMessage(content=""))
+    [turn] = copilot.ask("Hello")["turns"]
+    assert (turn["status"], turn["failure"]) == (
+        "failed",
+        "NoAnswer: The Copilot finished without an answer",
+    )
+
+
 def test_who_is_signed_in_comes_first(copilot: Copilot):
     copilot.model = stub()
     conversation = started(copilot.dashboard)
@@ -225,13 +234,11 @@ def test_the_gateway_route_for_the_context_layer(
     copilot: Copilot, gateway, monkeypatch
 ):
     monkeypatch.setenv(GATEWAY_URL, gateway.url)
-    copilot.model = stub(
-        call("read_section", document="policy_wording", number=3), "Read."
-    )
-    [turn] = copilot.ask("What does section 3 say?")["turns"]
-    assert gateway.names == ["payrollcheck-context___read_section"]
+    copilot.model = stub(call("lookup_payroll_term", term=TERM), "Read.")
+    [turn] = copilot.ask("What's a No Work Week?")["turns"]
+    assert gateway.names == ["payrollcheck-context___lookup_payroll_term"]
     assert all(c.signed for c in gateway.calls)
-    assert cards_of(turn) == [("read_section", "policy_wording 3", "done")]
+    assert cards_of(turn) == [("lookup_payroll_term", TERM, "done")]
 
 
 def test_the_copilots_tools(copilot: Copilot):
@@ -246,23 +253,17 @@ def test_the_copilots_tools(copilot: Copilot):
         "what_needs_a_reviewer",
         "find_subcontractors",
         "get_subcontractor",
-        "get_policy",
-        "lookup_term",
-        "describe_fields",
-        "get_plan",
-        "get_case_rules",
-        "search_reference_data",
-        "search_documents",
-        "read_section",
+        "get_wage_rate",
+        "check_registration",
+        "check_apprentice",
+        "get_filing_rules",
+        "lookup_payroll_term",
         "get_latest_dispatch",
         "list_evaluations",
         "get_settings",
         "wait_for_run",
         "start_dispatch",
         "start_evaluation",
-        "send_back_case",
-        "check_success_criteria",
-        "sign_off_case",
     ]
     for tool in COPILOT_TOOLS:
         assert tool.description, tool.name
@@ -274,14 +275,11 @@ def test_the_copilots_tools(copilot: Copilot):
         "what_needs_a_reviewer": "cases",
         "find_subcontractors": "subcontractors",
         "get_subcontractor": "subcontractors",
-        "get_policy": "subcontractors",
-        "lookup_term": "context",
-        "describe_fields": "context",
-        "get_plan": "context",
-        "get_case_rules": "context",
-        "search_reference_data": "context",
-        "search_documents": "context",
-        "read_section": "context",
+        "get_wage_rate": "context",
+        "check_registration": "context",
+        "check_apprentice": "context",
+        "get_filing_rules": "context",
+        "lookup_payroll_term": "context",
         "get_latest_dispatch": "work",
         "list_evaluations": "work",
         "get_settings": "work",
@@ -289,53 +287,115 @@ def test_the_copilots_tools(copilot: Copilot):
         "search_memory": "memory",
         "start_dispatch": "action",
         "start_evaluation": "action",
-        "send_back_case": "action",
-        "sign_off_case": "action",
-        "check_success_criteria": "action",
     }
 
 
-def test_the_lookups_each_with_a_card(client, copilot: Copilot):
+def test_the_lookups_each_with_a_card(copilot: Copilot):
     copilot.model = stub(
         AIMessage(
             content="",
             tool_calls=[
-                {"name": "find_subcontractors", "args": {"name": "maya"}, "id": "f"}
+                {"name": "find_subcontractors", "args": {"name": "garden"}, "id": "f"}
             ],
         ),
-        call("get_subcontractor", subcontractor_id="CUS-3001"),
-        call("get_policy", policy_id="POL-2001"),
+        call("get_subcontractor", subcontractor_id="SUB-01"),
+        call("list_cases"),
         call("get_latest_dispatch"),
         call("list_evaluations"),
         call("get_settings"),
-        "Maya Patel has one policy.",
+        "Garden State Electric works on three projects.",
     )
-    [turn] = copilot.ask("Tell me about Maya Patel")["turns"]
+    [turn] = copilot.ask("Tell me about Garden State Electric")["turns"]
     assert [(c["tool"], c["kind"], c["status"]) for c in turn["steps"]] == [
         ("find_subcontractors", "subcontractors", "done"),
         ("get_subcontractor", "subcontractors", "done"),
-        ("get_policy", "subcontractors", "done"),
+        ("list_cases", "cases", "done"),
         ("get_latest_dispatch", "work", "done"),
         ("list_evaluations", "work", "done"),
         ("get_settings", "work", "done"),
     ]
     found = copilot.model.prompts[1][-1]
     assert json.loads(found.text) == [
-        {"subcontractor_id": "CUS-3001", "name": "Maya Patel"}
+        {"subcontractor_id": "SUB-01", "legal_name": "Garden State Electric LLC"}
     ]
+    subcontractor = json.loads(copilot.model.prompts[2][-1].text)
+    assert subcontractor["legal_name"] == "Garden State Electric LLC"
+    assert "PC-1201" in [c["case_id"] for c in subcontractor["cases"]]
+    queue = {c["case_id"]: c for c in json.loads(copilot.model.prompts[3][-1].text)}
+    assert queue["PC-0311"]["status"] == "returned_to_sub"
 
 
-def test_a_call_with_bad_inputs_or_to_no_such_tool_goes_back_to_the_model(
-    copilot: Copilot,
+def test_the_five_payroll_lookups_each_with_a_card_and_its_sources(copilot: Copilot):
+    copilot.model = stub(
+        call("get_wage_rate", question=RATE),
+        call("check_registration", registration_no="177511", date="2026-11-23"),
+        call("check_apprentice", worker_id="W-059", date="2026-10-19"),
+        call("get_filing_rules"),
+        call("lookup_payroll_term", term=TERM),
+        "Looked up.",
+    )
+    [turn] = copilot.ask("What's the electrician's rate in Middlesex?")["turns"]
+    assert [(c["tool"], c["kind"], c["status"]) for c in turn["steps"]] == [
+        ("get_wage_rate", "context", "done"),
+        ("check_registration", "context", "done"),
+        ("check_apprentice", "context", "done"),
+        ("get_filing_rules", "context", "done"),
+        ("lookup_payroll_term", "context", "done"),
+    ]
+    assert [[s["file"] for s in c["sources"]][0] for c in turn["steps"]] == [
+        "rate_determinations.yaml",
+        "contractor_registry.yaml",
+        "apprentice_registrations.yaml",
+        "filing_rules.yaml",
+        "payroll_glossary.yaml",
+    ]
+    rate = json.loads(copilot.model.prompts[1][-1].text)
+    assert rate["row"]["effective"] == "2026-10-01"
+    assert turn["steps"][1]["input"] == "177511 2026-11-23"
+
+
+def test_a_lookup_the_context_layer_refuses_goes_back_to_the_model(copilot: Copilot):
+    copilot.model = stub(
+        call("check_registration", registration_no="000000", date="2026-11-23"),
+        "No such registration.",
+    )
+    [turn] = copilot.ask("Is 000000 registered?")["turns"]
+    [card] = turn["steps"]
+    assert (card["tool"], card["status"]) == ("check_registration", "refused")
+    assert card["reason"].endswith("No registration 000000 in the registry")
+    refusal = copilot.model.prompts[1][-1]
+    assert refusal.text.startswith("Refused: ")
+    assert refusal.text.endswith("No registration 000000 in the registry")
+    assert turn["status"] == "done"
+
+
+@pytest.mark.parametrize(
+    ("tool", "args"),
+    [
+        ("pay_case", {"case_id": "PC-1201"}),
+        ("sign_off_case", {"case_id": "PC-1201"}),
+        ("send_back_case", {"case_id": "PC-1201", "note": "Fix line 1."}),
+        ("check_success_criteria", {}),
+    ],
+)
+def test_a_tool_the_copilot_doesnt_have_goes_back_to_the_model(
+    client, copilot: Copilot, tool, args
 ):
-    copilot.model = stub(call("get_case"), call("pay_case", case_id="CLM-1001"), "Ok.")
+    awaiting_review(client, "PC-1201", finding())
+    copilot.model = stub(call(tool, **args), "I can't.")
+    [turn] = copilot.ask("Do it")["turns"]
+    assert turn["steps"] == []
+    assert f"{tool} is not a valid tool" in copilot.model.prompts[1][-1].text
+    assert client.get("/api/cases/PC-1201").json()["status"] == "awaiting_review"
+
+
+def test_a_call_with_bad_inputs_goes_back_to_the_model(copilot: Copilot):
+    copilot.model = stub(call("get_case"), "Ok.")
     [turn] = copilot.ask("Look at a case")["turns"]
     [card] = turn["steps"]
     assert (card["tool"], card["status"]) == ("get_case", "refused")
     assert "case_id" in card["reason"]
-    bad, missing = copilot.model.prompts[1][-1], copilot.model.prompts[2][-1]
-    assert bad.text.startswith("Refused: ")
-    assert "pay_case is not a valid tool" in missing.text
+    assert copilot.model.prompts[1][-1].text.startswith("Refused: ")
 
 
 def test_the_model_is_the_one_the_app_names(monkeypatch):

@@ -1,3 +1,4 @@
+from agent.context_tools import RateQuestion
 from agent.direct import CONTEXT_LAYER
 from agent.json_text import as_json
 from agent.mcp_tools import McpTools
@@ -14,33 +15,56 @@ def test_the_app_tools_are_named_after_backend_operations(client):
     names = [t.name for t in APP_TOOLS]
     assert names == [
         "get_case",
-        "get_policy",
-        "get_case_history",
-        "calculate_payout",
-        "record_decision",
+        "get_project",
+        "list_subcontractors",
+        "get_payroll_history",
+        "record_exception_report",
     ]
     assert set(names) <= operations(client)
 
 
+def test_the_payroll_agents_tools_are_the_designs():
+    assert [t.name for t in PAYROLL_TOOLS] == [
+        "get_case",
+        "get_project",
+        "list_subcontractors",
+        "get_payroll_history",
+        "record_exception_report",
+        "get_wage_rate",
+        "check_registration",
+        "check_apprentice",
+        "get_filing_rules",
+        "lookup_payroll_term",
+    ]
+
+
+def inputs_of(tool):
+    """A tool's inputs as the model sees them, the rate question's fields as the
+    rate lookup's own."""
+    if tool.name == "get_wage_rate":
+        return RateQuestion.model_json_schema()["properties"]
+    return tool.args
+
+
 def test_the_context_tools_are_the_context_layers_with_its_inputs(context_at):
     served = McpTools(CONTEXT_LAYER, context_at).tools
-    # The payroll lookups are served too; the agents get them in stages 3 and 6.
-    assert {t.name for t in CONTEXT_TOOLS} < set(served)
+    assert {t.name for t in CONTEXT_TOOLS} == set(served)
     for tool in CONTEXT_TOOLS:
         inputs = served[tool.name].args
-        assert set(tool.args) == set(inputs), tool.name
-        for name, schema in tool.args.items():
-            for rule in ("type", "enum", "minLength"):
+        ours = inputs_of(tool)
+        assert set(ours) == set(inputs), tool.name
+        for name, schema in ours.items():
+            for rule in ("type", "enum", "minLength", "format"):
                 assert schema.get(rule) == inputs[name].get(rule), (tool.name, name)
 
 
 def test_a_payroll_agent_can_only_act_on_its_own_case_and_subcontractor():
-    ids = {"case_id", "policy_id", "subcontractor_id"}
+    ids = {"case_id", "project_id", "subcontractor_id"}
     assert all(ids & set(t.args) == set() for t in PAYROLL_TOOLS)
 
 
 def test_the_agent_writes_json_with_characters_as_themselves():
-    section = {"title": "Policy wording §2", "note": "the plan’s limit"}
-    assert as_json(section) == (
-        '{"title": "Policy wording §2", "note": "the plan’s limit"}'
+    found = {"citation": "N.J.S.A. 34:11-56.29 §(b)", "note": "the sub’s note"}
+    assert as_json(found) == (
+        '{"citation": "N.J.S.A. 34:11-56.29 §(b)", "note": "the sub’s note"}'
     )

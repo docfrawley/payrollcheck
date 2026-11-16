@@ -3,7 +3,6 @@ import type { Source } from "./sources";
 // The Copilot's conversations, each turn and its cards.
 export type TurnStatus =
   | "working"
-  | "waiting_for_confirmation"
   | "done"
   | "failed"
   // A turn still working long after it started, which the app reads as stopped.
@@ -11,22 +10,13 @@ export type TurnStatus =
 export type CardKind =
   "cases" | "subcontractors" | "context" | "work" | "memory" | "action";
 export type CardStatus = "working" | "done" | "refused" | "failed";
-export type ConfirmationAnswer = "sign_off" | "cancel";
-
-// A sign-off waiting for the reviewer's confirmation, from the app's records.
-export interface Confirmation {
-  case_id: string;
-  subcontractor_name: string;
-  payout: number;
-  reason: string;
-}
 
 // A card: one tool the Copilot called, what was asked and what came back.
 export interface CopilotStep {
   step_id: number;
   tool: string;
   kind: CardKind;
-  // The tool's main input, such as CLM-1012.
+  // The tool's main input, such as PC-1201.
   input: string;
   asked: string;
   status: CardStatus;
@@ -45,18 +35,13 @@ export interface CopilotTurn {
   message: string;
   status: TurnStatus;
   started_at: string;
-  paused_at: string | null;
-  answered_at: string | null;
   finished_at: string | null;
-  // Once it has finished, leaving out the wait for the reviewer.
+  // Once it has finished.
   seconds: number | null;
   answer: string | null;
   model_calls: number | null;
   cost: number | null;
   failure: string | null;
-  confirmation: Confirmation | null;
-  confirmation_answer: ConfirmationAnswer | null;
-  canceled_because: string | null;
   steps: CopilotStep[];
 }
 

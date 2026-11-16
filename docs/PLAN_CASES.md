@@ -213,15 +213,15 @@ Built first because both are pure, deterministic and additive: nothing in the tr
 - `agentcore/cdk/lib/cdk-stack.ts` stages `context/__init__.py`, `wage_rules.py` and `registrations.py` beside `agent/`.
 
 Success criteria:
-- [ ] `uv run pytest agent/tests/test_checks.py --no-cov` passes, built from the committed records and the context layer's lookups called in process, for both labelled sets:
+- [x] `uv run pytest agent/tests/test_checks.py --no-cov` passes, built from the committed records and the context layer's lookups called in process, for both labelled sets:
   - every label of each check's rules found on its case, with its worker, line and shortfall to the cent
   - on every other payroll, correction and decoy, no finding but one each on the two decoys that need judgment: the classification change with a valid note (`classification.changed`) and "Garden St. Electric" (`form.project_mismatch`)
   - the pre-listed Middlesex increase applied from 2026-10-01, and the later determination ignored, shown by the rate-increase-week and later-determination decoys
-- [ ] A unit test for each check on hand-made inputs, covering each finding's citation (the determination id and row, the registry record, the filing rule) and the rounding tolerance: a difference of 1 cent found at a tolerance of 0 and not at 1.
-- [ ] `uv run pytest data/tests/test_template.py --no-cov` passes, including an accept/reject table for `read_upload`: each refusal with its reason, and accepted files that break rules (blank FEIN, unsigned, bad arithmetic, a late wage payment date, a No Work Week row).
-- [ ] `npm run generate` leaves no change after the commit, and `data/tests/test_determinism.py` passes. The labels in `data/evals/` are byte for byte the same as before the phase.
-- [ ] `npm run check:runtime` and `npm run check:context` exit 0, and `context/tests/test_payroll_files.py` covers the craft entry in `get_wage_rate`'s answer.
-- [ ] `npm run check` is green.
+- [x] A unit test for each check on hand-made inputs (committed payrolls edited by hand), covering each finding's citation (the determination id and row, the registry record, the filing rule) and the rounding tolerance: a difference of 1 cent found at a tolerance of 0 and not at 1.
+- [x] `uv run pytest data/tests/test_template.py --no-cov` passes, including an accept/reject table for `read_upload`: each refusal with its reason, and accepted files that break rules (blank FEIN, unsigned, bad arithmetic, a late wage payment date, a No Work Week row).
+- [x] `npm run generate` leaves no change after the commit, and `data/tests/test_determinism.py` passes. The labels in `data/evals/` are byte for byte the same as before the phase.
+- [x] `npm run check:runtime` and `npm run check:context` exit 0, and `context/tests/test_payroll_files.py` covers the craft entry in `get_wage_rate`'s answer.
+- [x] `npm run check` is green.
 
 ### Phase 2: the change-over, from records to the case lifecycle
 
@@ -296,7 +296,7 @@ The seed replaces the records that every part of the app reads, so the backend, 
 The components and tests of the travel pieces go with them (`Approval`, `DecisionDetails`, `DecisionPanel`, `PolicyPanels`, `SendBackForm`, `SentBackDecisions`, `SignOffForm`, `ConfirmationCard`, `Judging`, `SendBack.test.tsx` among them). The Playwright specs for the changed pages are rewritten: `agent.spec.ts`, `send_back.spec.ts`, `run.spec.ts`, `pages.spec.ts`, `scoreboard.spec.ts`, `starts.spec.ts`, `improvement.spec.ts`, `settings.spec.ts` and `copilot.spec.ts`'s sign-off tests.
 
 Success criteria:
-- [ ] **The seed** (`backend/tests/test_seeding.py`):
+- [x] **The seed** (`backend/tests/test_seeding.py`):
   - 22 Received week-12 cases
   - the history's statuses: 175 Accepted, 20 of them with two submissions and their first submission's exceptions superseded, and 10 Returned to sub with their exceptions open, PC-0311 with exactly three
   - PC-1206 Received with two submissions
@@ -304,27 +304,27 @@ Success criteria:
   - the business date 2026-11-23
   - 207 development and 98 held-out labelled cases, 10 of them tiny, with their labels
   - no held-out project, subcontractor or worker in any list
-- [ ] **The guarantee** (`backend/tests/test_reports.py`): a money exception with no matching candidate refused with a 422, and the same with the shortfall a cent out or the wrong worker. A candidate neither raised nor dismissed, a dismissal with no reason, and exceptions with a blank notice are each refused. A report matching its candidates is recorded and moves the case to Awaiting review.
-- [ ] **The lifecycle** (`backend/tests/test_lifecycle.py` and `agent/tests/test_payroll_agent.py`, on a stub model):
+- [x] **The guarantee** (`backend/tests/test_reports.py`): a money exception with no matching candidate refused with a 422, and the same with the shortfall a cent out or the wrong worker. A candidate neither raised nor dismissed, a dismissal with no reason, and exceptions with a blank notice are each refused. A report matching its candidates is recorded and moves the case to Awaiting review.
+- [x] **The lifecycle** (`backend/tests/test_lifecycle.py` and `agent/tests/test_payroll_agent.py`, on a stub model):
   - a clean case reaching Awaiting review, its report listing the eight checks it ran
   - a case failed twice reaching Awaiting review with `agent_failed`
   - Sign off refused while an exception is open, and accepted once none is
   - Send back to Returned to sub
   - two Sign offs at once accepting the case once
   - Sign off and Send back refused with the agent's key
-- [ ] **Screening** (`agent/tests/test_screening.py`): a flagged case reaches Awaiting review with its reason and no exceptions, and the agent's stub model is never called. The screening reads a hidden instruction in each of `payroll_notes`, `line_notes` and `signed_by`.
-- [ ] **The checks on the route:** `agent/tests/test_check_node.py` works a labelled case through the graph on the direct route, with the real context layer on a local port, and its recorded candidates equal phase 1's findings.
-- [ ] **Scoring** (`backend/tests/test_scoring.py`), on hand-made exceptions, with measures matching ones worked out by hand:
+- [x] **Screening** (`agent/tests/test_screening.py`): a flagged case reaches Awaiting review with its reason and no exceptions, and the agent's stub model is never called. The screening reads a hidden instruction in each of `payroll_notes`, `line_notes` and `signed_by`.
+- [x] **The checks on the route:** `agent/tests/test_check_node.py` works a labelled case through the graph on the direct route, with the real context layer on a local port, and its recorded candidates equal phase 1's findings.
+- [x] **Scoring** (`backend/tests/test_scoring.py`), on hand-made exceptions, with measures matching ones worked out by hand:
   - a wrong rule code in the same family not caught
   - a shortfall a cent out caught but not correct
   - a flagged decoy false
   - an exception on a flagged copy false
-- [ ] **The answer key** (`backend/tests/test_copies.py`): every response the agent's key can read for a copy holds nothing from `labels`, and its history comes from its own set.
-- [ ] **The API document** (`backend/tests/test_agent_api.py`): `get_agent_api` lists exactly the seven operations, with no `servers`. `backend/tests/test_openapi.py` still checks every operation's `operation_id`, docstring and required inputs.
-- [ ] **Rounds** (`backend/tests/test_verdict.py`, `test_rounds.py` and `agent/tests/test_improver.py`): a version kept on a catch rate improved by more than its noise, and rolled back on one that fell by more than its tolerance, with no grade.
-- [ ] **Nothing of the travel domain left:** `git grep -n -i -E "payout|policy_id|calculate_payout|record_decision|sent_back|approval_limit|wait_for_reviewer|PAYROLLCHECK_MEMORY_ID"` outside `docs/`, `labs/` and `CONTEXT.md` finds nothing. The payroll graph has no `interrupt()`.
-- [ ] With `npm run dev` on SQLite and the agent's stand-in, `curl -H "X-API-Key: ..." http://127.0.0.1:8000/api/cases/PC-0311` returns Returned to sub with three open exceptions, and `/api/agent/openapi.json` lists the seven operations.
-- [ ] `npm run check` is green, the Playwright specs rewritten as listed.
+- [x] **The answer key** (`backend/tests/test_copies.py`): every response the agent's key can read for a copy holds nothing from `labels`, and its history comes from its own set.
+- [x] **The API document** (`backend/tests/test_agent_api.py`): `get_agent_api` lists exactly the seven operations, with no `servers`. `backend/tests/test_openapi.py` still checks every operation's `operation_id`, docstring and required inputs.
+- [x] **Rounds** (`backend/tests/test_verdict.py`, `test_rounds.py` and `agent/tests/test_improver.py`): a version kept on a catch rate improved by more than its noise, and rolled back on one that fell by more than its tolerance, with no grade.
+- [x] **Nothing of the travel domain left:** `git grep -n -i -E "payout|policy_id|calculate_payout|record_decision|sent_back|approval_limit|wait_for_reviewer|PAYROLLCHECK_MEMORY_ID"` outside `docs/`, `labs/` and `CONTEXT.md` finds nothing. The payroll graph has no `interrupt()`.
+- [x] With the backend on SQLite (uvicorn, since `npm run dev` reads `.env`), `curl -H "X-API-Key: ..." http://127.0.0.1:8000/api/cases/PC-0311` returns Returned to sub with three open exceptions, and `/api/agent/openapi.json` lists the seven operations.
+- [x] `npm run check` is green, the Playwright specs rewritten as listed.
 
 ### Phase 3: intake and the project pages
 
@@ -344,14 +344,14 @@ Success criteria:
   - every case's project linked to its page
 
 Success criteria:
-- [ ] `uv run pytest backend/tests/test_intake.py --no-cov` passes an accept/reject table: each refusal with its reason and no case created, and accepted files that break rules creating a Received case: blank FEIN, unsigned, bad arithmetic, a late wage payment date, an unregistered apprentice, a No Work Week row with no lines, and a hidden instruction in free text.
-- [ ] A second upload for the same subcontractor, project and week answers 409 naming the case, and the case and its submissions are unchanged.
-- [ ] An upload with the agent's key is refused with a 403.
-- [ ] vitest covers the project page's form, its refusal and its link to the created case.
-- [ ] `e2e/intake.spec.ts`, signed in as Dana Whitfield:
+- [x] `uv run pytest backend/tests/test_intake.py --no-cov` passes an accept/reject table: each refusal with its reason and no case created, and accepted files that break rules creating a Received case: blank FEIN, unsigned, bad arithmetic, a late wage payment date, an unregistered apprentice, a No Work Week row with no lines, and a hidden instruction in free text.
+- [x] A second upload for the same subcontractor, project and week answers 409 naming the case, and the case and its submissions are unchanged.
+- [x] An upload with the agent's key is refused with a 403.
+- [x] vitest covers the project page's form, its refusal and its link to the created case.
+- [x] `e2e/intake.spec.ts`, signed in as Dana Whitfield:
   - an upload refused with its reason on the page
   - `data/development/arrivals/PC-1214-1.csv` creating PC-1214, Received, which shows in the queue
-- [ ] `npm run check` is green.
+- [x] `npm run check` is green.
 
 ### Phase 4: the payroll agent's judgment and its notice
 
@@ -370,16 +370,16 @@ Phase 2 wires the agent and its first instructions. This phase finishes what the
 - Langfuse: each case keeps its own session, tagged with its run, as now.
 
 Success criteria:
-- [ ] `agent/tests/test_payroll_agent.py` on a stub model:
+- [x] `agent/tests/test_payroll_agent.py` on a stub model:
   - a report that dismisses the classification-note candidate with a reason, recorded as dismissed with it
   - a non-money exception added with no candidate, recorded as raised by the agent
   - a stub reply that invents a money exception, refused, with the refusal returned to the model as a refusal step
   - a case with exceptions whose report has a blank notice, refused
-- [ ] `agent/tests/test_tools.py`: the tools' names are exactly the design's, the five lookups are a strict subset of the context server's tools, and no tool takes a case, project or subcontractor id from the model.
-- [ ] `agent/tests/test_steps.py`: a case's steps hold the screening first, then the eight checks in order, then the model's calls.
-- [ ] vitest covers the judgment calls on the case page.
-- [ ] A fresh reviewer reads `payroll.md` against `docs/CODE_STANDARDS.md` rule 14 and finds goals, not steps.
-- [ ] `npm run check` is green.
+- [x] `agent/tests/test_tools.py`: the tools' names are exactly the design's, the five lookups are a strict subset of the context server's tools, and no tool takes a case, project or subcontractor id from the model.
+- [x] `agent/tests/test_steps.py`: a case's steps hold the screening first, then the eight checks in order, then the model's calls.
+- [x] vitest covers the judgment calls on the case page.
+- [x] A fresh reviewer reads `payroll.md` against `docs/CODE_STANDARDS.md` rule 14 and finds goals, not steps.
+- [x] `npm run check` is green.
 
 ### Phase 5: the Scoreboard and an evaluation's cases
 
@@ -399,12 +399,12 @@ Success criteria:
 - The improver's view, from phase 2's bridge, holds the development set's misses and false exceptions with the label beside each exception, and nothing from the held-out set but its scores.
 
 Success criteria:
-- [ ] `backend/tests/test_scoreboard.py`: an evaluation played out through the API, with a caught label, a missed one, a wrong shortfall, a false exception, a flagged decoy and a missed screening flag, reads back with each measure as worked out by hand, in a fixed number of queries.
-- [ ] `backend/tests/test_improvement.py`: the improver's view holds the development misses and nothing of the held-out labels.
-- [ ] Sign off and Send back on a copy refused with a 409.
-- [ ] vitest covers the Scoreboard's measures and the evaluation page's chips and ordering.
-- [ ] `e2e/scoreboard.spec.ts` shows an evaluation of the tiny set played out through the API, with its measures, a miss and a false exception, each copy linking to its case page.
-- [ ] `npm run check` is green.
+- [x] `backend/tests/test_scoreboard.py`: an evaluation played out through the API, with a caught label, a missed one, a wrong shortfall, a false exception, a flagged decoy and a missed screening flag, reads back with each measure as worked out by hand, in a fixed number of queries.
+- [x] `backend/tests/test_improvement.py`: the improver's view holds the development misses and nothing of the held-out labels.
+- [x] Sign off and Send back on a copy refused with a 409.
+- [x] vitest covers the Scoreboard's measures and the evaluation page's chips and ordering.
+- [x] `e2e/scoreboard.spec.ts` shows an evaluation of the tiny set played out through the API, with its measures, a miss and a false exception, each copy linking to its case page.
+- [x] `npm run check` is green.
 
 ### Phase 6: the documents, the live checks and the spending limit
 
@@ -420,11 +420,11 @@ Success criteria:
 - The spending limit: from the live runs' cost per case, work out a round of about 400 case runs (no judge until stage 5, plus the improver's own calls), compare it with the $5.00 the improver's settings call for, and propose any change without making it.
 
 Success criteria:
-- [ ] The dispatch works all 22 week-12 cases to Awaiting review, each with its exceptions and their citations and a draft notice, or a clean report listing its checks. None is left In progress.
-- [ ] The tiny-set evaluation appears on the Scoreboard with every measure, its hidden-instruction payroll flagged.
-- [ ] A case page with exceptions, in light and dark mode, with no console errors.
-- [ ] The upload creates PC-1223, Received, in the queue.
-- [ ] The report gives what the runs spent, from the backend's records and the OpenRouter key's usage, and the spending-limit proposal.
-- [ ] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green.
+- [x] The dispatch works all 22 week-12 cases to Awaiting review, each with its exceptions and their citations and a draft notice, or a clean report listing its checks. None is left In progress.
+- [x] The tiny-set evaluation appears on the Scoreboard with every measure, its hidden-instruction payroll flagged.
+- [x] A case page with exceptions, in light and dark mode, with no console errors.
+- [x] The upload creates PC-1223, Received, in the queue.
+- [x] The report gives what the runs spent, from the backend's records and the OpenRouter key's usage, and the spending-limit proposal.
+- [x] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green.
 
 The success criteria themselves (41 of 45 caught, at most 5 false exceptions) are measured on the whole development set at the end of stage 5, not here.

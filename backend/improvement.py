@@ -7,7 +7,7 @@ refuses anything a round records once it has finished or been stopped."""
 
 import uuid
 from functools import partial
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Connection, RowMapping, func, insert, select, update
@@ -16,13 +16,10 @@ from backend import agent_service, spending, verdict
 from backend.agent_work import clear_the_way
 from backend.asking import commit_and_ask
 from backend.database import (
-    FIRST_VERSION,
-    INSTRUCTIONS,
     improver_calls,
     now,
     proposals,
     recipes,
-    reviewer_decisions,
     rounds,
     runs,
     versions,
@@ -34,6 +31,7 @@ from backend.dependencies import (
     compliance_manager,
 )
 from backend.diffs import diff
+from backend.first_version import FIRST_VERSION, INSTRUCTIONS
 from backend.free_models import model_or_free
 from backend.lookups import (
     allowed_models,
@@ -44,19 +42,16 @@ from backend.lookups import (
 )
 from backend.models import (
     Accepted,
-    AgentAnswer,
-    CaseBesideReviewer,
+    CaseResults,
     ChangeProposalRequest,
     Diff,
     EarlierRound,
     Evaluation,
     EvaluationSet,
-    EvaluationSetResults,
     FailureRequest,
     Improvement,
     ImproverCallRequest,
     ImproverView,
-    JudgeAnswer,
     Measures,
     NewNumber,
     PayrollAgentVersion,
@@ -68,7 +63,6 @@ from backend.models import (
     RejectionRequest,
     Review,
     Reviewer,
-    ReviewerAnswer,
     RoundForTheAgent,
     RoundReviewView,
     RoundStatus,
@@ -101,7 +95,7 @@ from backend.round_state import (
 )
 from backend.scoreboard import (
     Expected,
-    expected_answers,
+    expected_labels,
     round_evaluations,
     score,
     score_all,
@@ -113,9 +107,6 @@ from backend.scoreboard import (
 IMPROVER_MODEL = ("openai/gpt-6.1-sol", "medium")
 ROUND_OPEN = "Round {number} is open. Finish or stop it first."
 NOT_WAITING = "Proposal {proposal_id} isn't waiting for a reviewer: it was {review}"
-# How many of the right cases the improver reads, those the judge graded lowest.
-EXPLAINED_LEAST_WELL = 5
-YES_FROM = 0.5
 
 router = APIRouter()
 
@@ -257,68 +248,35 @@ def measures_or_none(stored: dict[str, Any] | None) -> Measures | None:
 # What the improver reads.
 
 
-def yes_or_no(chance: float) -> Literal["yes", "no"]:
-    """A check as the improver reads it: yes from even odds."""
-    return "yes" if chance >= YES_FROM else "no"
-
-
-def beside_reviewer(case: ScoredCase, reviewer: RowMapping) -> CaseBesideReviewer:
-    """An evaluation's copy as the improver reads it: under its original's id, the
-    agent's answer beside the reviewer's, and the judge's grade."""
-    grade = case.grade
-    return CaseBesideReviewer(
+def to_results(case: ScoredCase) -> CaseResults:
+    """A copy as the improver reads it: under its original's id, with what it
+    missed and what it raised that matched no label."""
+    return CaseResults(
         case_id=case.copy_of,
-        summary=case.summary,
-        agent=AgentAnswer(
-            decision=case.decision,
-            payout=case.payout,
-            reason=case.reason,
-            section=case.section,
-        ),
-        reviewer=ReviewerAnswer(
-            decision=reviewer["decision"],
-            payout=reviewer["payout"],
-            reason=reviewer["reason"],
-            reference=reviewer["reference"],
-        ),
-        judge=grade
-        and JudgeAnswer(
-            grade=grade.score,
-            letter=grade.letter,
-            same_grounds=yes_or_no(grade.same_grounds),
-            same_section=yes_or_no(grade.same_section),
-        ),
+        missed=[label for label in case.labels if label.result != "caught"],
+        false_exceptions=[found for found in case.exceptions if not found.matched],
+        screening_expected=case.screening_expected,
+        screening_found=case.screening_found,
     )
 
 
-def evaluation_set_results(
+def development_results(
     db: Connection, version: int, expected: Expected
-) -> EvaluationSetResults:
-    """From a version's latest round evaluation on the evaluation set, the cases it
-    got wrong and the right ones the judge graded lowest, with the reviewers'
-    reasons. Nothing from the held-out set."""
-    latest = round_evaluations(db, version)[EvaluationSet.EVALUATION][-1:]
+) -> list[CaseResults]:
+    """From a version's latest round evaluation on the development set, each case
+    with a miss, a wrong shortfall, a false exception or a screening it got wrong.
+    Nothing from the held-out set."""
+    latest = round_evaluations(db, version)[EvaluationSet.DEVELOPMENT][-1:]
     if not latest:
-        return EvaluationSetResults(wrong=[], explained_least_well=[])
-    cases = score(db, latest[0], expected).cases
-    reviewers_ = reviewer_reasons(db)
-    right = [c for c in cases if c.right]
-    weakest = sorted(right, key=lambda c: c.grade.score if c.grade else 3)
-    return EvaluationSetResults(
-        wrong=[beside_reviewer(c, reviewers_[c.copy_of]) for c in cases if not c.right],
-        explained_least_well=[
-            beside_reviewer(c, reviewers_[c.copy_of])
-            for c in weakest[:EXPLAINED_LEAST_WELL]
-        ],
-    )
-
-
-def reviewer_reasons(db: Connection) -> dict[str, RowMapping]:
-    """The reviewers' decisions on the evaluation set, with their reasons."""
-    query = select(reviewer_decisions).where(
-        reviewer_decisions.c.evaluation_set == EvaluationSet.EVALUATION
-    )
-    return {row["case_id"]: row for row in db.execute(query).mappings()}
+        return []
+    return [
+        to_results(case)
+        for case in score(db, latest[0], expected).cases
+        if case.misses
+        or case.false_exceptions
+        or any(label.result == "shortfall_wrong" for label in case.labels)
+        or case.screening_expected != case.screening_found
+    ]
 
 
 def earlier_round(db: Connection, row: RowMapping) -> EarlierRound:
@@ -342,13 +300,13 @@ def earlier_round(db: Connection, row: RowMapping) -> EarlierRound:
 def improver_view(db: Connection, row: RowMapping) -> ImproverView:
     """What the improver reads in a round, as the lab's read_results gives it."""
     current = version_row(db, current_version_number(db))
-    expected = expected_answers(db)
+    expected = expected_labels(db)
     settings = settings_number(db, row["settings"])
     earlier = select(rounds).where(rounds.c.number < row["number"])
     return ImproverView(
         current_version=PayrollAgentVersion(**current),
         scores=version_scores(db, current["number"], expected),
-        evaluation_set=evaluation_set_results(db, current["number"], expected),
+        development_set=development_results(db, current["number"], expected),
         earlier_rounds=[
             earlier_round(db, earlier_row)
             for earlier_row in db.execute(earlier.order_by(rounds.c.number)).mappings()
@@ -465,20 +423,19 @@ def view_of(
 
 
 def version_point(row: RowMapping, scores: VersionScores) -> VersionPoint:
-    """A version's held-out accuracy and grade, for the chart."""
+    """A version's held-out catch rate, for the chart."""
     held_out = scores.held_out
     return VersionPoint(
         number=row["number"],
         verdict=row["verdict"] if row["round_id"] else None,
-        accuracy=held_out.accuracy if held_out else None,
-        grade=held_out.grade if held_out else None,
+        catch_rate=held_out.catch_rate if held_out else None,
     )
 
 
 def version_points(
     db: Connection, expected: Expected
 ) -> tuple[VersionPoint, list[VersionPoint]]:
-    """Version 1's held-out accuracy and grade, and each tried version's, for the
+    """Version 1's held-out catch rate, and each tried version's, for the
     chart."""
     first = version_row(db, FIRST_VERSION["number"])
     query = select(versions).where(versions.c.round_id.is_not(None))
@@ -528,7 +485,7 @@ def recipe_summaries(db: Connection) -> list[RecipeSummary]:
 def improvement_page(db: Connection) -> Improvement:
     """Everything the Improvement page shows, in a few queries however many rounds
     there have been, since the page asks for it every two seconds."""
-    expected = expected_answers(db)
+    expected = expected_labels(db)
     all_rounds = list(
         db.execute(select(rounds).order_by(rounds.c.number.desc())).mappings()
     )
@@ -759,12 +716,16 @@ def create_version(round_id: str, db: Database) -> NewNumber:
     change = ChangeProposalRequest(**proposal["proposal"])
     refuse_a_model_not_allowed(db, change)
     number = db.execute(select(func.max(versions.c.number))).scalar_one() + 1
+    base = version_row(db, current_version_number(db))
     db.execute(
         insert(versions).values(
             number=number,
             **change.model_dump(),
+            # The improver can't propose the parameters until stage 5, so a change
+            # keeps its base's.
+            parameters=base["parameters"],
             proposed_by=proposer(row),
-            based_on=current_version_number(db),
+            based_on=base["number"],
             round_id=round_id,
             approved_by=proposal["reviewed_by"],
             approved_at=proposal["reviewed_at"],
@@ -831,7 +792,7 @@ def record_verdict(round_id: str, db: Database) -> VerdictResult:
     version = tried_version(db, round_id)
     if version is None or version["verdict"] is not None:
         raise HTTPException(409, f"Round {row['number']} has no version under test")
-    expected = expected_answers(db)
+    expected = expected_labels(db)
     before = version_scores(db, current_version_number(db), expected).held_out
     tried = version_scores(db, version["number"], expected)
     decided = decide(db, row, version, tried.held_out, before)
@@ -860,7 +821,7 @@ def record_verdict(round_id: str, db: Database) -> VerdictResult:
         scores=VerdictScores(
             held_out_before=before,
             held_out_after=tried.held_out,
-            evaluation_after=tried.evaluation,
+            development_after=tried.development,
         ),
     )
 

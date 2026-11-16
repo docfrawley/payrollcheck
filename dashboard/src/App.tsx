@@ -6,6 +6,8 @@ import { CasePage } from "./pages/CasePage";
 import { ConfigurationPage } from "./pages/ConfigurationPage";
 import { EvaluationPage } from "./pages/EvaluationPage";
 import { ImprovementPage } from "./pages/ImprovementPage";
+import { ProjectPage } from "./pages/ProjectPage";
+import { ProjectsPage } from "./pages/ProjectsPage";
 import { QueuePage } from "./pages/QueuePage";
 import { RecipePage } from "./pages/RecipePage";
 import { ScoreboardPage } from "./pages/ScoreboardPage";
@@ -18,6 +20,8 @@ import {
   EVALUATION_PAGE,
   IMPROVEMENT,
   INSTRUCTIONS,
+  PROJECT_PAGE,
+  PROJECTS,
   QUEUE,
   RECIPE_PAGE,
   SCOREBOARD,
@@ -41,6 +45,8 @@ export function App() {
       >
         <Route path={QUEUE} element={<QueuePage />} />
         <Route path={CASE_PAGE} element={<CasePage />} />
+        <Route path={PROJECTS} element={<ProjectsPage />} />
+        <Route path={PROJECT_PAGE} element={<ProjectPage />} />
         <Route path={SCOREBOARD} element={<ScoreboardPage />} />
         <Route path={EVALUATION_PAGE} element={<EvaluationPage />} />
         <Route path={IMPROVEMENT} element={<ImprovementPage />} />

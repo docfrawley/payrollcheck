@@ -1,8 +1,6 @@
-"""Finding a case, a run, a version, the settings and the models allowed, and the
-messages for what isn't found or can't be answered, which more than one of the
+"""Finding a case, a project, a run, a version, the settings and the models
+allowed, and the messages for what isn't found, which more than one of the
 backend's modules need."""
-
-from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, func, select
@@ -11,10 +9,10 @@ from backend.database import (
     case_view,
     cases,
     models_allowed,
+    projects,
     rounds,
     runs,
     settings,
-    subcontractors,
     versions,
 )
 from backend.models import ModelAllowed, Settings, Verdict
@@ -22,9 +20,7 @@ from backend.models import ModelAllowed, Settings, Verdict
 RUN_NOT_FOUND = "Run {run_id} not found"
 CASE_NOT_FOUND = "Case {case_id} not found"
 VERSION_NOT_FOUND = "Version {number} not found"
-SUBCONTRACTOR_NOT_FOUND = "Subcontractor {subcontractor_id} not found"
-NOT_WAITING_FOR_SIGN_OFF = "Case {case_id} is not waiting for sign-off"
-A_COPY = "Case {case_id} is a copy in an evaluation and can't be {answered}"
+PROJECT_NOT_FOUND = "Project {project_id} not found"
 
 
 def find_case(db: Connection, case_id: str) -> RowMapping:
@@ -36,17 +32,13 @@ def find_case(db: Connection, case_id: str) -> RowMapping:
     return row
 
 
-def subcontractor_record(db: Connection, subcontractor_id: str) -> dict[str, Any]:
-    """Return one subcontractor's record, or raise a 404."""
-    query = select(subcontractors.c.record).where(
-        subcontractors.c.subcontractor_id == subcontractor_id
-    )
-    record = db.execute(query).scalar_one_or_none()
-    if record is None:
-        raise HTTPException(
-            404, SUBCONTRACTOR_NOT_FOUND.format(subcontractor_id=subcontractor_id)
-        )
-    return record
+def project_row(db: Connection, project_id: str) -> RowMapping:
+    """Return one project's row, or raise a 404."""
+    query = select(projects).where(projects.c.project_id == project_id)
+    row = db.execute(query).mappings().first()
+    if row is None:
+        raise HTTPException(404, PROJECT_NOT_FOUND.format(project_id=project_id))
+    return row
 
 
 def run_row(db: Connection, run_id: str) -> RowMapping:

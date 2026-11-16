@@ -1,15 +1,14 @@
 import type { Measures, RoundReview, RoundSummary } from "../api";
 import {
   dateTime,
-  grade,
   inWords,
   modelCost,
   money,
   percent,
   whereRoundIs,
 } from "../format";
-import { NOT_GRADED } from "../measures";
 import { RoundChip, VerdictChip } from "./Chips";
+import { None } from "./None";
 import { StateMessage } from "./StateMessage";
 import { RecipeLink, VersionLink } from "./VersionLink";
 
@@ -17,8 +16,7 @@ const HEADINGS: [string, string][] = [
   ["Round", ""],
   ["Recipe", ""],
   ["Version tried", ""],
-  ["Held-out accuracy", "num"],
-  ["Held-out grade", "num"],
+  ["Held-out catch rate", "num"],
   ["Verdict", ""],
   ["Cost", "num"],
 ];
@@ -81,15 +79,7 @@ function RoundRows({ round }: Readonly<{ round: RoundSummary }>) {
         <td className="num">
           <BeforeAfter
             round={round}
-            show={(measures) => percent(measures.accuracy)}
-          />
-        </td>
-        <td className="num">
-          <BeforeAfter
-            round={round}
-            show={(measures) =>
-              measures.grade === null ? NOT_GRADED : grade(measures.grade)
-            }
+            show={(measures) => percent(measures.catch_rate)}
           />
         </td>
         <td className="round-verdict">
@@ -133,7 +123,7 @@ function BeforeAfter({
   show,
 }: Readonly<{ round: RoundSummary; show: (measures: Measures) => string }>) {
   const { held_out_before: before, held_out_after: after } = round;
-  if (!before && !after) return <span className="muted">None</span>;
+  if (!before && !after) return <None />;
   return (
     <>
       {before ? show(before) : "None"} to {after ? show(after) : "None"}

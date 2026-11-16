@@ -44,14 +44,6 @@ def take_turn(conversation_id: str, turn_id: str, sign_in: str) -> dict[str, Any
     }
 
 
-def answer_confirmation(
-    conversation_id: str, turn_id: str, sign_in: str
-) -> dict[str, Any]:
-    return take_turn(conversation_id, turn_id, sign_in) | {
-        "operation": "answer_confirmation"
-    }
-
-
 def key_headers() -> dict[str, str]:
     """The agent's key as the app sends it, read as the tests set it."""
     return {"Authorization": f"Bearer {os.environ['PAYROLLCHECK_API_KEY']}"}

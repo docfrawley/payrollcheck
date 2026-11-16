@@ -15,10 +15,10 @@ export function step(changes: Partial<CopilotStep> = {}): CopilotStep {
     step_id: 1,
     tool: "get_case",
     kind: "cases",
-    input: "CLM-1012",
-    asked: '{"case_id": "CLM-1012"}',
+    input: "PC-1201",
+    asked: '{"case_id": "PC-1201"}',
     status: "done",
-    answer: '{"case_id": "CLM-1012", "status": "decided"}',
+    answer: '{"case_id": "PC-1201", "status": "awaiting_review"}',
     reason: null,
     sources: [],
     started_at: "2026-10-10T09:00:01.000+00:00",
@@ -35,17 +35,12 @@ export function turn(changes: Partial<CopilotTurn> = {}): CopilotTurn {
     message: "What needs me today?",
     status: "done",
     started_at: "2026-10-10T09:00:00.000+00:00",
-    paused_at: null,
-    answered_at: null,
     finished_at: "2026-10-10T09:00:12.000+00:00",
     seconds: 12,
     answer: "Nothing needs you today.",
     model_calls: 4,
     cost: 0.0021,
     failure: null,
-    confirmation: null,
-    confirmation_answer: null,
-    canceled_because: null,
     steps: [],
     ...changes,
   };
@@ -58,29 +53,6 @@ export function conversation(...turns: CopilotTurn[]): Conversation {
     created_at: "2026-10-10T09:00:00.000+00:00",
     turns,
   };
-}
-
-// A turn waiting for Dana to confirm the sign-off of CLM-1003.
-export const confirmation = {
-  case_id: "CLM-1003",
-  subcontractor_name: "Lena Fischer",
-  payout: 3750,
-  reason: "The hospital bill is covered under section 7.",
-};
-
-export function waiting(changes: Partial<CopilotTurn> = {}): CopilotTurn {
-  return turn({
-    message: "Sign off CLM-1003",
-    status: "waiting_for_confirmation",
-    paused_at: "2026-10-10T09:00:05.000+00:00",
-    finished_at: null,
-    seconds: null,
-    answer: null,
-    model_calls: null,
-    cost: null,
-    confirmation,
-    ...changes,
-  });
 }
 
 // The reviewer opened a conversation in this browser before.

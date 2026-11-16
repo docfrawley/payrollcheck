@@ -6,10 +6,9 @@ import type {
   Case,
   CaseSummary,
   Reviewer,
-  Policy,
-  PreviousCase,
   Settings,
   SettingsPage,
+  Submission,
 } from "./api";
 
 // Stands in for the backend: answers "METHOD /path" with the JSON given, or
@@ -41,22 +40,20 @@ export const marcus: Reviewer = {
 
 const startingSettings: Settings = {
   number: 1,
-  approval_limit: 1000,
-  objectives: { accuracy: 0.6, grade: 1 },
+  objectives: { catch_rate: 0.6 },
   noise: {
-    accuracy: 0.1,
-    grade: 0.15,
+    catch_rate: 0.1,
     cost_per_case: 0.15,
     seconds_per_case: 0.15,
   },
   tolerance: {
-    accuracy: 0.1,
-    grade: 0.15,
+    catch_rate: 0.1,
     cost_per_case: 1,
     seconds_per_case: 0.25,
   },
   spending_limit: 0.5,
   agents: 25,
+  business_date: "2026-11-23",
   changed_by: null,
   changed_at: "2026-10-04T09:00:00+00:00",
 };
@@ -130,77 +127,82 @@ export async function panel(heading: string) {
   return within(await screen.findByRole("region", { name: heading }));
 }
 
-export const caseRecord: Case = {
-  case_id: "CLM-1002",
-  policy_id: "POL-2002",
-  subcontractor_id: "CUS-3002",
-  subcontractor_name: "Tom Becker",
-  case_type: "baggage",
-  submitted_on: "2026-07-20",
-  incident_date: "2026-06-21",
-  incident_location: "Frankfurt, Germany",
-  summary: "Suitcase lost on a connecting flight",
-  story: "My suitcase never arrived in Prague.",
-  items: [
-    { description: "Hard-shell suitcase", category: "luggage", amount: 280 },
-    { description: "Wool suit", category: "clothing", amount: 870 },
-  ],
-  amount_claimed: 1150,
-  documents: [
+export const summary: CaseSummary = {
+  case_id: "PC-1201",
+  project_id: "PRJ-01",
+  project_name: "Lincoln School renovation",
+  subcontractor_id: "SUB-01",
+  subcontractor_name: "Garden State Electric LLC",
+  week_ending: "2026-11-22",
+  status: "received",
+  screening_flag: false,
+  agent_failed: false,
+  open_exceptions: 0,
+  shortfall_cents: 0,
+};
+
+export const submission: Submission = {
+  submission_no: 1,
+  uploaded_by: "HND-01",
+  uploaded_at: "2026-11-23",
+  received_on: "2026-11-23",
+  file_name: "PC-1201-1.csv",
+  payroll_no: 12,
+  wage_payment_date: "2026-11-23",
+  certification: {
+    contractor_name: "Garden State Electric LLC",
+    fein: "62-9917837",
+    registration_no: "177511",
+    project_id: "PRJ-01",
+    payroll_no: 12,
+    week_ending: "2026-11-22",
+    wage_payment_date: "2026-11-23",
+    signed_by: "Rosa Medina, Payroll Manager",
+    signed_on: "2026-11-23",
+    no_work_week: false,
+    payroll_notes: "",
+  },
+  lines: [
     {
-      name: "Lost baggage report",
-      type: "carrier_report",
-      content: "One checked bag not delivered.",
+      worker_id: "W-001",
+      worker_name: "Kim Dimitrov",
+      classification: "Electrician Journeyman",
+      apprentice_level: null,
+      hours: ["0.00", "8.00", "8.00", "8.00", "8.00", "0.00", "0.00"],
+      total_hours: "32.00",
+      base_rate: 5885,
+      fringe_rate: 3465,
+      fringe_cash: 0,
+      overtime_hours: "0.00",
+      gross: 188320,
+      deductions: 39547,
+      net: 148773,
+      line_notes: "",
     },
   ],
-  status: "waiting",
+};
+
+export const caseRecord: Case = {
+  ...summary,
+  screening_reason: null,
+  latest_submission_no: 1,
   thread_id: null,
   attempts: 0,
   evaluation_id: null,
   copy_of: null,
-  decision: null,
-  payment: null,
-  sent_back_decisions: [],
+  reviewed_by: null,
+  reviewed_on: null,
+  submissions: [submission],
+  workers: [
+    {
+      worker_id: "W-001",
+      name: "Kim Dimitrov",
+      craft: "electrician",
+      classification: "journeyman",
+    },
+  ],
+  exceptions: [],
+  candidates: [],
+  checks_run: [],
+  notice: null,
 };
-
-export const summary: CaseSummary = {
-  case_id: "CLM-1002",
-  subcontractor_name: "Tom Becker",
-  case_type: "baggage",
-  summary: "Suitcase lost on a connecting flight",
-  amount_claimed: 1150,
-  submitted_on: "2026-07-20",
-  status: "waiting",
-  decision: null,
-  payout: null,
-  resuming: false,
-};
-
-export const policy: Policy = {
-  policy_id: "POL-2002",
-  subcontractor_id: "CUS-3002",
-  plan: "premium",
-  add_ons: ["electronics_plus"],
-  purchased_on: "2026-05-02",
-  sold_through: "UnderCover website",
-  trip: {
-    destination: "Prague, Czech Republic",
-    departs_on: "2026-06-20",
-    returns_on: "2026-06-30",
-    trip_cost: 2400,
-  },
-  travelers: ["Tom Becker"],
-  status: "active",
-};
-
-export const history: PreviousCase[] = [
-  {
-    case_id: "CLM-0412",
-    filed_on: "2024-08-19",
-    incident_date: "2024-08-09",
-    case_type: "baggage_delay",
-    summary: "Checked bag arrived 30 hours late in Lisbon",
-    outcome: "approved",
-    amount_paid: 140,
-  },
-];

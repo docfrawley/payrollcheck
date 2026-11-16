@@ -1,15 +1,19 @@
+import { ShieldAlert } from "lucide-react";
 import { useCallback } from "react";
 import { Link, useParams } from "react-router";
 import { api, type Case } from "../api";
-import { StatusChip } from "../components/Chips";
+import { CaseFlags, StatusChip } from "../components/Chips";
+import { CaseReview } from "../components/CaseReview";
+import { CheckFindings } from "../components/CheckFindings";
 import { ContextUsed } from "../components/ContextUsed";
-import { DecisionPanel } from "../components/DecisionPanel";
+import { ExceptionList } from "../components/ExceptionList";
+import { NoticePanel } from "../components/NoticePanel";
 import { StateMessage } from "../components/StateMessage";
 import { PageHeader } from "../components/PageHeader";
-import { HistoryPanel, PolicyPanel } from "../components/PolicyPanels";
-import { SentBackDecisions } from "../components/SentBackDecisions";
+import { ProjectLink } from "../components/ProjectLink";
 import { StepList } from "../components/StepList";
-import { date, label, money } from "../format";
+import { SubmissionPanels } from "../components/SubmissionPanels";
+import { date } from "../format";
 import { evaluationPage, QUEUE } from "../paths";
 import { REFRESH_MS, useLoad } from "../useLoad";
 
@@ -46,8 +50,16 @@ export function CasePage() {
             <span className="mono">/ {caseRecord.case_id}</span>
           </>
         }
-        title={caseRecord.summary}
-        status={<StatusChip status={caseRecord.status} />}
+        title={caseRecord.subcontractor_name}
+        status={
+          <>
+            <StatusChip status={caseRecord.status} />
+            <CaseFlags
+              screeningFlag={caseRecord.screening_flag}
+              agentFailed={caseRecord.agent_failed}
+            />
+          </>
+        }
         lead={
           caseRecord.evaluation_id ? (
             <>
@@ -57,7 +69,13 @@ export function CasePage() {
               </Link>
             </>
           ) : (
-            `${caseRecord.subcontractor_name}'s ${label(caseRecord.case_type).toLowerCase()} case`
+            <>
+              <ProjectLink
+                projectId={caseRecord.project_id}
+                name={caseRecord.project_name}
+              />
+              , week ending {date(caseRecord.week_ending)}
+            </>
           )
         }
       />
@@ -67,15 +85,18 @@ export function CasePage() {
       <div className="case-layout">
         <div className="column">
           <CaseDetails caseRecord={caseRecord} />
-          <ItemsPanel caseRecord={caseRecord} />
-          <DocumentsPanel caseRecord={caseRecord} />
-          <PolicyPanel policyId={caseRecord.policy_id} />
-          <HistoryPanel subcontractorId={caseRecord.subcontractor_id} />
+          <Screening caseRecord={caseRecord} />
+          <SubmissionPanels submissions={caseRecord.submissions} />
           <ContextUsed steps={steps.data} />
         </div>
         <div className="column">
-          <DecisionPanel caseRecord={caseRecord} onAnswered={reload} />
-          <SentBackDecisions decisions={caseRecord.sent_back_decisions} />
+          <CaseReview caseRecord={caseRecord} onAnswered={reload} />
+          <ExceptionList
+            exceptions={caseRecord.exceptions}
+            latestSubmission={caseRecord.latest_submission_no}
+          />
+          <CheckFindings caseRecord={caseRecord} />
+          <NoticePanel notice={caseRecord.notice} />
           <StepList steps={steps.data} error={steps.error} />
         </div>
       </div>
@@ -90,81 +111,58 @@ function CaseDetails({ caseRecord }: Readonly<{ caseRecord: Case }>) {
       <dl className="facts">
         <div>
           <dt>Subcontractor</dt>
-          <dd>{caseRecord.subcontractor_name}</dd>
-        </div>
-        <div>
-          <dt>Type</dt>
-          <dd>{label(caseRecord.case_type)}</dd>
-        </div>
-        <div>
-          <dt>Incident</dt>
           <dd>
-            {date(caseRecord.incident_date)}, {caseRecord.incident_location}
+            {caseRecord.subcontractor_name}{" "}
+            <span className="mono muted">{caseRecord.subcontractor_id}</span>
           </dd>
         </div>
         <div>
-          <dt>Submitted</dt>
-          <dd>{date(caseRecord.submitted_on)}</dd>
+          <dt>Project</dt>
+          <dd>
+            {/* A copy's project may be held out, with no page a reviewer sees. */}
+            {caseRecord.evaluation_id ? (
+              caseRecord.project_name
+            ) : (
+              <ProjectLink
+                projectId={caseRecord.project_id}
+                name={caseRecord.project_name}
+              />
+            )}{" "}
+            <span className="mono muted">{caseRecord.project_id}</span>
+          </dd>
         </div>
         <div>
-          <dt>Amount claimed</dt>
-          <dd className="mono">{money(caseRecord.amount_claimed)}</dd>
+          <dt>Week ending</dt>
+          <dd>{date(caseRecord.week_ending)}</dd>
         </div>
+        <div>
+          <dt>Submissions</dt>
+          <dd className="mono">{caseRecord.submissions.length}</dd>
+        </div>
+        {caseRecord.reviewed_by && (
+          <div>
+            <dt>Reviewed by</dt>
+            <dd className="mono">{caseRecord.reviewed_by}</dd>
+          </div>
+        )}
       </dl>
-      <h3>The subcontractor's story</h3>
-      <p className="story">{caseRecord.story}</p>
     </section>
   );
 }
 
-function ItemsPanel({ caseRecord }: Readonly<{ caseRecord: Case }>) {
-  const total = caseRecord.items.reduce((sum, item) => sum + item.amount, 0);
+// What the screening for hidden instructions found, once it flagged the case.
+function Screening({ caseRecord }: Readonly<{ caseRecord: Case }>) {
+  if (!caseRecord.screening_flag) return null;
   return (
-    <section className="panel" aria-labelledby="items-title">
-      <h2 id="items-title">Items claimed</h2>
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Category</th>
-              <th className="num">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {caseRecord.items.map((item) => (
-              <tr key={item.description}>
-                <td>{item.description}</td>
-                <td>{label(item.category)}</td>
-                <td className="num mono">{money(item.amount)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row" colSpan={2}>
-                Total
-              </th>
-              <td className="num mono">{money(total)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-function DocumentsPanel({ caseRecord }: Readonly<{ caseRecord: Case }>) {
-  return (
-    <section className="panel" aria-labelledby="documents-title">
-      <h2 id="documents-title">Documents</h2>
-      {caseRecord.documents.map((document) => (
-        <article className="document" key={document.name}>
-          <h3>{document.name}</h3>
-          <p className="muted small">{label(document.type)}</p>
-          <p>{document.content}</p>
-        </article>
-      ))}
+    <section className="panel" aria-labelledby="screening-title">
+      <h2 id="screening-title">Screening</h2>
+      <p className="screening">
+        <ShieldAlert aria-hidden />
+        <span>
+          {caseRecord.screening_reason ??
+            "The screening found an instruction in this payroll."}
+        </span>
+      </p>
     </section>
   );
 }

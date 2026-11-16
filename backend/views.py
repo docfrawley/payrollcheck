@@ -1,56 +1,105 @@
-"""Cases as the API shows them, built from rows of the case view."""
+"""Cases as the API shows them: a case's line in the queue from its row of the case
+view, and a case in full with its submissions, workers, exceptions, the current
+attempt's candidates and checks, and its notice."""
 
-from sqlalchemy import RowMapping
+from sqlalchemy import Connection, RowMapping, select
 
-from backend.agent_work import heard_lately
+from backend.candidates import checks_run_on
+from backend.database import (
+    candidates,
+    exceptions,
+    notices,
+    submissions,
+    workers,
+)
+from backend.lookups import find_case
 from backend.models import (
+    Candidate,
     Case,
     CaseSummary,
-    Decision,
-    Payment,
-    SentBackDecision,
-    Status,
+    ExceptionRecord,
+    Notice,
+    Submission,
+    Worker,
 )
+from backend.rule_codes import CHECKS
 
 
 def to_summary(row: RowMapping) -> CaseSummary:
-    """Build a case's line in the queue from its row, saying whether a resume is
-    working on it: one in progress that the agent spoke of lately."""
-    resuming = row["status"] == Status.IN_PROGRESS and heard_lately(
-        row["resume_heard_at"]
-    )
-    return CaseSummary(
-        **row["record"]
-        | {
-            "status": row["status"],
-            "subcontractor_name": row["subcontractor_name"],
-            "decision": row["decision"],
-            "payout": row["payout"],
-            "resuming": resuming,
-        }
-    )
+    """A case's line in the queue, from its row of the case view."""
+    return CaseSummary(**{field: row[field] for field in CaseSummary.model_fields})
 
 
-def to_case(row: RowMapping, sent_back: list[SentBackDecision]) -> Case:
-    """Build a case in full, with its decision and payment, from its row, and the
-    decisions reviewers sent back on it."""
-    decision = None
-    if row["decision"] is not None:
-        decision = Decision(**{field: row[field] for field in Decision.model_fields})
-    payment = None
-    if row["paid_at"] is not None:
-        payment = Payment(**{field: row[field] for field in Payment.model_fields})
+def submissions_of(db: Connection, case_id: str) -> list[Submission]:
+    query = (
+        select(submissions)
+        .where(submissions.c.case_id == case_id)
+        .order_by(submissions.c.submission_no)
+    )
+    return [Submission(**row) for row in db.execute(query).mappings()]
+
+
+def workers_on(db: Connection, latest: Submission) -> list[Worker]:
+    """Each worker on a submission, as our records have them."""
+    ids = [line["worker_id"] for line in latest.lines]
+    query = select(workers).where(workers.c.worker_id.in_(ids))
+    found = {row["worker_id"]: Worker(**row) for row in db.execute(query).mappings()}
+    return [found[i] for i in dict.fromkeys(ids) if i in found]
+
+
+def exceptions_of(db: Connection, case_id: str) -> list[ExceptionRecord]:
+    query = (
+        select(exceptions)
+        .where(exceptions.c.case_id == case_id)
+        .order_by(exceptions.c.exception_id)
+    )
+    return [ExceptionRecord(**row) for row in db.execute(query).mappings()]
+
+
+def candidates_of(
+    db: Connection, case_id: str, thread_id: str | None
+) -> list[Candidate]:
+    """The current attempt's candidates, in the order the checks ran."""
+    query = select(candidates).where(
+        candidates.c.case_id == case_id, candidates.c.thread_id == thread_id
+    )
+    found = [Candidate(**row) for row in db.execute(query).mappings()]
+    return sorted(found, key=lambda c: (CHECKS.index(c.check), c.candidate_id))
+
+
+def notice_of(db: Connection, case_id: str, submission_no: int) -> Notice | None:
+    query = select(notices).where(
+        notices.c.case_id == case_id, notices.c.submission_no == submission_no
+    )
+    row = db.execute(query).mappings().first()
+    return None if row is None else Notice(**row)
+
+
+def case_in_full(db: Connection, case_id: str) -> Case:
+    """One case in full, as the API shows it, or raise a 404."""
+    row = find_case(db, case_id)
+    found = submissions_of(db, case_id)
+    thread_id = row["thread_id"]
     return Case(
-        **row["record"]
-        | {
-            "status": row["status"],
-            "subcontractor_name": row["subcontractor_name"],
-            "thread_id": row["thread_id"],
-            "attempts": row["attempts"],
-            "evaluation_id": row["evaluation_id"],
-            "copy_of": row["copy_of"],
-            "decision": decision,
-            "payment": payment,
-            "sent_back_decisions": sent_back,
-        }
+        **to_summary(row).model_dump(),
+        **{field: row[field] for field in CASE_FIELDS},
+        submissions=found,
+        workers=workers_on(db, found[-1]),
+        exceptions=exceptions_of(db, case_id),
+        candidates=candidates_of(db, case_id, thread_id),
+        checks_run=checks_run_on(db, case_id, thread_id),
+        notice=notice_of(db, case_id, row["latest_submission_no"]),
     )
+
+
+# The columns of a case's row that its record in full shows beside its line.
+CASE_FIELDS = (
+    "screening_reason",
+    "latest_submission_no",
+    "thread_id",
+    "attempts",
+    "evaluation_id",
+    "copy_of",
+    "reviewed_by",
+    "reviewed_on",
+)

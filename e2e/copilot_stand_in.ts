@@ -1,7 +1,7 @@
 // Stands in for the Copilot's AgentCore app in the end-to-end tests: it answers
-// /ping and the health check, and takes each turn and each answer to a
-// confirmation the backend posts to /invocations, with no key. It then plays a
-// scripted turn through the backend with the reviewer's sign-in it was given:
+// /ping and the health check, and takes each turn the backend posts to
+// /invocations, with no key. It then plays a scripted turn through the backend
+// with the reviewer's sign-in it was given:
 // it checks the sign-in with /api/me, stopping if it's refused, reads the
 // turn's message, records its cards and answers, as the Copilot does.
 import { createServer } from "node:http";
@@ -18,30 +18,28 @@ interface Payload {
 interface Turn {
   turn_id: string;
   message: string;
-  confirmation_answer: string | null;
-  canceled_because: string | null;
-  confirmation: { case_id: string; payout: number } | null;
 }
 
 const app = process.env.PAYROLLCHECK_API ?? "";
 // A pause between steps, so the sidebar shows each card working.
 const STEP_MS = 250;
 const SOURCE = {
-  file: "policy_wording.md",
-  system: "Policy administration",
-  owner: "Head of product",
+  file: "payroll_glossary.yaml",
+  system: "Compliance manual, glossary",
+  owner: "Compliance manager",
   reviewed: "2026-09-01",
 };
-// The case the scripted turn links to, and the one it tries to send back, which
-// isn't held, so the app refuses.
-const LINKED = "CLM-1009";
+// The case the scripted turn links to, and one it asks for that doesn't exist,
+// so the app refuses.
+const LINKED = "PC-0311";
+const MISSING = "PC-9999";
 const ANSWER = [
-  `I started a dispatch and looked at the wording. ${LINKED} is worth a look.`,
+  `I started a dispatch and looked up a term. ${LINKED} is worth a look.`,
   "",
   "| What | Where it stands |",
   "| --- | --- |",
   "| The dispatch | Started with 3 payroll agents |",
-  `| ${LINKED} | Not held, so it can't be sent back |`,
+  `| ${LINKED} | Returned to sub, with three open exceptions |`,
 ].join("\n");
 
 const pause = () => new Promise((resolve) => setTimeout(resolve, STEP_MS));
@@ -126,30 +124,13 @@ async function theTurn(payload: Payload): Promise<Turn> {
   return turn;
 }
 
-// A message: a sign-off asked for pauses for the reviewer's confirmation; any
-// other gets a lookup, an action, a refusal and a formatted answer.
+// A message gets a lookup, an action, a refusal and a formatted answer.
 async function takeTurn(payload: Payload) {
-  const { message } = await theTurn(payload);
-  const asked = /sign off (CLM-\d{4})/i.exec(message);
-  if (asked) {
-    const caseId = asked[1];
-    await card(
-      payload,
-      { tool: "get_case", kind: "cases", input: caseId },
-      () => asTheReviewer(payload.sign_in, "GET", `/cases/${caseId}`),
-    );
-    await asTheReviewer(
-      payload.sign_in,
-      "POST",
-      `/copilot/turns/${payload.turn_id}/pause`,
-      { case_id: caseId },
-    );
-    return;
-  }
+  await theTurn(payload);
   await card(
     payload,
-    { tool: "read_section", kind: "context", input: "policy_wording 3" },
-    () => Promise.resolve({ ok: true, answer: { title: "Trip delay" } }),
+    { tool: "lookup_payroll_term", kind: "context", input: "fringe" },
+    () => Promise.resolve({ ok: true, answer: { term: "fringe" } }),
     [SOURCE],
   );
   await card(
@@ -157,41 +138,11 @@ async function takeTurn(payload: Payload) {
     { tool: "start_dispatch", kind: "action", input: "3" },
     () => asTheReviewer(payload.sign_in, "POST", "/dispatches", { agents: 3 }),
   );
-  await card(
-    payload,
-    { tool: "send_back_case", kind: "action", input: LINKED },
-    () =>
-      asTheReviewer(payload.sign_in, "POST", `/cases/${LINKED}/send-back`, {
-        note: "Check the receipts again.",
-      }),
+  await card(payload, { tool: "get_case", kind: "cases", input: MISSING }, () =>
+    asTheReviewer(payload.sign_in, "GET", `/cases/${MISSING}`),
   );
   await pause();
   await finish(payload, ANSWER);
-}
-
-// The reviewer's answer to a confirmation, read from the app's record of the
-// turn: a Sign off signs the case off as the reviewer, which pays it.
-async function answerConfirmation(payload: Payload) {
-  const turn = await theTurn(payload);
-  const caseId = turn.confirmation?.case_id ?? "";
-  if (turn.confirmation_answer !== "sign_off") {
-    await finish(
-      payload,
-      turn.canceled_because
-        ? "The case changed since the card was shown, so I canceled this sign-off without making a payment. Please ask again."
-        : `I haven't signed off ${caseId}. What would you like to do instead?`,
-    );
-    return;
-  }
-  const paid = await card(
-    payload,
-    { tool: "sign_off_case", kind: "action", input: caseId },
-    () => asTheReviewer(payload.sign_in, "POST", `/cases/${caseId}/sign-off`),
-  );
-  await finish(
-    payload,
-    paid ? `Signed off and paid ${caseId}.` : `I couldn't sign off ${caseId}.`,
-  );
 }
 
 createServer((request, response) => {
@@ -205,9 +156,7 @@ createServer((request, response) => {
           return;
         }
         reply(response, 200, { accepted: true });
-        const work =
-          payload.operation === "take_turn" ? takeTurn : answerConfirmation;
-        work(payload).catch((error: unknown) => {
+        takeTurn(payload).catch((error: unknown) => {
           console.error(error);
         });
       },

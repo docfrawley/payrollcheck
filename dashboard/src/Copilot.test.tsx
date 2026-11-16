@@ -7,13 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import {
-  ANSWER_FIRST,
-  ASK,
-  OVERLAY,
-  STILL_WORKING,
-  savedConversation,
-} from "./copilot";
+import { ASK, OVERLAY, STILL_WORKING, savedConversation } from "./copilot";
 import {
   CONVERSATIONS,
   CONVERSATION_PATH,
@@ -24,14 +18,13 @@ import {
   sidebar,
   step,
   turn,
-  waiting,
 } from "./copilotTesting";
 import { freshAccessToken } from "./fakeAuth";
 import { Refusal, renderAt, sent, stubApi } from "./testing";
 
 // The Copilot's sidebar on every signed-in page: open or collapsed, a greeting,
 // the message box, reading the conversation, and the earlier conversations.
-// The cards, the answer and the confirmation card are in CopilotCards.test.tsx.
+// The cards and the answer are in CopilotCards.test.tsx.
 
 afterEach(() => {
   cleanup();
@@ -99,8 +92,8 @@ it("greets the reviewer by first name with questions to click", async () => {
   expect(questions.getAllByRole("button").map((b) => b.textContent)).toEqual([
     "What needs me today?",
     "How did the latest dispatch go?",
-    "Are we meeting the success criteria we agreed?",
-    "What does the policy wording say about baggage delays?",
+    "Which cases have a screening flag?",
+    "What do the filing rules say about late payrolls?",
   ]);
   fireEvent.click(
     questions.getByRole("button", { name: "What needs me today?" }),
@@ -132,19 +125,11 @@ it("sends with Enter, starts a new line with Shift+Enter", async () => {
   expect(freshAccessToken).toHaveBeenCalled();
 });
 
-it("holds the box while a turn works or a confirmation waits", async () => {
+it("holds the box while a turn works", async () => {
   showConversation(turn({ status: "working", answer: null }));
-  const copilot = await openSidebar();
-  await waitFor(() => {
-    expect(copilot.getByRole<HTMLTextAreaElement>("textbox").disabled).toBe(
-      true,
-    );
-  });
-  cleanup();
-  showConversation(waiting());
   const held = (await openSidebar()).getByRole<HTMLTextAreaElement>("textbox");
   await waitFor(() => {
-    expect(held.placeholder).toBe(ANSWER_FIRST);
+    expect(held.placeholder).toBe(STILL_WORKING);
   });
   expect(held.disabled).toBe(true);
 });
@@ -159,12 +144,7 @@ it("reads the conversation once a second while a turn works, and not after", asy
   expect(readsOf(working)).toBe(1);
   await act(() => vi.advanceTimersByTimeAsync(3000));
   expect(readsOf(working)).toBe(4);
-  for (const status of [
-    "done",
-    "failed",
-    "stopped",
-    "waiting_for_confirmation",
-  ] as const) {
+  for (const status of ["done", "failed", "stopped"] as const) {
     cleanup();
     const ended = showConversation(turn({ status }));
     await act(() => vi.advanceTimersByTimeAsync(3000));

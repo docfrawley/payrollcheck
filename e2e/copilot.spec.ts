@@ -1,5 +1,5 @@
 import { type Locator, type Page, expect, test } from "@playwright/test";
-import { decide, nextStarted, startCase, started, stopTheWork } from "./api";
+import { nextStarted, started, stopTheWork } from "./api";
 
 // The Copilot's sidebar on every signed-in page, driving a stand-in for the
 // Copilot, which plays scripted turns through the backend with the reviewer's
@@ -26,7 +26,7 @@ async function boxOf(locator: Locator) {
 
 const PAGES = [
   "/",
-  "/cases/CLM-1002",
+  "/cases/PC-1201",
   "/scoreboard",
   "/improvement",
   "/configuration",
@@ -88,18 +88,16 @@ test("the Copilot's steps show as cards, then its answer, and the page shows its
   const before = (await started(request)).length;
   await ask(page, "What needs me today?");
   const copilot = sidebar(page);
-  const lookup = copilot.locator(".card", { hasText: "read_section" });
-  await expect(lookup).toContainText("policy_wording 3");
+  const lookup = copilot.locator(".card", { hasText: "lookup_payroll_term" });
+  await expect(lookup).toContainText("fringe");
   await lookup.getByRole("button").click();
-  await expect(lookup).toContainText("Policy administration, owned by");
+  await expect(lookup).toContainText("Compliance manual, glossary, owned by");
   const action = copilot.locator(".card", { hasText: "start_dispatch" });
   await expect(action.getByLabel("Done")).toBeVisible();
   await expect(action).toHaveClass(/card-action/);
-  const refused = copilot.locator(".card", { hasText: "send_back_case" });
+  const refused = copilot.locator(".card", { hasText: "get_case" });
   await expect(refused.getByText("Refused")).toBeVisible();
-  await expect(refused).toContainText(
-    "Case CLM-1009 is not waiting for sign-off",
-  );
+  await expect(refused).toContainText("Case PC-9999 not found");
   await expect(copilot.getByRole("table")).toBeVisible();
   await expect(copilot.getByText("3 model calls, $0.0021")).toBeVisible();
   expect(await nextStarted(request, before)).toMatchObject({
@@ -108,72 +106,8 @@ test("the Copilot's steps show as cards, then its answer, and the page shows its
   await expect(
     page.getByRole("region", { name: "Dispatch" }).getByText("Running"),
   ).toBeVisible();
-  await copilot.getByRole("link", { name: "CLM-1009" }).first().click();
-  await expect(page).toHaveURL("/cases/CLM-1009");
-});
-
-async function holdForSignOff(
-  request: Parameters<typeof startCase>[0],
-  caseId: string,
-) {
-  await startCase(request, caseId, `e2e-copilot-${caseId}`);
-  await decide(request, caseId, {
-    decision: "approve",
-    payout: 1350,
-    section: "Section 7, Emergency Medical",
-    reason: "The hospital bill is covered under section 7.",
-  });
-}
-
-test("a sign-off waits for Dana's confirmation, even after a reload, and pays once she confirms", async ({
-  page,
-  request,
-}) => {
-  await holdForSignOff(request, "CLM-1008");
-  await page.goto("/");
-  await ask(page, "Sign off CLM-1008");
-  const card = page.getByRole("region", { name: "Confirm the sign-off" });
-  await expect(card.getByRole("link", { name: "CLM-1008" })).toBeVisible();
-  await expect(card.getByText("Dorothy Gale")).toBeVisible();
-  await expect(card.getByText("$1,350.00")).toBeVisible();
-  await expect(
-    card.getByText("The hospital bill is covered under section 7."),
-  ).toBeVisible();
-  const box = sidebar(page).getByRole("textbox", { name: "Ask the Copilot" });
-  await expect(box).toBeDisabled();
-  await expect(box).toHaveAttribute(
-    "placeholder",
-    "Answer the confirmation first",
-  );
-  await page.reload();
-  await expect(card.getByText("$1,350.00")).toBeVisible();
-  await card.getByRole("button", { name: "Sign off and pay" }).click();
-  await expect(card.getByRole("status")).toHaveText("Signed off and paid");
-  await page.goto("/cases/CLM-1008");
-  await expect(
-    page.getByText(/^Paid \$1,350\.00, signed off by Dana Whitfield at /),
-  ).toBeVisible();
-});
-
-test("Cancel leaves the case held, and the answer says nothing was signed off", async ({
-  page,
-  request,
-}) => {
-  await holdForSignOff(request, "CLM-1011");
-  await page.goto("/");
-  await ask(page, "Sign off CLM-1011");
-  const card = page.getByRole("region", { name: "Confirm the sign-off" });
-  await card.getByRole("button", { name: "Cancel" }).click();
-  await expect(card.getByRole("status")).toHaveText("Canceled");
-  await expect(
-    sidebar(page).getByText(
-      "I haven't signed off CLM-1011. What would you like to do instead?",
-    ),
-  ).toBeVisible();
-  await page.goto("/cases/CLM-1011");
-  await expect(
-    page.locator(".page-header").getByText("Waiting for sign-off"),
-  ).toBeVisible();
+  await copilot.getByRole("link", { name: "PC-0311" }).first().click();
+  await expect(page).toHaveURL("/cases/PC-0311");
 });
 
 test("the earlier conversations hold each by its first question, and open it", async ({

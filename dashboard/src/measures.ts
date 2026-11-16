@@ -1,22 +1,37 @@
 import type { Measures } from "./api";
-import { duration, grade, modelCost, money, percent } from "./format";
+import { duration, modelCost, percent } from "./format";
 
 // A run that's running or stopped has no run time.
 const NOT_FINISHED = "Not finished";
-export const NOT_GRADED = "Not graded";
+// Shortfall accuracy with no money label caught.
+export const NONE_CAUGHT = "None caught";
 
 // The scoreboard's measures, in order, each with how it's shown.
 export const MEASURES: {
   label: string;
   show: (measures: Measures) => string;
 }[] = [
-  { label: "Decision accuracy", show: (m) => percent(m.decision_accuracy) },
-  { label: "Accuracy", show: (m) => percent(m.accuracy) },
-  { label: "Cost of mistakes", show: (m) => money(m.cost_of_mistakes) },
-  { label: "Straight-through", show: (m) => percent(m.straight_through) },
   {
-    label: "Grade (of 3)",
-    show: (m) => (m.grade === null ? NOT_GRADED : grade(m.grade)),
+    label: "Catch rate",
+    show: (m) =>
+      `${percent(m.catch_rate)} (${String(m.caught)} of ${String(m.labels)})`,
+  },
+  {
+    label: "False exceptions",
+    show: (m) =>
+      `${String(m.false_exceptions)} (${m.false_per_100.toFixed(1)} per 100)`,
+  },
+  {
+    label: "Shortfall accuracy",
+    show: (m) =>
+      m.shortfall_accuracy === null
+        ? NONE_CAUGHT
+        : percent(m.shortfall_accuracy),
+  },
+  {
+    label: "Screening flags",
+    show: (m) =>
+      `${String(m.screening_caught)} of ${String(m.screening_expected)}`,
   },
   {
     label: "Model cost per case",

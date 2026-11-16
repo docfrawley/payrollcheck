@@ -1,9 +1,9 @@
 import { expect, it } from "vitest";
 import {
-  addOnName,
+  cents,
   date,
   duration,
-  grade,
+  evaluationSetName,
   initials,
   label,
   modelCost,
@@ -34,10 +34,18 @@ it("formats dates without shifting the day", () => {
   expect(date("2026-06-24")).toBe("Jun 24, 2026");
 });
 
+it("formats amounts kept in cents in US dollars", () => {
+  expect(cents(128460)).toBe("$1,284.60");
+  expect(cents(5)).toBe("$0.05");
+});
+
+it("names an evaluation's set and its size", () => {
+  expect(evaluationSetName("tiny", 10)).toBe("Tiny set, 10 payrolls");
+  expect(evaluationSetName("held_out", 1)).toBe("Held-out set, 1 payroll");
+});
+
 it("turns codes into labels", () => {
-  expect(label("trip_delay")).toBe("Trip delay");
-  expect(addOnName("electronics_plus")).toBe("Electronics Plus");
-  expect(addOnName("new_add_on")).toBe("New add on");
+  expect(label("check_rates")).toBe("Check rates");
 });
 
 it("formats model costs to four places, since they're often under a cent", () => {
@@ -50,9 +58,4 @@ it("formats lengths of time in minutes and seconds", () => {
   expect(duration(161)).toBe("2 min 41 s");
   expect(duration(0)).toBe("0 s");
   expect(duration(120)).toBe("2 min");
-});
-
-it("shows the judge's grade to two places", () => {
-  expect(grade(2.2)).toBe("2.20");
-  expect(grade(0)).toBe("0.00");
 });

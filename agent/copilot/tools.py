@@ -1,28 +1,25 @@
 """The Copilot's tools, which reach the app through its API with the reviewer's
 sign-in and the context layer on the route in their context, the context they
-read, and the kind of card each one makes. The sign-off is a schema the model can ask
-for, which the graph answers itself: no tool pays."""
+read, and the kind of card each one makes. No tool signs off or sends back a
+case: those happen on the case page, by the reviewer."""
 
 from dataclasses import dataclass, field
 from typing import Annotated, Any
 
 from langchain.tools import BaseTool, ToolRuntime, tool
-from langchain_core.messages import ToolMessage
-from langgraph.types import Command
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import Field, StringConstraints
 
 from agent.app_terms import EvaluationSet
 from agent.context_tools import CONTEXT_TOOLS
-from agent.copilot import app_api, criteria, waiting
+from agent.copilot import app_api, waiting
 from agent.copilot.app_api import CardKind
 from agent.copilot.needs_a_reviewer import needs_a_reviewer
 from agent.json_text import as_json
 from agent.routes import Route
 
-SIGN_OFF = "sign_off_case"
 # The memory's lookup at the start of a turn, which the code makes, not the model.
 SEARCH_MEMORY = "search_memory"
-# A search needs a word to look for, and a note something to say.
+# A search needs a word to look for.
 Words = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Agents = Annotated[
     int | None,
@@ -47,28 +44,19 @@ class CopilotContext:
     route: Route
 
 
-class SignOffCase(BaseModel):
-    """Sign off a payout held for sign-off, which pays it. The reviewer confirms on
-    a card first, and nothing is paid if they cancel."""
-
-    model_config = ConfigDict(title=SIGN_OFF)
-
-    case_id: str = Field(description="The case held for sign-off, such as CLM-1003")
-
-
 def sign_in_of(runtime: ToolRuntime[CopilotContext]) -> str:
     return runtime.context.sign_in
 
 
 @tool
 def list_cases(runtime: ToolRuntime[CopilotContext]) -> str:
-    """List the cases in the queue with where each stands, its decision and payout."""
+    """List the queue's cases with where each stands, its flags and open exceptions."""
     return as_json(app_api.list_cases(sign_in_of(runtime)))
 
 
 @tool
 def get_case(case_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
-    """Get a case in full, with its decision, payout and any decision sent back."""
+    """Get a case in full: its submissions, exceptions, findings and notice."""
     return as_json(app_api.get_case(sign_in_of(runtime), case_id))
 
 
@@ -80,7 +68,7 @@ def list_steps(case_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
 
 @tool
 def find_subcontractors(name: Words, runtime: ToolRuntime[CopilotContext]) -> str:
-    """Find subcontractors whose name holds every word given, with their ids."""
+    """Find subcontractors whose legal name holds every word given, with their ids."""
     return as_json(app_api.find_subcontractors(sign_in_of(runtime), name))
 
 
@@ -88,14 +76,8 @@ def find_subcontractors(name: Words, runtime: ToolRuntime[CopilotContext]) -> st
 def get_subcontractor(
     subcontractor_id: str, runtime: ToolRuntime[CopilotContext]
 ) -> str:
-    """Get a subcontractor with their policies, earlier cases and cases in our queue."""
+    """Get a subcontractor with its record, its projects and its cases in our queue."""
     return as_json(app_api.get_subcontractor(sign_in_of(runtime), subcontractor_id))
-
-
-@tool
-def get_policy(policy_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
-    """Get a policy: the plan, add-ons, purchase date, trip and travelers."""
-    return as_json(app_api.get_policy(sign_in_of(runtime), policy_id))
 
 
 @tool
@@ -112,7 +94,7 @@ def list_evaluations(runtime: ToolRuntime[CopilotContext]) -> str:
 
 @tool
 def get_settings(runtime: ToolRuntime[CopilotContext]) -> str:
-    """Get our settings: the approval limit, objectives and payroll agents at once."""
+    """Get our settings: the objectives, spending limit and payroll agents at once."""
     return as_json(app_api.get_settings(sign_in_of(runtime)))
 
 
@@ -130,7 +112,7 @@ def started(run: dict[str, Any]) -> str:
 
 @tool
 def what_needs_a_reviewer(runtime: ToolRuntime[CopilotContext]) -> str:
-    """List what in the queue needs a reviewer: held payouts, referrals and the rest."""
+    """List the queue's cases awaiting review: flagged, failed, with exceptions."""
     return as_json(needs_a_reviewer(app_api.list_cases(sign_in_of(runtime))))
 
 
@@ -139,14 +121,6 @@ def wait_for_run(run_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
     """Wait for a dispatch or evaluation you started to end, and get how it went."""
     sign_in = sign_in_of(runtime)
     return as_json(waiting.how_it_went(sign_in, waiting.wait_for(sign_in, run_id)))
-
-
-@tool
-def check_success_criteria(runtime: ToolRuntime[CopilotContext]) -> Command:
-    """Check the three success criteria we agreed, with an evaluation of their own."""
-    answer = criteria.check(sign_in_of(runtime))
-    message = ToolMessage(answer, tool_call_id=runtime.tool_call_id)
-    return Command(update={"messages": [message], "criteria": answer})
 
 
 @tool
@@ -159,30 +133,18 @@ def start_dispatch(agents: Agents, runtime: ToolRuntime[CopilotContext]) -> str:
 @tool
 def start_evaluation(
     evaluation_set: Annotated[
-        EvaluationSet, "The evaluation set, or the held-out set our criteria use"
+        EvaluationSet,
+        "The development set, the held-out set, or the development set's tiny cases",
     ],
-    tiny: Annotated[bool, "Only the set's five tiny cases, rather than all of it"],
     agents: Agents,
     runtime: ToolRuntime[CopilotContext],
 ) -> str:
-    """Start an evaluation of one of our labeled sets, whole or its tiny cases."""
+    """Start an evaluation of one of our labelled sets, or the tiny set."""
     sign_in = sign_in_of(runtime)
     run = app_api.start_evaluation(
-        sign_in, evaluation_set, tiny, agents_or_settings(sign_in, agents)
+        sign_in, evaluation_set, agents_or_settings(sign_in, agents)
     )
     return started(run)
-
-
-@tool
-def send_back_case(
-    case_id: str,
-    note: Annotated[
-        Words, "What the agent should look at again, up to 1,000 characters"
-    ],
-    runtime: ToolRuntime[CopilotContext],
-) -> str:
-    """Send a decision held for sign-off back to the agent with a note."""
-    return as_json(app_api.send_back_case(sign_in_of(runtime), case_id, note))
 
 
 PAYROLL_TOOLS: list[BaseTool] = [
@@ -194,7 +156,6 @@ PAYROLL_TOOLS: list[BaseTool] = [
 SUBCONTRACTOR_TOOLS: list[BaseTool] = [
     find_subcontractors,
     get_subcontractor,
-    get_policy,
 ]
 WORK_TOOLS: list[BaseTool] = [
     get_latest_dispatch,
@@ -205,8 +166,6 @@ WORK_TOOLS: list[BaseTool] = [
 ACTION_TOOLS: list[BaseTool] = [
     start_dispatch,
     start_evaluation,
-    send_back_case,
-    check_success_criteria,
 ]
 COPILOT_TOOLS = (
     PAYROLL_TOOLS + SUBCONTRACTOR_TOOLS + CONTEXT_TOOLS + WORK_TOOLS + ACTION_TOOLS
@@ -221,12 +180,12 @@ def names(tools: list[BaseTool]) -> list[str]:
     return [tool.name for tool in tools]
 
 
-# The kind of card each tool makes, and the sign-off.
+# The kind of card each tool makes, and the memory's lookup.
 KINDS = (
     kind_of_each(names(PAYROLL_TOOLS), "cases")
     | kind_of_each(names(SUBCONTRACTOR_TOOLS), "subcontractors")
     | kind_of_each(names(CONTEXT_TOOLS), "context")
     | kind_of_each(names(WORK_TOOLS), "work")
-    | kind_of_each([*names(ACTION_TOOLS), SIGN_OFF], "action")
+    | kind_of_each(names(ACTION_TOOLS), "action")
     | kind_of_each([SEARCH_MEMORY], "memory")
 )

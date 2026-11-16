@@ -15,6 +15,9 @@ DAYS = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 JOURNEYMAN = "journeyman"
 FOREMAN = "foreman"
 APPRENTICE = "apprentice"
+# How a rate lookup's refusal starts when the rate determinations don't have the
+# craft or the classification asked about, unlike a determination or row missing.
+UNKNOWN_NAMES = ("No craft ", "No classification ")
 WAGE_ONLY = "wage"
 DAILY_OVER = "daily_over"
 DAY_OF_WEEK = "day_of_week"

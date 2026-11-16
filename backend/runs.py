@@ -4,28 +4,25 @@ creates and asks the agent to work; the agent records its work under /api/runs,
 and the dashboard reads the runs."""
 
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable
 from functools import partial
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import Connection, RowMapping, delete, func, insert, select, update
 
-from backend import agent_service, judge, spending
+from backend import agent_service, spending
 from backend.agent_work import clear_the_way
 from backend.asking import commit_and_ask
+from backend.copies import make_copies
 from backend.database import (
-    LABELED_SETS,
     cases,
-    grades,
+    labelled_cases,
     now,
-    reviewer_decisions,
     run_cases,
     runs,
-    waiting_case,
 )
 from backend.dependencies import AgentKey, Database, ReviewerOrAgent, SignedInReviewer
-from backend.free_models import free_model
 from backend.lookups import (
     CASE_NOT_FOUND,
     RUN_NOT_FOUND,
@@ -37,14 +34,11 @@ from backend.lookups import (
     version_row,
 )
 from backend.models import (
-    CaseGrade,
-    DecisionKind,
+    LABELLED_SET,
     DispatchSummary,
     Evaluation,
     EvaluationSet,
     FailureRequest,
-    HeldPayout,
-    Letter,
     RoundStatus,
     Run,
     RunCasesRequest,
@@ -69,7 +63,7 @@ from backend.round_state import (
 )
 from backend.scoreboard import (
     cases_of,
-    expected_answers,
+    expected_labels,
     model_cost_of,
     score,
     score_all,
@@ -78,22 +72,10 @@ from backend.scoreboard import (
 )
 from backend.stops import stop_runs
 
-# A copy's id is its original's with the evaluation's number, such as CLM-1104-E7.
-COPY_ID = "{case_id}-E{number}"
-# The grade of a copy the agent didn't decide, which the judge isn't asked about.
-UNDECIDED = CaseGrade(score=0, letter=Letter.F, same_grounds=0, same_section=0, cost=0)
-# The record of a copy the judge couldn't grade.
-NOT_GRADED = {
-    "score": None,
-    "letter": None,
-    "same_grounds": None,
-    "same_section": None,
-    "cost": 0,
-}
 FIRST_EVALUATIONS_CUT_SHORT = "The spending limit cut short its first evaluations"
 NOT_RUNNING = "Run {run_id} is not running"
 # Cases a dispatch left that the next one picks up.
-UNFINISHED = {Status.IN_PROGRESS, Status.WAITING, Status.SENT_BACK}
+UNFINISHED = {Status.IN_PROGRESS, Status.RECEIVED}
 
 router = APIRouter()
 
@@ -120,24 +102,23 @@ def running_run(db: Connection, run_id: str) -> RowMapping:
 
 def summarize(rows: list[RowMapping]) -> DispatchSummary:
     """Say what a dispatch left, from its cases as they stand, counting each case
-    once: the decisions, with the payouts waiting for a sign-off counted as
-    approved, the cases left for a reviewer, and those the next dispatch picks up."""
-    unfinished = [row["case_id"] for row in rows if row["status"] in UNFINISHED]
-    decided = [row for row in rows if row["status"] not in UNFINISHED]
-    decisions = [row["decision"] for row in decided]
+    once: Awaiting review with exceptions or clean, flagged by the screening or
+    failed by the agent, and those the next dispatch picks up."""
+
+    def which(keep: Callable[[RowMapping], bool]) -> list[str]:
+        return [row["case_id"] for row in rows if keep(row)]
+
+    def reviewing(row: RowMapping) -> bool:
+        return row["status"] not in UNFINISHED and not (
+            row["screening_flag"] or row["agent_failed"]
+        )
+
     return DispatchSummary(
-        approved=decisions.count(DecisionKind.APPROVE),
-        declined=decisions.count(DecisionKind.DECLINE),
-        referred=decisions.count(DecisionKind.REFER),
-        waiting_for_sign_off=[
-            HeldPayout(case_id=row["case_id"], payout=row["payout"])
-            for row in rows
-            if row["status"] == Status.WAITING_FOR_SIGN_OFF
-        ],
-        left_for_reviewer=[
-            row["case_id"] for row in rows if row["status"] == Status.LEFT_FOR_REVIEWER
-        ],
-        unfinished=unfinished,
+        with_exceptions=which(lambda r: reviewing(r) and r["open_exceptions"] > 0),
+        clean=which(lambda r: reviewing(r) and r["open_exceptions"] == 0),
+        flagged=which(lambda r: r["screening_flag"]),
+        agent_failed=which(lambda r: r["agent_failed"]),
+        unfinished=which(lambda r: r["status"] in UNFINISHED),
     )
 
 
@@ -176,53 +157,17 @@ def put_cases(db: Connection, run_id: str, case_ids: list[str]) -> None:
         )
 
 
-def originals(
-    db: Connection, evaluation_set: EvaluationSet, tiny: bool
-) -> list[dict[str, Any]]:
-    """Return the records of a labeled set's cases, all or its tiny ones, oldest
-    submitted first."""
-    chosen = select(reviewer_decisions.c.case_id).where(
-        reviewer_decisions.c.evaluation_set == evaluation_set
-    )
-    if tiny:
-        chosen = chosen.where(reviewer_decisions.c.tiny)
-    table = LABELED_SETS[evaluation_set].cases
-    records = db.execute(select(table.c.record).where(table.c.case_id.in_(chosen)))
-    return sorted(records.scalars(), key=lambda r: (r["submitted_on"], r["case_id"]))
-
-
-def make_copies(
-    db: Connection, run: RowMapping, records: list[dict[str, Any]]
-) -> list[str]:
-    """Copy each case, waiting, as the evaluation's own, with a new id in its record
-    too, and return the copies' ids in order."""
-    copies = [
-        record
-        | {"case_id": COPY_ID.format(case_id=record["case_id"], number=run["number"])}
-        for record in records
-    ]
-    db.execute(
-        insert(cases),
-        [
-            waiting_case(copy, evaluation_id=run["run_id"], copy_of=original["case_id"])
-            for copy, original in zip(copies, records, strict=True)
-        ],
-    )
-    return [copy["case_id"] for copy in copies]
-
-
 def evaluation_of(db: Connection, fields: dict[str, Any], version: RowMapping) -> Run:
-    """Record a new evaluation on a version, with a waiting copy of each case."""
+    """Record a new evaluation on a version, with a Received copy of each case."""
     row = new_run(db, RunKind.EVALUATION, fields, version)
-    records = originals(db, fields["evaluation_set"], fields["tiny"])
-    put_cases(db, row["run_id"], make_copies(db, row, records))
+    put_cases(db, row["run_id"], make_copies(db, row))
     return find_run(db, row["run_id"])
 
 
 def set_size(db: Connection, evaluation_set: EvaluationSet) -> int:
-    """How many cases a labeled set holds."""
+    """How many cases a labelled set holds."""
     query = select(func.count()).where(
-        reviewer_decisions.c.evaluation_set == evaluation_set
+        labelled_cases.c.labelled_set == LABELLED_SET[evaluation_set]
     )
     return db.execute(query).scalar_one()
 
@@ -280,7 +225,7 @@ def why_cut_short(db: Connection, row: RowMapping) -> str | None:
     round_ = round_row(db, row["round_id"])
     why = why_no_case_starts(db, round_)
     unstarted = any(
-        case["status"] == Status.WAITING for case in cases_of(db, row["run_id"])
+        case["status"] == Status.RECEIVED for case in cases_of(db, row["run_id"])
     )
     cut = round_["status"] != RoundStatus.OPEN or unstarted
     return why if why and cut else None
@@ -299,8 +244,7 @@ def end_cut_short(db: Connection, row: RowMapping, because: str) -> None:
 
 def mark_finished(db: Connection, run_id: str, summary: dict[str, Any] | None) -> None:
     """Mark a running run finished, with a dispatch's summary. A run stopped
-    meanwhile, such as while its copies were graded, stays stopped, and nothing
-    done to finish it is kept."""
+    meanwhile stays stopped, and nothing done to finish it is kept."""
     done = db.execute(
         update(runs)
         .where(runs.c.run_id == run_id, runs.c.status == RunStatus.RUNNING)
@@ -318,54 +262,6 @@ def evaluation_row(db: Connection, run_id: str) -> RowMapping:
     return row
 
 
-def reviewer_explanations(
-    db: Connection, evaluation_set: EvaluationSet
-) -> dict[str, judge.Explanation]:
-    """Return the reviewers' decisions on a labeled set's cases, with their reasons
-    and references, by case."""
-    query = select(reviewer_decisions).where(
-        reviewer_decisions.c.evaluation_set == evaluation_set
-    )
-    return {
-        d["case_id"]: judge.Explanation(d["decision"], d["reason"], d["reference"])
-        for d in db.execute(query).mappings()
-    }
-
-
-def grade_copy(copy: RowMapping, reviewer: judge.Explanation) -> CaseGrade | None:
-    """Grade a copy's explanation against the reviewer's: an F without asking the
-    judge for a copy the agent didn't decide."""
-    if copy["decision"] is None:
-        return UNDECIDED
-    agent = judge.Explanation(copy["decision"], copy["reason"], copy["section"])
-    return judge.grade(reviewer, agent)
-
-
-def grade_copies(db: Connection, row: RowMapping) -> None:
-    """Grade an evaluation's copies, in parallel, one thread for each, and record
-    the grades. With a free model there's no judge, so nothing is graded."""
-    if free_model():
-        return
-    reviewers = reviewer_explanations(db, row["evaluation_set"])
-    copies = cases_of(db, row["run_id"])
-    with ThreadPoolExecutor(max_workers=len(copies)) as pool:
-        graded = list(
-            pool.map(lambda copy: grade_copy(copy, reviewers[copy["copy_of"]]), copies)
-        )
-    db.execute(
-        insert(grades),
-        [
-            {
-                "case_id": copy["case_id"],
-                "run_id": row["run_id"],
-                **(grade.model_dump() if grade else NOT_GRADED),
-                "graded_at": now(),
-            }
-            for copy, grade in zip(copies, graded, strict=True)
-        ],
-    )
-
-
 @router.post(
     "/api/runs/rounds/{round_id}/evaluations",
     operation_id="create_round_evaluation",
@@ -379,7 +275,6 @@ def create_round_evaluation(round_id: str, db: Database) -> Run:
         refuse_what_the_round_cant_afford(db, row, version)
     fields = {
         "evaluation_set": evaluation_set,
-        "tiny": False,
         "agents": settings_number(db, row["settings"]).agents,
         "round_id": round_id,
     }
@@ -407,7 +302,7 @@ def record_run_cases(run_id: str, request: RunCasesRequest, db: Database) -> Run
     "/api/runs/{run_id}/finish", operation_id="finish_run", dependencies=[AgentKey]
 )
 def finish_run(run_id: str, db: Database) -> Run:
-    """Finish a run: a dispatch gets its summary, an evaluation its grades or a stop."""
+    """Finish a run: a dispatch gets its summary, an evaluation its finish or a stop."""
     row = run_row(db, run_id)
     if row["status"] == RunStatus.STOPPED:
         return find_run(db, run_id)
@@ -418,7 +313,6 @@ def finish_run(run_id: str, db: Database) -> Run:
     elif because := why_cut_short(db, row):
         end_cut_short(db, row, because)
     else:
-        grade_copies(db, row)
         mark_finished(db, run_id, None)
     return find_run(db, run_id)
 
@@ -508,7 +402,7 @@ def list_evaluations(db: Database) -> list[Evaluation]:
     rows = list(db.execute(query).mappings())
     return [
         Evaluation(**scored.model_dump(exclude={"cases"}))
-        for scored in score_all(db, rows, expected_answers(db))
+        for scored in score_all(db, rows, expected_labels(db))
     ]
 
 
@@ -518,8 +412,8 @@ def list_evaluations(db: Database) -> list[Evaluation]:
     dependencies=[SignedInReviewer],
 )
 def get_evaluation(run_id: str, db: Database) -> ScoredEvaluation:
-    """Get one evaluation with its measures and its cases beside the reviewers'."""
-    return score(db, evaluation_row(db, run_id), expected_answers(db))
+    """Get one evaluation with its measures and its copies beside their labels."""
+    return score(db, evaluation_row(db, run_id), expected_labels(db))
 
 
 @router.post(

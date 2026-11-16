@@ -23,7 +23,6 @@ from botocore.exceptions import (
 from backend import agent_service, runtime_calls
 from backend.agent_service import NO_ANSWER, NOT_RUNNING
 from backend.tests.agent_answers import answering, raising
-from backend.tests.case_requests import held, sign_off
 from backend.tests.rows import newest_run
 from backend.tests.run_requests import start_dispatch
 from backend.tests.runtime_stand_in import ENDPOINT, runtime_at
@@ -76,7 +75,7 @@ def test_the_runtime_route_sends_the_payload_to_the_runtime_with_no_key(
     client, runtime, agent_calls
 ):
     assert start_dispatch(client).status_code == 202
-    agent_service.resume_case("CLM-1001")
+    agent_service.work_round("round-1")
     first, second = runtime.calls
     assert first["agentRuntimeArn"] == ARN
     assert json.loads(first["payload"]) == {
@@ -89,30 +88,28 @@ def test_the_runtime_route_sends_the_payload_to_the_runtime_with_no_key(
     assert agent_calls == []
 
 
-FOUR_OPERATIONS = [
+THREE_OPERATIONS = [
     {"operation": "work_run", "run_id": "run-1"},
     {"operation": "work_round", "round_id": "round-1"},
     {"operation": "carry_round_on", "round_id": "round-1", "proposal_id": "proposal-1"},
-    {"operation": "resume_case", "case_id": "CLM-1001"},
 ]
 
 
-def ask_all_four():
+def ask_all_three():
     agent_service.work_run("run-1")
     agent_service.work_round("round-1")
     agent_service.carry_round_on("round-1", "proposal-1")
-    agent_service.resume_case("CLM-1001")
 
 
-def test_the_agents_four_operations_on_the_laptop(agent_calls):
-    ask_all_four()
-    assert agent_calls == FOUR_OPERATIONS
+def test_the_agents_three_operations_on_the_laptop(agent_calls):
+    ask_all_three()
+    assert agent_calls == THREE_OPERATIONS
 
 
-def test_the_agents_four_operations_on_runtime_each_in_a_new_session(runtime):
-    ask_all_four()
-    assert [json.loads(call["payload"]) for call in runtime.calls] == FOUR_OPERATIONS
-    assert len({call["runtimeSessionId"] for call in runtime.calls}) == 4
+def test_the_agents_three_operations_on_runtime_each_in_a_new_session(runtime):
+    ask_all_three()
+    assert [json.loads(call["payload"]) for call in runtime.calls] == THREE_OPERATIONS
+    assert len({call["runtimeSessionId"] for call in runtime.calls}) == 3
 
 
 def test_the_runtime_client_makes_one_attempt_and_waits_2_seconds_and_15():
@@ -240,13 +237,3 @@ def test_on_runtime_an_answer_neither_accepted_nor_refused_is_an_error(
     response = start_dispatch(client)
     assert response.status_code == 502
     assert response.json()["detail"].startswith("The agent couldn't take the work: ")
-
-
-def test_a_sign_off_on_the_runtime_route_asks_to_resume_the_case(client, runtime):
-    held(client, "CLM-1008", 2240.0)
-    assert sign_off(client, "CLM-1008").status_code == 200
-    [call] = runtime.calls
-    assert json.loads(call["payload"]) == {
-        "operation": "resume_case",
-        "case_id": "CLM-1008",
-    }

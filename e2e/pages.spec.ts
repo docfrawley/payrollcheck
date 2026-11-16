@@ -1,25 +1,51 @@
 import { expect, test } from "@playwright/test";
-import { REVIEWERS } from "./reviewers";
+import { listCases } from "./api";
+import { REVIEWERS, signedInAs } from "./reviewers";
 
-test("the queue lists every case", async ({ page }) => {
+test("the queue lists every case, with a tile for each status", async ({
+  page,
+  request,
+}) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Case queue" })).toBeVisible();
-  await expect(page.locator("tbody tr")).toHaveCount(26);
-  for (const caseId of ["CLM-1025", "CLM-1901"]) {
-    const row = page.getByRole("row").filter({ hasText: caseId });
-    await expect(row.getByText("Waiting")).toBeVisible();
-  }
+  const tiles = page
+    .getByRole("region", { name: "Cases by status" })
+    .getByRole("group");
+  await expect(tiles).toHaveText([
+    /^Received/,
+    /^In progress/,
+    /^Awaiting review/,
+    /^Accepted/,
+    /^Returned to sub/,
+  ]);
+  // The seeded 207, and any case another test's upload added.
+  const all = await listCases(
+    request,
+    await signedInAs(request, REVIEWERS.dana),
+  );
+  expect(all.length).toBeGreaterThanOrEqual(207);
+  const cases = page.getByRole("region", { name: "Cases" });
+  await expect(cases.locator("tbody tr")).toHaveCount(all.length);
+  const row = cases.getByRole("row").filter({ hasText: "PC-1201" });
+  await expect(row.getByText("Received")).toBeVisible();
+  await expect(row.getByText("Nov 22, 2026")).toBeVisible();
 });
 
 test("a case opens from the queue", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "CLM-1001" }).click();
-  await expect(page).toHaveURL("/cases/CLM-1001");
-  await expect(page.getByText(/My flight home from Rome/)).toBeVisible();
+  await page.getByRole("link", { name: "PC-0311" }).click();
+  await expect(page).toHaveURL("/cases/PC-0311");
   await expect(
-    page.getByText("Hotel Aurelia Fiumicino", { exact: false }),
+    page.locator(".page-header").getByText("Returned to sub"),
   ).toBeVisible();
-  await expect(page.getByText("POL-2001")).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Review" })
+      .getByText(/^3 open exceptions/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Exceptions" }).getByRole("listitem"),
+  ).toHaveCount(3);
 });
 
 test("signing out from the account menu lands on the sign-in page", async ({

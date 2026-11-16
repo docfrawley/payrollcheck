@@ -2,7 +2,7 @@ import { useState } from "react";
 import { REQUEST_FAILED } from "./refusals";
 
 // Runs an action that asks the backend to do one thing, such as signing off a
-// payout or sending the Copilot a message, one request at a time, and keeps the
+// case or sending the Copilot a message, one request at a time, and keeps the
 // backend's reason if it refuses. `run` takes what the action does it with and
 // says whether it was done.
 export function useAction<A extends unknown[]>(

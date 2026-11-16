@@ -1,5 +1,5 @@
-"""The payroll agent's own API document: the OpenAPI document of the six operations
-its tools and its payment call, which the Gateway turns into tools."""
+"""The payroll agent's own API document: the OpenAPI document of the seven operations
+its route calls, which the Gateway turns into tools."""
 
 from typing import Any
 
@@ -9,11 +9,12 @@ from fastapi.routing import APIRoute, iter_route_contexts
 
 OPERATIONS = {
     "get_case",
-    "get_policy",
-    "get_case_history",
-    "calculate_payout",
-    "record_decision",
-    "pay_case",
+    "get_project",
+    "list_subcontractors",
+    "get_payroll_history",
+    "record_check_findings",
+    "record_screening_flag",
+    "record_exception_report",
 }
 
 

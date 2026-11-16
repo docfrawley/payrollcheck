@@ -7,14 +7,14 @@ import re
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.database import decisions
+from backend.database import exceptions
 from backend.dependencies import (
     API_KEY_HEADER,
     NEEDS_A_SIGN_IN_OR_THE_KEY,
     NEEDS_THE_KEY,
 )
 from backend.main import app
-from backend.tests.case_requests import decide, start
+from backend.tests.case_requests import finding, record_findings, report, start
 from backend.tests.dashboard_reads import read
 from backend.tests.gates import (
     AGENT_OPERATIONS,
@@ -77,13 +77,17 @@ def test_each_operation_asks_for_its_gates_security():
         assert security == SECURITY[gate], operation
 
 
-def test_recording_a_decision_needs_the_agents_key(client, dashboard):
-    start(client, "CLM-1001")
+def test_recording_a_report_needs_the_agents_key(client, dashboard):
+    start(client, "PC-1201")
+    [candidate] = record_findings(client, "PC-1201", findings=[finding()]).json()
+    raised = [candidate["candidate_id"]]
     for caller in (dashboard, TestClient(app, headers=WRONG_KEY)):
-        refused = decide(caller, "CLM-1001", "decline", 0)
+        refused = report(caller, "PC-1201", raised=raised, notice="Please correct.")
         assert (refused.status_code, refused.json()["detail"]) == (401, NEEDS_THE_KEY)
-    assert count(decisions) == 0
-    assert decide(client, "CLM-1001", "decline", 0).status_code == 200
+    before = count(exceptions)
+    recorded = report(client, "PC-1201", raised=raised, notice="Please correct.")
+    assert recorded.status_code == 200
+    assert count(exceptions) == before + 1
 
 
 @pytest.mark.parametrize(("method", "path"), AGENT_ROUTES)
@@ -113,7 +117,7 @@ def test_with_no_key_set_reviewers_still_work_and_the_agents_routes_refuse(
 ):
     monkeypatch.delenv("PAYROLLCHECK_API_KEY")
     assert dashboard.get("/api/health").status_code == 200
-    assert len(read(dashboard, "/api/cases").json()) == 26
+    assert len(read(dashboard, "/api/cases").json()) == 207
     for route in AGENT_ROUTES:
         method, path = route.values
         refused = dashboard.request(method, path, headers={API_KEY_HEADER: ""})

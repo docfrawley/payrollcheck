@@ -1,81 +1,100 @@
-"""The lab's measures of the agent's work against the reviewers' decisions: whether an
-answer is right, what a mistake costs, and an evaluation's measures."""
+"""The strict scoring of an evaluation against the labels, pure. A label is caught
+by an open exception on its copy with the same rule code, exactly, and the same
+worker (both none for a rule about the whole payroll); its shortfall is correct
+when the exception's equals the label's to the cent. A screening label is caught
+when the copy is flagged, and every exception on a flagged copy is false, as is a
+flag on a copy with no screening label. An open exception matching no label is
+false."""
 
-from statistics import fmean
 from typing import NamedTuple
 
-from backend.models import DecisionKind, Measures, ScoredCase
+from backend.models import ExceptionMatch, LabelMatch, Measures, ScoredCase
 
-WRONGFUL_DECLINE = 1500
-NEEDLESS_REFERRAL = 50
-# A payout within a dollar of the reviewer's is right.
-PAYOUT_TOLERANCE = 1
+PER = 100
 
 
-class Answer(NamedTuple):
-    """A decision on a case and its payout, the agent's or a reviewer's."""
-
-    decision: DecisionKind
-    payout: float
-
-
-def answer_of(decision: DecisionKind | None, payout: float | None) -> Answer:
-    """Return the agent's answer on a case, with a case it didn't decide counted
-    as a referral."""
-    if decision is None:
-        return Answer(DecisionKind.REFER, 0)
-    return Answer(decision, payout or 0)
+class Label(NamedTuple):
+    rule: str
+    worker_id: str | None
+    line_no: int | None
+    expected_shortfall_cents: int | None
 
 
-def is_right(answer: Answer, expected: Answer) -> bool:
-    """Say whether the decision matches the reviewer's and the payout is within a
-    dollar."""
-    return (
-        answer.decision == expected.decision
-        and abs(answer.payout - expected.payout) <= PAYOUT_TOLERANCE
-    )
+class Raised(NamedTuple):
+    """An open exception on a copy's latest submission."""
+
+    exception_id: int
+    rule: str
+    worker_id: str | None
+    line_no: int | None
+    shortfall_cents: int | None
 
 
-def mistake_cost(answer: Answer, expected: Answer) -> float:
-    """Return what the agent's answer costs UnderCover against the reviewer's: a
-    wrongful decline, a wrongful approval's payout whether or not it was paid, a
-    needless referral, or the difference on a right approval."""
-    if answer.decision == expected.decision:
-        if answer.decision == DecisionKind.APPROVE:
-            return abs(answer.payout - expected.payout)
-        return 0
-    if answer.decision == DecisionKind.DECLINE:
-        return WRONGFUL_DECLINE
-    if answer.decision == DecisionKind.APPROVE:
-        return answer.payout
-    return NEEDLESS_REFERRAL
+def same(label: Label, raised: Raised) -> bool:
+    return (label.rule, label.worker_id) == (raised.rule, raised.worker_id)
 
 
-def average_grade(cases: list[ScoredCase]) -> float | None:
-    """Return the judge's average grade over the cases it graded, or nothing when
-    it graded none."""
-    scores = [c.grade.score for c in cases if c.grade]
-    return fmean(scores) if scores else None
+def match_label(label: Label, found: list[Raised]) -> LabelMatch:
+    """A label beside the exceptions that catch it: missed, caught, or caught with
+    the wrong shortfall when no catching exception has the label's."""
+    catching = [raised for raised in found if same(label, raised)]
+    if not catching:
+        result, shortfall = "missed", None
+    else:
+        right = [
+            r for r in catching if r.shortfall_cents == label.expected_shortfall_cents
+        ]
+        result = "caught" if right else "shortfall_wrong"
+        shortfall = (right or catching)[0].shortfall_cents
+    return LabelMatch(**label._asdict(), result=result, shortfall_cents=shortfall)
+
+
+def match_copy(
+    found_labels: list[Label], found: list[Raised], flagged: bool
+) -> tuple[list[LabelMatch], list[ExceptionMatch]]:
+    """A copy's labels and its exceptions, each matched or not. On a flagged copy
+    nothing it raised counts."""
+    counted = [] if flagged else found
+    matches = [match_label(label, counted) for label in found_labels]
+    raised = [
+        ExceptionMatch(
+            **r._asdict(),
+            matched=not flagged and any(same(label, r) for label in found_labels),
+        )
+        for r in found
+    ]
+    return matches, raised
+
+
+def false_count(found: list[ExceptionMatch], flagged: bool, expected: bool) -> int:
+    """A copy's false exceptions: those matching no label, and a screening flag
+    on a copy with no screening label, as on a flagged decoy."""
+    return sum(not f.matched for f in found) + (flagged and not expected)
 
 
 def measures(
     cases: list[ScoredCase], model_cost: float, run_seconds: float | None
 ) -> Measures:
-    """Score an evaluation from its cases, its model cost and its time."""
+    """An evaluation's measures from its scored copies, its model cost and its time."""
     count = len(cases)
-    agreed = [
-        answer_of(c.decision, c.payout).decision == c.reviewer_decision for c in cases
-    ]
-    referred = [
-        answer_of(c.decision, c.payout).decision == DecisionKind.REFER for c in cases
-    ]
+    labelled = [label for case in cases for label in case.labels]
+    caught = [label for label in labelled if label.result != "missed"]
+    money = [label for label in caught if label.expected_shortfall_cents is not None]
+    false = sum(case.false_exceptions for case in cases)
     return Measures(
-        decision_accuracy=sum(agreed) / count,
-        accuracy=sum(c.right for c in cases) / count,
-        cost_of_mistakes=sum(c.mistake_cost for c in cases),
-        straight_through=sum(not r for r in referred) / count,
-        grade=average_grade(cases),
-        model_cost_per_case=model_cost / count,
-        seconds_per_case=sum(c.seconds for c in cases) / count,
+        catch_rate=len(caught) / len(labelled) if labelled else 1,
+        caught=len(caught),
+        labels=len(labelled),
+        false_exceptions=false,
+        false_per_100=PER * false / count if count else 0,
+        shortfall_accuracy=(
+            sum(label.result == "caught" for label in money) / len(money)
+            if money
+            else None
+        ),
+        screening_caught=sum(c.screening_expected and c.screening_found for c in cases),
+        screening_expected=sum(c.screening_expected for c in cases),
+        model_cost_per_case=model_cost / count if count else 0,
+        seconds_per_case=sum(c.seconds for c in cases) / count if count else 0,
         run_seconds=run_seconds,
     )

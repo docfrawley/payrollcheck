@@ -2,6 +2,7 @@ import { cleanup, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import {
   configuration,
+  finishedEvaluation,
   firstVersion as first,
   versionDetails as details,
 } from "./fixtures";
@@ -20,8 +21,8 @@ it("shows the current version and every version with its status", async () => {
   );
   expect(current.getByText("google/gemini-3.5-flash-lite")).toBeDefined();
   expect(current.getByText("Minimal")).toBeDefined();
-  // Neither the held-out accuracy nor the grade, until rounds score it.
-  expect(current.getAllByText("Not scored yet")).toHaveLength(2);
+  // No held-out catch rate until rounds score it.
+  expect(current.getAllByText("Not scored yet")).toHaveLength(1);
 
   const rows = within(
     screen.getByRole("region", { name: "Versions" }),
@@ -40,6 +41,27 @@ it("shows the current version and every version with its status", async () => {
       .getByRole("link", { name: "Version 1" })
       .getAttribute("href"),
   ).toBe("/configuration/versions/1");
+});
+
+it("shows a version's held-out catch rate once rounds have scored it", async () => {
+  const heldOut = finishedEvaluation.measures;
+  stubApi({
+    "GET /api/configuration": {
+      ...configuration,
+      versions: [
+        {
+          ...configuration.versions[0],
+          scores: { development: null, held_out: heldOut },
+        },
+        first,
+      ],
+    },
+  });
+  renderAt("/configuration");
+  const current = within(
+    await screen.findByRole("region", { name: "Current version" }),
+  );
+  expect(current.getByText("80%")).toBeDefined();
 });
 
 it("marks the Configuration page in the header", async () => {
@@ -69,18 +91,16 @@ it("shows a version's diff and its instructions, read only", async () => {
       name: "What changed from version 1",
     }),
   );
-  expect(changes.getByText("Refer a stolen phone.").tagName).toBe("DEL");
-  expect(changes.getByText("Decline a phone left unattended.").tagName).toBe(
+  expect(changes.getByText("Dismiss a weekend premium.").tagName).toBe("DEL");
+  expect(changes.getByText("Raise a weekend premium paid short.").tagName).toBe(
     "INS",
   );
-  expect(changes.getByText("Read the case.").tagName).toBe("SPAN");
+  expect(changes.getByText("Read the candidates.").tagName).toBe("SPAN");
   expect(document.querySelectorAll(".diff-gap")).toHaveLength(1);
   const instructions = within(
     screen.getByRole("region", { name: "Instructions" }),
   );
-  expect(
-    instructions.getByText(/## Contents of the claims manual/),
-  ).toBeDefined();
+  expect(instructions.getByText(/## What you work from/)).toBeDefined();
   expect(within(screen.getByRole("main")).queryByRole("textbox")).toBeNull();
 });
 

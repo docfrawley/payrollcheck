@@ -5,7 +5,7 @@ models allowed, for the Settings page."""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import Connection, RowMapping, insert, select
+from sqlalchemy import RowMapping, insert, select
 
 from backend.database import now, settings, versions
 from backend.dependencies import (
@@ -15,7 +15,6 @@ from backend.dependencies import (
     compliance_manager,
 )
 from backend.diffs import diff
-from backend.documents import contents
 from backend.free_models import model_or_free
 from backend.lookups import (
     allowed_models,
@@ -36,7 +35,7 @@ from backend.models import (
     VersionStatus,
     VersionSummary,
 )
-from backend.scoreboard import expected_answers, scores_of_versions, version_scores
+from backend.scoreboard import expected_labels, scores_of_versions, version_scores
 
 router = APIRouter()
 
@@ -49,20 +48,9 @@ ChangesTheSettings = Annotated[
 ]
 
 
-def with_contents(db: Connection, instructions: str) -> str:
-    """The payroll agent's instructions as it reads them: they end with the contents
-    of the policy wording and the claims manual."""
-    return f"{instructions}\n{contents(db)}"
-
-
-def for_the_payroll_agent(db: Connection, row: RowMapping) -> PayrollAgentVersion:
+def for_the_payroll_agent(row: RowMapping) -> PayrollAgentVersion:
     """A version as the payroll agent reads it, with no scores."""
-    return PayrollAgentVersion(
-        number=row["number"],
-        instructions=with_contents(db, row["instructions"]),
-        model=row["model"],
-        reasoning_effort=row["reasoning_effort"],
-    )
+    return PayrollAgentVersion(**row)
 
 
 def status_of(row: RowMapping, current: int) -> VersionStatus:
@@ -99,7 +87,7 @@ def summary_of(
 )
 def get_current_version(db: Database) -> PayrollAgentVersion:
     """Get the current version of the payroll agent: its instructions and its model."""
-    return for_the_payroll_agent(db, version_row(db, current_version_number(db)))
+    return for_the_payroll_agent(version_row(db, current_version_number(db)))
 
 
 @router.get(
@@ -107,7 +95,7 @@ def get_current_version(db: Database) -> PayrollAgentVersion:
 )
 def get_version(number: int, db: Database) -> PayrollAgentVersion:
     """Get one version of the payroll agent: its instructions and its model."""
-    return for_the_payroll_agent(db, version_row(db, number))
+    return for_the_payroll_agent(version_row(db, number))
 
 
 @router.get("/api/screening", operation_id="get_screening", dependencies=[AgentKey])
@@ -127,7 +115,7 @@ def get_configuration(db: Database) -> Configuration:
     current = current_version_number(db)
     query = select(versions).order_by(versions.c.number.desc())
     rows = {row["number"]: row for row in db.execute(query).mappings()}
-    scores = scores_of_versions(db, list(rows), expected_answers(db))
+    scores = scores_of_versions(db, list(rows), expected_labels(db))
     return Configuration(
         current=current,
         versions=[
@@ -146,11 +134,11 @@ def get_version_details(number: int, db: Database) -> VersionDetails:
     """Get one version in full, with its diff from the version it was based on."""
     row = version_row(db, number)
     before = version_row(db, row["based_on"]) if row["based_on"] else None
-    scores = version_scores(db, number, expected_answers(db))
+    scores = version_scores(db, number, expected_labels(db))
     summary = summary_of(row, before, current_version_number(db), scores)
     return VersionDetails(
         **summary.model_dump(),
-        instructions=with_contents(db, row["instructions"]),
+        instructions=row["instructions"],
         diff=diff(before["instructions"], row["instructions"]) if before else None,
     )
 
