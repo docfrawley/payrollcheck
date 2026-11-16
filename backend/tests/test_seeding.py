@@ -66,6 +66,7 @@ def test_a_corrected_cases_exceptions_are_superseded_and_a_returned_ones_open(
     assert all(row["submission_no"] == 1 for row in rows)
     names = {"Dana Whitfield", "Marcus Oyelaran", "Priya Raman"}
     assert {row["raised_by"] for row in rows} <= names
+    assert {row["source"] for row in rows} == {"reviewer"}
 
 
 def test_pc_0311_is_returned_to_sub_with_its_three_open_exceptions(client):

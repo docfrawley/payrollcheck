@@ -128,6 +128,68 @@ test("the case page shows the agent at work and its report", async ({
   ).toHaveText("1 open exception, $64.00 short.");
 });
 
+test("the case page shows the agent's judgment beside the checks' findings", async ({
+  page,
+  request,
+}) => {
+  await startCase(request, "PC-1204", "e2e-judgment");
+  await recordCheckFindings(request, "PC-1204", "check_form");
+  const [rate] = await recordCheckFindings(request, "PC-1204", "check_rates", [
+    BASE_SHORT,
+  ]);
+  const [change] = await recordCheckFindings(
+    request,
+    "PC-1204",
+    "check_classification",
+    [
+      {
+        rule: "classification.changed",
+        worker_id: "W-002",
+        line_no: 2,
+        expected: "Electrician Journeyman",
+        actual: "Electrician Foreman",
+        shortfall_cents: null,
+        citation: "Last week's payroll",
+      },
+    ],
+  );
+  const reason = "The line note explains the move to foreman this week.";
+  await recordExceptionReport(request, "PC-1204", {
+    raised: [rate.candidate_id],
+    dismissed: [{ candidate_id: change.candidate_id, reason }],
+    added: [
+      {
+        rule: "form.project_mismatch",
+        worker_id: null,
+        line_no: null,
+        expected: "Lincoln School renovation",
+        actual: "Lincoln Middle School",
+        shortfall_cents: null,
+        citation: "Our project and subcontractor records",
+      },
+    ],
+    notice: "Please pay W-001 the base rate and name the project as awarded.",
+  });
+
+  await page.goto("/cases/PC-1204");
+  const checks = page.getByRole("region", { name: "Checks and judgment" });
+  await expect(checks.locator(".check")).toHaveText([
+    "check_form Nothing found",
+    /^check_rates.*rate\.base_short W-001, line 1, \$64\.00 short.*Raised as an exception$/,
+    new RegExp(`^check_classification.*Dismissed: ${reason}$`),
+  ]);
+  await expect(
+    checks.getByText(
+      "Raised with no check behind it: Our project and subcontractor records",
+    ),
+  ).toBeVisible();
+  const own = page
+    .getByRole("region", { name: "Exceptions" })
+    .getByRole("listitem")
+    .filter({ hasText: "form.project_mismatch" });
+  await expect(own.getByText("Agent's own judgment")).toBeVisible();
+});
+
 test("the case page shows each submission, every kind of step and the context used", async ({
   page,
   request,

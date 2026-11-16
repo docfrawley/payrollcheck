@@ -8,7 +8,12 @@ from sqlalchemy import Connection, RowMapping, insert, update
 
 from backend.candidates import attempts_candidates
 from backend.database import candidates, exceptions, notices, now
-from backend.models import AddedException, ExceptionReport, ExceptionStatus
+from backend.models import (
+    AddedException,
+    ExceptionReport,
+    ExceptionSource,
+    ExceptionStatus,
+)
 from backend.rule_codes import RULES
 
 NO_CANDIDATE = (
@@ -105,11 +110,16 @@ def record_report(db: Connection, case: RowMapping, report: ExceptionReport) -> 
                 )
             },
             "candidate_id": candidate_id,
+            "source": ExceptionSource.CHECK,
         }
         for candidate_id in raised
     ] + [
         found.model_dump()
-        | {"severity": RULES[found.rule].severity, "candidate_id": None}
+        | {
+            "severity": RULES[found.rule].severity,
+            "candidate_id": None,
+            "source": ExceptionSource.AGENT,
+        }
         for found in added
     ]
     if rows:

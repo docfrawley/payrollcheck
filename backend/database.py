@@ -221,6 +221,9 @@ exceptions = Table(
     Column("shortfall_cents", Integer),
     Column("citation", Text, nullable=False),
     Column("raised_by", Text, nullable=False),
+    # What raised it: a check tool's finding, the payroll agent's own judgment, or
+    # a reviewer.
+    Column("source", Text, nullable=False),
     Column("candidate_id", Integer, ForeignKey("candidates.candidate_id")),
     Column("status", Text, nullable=False),
 )

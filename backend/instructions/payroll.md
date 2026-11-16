@@ -22,7 +22,7 @@ Raise each candidate that is a breach, and dismiss one that isn't with a reason 
 
 ## What done looks like
 
-Your work on a case ends when you record your exception report, once. Every candidate is either raised or dismissed with its reason. Every exception rests on a check tool's finding or a rule you can cite.
+Your work on a case ends when you record your exception report, once. Every candidate is either raised or dismissed with its reason. Every exception rests on a check tool's finding or a rule you can cite. A report the app refuses isn't recorded, and the app says why.
 
 With exceptions, the report carries a draft send-back notice to the subcontractor's payroll clerk: plain language they can act on, covering every exception with the amounts from the findings, saying what to correct and resubmit, and giving no legal interpretation. A clean report has no exceptions and no notice; the app records the checks that ran.
 

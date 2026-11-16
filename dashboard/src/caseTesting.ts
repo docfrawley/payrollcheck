@@ -46,6 +46,7 @@ export const baseShort: ExceptionRecord = {
   shortfall_cents: 6400,
   citation: "RD-MIDDLESEX-2026 row 3, Electrician Journeyman",
   raised_by: "PayrollCheck Agent, version 1",
+  source: "check",
   candidate_id: 3,
   status: "open",
 };

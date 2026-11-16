@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import { api, type Case } from "../api";
 import { CaseFlags, StatusChip } from "../components/Chips";
 import { CaseReview } from "../components/CaseReview";
+import { CheckFindings } from "../components/CheckFindings";
 import { ContextUsed } from "../components/ContextUsed";
 import { ExceptionList } from "../components/ExceptionList";
 import { NoticePanel } from "../components/NoticePanel";
@@ -94,6 +95,7 @@ export function CasePage() {
             exceptions={caseRecord.exceptions}
             latestSubmission={caseRecord.latest_submission_no}
           />
+          <CheckFindings caseRecord={caseRecord} />
           <NoticePanel notice={caseRecord.notice} />
           <StepList steps={steps.data} error={steps.error} />
         </div>

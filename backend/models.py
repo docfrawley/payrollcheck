@@ -22,6 +22,15 @@ class Status(StrEnum):
     RETURNED_TO_SUB = "returned_to_sub"
 
 
+class ExceptionSource(StrEnum):
+    """What raised an exception: a check tool's finding, the payroll agent's own
+    judgment with no check behind it, or a reviewer."""
+
+    CHECK = "check"
+    AGENT = "agent"
+    REVIEWER = "reviewer"
+
+
 class ExceptionStatus(StrEnum):
     OPEN = "open"
     DISMISSED = "dismissed"
@@ -251,6 +260,7 @@ class ExceptionRecord(BaseModel):
     shortfall_cents: int | None
     citation: str
     raised_by: str
+    source: ExceptionSource
     candidate_id: int | None = Field(description="The check's finding it raises")
     status: ExceptionStatus
 

@@ -3,6 +3,7 @@ import type {
   RoundStage,
   RoundStatus,
   RoundSummary,
+  ExceptionStatus,
   RunStatus,
   Severity,
   Status,
@@ -124,6 +125,12 @@ export const statusLabels: Record<Status, string> = {
   awaiting_review: "Awaiting review",
   accepted: "Accepted",
   returned_to_sub: "Returned to sub",
+};
+
+export const exceptionStatusLabels: Record<ExceptionStatus, string> = {
+  open: "Open",
+  dismissed: "Dismissed",
+  superseded: "Superseded",
 };
 
 export const severityLabels: Record<Severity, string> = {

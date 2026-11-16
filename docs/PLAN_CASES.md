@@ -370,16 +370,16 @@ Phase 2 wires the agent and its first instructions. This phase finishes what the
 - Langfuse: each case keeps its own session, tagged with its run, as now.
 
 Success criteria:
-- [ ] `agent/tests/test_payroll_agent.py` on a stub model:
+- [x] `agent/tests/test_payroll_agent.py` on a stub model:
   - a report that dismisses the classification-note candidate with a reason, recorded as dismissed with it
   - a non-money exception added with no candidate, recorded as raised by the agent
   - a stub reply that invents a money exception, refused, with the refusal returned to the model as a refusal step
   - a case with exceptions whose report has a blank notice, refused
-- [ ] `agent/tests/test_tools.py`: the tools' names are exactly the design's, the five lookups are a strict subset of the context server's tools, and no tool takes a case, project or subcontractor id from the model.
-- [ ] `agent/tests/test_steps.py`: a case's steps hold the screening first, then the eight checks in order, then the model's calls.
-- [ ] vitest covers the judgment calls on the case page.
-- [ ] A fresh reviewer reads `payroll.md` against `docs/CODE_STANDARDS.md` rule 14 and finds goals, not steps.
-- [ ] `npm run check` is green.
+- [x] `agent/tests/test_tools.py`: the tools' names are exactly the design's, the five lookups are a strict subset of the context server's tools, and no tool takes a case, project or subcontractor id from the model.
+- [x] `agent/tests/test_steps.py`: a case's steps hold the screening first, then the eight checks in order, then the model's calls.
+- [x] vitest covers the judgment calls on the case page.
+- [x] A fresh reviewer reads `payroll.md` against `docs/CODE_STANDARDS.md` rule 14 and finds goals, not steps.
+- [x] `npm run check` is green.
 
 ### Phase 5: the Scoreboard and an evaluation's cases
 

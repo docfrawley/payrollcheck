@@ -73,6 +73,7 @@ def test_a_report_matching_its_candidates_is_recorded(client, candidates):
     assert (exception["rule"], exception["shortfall_cents"]) == ("rate.base_short", 32)
     assert exception["candidate_id"] == money["candidate_id"]
     assert exception["raised_by"] == "PayrollCheck Agent, version 1"
+    assert exception["source"] == "check"
     assert case["notice"]["draft"] == NOTICE
     dismissed = [c for c in case["candidates"] if c["dismissed_because"]]
     assert [c["dismissed_because"] for c in dismissed] == [reason]
@@ -99,6 +100,7 @@ def test_an_added_exception_with_no_money_is_the_agent_s_own(client, candidates)
     case = report(client, CASE, raised=ids, added=[own], notice=NOTICE).json()
     [agents] = [e for e in case["exceptions"] if e["candidate_id"] is None]
     assert (agents["rule"], agents["severity"]) == ("form.project_mismatch", "medium")
+    assert agents["source"] == "agent"
 
 
 @pytest.mark.parametrize(

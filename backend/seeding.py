@@ -41,6 +41,7 @@ from backend.first_version import (
 )
 from backend.free_models import model_or_free, models_or_free
 from backend.models import (
+    ExceptionSource,
     ExceptionStatus,
     LabelledSet,
     ModelAllowed,
@@ -253,6 +254,7 @@ def history_exceptions(
                 "shortfall_cents": label["expected_shortfall_cents"],
                 "citation": rule.cites,
                 "raised_by": names[case["reviewer"]],
+                "source": ExceptionSource.REVIEWER,
                 "status": ExceptionStatus.SUPERSEDED
                 if corrected
                 else ExceptionStatus.OPEN,

@@ -839,6 +839,60 @@ p {
   margin-bottom: 8px;
 }
 
+/* An exception the agent raised on its own judgment, marked as information. */
+.judgment {
+  background: var(--survey-blue);
+  color: #ffffff;
+}
+
+/* Each check in the order it ran, its findings beneath it, each with the
+   agent's call on it. */
+.checks {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.check-name,
+.finding p,
+.finding-call {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.check-name svg.lucide,
+.finding svg.lucide {
+  align-self: center;
+  color: var(--muted);
+}
+
+.findings {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.finding {
+  background: var(--inset);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.finding-call {
+  margin-top: 4px;
+  font-size: 0.9rem;
+}
+
+.finding-call.raised svg.lucide {
+  color: var(--red-text);
+}
+
 .exception:not(.exception-open) .exception-head .mono {
   color: var(--muted);
 }

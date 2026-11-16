@@ -14,6 +14,9 @@ export const statuses = [
 export type Status = (typeof statuses)[number];
 export type Severity = "high" | "medium" | "low";
 export type ExceptionStatus = "open" | "dismissed" | "superseded";
+// What raised an exception: a check tool's finding, the payroll agent's own
+// judgment with no check behind it, or a reviewer.
+export type ExceptionSource = "check" | "agent" | "reviewer";
 export type StepKind =
   | "screening"
   // A check tool's findings, which the app records itself.
@@ -108,6 +111,7 @@ export interface ExceptionRecord {
   shortfall_cents: number | null;
   citation: string;
   raised_by: string;
+  source: ExceptionSource;
   // The check's finding it raises.
   candidate_id: number | null;
   status: ExceptionStatus;
