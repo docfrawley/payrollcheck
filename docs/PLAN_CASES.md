@@ -420,11 +420,11 @@ Success criteria:
 - The spending limit: from the live runs' cost per case, work out a round of about 400 case runs (no judge until stage 5, plus the improver's own calls), compare it with the $5.00 the improver's settings call for, and propose any change without making it.
 
 Success criteria:
-- [ ] The dispatch works all 22 week-12 cases to Awaiting review, each with its exceptions and their citations and a draft notice, or a clean report listing its checks. None is left In progress.
-- [ ] The tiny-set evaluation appears on the Scoreboard with every measure, its hidden-instruction payroll flagged.
-- [ ] A case page with exceptions, in light and dark mode, with no console errors.
-- [ ] The upload creates PC-1223, Received, in the queue.
-- [ ] The report gives what the runs spent, from the backend's records and the OpenRouter key's usage, and the spending-limit proposal.
+- [x] The dispatch works all 22 week-12 cases to Awaiting review, each with its exceptions and their citations and a draft notice, or a clean report listing its checks. None is left In progress.
+- [x] The tiny-set evaluation appears on the Scoreboard with every measure, its hidden-instruction payroll flagged.
+- [x] A case page with exceptions, in light and dark mode, with no console errors.
+- [x] The upload creates PC-1223, Received, in the queue.
+- [x] The report gives what the runs spent, from the backend's records and the OpenRouter key's usage, and the spending-limit proposal.
 - [ ] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green.
 
 The success criteria themselves (41 of 45 caught, at most 5 false exceptions) are measured on the whole development set at the end of stage 5, not here.

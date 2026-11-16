@@ -47,8 +47,8 @@ The checks show that the code works, but not that it is fit to merge. Every code
 ## Rules
 
 - Add tests with each change. Tests never call a model; use a stub model.
-- Every page needs a signed-in reviewer. For browser checks with the Playwright MCP server, sign in on `/sign-in` with a reviewer's email and `REVIEWER_PASSWORD` from `.env`. The people are in `data/reviewers.json`, at `@payrollcheck.example`. Sign in as Dana Whitfield, the compliance manager, to act, and as Marcus Oyelaran to see what a reviewer whose scope is limited sees.
-- Before the live runs with the real model, reseed once with `npm run seed`. Evaluations work their own copies and need no reseed. Keep to the live runs the stage brief lists. Report what they spent from the backend's records and the OpenRouter key's usage.
+- Every page needs a signed-in reviewer. For browser checks with the Playwright MCP server, sign in on `/sign-in` with a reviewer's email and `REVIEWER_PASSWORD` from `.env`. The people are in `data/reviewers.json`, at `@payrollcheck.example`. Any reviewer can work cases, upload payrolls and sign off or send back; sign in as Dana Whitfield, the compliance manager, to change the settings and run the improver's rounds, and as Marcus Oyelaran to see what a reviewer who isn't the compliance manager sees.
+- Before the live runs with the real model, reseed once with `npm run seed`, which puts the week-12 wave back in the queue as Received and leaves PC-1214 and PC-1223 missing for an upload. Evaluations work their own copies and need no reseed. Keep to the live runs the stage brief lists. Report what they spent from the backend's records and the OpenRouter key's usage.
 - Outside a plan, commit each change once you have checked and reviewed it.
 - Outside a plan, run `npm run check` before you hand work over.
 - Never use `git commit --no-verify`.
