@@ -1,6 +1,7 @@
 """Overtime: each line pays as overtime every hour its craft's rules give a
 premium (over 8 hours a day, Saturdays, Sundays and holidays), with the state's
-40-hour weekly floor."""
+40-hour weekly floor, by the rules of the craft it's paid as or, paid as a
+lower-paid craft, the worker's established one."""
 
 from agent.checks import pay
 from agent.checks.findings import OVERTIME, Finding, Parameters, hours
@@ -11,10 +12,12 @@ from context import wage_rules
 def check(inputs: CheckInputs, parameters: Parameters) -> list[Finding]:
     found = []
     for line in inputs.lines:
-        claimed = line.claimed
-        if claimed is None or line.misclassified:
+        # A line paid as a lower-paid craft owes the premium by the rules of the
+        # worker's established craft; the classification check finds the rest.
+        requirement = line.established if line.misclassified else line.claimed
+        if requirement is None:
             continue
-        split = pay.split(claimed, line)
+        split = pay.split(requirement, line)
         premium = wage_rules.premium_hours(split)
         paid = line.line.overtime_hours
         if paid >= premium:
@@ -31,7 +34,7 @@ def check(inputs: CheckInputs, parameters: Parameters) -> list[Finding]:
                     f"{hours(premium)} at a premium",
                     f"{hours(paid)} paid as overtime",
                     short,
-                    f"{claimed.citation()}: its overtime rules, and the state's "
+                    f"{requirement.citation()}: its overtime rules, and the state's "
                     "40-hour weekly floor",
                 )
             )

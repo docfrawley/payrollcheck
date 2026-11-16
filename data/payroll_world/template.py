@@ -290,6 +290,12 @@ def read_upload(text: str) -> Payroll:
     rows = list(reader)
     if not rows:
         raise Unreadable("The file has no rows under its header")
+    # The header is the spreadsheet's row 1, so the first payroll row is row 2.
+    for row_no, row in enumerate(rows, start=2):
+        if None in row.values():
+            raise Unreadable(f"Row {row_no} has fewer cells than the header")
+        if None in row:
+            raise Unreadable(f"Row {row_no} has more cells than the header")
     differ = [
         c for c in (*CERTIFICATION, "payroll_notes") if len({r[c] for r in rows}) > 1
     ]
@@ -297,7 +303,6 @@ def read_upload(text: str) -> Payroll:
         raise Unreadable(
             f"The certification differs between rows in: {', '.join(differ)}"
         )
-    # The header is the spreadsheet's row 1, so the first payroll row is row 2.
     certification = read_certification(rows[0], 2)
     if certification.no_work_week:
         return Payroll(certification, ())

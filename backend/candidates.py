@@ -2,12 +2,20 @@
 thread, each with its severity from the rule catalogue, and the check recorded as
 a step on the case."""
 
+from typing import cast
+
 from sqlalchemy import Connection, RowMapping, delete, insert, select
 
 from backend.database import candidates, check_runs
-from backend.models import Candidate, CheckFindingsRequest, FindingRecord, NewStep
+from backend.models import (
+    Candidate,
+    CheckFindingsRequest,
+    CheckName,
+    FindingRecord,
+    NewStep,
+)
 from backend.money import dollars
-from backend.rule_codes import RULES
+from backend.rule_codes import CHECKS, RULES
 from backend.steps import add_step
 
 NOTHING_FOUND = "Nothing found"
@@ -91,3 +99,14 @@ def attempts_candidates(db: Connection, case: RowMapping) -> dict[int, RowMappin
         candidates.c.thread_id == case["thread_id"],
     )
     return {row["candidate_id"]: row for row in db.execute(query).mappings()}
+
+
+def checks_run_on(
+    db: Connection, case_id: str, thread_id: str | None
+) -> list[CheckName]:
+    """The checks an attempt ran, in the order they run."""
+    query = select(check_runs.c.check).where(
+        check_runs.c.case_id == case_id, check_runs.c.thread_id == thread_id
+    )
+    ran = set(db.execute(query).scalars())
+    return [cast(CheckName, check) for check in CHECKS if check in ran]

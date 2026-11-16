@@ -1,19 +1,35 @@
 """The projects: the list a reviewer sees, a project with its subcontractors and
 their engagement windows, the project's subcontractors as the payroll agent reads
 them, and a payroll uploaded on a project's page. No list holds a held-out
-record."""
+record, and only the agent reads a held-out project."""
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import Connection, select
+from sqlalchemy import Connection, RowMapping, select
 
+from backend import api_key
 from backend.database import engagements, projects, subcontractors
-from backend.dependencies import Database, ReviewerOrAgent, SignedIn, SignedInReviewer
+from backend.dependencies import (
+    AgentKeyHeader,
+    Database,
+    ReviewerOrAgent,
+    SignedIn,
+    SignedInReviewer,
+)
 from backend.intake import take_upload
 from backend.lookups import PROJECT_NOT_FOUND, project_row
 from backend.models import Case, Engagement, Project, ProjectInFull, UploadRequest
 from backend.views import case_in_full
 
 router = APIRouter()
+
+
+def project_seen(db: Connection, project_id: str, key: str | None) -> RowMapping:
+    """A project's row as its caller may see it: a held-out project is the agent's
+    alone, read for an evaluation's copies, and not found by a reviewer."""
+    row = project_row(db, project_id)
+    if row["held_out"] and not api_key.is_the_agents(key):
+        raise HTTPException(404, PROJECT_NOT_FOUND.format(project_id=project_id))
+    return row
 
 
 def engagements_of(db: Connection, project_id: str) -> list[Engagement]:
@@ -44,9 +60,9 @@ def list_projects(db: Database) -> list[Project]:
     operation_id="get_project",
     dependencies=[ReviewerOrAgent],
 )
-def get_project(project_id: str, db: Database) -> ProjectInFull:
+def get_project(project_id: str, db: Database, key: AgentKeyHeader) -> ProjectInFull:
     """Get a project: its county, contract, award date and subcontractors."""
-    row = project_row(db, project_id)
+    row = project_seen(db, project_id, key)
     return ProjectInFull(**row, subcontractors=engagements_of(db, project_id))
 
 
@@ -55,9 +71,11 @@ def get_project(project_id: str, db: Database) -> ProjectInFull:
     operation_id="list_subcontractors",
     dependencies=[ReviewerOrAgent],
 )
-def list_subcontractors(project_id: str, db: Database) -> list[Engagement]:
+def list_subcontractors(
+    project_id: str, db: Database, key: AgentKeyHeader
+) -> list[Engagement]:
     """List a project's subcontractors with their records and engagement windows."""
-    project_row(db, project_id)
+    project_seen(db, project_id, key)
     return engagements_of(db, project_id)
 
 
@@ -70,6 +88,5 @@ def upload_payroll(
     project_id: str, request: UploadRequest, reviewer: SignedIn, db: Database
 ) -> Case:
     """Upload a subcontractor's payroll CSV, which creates its Received case."""
-    if project_row(db, project_id)["held_out"]:
-        raise HTTPException(404, PROJECT_NOT_FOUND.format(project_id=project_id))
+    project_seen(db, project_id, None)
     return case_in_full(db, take_upload(db, project_id, request, reviewer))

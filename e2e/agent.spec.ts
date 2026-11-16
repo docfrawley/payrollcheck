@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   type Request,
+  CHECKS,
   recordCheckFindings,
   recordExceptionReport,
   recordStep,
@@ -11,17 +12,6 @@ import { REVIEWERS } from "./reviewers";
 // These tests stand in for the payroll agent by calling the API through the
 // dashboard's proxy, and watch the case page update without a reload. Each
 // works a week-12 case no other test touches.
-
-const CHECKS = [
-  "check_form",
-  "check_contractor_registration",
-  "check_rates",
-  "check_overtime",
-  "check_arithmetic",
-  "check_apprentices",
-  "check_timeliness",
-  "check_classification",
-];
 
 const BASE_SHORT = {
   rule: "rate.base_short",
@@ -170,7 +160,12 @@ test("the case page shows the agent's judgment beside the checks' findings", asy
   const checks = page.getByRole("region", { name: "Checks and judgment" });
   await expect(checks.locator(".check")).toHaveText([
     "check_form Nothing found",
+    "check_contractor_registration Nothing found",
     /^check_rates.*rate\.base_short W-001, line 1, \$64\.00 short.*Raised as an exception$/,
+    "check_overtime Nothing found",
+    "check_arithmetic Nothing found",
+    "check_apprentices Nothing found",
+    "check_timeliness Nothing found",
     new RegExp(`^check_classification.*Dismissed: ${reason}$`),
   ]);
   await expect(

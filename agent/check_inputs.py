@@ -135,7 +135,9 @@ class Reader:
     ) -> Requirement | None:
         """What each work day requires paid as this craft and classification: an
         apprentice at their registered level, or the journeyman rate on a day they
-        aren't registered. None when the rate determinations don't have it."""
+        aren't registered. None when the rate determinations don't have the craft or
+        the classification; any other refusal, such as a work date with no row, is
+        raised, failing the attempt rather than leaving the line's pay unchecked."""
         apprentice = classification == APPRENTICE
         asked = JOURNEYMAN if apprentice else classification
         try:
@@ -143,8 +145,10 @@ class Reader:
             entry = next(iter(answers.values()), None) or self.wage_rate(
                 craft, asked, self.week_ending
             )
-        except LookupRefused:
-            return None
+        except LookupRefused as refused:
+            if any(name in str(refused) for name in wage_rules.UNKNOWN_NAMES):
+                return None
+            raise
         craft_rules = wage_rules.craft_rules(entry["craft_rules"])
         rates = {}
         for day, answer in answers.items():

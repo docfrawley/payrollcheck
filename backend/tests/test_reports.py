@@ -13,6 +13,7 @@ from backend.tests.case_requests import (
     finding,
     record_findings,
     report,
+    run_the_other_checks,
     start,
 )
 from backend.tests.rows import everything_recorded
@@ -22,11 +23,14 @@ CASE = "PC-1201"
 
 @pytest.fixture
 def candidates(client):
-    """A started case with two of a check's findings, the second with no money."""
+    """A started case with two of a check's findings, the second with no money,
+    and every other check run, finding nothing."""
     start(client, CASE)
     found = [finding(), finding("classification.changed", "W-002", 2)]
     found[1]["shortfall_cents"] = None
-    return record_findings(client, CASE, findings=found).json()
+    kept = record_findings(client, CASE, findings=found).json()
+    run_the_other_checks(client, CASE)
+    return kept
 
 
 def added(**changes):
@@ -42,7 +46,7 @@ def test_a_check_s_findings_are_kept_with_ids_severities_and_a_step(client, cand
     )
     assert [c["severity"] for c in candidates] == ["high", "low"]
     case = client.get(f"/api/cases/{CASE}").json()
-    assert case["checks_run"] == ["check_rates"]
+    assert case["checks_run"] == list(CHECKS)
     assert [c["candidate_id"] for c in case["candidates"]] == [
         c["candidate_id"] for c in candidates
     ]
@@ -192,7 +196,24 @@ def test_a_clean_report_needs_no_notice(client):
         [],
         None,
     )
-    assert case["checks_run"] == ["check_rates"]
+    assert case["checks_run"] == list(CHECKS)
+
+
+def test_a_report_before_every_check_has_run_is_refused(client):
+    start(client, CASE)
+    for check in CHECKS[:-2]:
+        record_findings(client, CASE, check, [])
+    before = everything_recorded()
+    body = {"raised": [], "dismissed": [], "added": [], "notice": ""}
+    refused = client.post(
+        f"/api/cases/{CASE}/report", json=body | {"raised_by": "The agent"}
+    )
+    assert (refused.status_code, refused.json()["detail"]) == (
+        422,
+        "Run every check before reporting: check_timeliness, check_classification "
+        "hasn't run on this attempt",
+    )
+    assert everything_recorded() == before
 
 
 def test_a_case_not_in_progress_is_refused(client):

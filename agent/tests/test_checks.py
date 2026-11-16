@@ -5,11 +5,18 @@ judgment."""
 
 import pytest
 
-from agent.check_inputs import read_inputs
+from agent.check_inputs import LookupRefused, read_inputs
 from agent.checks import CHECKS
-from agent.checks.findings import CHANGED, PROJECT_MISMATCH, Finding, Parameters
+from agent.checks.findings import (
+    CHANGED,
+    PROJECT_MISMATCH,
+    RULES,
+    Finding,
+    Parameters,
+)
 from agent.checks.inputs import CheckInputs
 from agent.tests.payroll_records import labels, lookup, records
+from backend import rule_codes
 
 EXACT = Parameters(0)
 # The decoys a check finds for the payroll agent to judge: a classification change
@@ -52,6 +59,12 @@ def judged(name: str, case_id: str) -> list[tuple[str, str | None]]:
         if h["case"] == case_id and h["column"] in HIDDEN
     ]
     return decoys + hidden
+
+
+def test_the_checks_names_and_rule_codes_are_the_backends():
+    # The check tools can't import the backend, so they name these themselves.
+    assert tuple(name for name, _ in CHECKS) == rule_codes.CHECKS
+    assert tuple(rule_codes.RULES) == RULES
 
 
 @pytest.mark.parametrize("name", ["development", "held_out"])
@@ -356,6 +369,24 @@ def test_a_lower_paid_craft_paid_the_established_rates_owes_nothing():
     assert run("check_classification", inputs) == []
 
 
+def test_a_lower_paid_craft_still_owes_the_established_crafts_overtime():
+    def as_laborer_unpaid(case):
+        line = case["submissions"][-1]["lines"][2]
+        assert line["worker_id"] == "W-007"
+        line.update(
+            classification="Laborer Journeyman", base_rate=4495, overtime_hours="0.00"
+        )
+
+    inputs = records(DEVELOPMENT).inputs("PC-0803", edit=as_laborer_unpaid)
+    assert inputs.lines[2].misclassified
+    [mismatch] = run("check_classification", inputs)
+    assert (mismatch.rule, mismatch.worker_id) == ("classification.mismatch", "W-007")
+    [overtime] = run("check_overtime", inputs)
+    assert (overtime.rule, overtime.worker_id) == ("overtime.underpaid", "W-007")
+    assert overtime.expected == "2.00 h at a premium"
+    assert "Plumber Journeyman" in overtime.citation
+
+
 def test_a_classification_the_rates_dont_have_is_a_mismatch_with_no_money():
     inputs = records(DEVELOPMENT).inputs(
         "PC-0101",
@@ -366,6 +397,14 @@ def test_a_classification_the_rates_dont_have_is_a_mismatch_with_no_money():
     assert (found.rule, found.shortfall_cents) == ("classification.mismatch", None)
     assert found.expected == "Electrician Journeyman"
     assert run("check_rates", inputs) == run("check_overtime", inputs) == []
+
+
+def test_a_rate_lookup_refused_for_a_missing_row_fails_the_reading():
+    def years_early(case):
+        case["week_ending"] = "2020-01-05"
+
+    with pytest.raises(LookupRefused, match="has no electrician rate on or before"):
+        records(DEVELOPMENT).inputs("PC-0101", edit=years_early)
 
 
 def test_a_change_from_last_week_is_found_with_its_note_for_the_agent_to_judge():

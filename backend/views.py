@@ -2,13 +2,11 @@
 view, and a case in full with its submissions, workers, exceptions, the current
 attempt's candidates and checks, and its notice."""
 
-from typing import cast
-
 from sqlalchemy import Connection, RowMapping, select
 
+from backend.candidates import checks_run_on
 from backend.database import (
     candidates,
-    check_runs,
     exceptions,
     notices,
     submissions,
@@ -19,7 +17,6 @@ from backend.models import (
     Candidate,
     Case,
     CaseSummary,
-    CheckName,
     ExceptionRecord,
     Notice,
     Submission,
@@ -68,16 +65,6 @@ def candidates_of(
     )
     found = [Candidate(**row) for row in db.execute(query).mappings()]
     return sorted(found, key=lambda c: (CHECKS.index(c.check), c.candidate_id))
-
-
-def checks_run_on(
-    db: Connection, case_id: str, thread_id: str | None
-) -> list[CheckName]:
-    query = select(check_runs.c.check).where(
-        check_runs.c.case_id == case_id, check_runs.c.thread_id == thread_id
-    )
-    ran = set(db.execute(query).scalars())
-    return [cast(CheckName, check) for check in CHECKS if check in ran]
 
 
 def notice_of(db: Connection, case_id: str, submission_no: int) -> Notice | None:

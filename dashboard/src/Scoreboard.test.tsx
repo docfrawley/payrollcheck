@@ -246,7 +246,7 @@ it("says when an evaluation doesn't exist", async () => {
   ).toBeDefined();
 });
 
-it("shows a copy's evaluation, and no Sign off or Send back", async () => {
+it("shows a copy's evaluation, its project unlinked, and no Sign off or Send back", async () => {
   stubApi({
     "GET /api/cases/PC-1201": {
       ...clean,
@@ -260,6 +260,8 @@ it("shows a copy's evaluation, and no Sign off or Send back", async () => {
   expect(note.textContent).toBe("A copy of PC-0412 in an evaluation");
   const link = within(note).getByRole("link", { name: "evaluation" });
   expect(link.getAttribute("href")).toBe("/scoreboard/run-9");
+  // A copy's project may be held out, so it isn't linked.
+  expect(screen.queryByRole("link", { name: clean.project_name })).toBeNull();
   const review = await panel("Review");
   expect(review.queryByRole("button", { name: "Sign off" })).toBeNull();
   expect(review.queryByRole("button", { name: "Send back" })).toBeNull();

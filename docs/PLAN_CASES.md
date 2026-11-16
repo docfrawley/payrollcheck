@@ -425,6 +425,6 @@ Success criteria:
 - [x] A case page with exceptions, in light and dark mode, with no console errors.
 - [x] The upload creates PC-1223, Received, in the queue.
 - [x] The report gives what the runs spent, from the backend's records and the OpenRouter key's usage, and the spending-limit proposal.
-- [ ] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green.
+- [x] The whole branch reviewed against `main` by a fresh subagent, its findings fixed, and `npm run check` green.
 
 The success criteria themselves (41 of 45 caught, at most 5 false exceptions) are measured on the whole development set at the end of stage 5, not here.

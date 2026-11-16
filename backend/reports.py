@@ -6,7 +6,7 @@ right."""
 from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, insert, update
 
-from backend.candidates import attempts_candidates
+from backend.candidates import attempts_candidates, checks_run_on
 from backend.database import candidates, exceptions, notices, now
 from backend.models import (
     AddedException,
@@ -14,7 +14,7 @@ from backend.models import (
     ExceptionSource,
     ExceptionStatus,
 )
-from backend.rule_codes import RULES
+from backend.rule_codes import CHECKS, RULES
 
 NO_CANDIDATE = (
     "No check found {rule}{where} with a shortfall of {cents} cents: an exception "
@@ -28,6 +28,7 @@ MONEY_RULE = (
 TWICE = "Candidate {candidate_id} is both raised and dismissed, or listed twice"
 NOT_JUDGED = "Raise or dismiss every finding: candidates {ids} are neither"
 BLANK_NOTICE = "A report with exceptions needs a draft send-back notice"
+CHECKS_NOT_RUN = "Run every check before reporting: {checks} hasn't run on this attempt"
 
 
 def where(found: AddedException) -> str:
@@ -88,7 +89,11 @@ def judged_candidates(
 def record_report(db: Connection, case: RowMapping, report: ExceptionReport) -> None:
     """Record a report the guarantee allows: the candidates raised as exceptions,
     the dismissals with their reasons, the agent's own exceptions with no money,
-    and the draft notice."""
+    and the draft notice. Every check must have run on the attempt first."""
+    ran = checks_run_on(db, case["case_id"], case["thread_id"])
+    not_run = [check for check in CHECKS if check not in ran]
+    if not_run:
+        raise HTTPException(422, CHECKS_NOT_RUN.format(checks=", ".join(not_run)))
     attempt = attempts_candidates(db, case)
     raised, added = judged_candidates(report, attempt)
     if (raised or added) and not report.notice.strip():

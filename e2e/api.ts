@@ -91,6 +91,31 @@ export async function recordCheckFindings(
   return (await response.json()) as Candidate[];
 }
 
+// The check tools, in the order they run.
+export const CHECKS = [
+  "check_form",
+  "check_contractor_registration",
+  "check_rates",
+  "check_overtime",
+  "check_arithmetic",
+  "check_apprentices",
+  "check_timeliness",
+  "check_classification",
+];
+
+// Records every check the attempt hasn't run as finding nothing, as the check
+// node runs them all before the model reports.
+async function runTheOtherChecks(request: Request, caseId: string) {
+  const response = await request.get(casePath(caseId), {
+    headers: AGENT_KEY_HEADERS,
+  });
+  await expect(response).toBeOK();
+  const { checks_run } = (await response.json()) as { checks_run: string[] };
+  for (const check of CHECKS)
+    if (!checks_run.includes(check))
+      await recordCheckFindings(request, caseId, check);
+}
+
 export interface ExceptionReport {
   raised: number[];
   dismissed: { candidate_id: number; reason: string }[];
@@ -98,14 +123,15 @@ export interface ExceptionReport {
   notice: string;
 }
 
-// Records the payroll agent's exception report, with its maker, which moves
-// the case to Awaiting review.
-export const recordExceptionReport = (
+// Records the payroll agent's exception report, with its maker, once every
+// check has run, which moves the case to Awaiting review.
+export async function recordExceptionReport(
   request: Request,
   caseId: string,
   report: Partial<ExceptionReport> = {},
-) =>
-  send(request, "POST", `${casePath(caseId)}/report`, {
+) {
+  await runTheOtherChecks(request, caseId);
+  return send(request, "POST", `${casePath(caseId)}/report`, {
     raised: [],
     dismissed: [],
     added: [],
@@ -113,6 +139,7 @@ export const recordExceptionReport = (
     ...report,
     raised_by: MAKER,
   });
+}
 
 export const recordScreeningFlag = (
   request: Request,

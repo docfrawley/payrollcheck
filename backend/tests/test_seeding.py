@@ -55,14 +55,22 @@ def test_a_corrected_cases_exceptions_are_superseded_and_a_returned_ones_open(
 ):
     with engine().connect() as db:
         rows = list(db.execute(select(exceptions)).mappings())
+    cases = {
+        case_id: client.get(f"/api/cases/{case_id}").json()
+        for case_id in {row["case_id"] for row in rows}
+    }
     by_status = Counter(
         (
             row["status"],
-            len(client.get(f"/api/cases/{row['case_id']}").json()["submissions"]),
+            len(cases[row["case_id"]]["submissions"]),
+            cases[row["case_id"]]["status"],
         )
         for row in rows
     )
-    assert set(by_status) <= {("superseded", 2), ("open", 1)}
+    assert set(by_status) <= {
+        ("superseded", 2, "accepted"),
+        ("open", 1, "returned_to_sub"),
+    }
     assert all(row["submission_no"] == 1 for row in rows)
     names = {"Dana Whitfield", "Marcus Oyelaran", "Priya Raman"}
     assert {row["raised_by"] for row in rows} <= names

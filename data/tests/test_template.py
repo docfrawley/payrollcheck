@@ -131,6 +131,15 @@ def without_column(text: str, *columns: str) -> str:
     return out.getvalue()
 
 
+def row_cut(text: str, row: int, cells: int) -> str:
+    """The CSV with one payroll row's last cells cut off, or extra cells added
+    when the number is negative."""
+    lines = text.splitlines()
+    cut = lines[row + 1].split(",")
+    lines[row + 1] = ",".join(cut[:-cells] if cells > 0 else cut + ["x"] * -cells)
+    return "\n".join(lines) + "\n"
+
+
 REFUSED = [
     ("empty", "", "no header row"),
     ("no header", SAMPLE.split("\n", 1)[1], "no header row"),
@@ -180,6 +189,9 @@ REFUSED = [
         edited(SAMPLE, "gross", "1883.205", row=0),
         'Row 2, gross: "1883.205" isn\'t dollars and cents',
     ),
+    ("a row cut short", row_cut(SAMPLE, 1, 3), "Row 3 has fewer cells than the header"),
+    ("a row's last cell cut", row_cut(SAMPLE, 0, 1), "Row 2 has fewer cells"),
+    ("a row too long", row_cut(SAMPLE, 1, -2), "Row 3 has more cells than the header"),
     (
         "no work week",
         edited(SAMPLE, "no_work_week", "yes"),

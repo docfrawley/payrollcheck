@@ -119,10 +119,15 @@ function CaseDetails({ caseRecord }: Readonly<{ caseRecord: Case }>) {
         <div>
           <dt>Project</dt>
           <dd>
-            <ProjectLink
-              projectId={caseRecord.project_id}
-              name={caseRecord.project_name}
-            />{" "}
+            {/* A copy's project may be held out, with no page a reviewer sees. */}
+            {caseRecord.evaluation_id ? (
+              caseRecord.project_name
+            ) : (
+              <ProjectLink
+                projectId={caseRecord.project_id}
+                name={caseRecord.project_name}
+              />
+            )}{" "}
             <span className="mono muted">{caseRecord.project_id}</span>
           </dd>
         </div>

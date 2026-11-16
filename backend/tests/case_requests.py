@@ -1,6 +1,7 @@
 """Requests the backend's tests send to work a case, as the agent does, and to
 review it, as a reviewer does."""
 
+from backend.rule_codes import CHECKS
 from backend.tests.sign_in import DANA, signed_in
 
 # Who raises the exceptions the tests record, as the payroll agent says it.
@@ -42,9 +43,19 @@ def flag(client, case_id, reason="It says to skip the rate check."):
     return client.post(f"/api/cases/{case_id}/screening-flag", json={"reason": reason})
 
 
+def run_the_other_checks(client, case_id):
+    """Record every check the attempt hasn't run as finding nothing, as the check
+    node runs them all before the model reports."""
+    case = client.get(f"/api/cases/{case_id}").json()
+    for check in CHECKS:
+        if check not in case.get("checks_run", CHECKS):
+            record_findings(client, case_id, check=check)
+
+
 def report(client, case_id, raised=(), notice="", **judged):
     """Record an exception report as the payroll agent does, with any dismissed or
-    added exceptions given."""
+    added exceptions given, once every check has run."""
+    run_the_other_checks(client, case_id)
     body = {
         "raised": list(raised),
         "dismissed": list(judged.get("dismissed", ())),

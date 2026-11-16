@@ -6,6 +6,7 @@ import pytest
 
 from backend import main
 from backend.dependencies import API_KEY_HEADER
+from backend.rule_codes import CHECKS
 from backend.tests.case_requests import (
     awaiting_review,
     fail,
@@ -95,11 +96,11 @@ def test_a_check_s_findings_are_a_step_on_the_case(client):
 
 def test_a_clean_case_reaches_awaiting_review_with_the_checks_it_ran(client):
     start(client, CASE)
-    for check in ("check_form", "check_rates"):
+    for check in reversed(CHECKS):
         record_findings(client, CASE, check, [])
     case = report(client, CASE).json()
     assert case["status"] == "awaiting_review"
-    assert case["checks_run"] == ["check_form", "check_rates"]
+    assert case["checks_run"] == list(CHECKS)
     assert case["open_exceptions"] == 0
 
 

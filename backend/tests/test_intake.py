@@ -115,6 +115,18 @@ def test_an_unknown_or_held_out_project_page_is_not_found(dashboard):
         "Project PRJ-51 not found",
     )
     assert everything_recorded() == before
+    for path in ("", "/subcontractors"):
+        page = dashboard.get(f"/api/projects/PRJ-51{path}", headers=signed_in())
+        assert (page.status_code, page.json()["detail"]) == (
+            404,
+            "Project PRJ-51 not found",
+        )
+
+
+def test_the_agent_reads_a_held_out_project_for_an_evaluations_copies(client):
+    project = client.get("/api/projects/PRJ-51")
+    assert project.json()["project_id"] == "PRJ-51"
+    assert client.get("/api/projects/PRJ-51/subcontractors").json()
 
 
 ACCEPTED = [
