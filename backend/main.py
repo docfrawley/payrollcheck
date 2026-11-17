@@ -11,6 +11,7 @@ from sqlalchemy import Connection, RowMapping, func, insert, select, update
 
 from backend import agent_api, dashboard, notices, outbox, overrides
 from backend.business_date import business_date
+from backend.business_date import router as business_date_router
 from backend.candidates import keep_findings
 from backend.configuration import router as configuration
 from backend.copilot import router as copilot
@@ -100,6 +101,7 @@ app.include_router(improvement)
 app.include_router(copilot)
 app.include_router(projects)
 app.include_router(subcontractors_router)
+app.include_router(business_date_router)
 
 
 def move_case(

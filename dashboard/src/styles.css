@@ -192,6 +192,20 @@ p {
   white-space: nowrap;
 }
 
+/* The chip and the business date beside it, on the band of every page. */
+.band-notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.business-date {
+  color: var(--on-header);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 /* Plain links, with a Hi-Vis Amber bar under the page you're on. */
 .nav {
   display: flex;

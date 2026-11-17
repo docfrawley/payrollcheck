@@ -245,3 +245,74 @@ it("saves an objective on false exceptions and a notice score's noise", async ()
     notice_score: 0.2,
   });
 });
+
+it("changes the business date through the confirmation, and reads it again for the header", async () => {
+  const moved = {
+    ...settings.current,
+    number: 2,
+    business_date: "2026-11-30",
+    changed_by: "Dana Whitfield",
+    changed_at: "2026-11-23T09:00:00+00:00",
+  };
+  const fetchMock = stubApi({
+    "GET /api/settings": settings,
+    "PUT /api/settings": { ...settings, current: moved, changes: [moved] },
+  });
+  // The business date as the backend gives it once the save has gone through.
+  const asked = fetchMock.getMockImplementation();
+  fetchMock.mockImplementation((path: string, init?: RequestInit) =>
+    path === "/api/business-date" &&
+    sent(fetchMock, "PUT /api/settings").length > 0
+      ? Promise.resolve(
+          Response.json({ business_date: "2026-11-30", real_date: false }),
+        )
+      : (asked?.(path, init) ?? Promise.reject(new Error("No stub"))),
+  );
+  renderAt("/settings");
+  await screen.findByRole("group", { name: "Business date" });
+  const field = group("Business date").getByLabelText("Business date");
+  expect(field).toHaveProperty("value", "2026-11-23");
+  fireEvent.change(field, { target: { value: "2026-11-30" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(
+    within(await screen.findByRole("dialog")).getByText(
+      "Business date: Nov 23, 2026 to Nov 30, 2026",
+    ),
+  ).toBeDefined();
+  await save();
+  await waitFor(() => {
+    expect(sent(fetchMock, "PUT /api/settings")).toHaveLength(1);
+  });
+  expect(sent(fetchMock, "PUT /api/settings")[0]).toMatchObject({
+    business_date: "2026-11-30",
+  });
+  expect(await screen.findByText("Nov 30, 2026")).toBeDefined();
+});
+
+it("saves the real date, null, with Use the real date", async () => {
+  const fetchMock = stubApi({
+    "GET /api/settings": settings,
+    "PUT /api/settings": settings,
+  });
+  renderAt("/settings");
+  await screen.findByRole("group", { name: "Business date" });
+  const useReal = await screen.findByRole("button", {
+    name: "Use the real date",
+  });
+  fireEvent.click(useReal);
+  expect(useReal).toHaveProperty("disabled", true);
+  expect(group("Business date").getByText("The real date")).toBeDefined();
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(
+    within(await screen.findByRole("dialog")).getByText(
+      "Business date: Nov 23, 2026 to the real date",
+    ),
+  ).toBeDefined();
+  await save();
+  await waitFor(() => {
+    expect(sent(fetchMock, "PUT /api/settings")).toHaveLength(1);
+  });
+  expect(sent(fetchMock, "PUT /api/settings")[0]).toMatchObject({
+    business_date: null,
+  });
+});

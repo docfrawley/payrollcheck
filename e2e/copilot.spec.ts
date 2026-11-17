@@ -69,6 +69,10 @@ test("on a narrow window the sidebar opens over the page, below the header, and 
 }) => {
   await page.setViewportSize({ width: 800, height: 800 });
   await page.goto("/");
+  // The header is laid out in full once the business date is in it.
+  await expect(
+    page.getByRole("banner").getByText(/^Business date/),
+  ).toBeVisible();
   const main = await boxOf(page.getByRole("main"));
   const header = await boxOf(page.getByRole("banner"));
   const copilot = await boxOf(sidebar(page));

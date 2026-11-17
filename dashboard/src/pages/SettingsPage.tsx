@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { CalendarClock, Save } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../api";
 import type {
@@ -13,6 +13,7 @@ import { PageHeader } from "../components/PageHeader";
 import { StateMessage } from "../components/StateMessage";
 import { dateTime, label, money } from "../format";
 import {
+  BUSINESS_DATE,
   GROUPS,
   SETTING_FIELDS,
   type SettingField,
@@ -22,6 +23,7 @@ import {
   settingGroups,
   valuesOf,
 } from "../settingsFields";
+import { useBusinessDate } from "../businessDate";
 import { useAction } from "../useAction";
 import { useLoad } from "../useLoad";
 
@@ -41,7 +43,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        lead="The rules for improving the payroll agent."
+        lead="The business date, and the rules for improving the payroll agent."
       />
       {page ? (
         <SettingsPanels page={page} onSaved={setSaved} />
@@ -74,7 +76,13 @@ function SettingsForm({
   const [confirming, setConfirming] = useState(false);
   const proposed = valuesOf(current, inputs);
   const changes = changesBetween(current, proposed);
-  const save = useAction(() => api.changeSettings(proposed).then(onSaved));
+  const businessDate = useBusinessDate();
+  const save = useAction(() =>
+    api.changeSettings(proposed).then((page) => {
+      onSaved(page);
+      businessDate.reload();
+    }),
+  );
 
   return (
     <form
@@ -96,6 +104,12 @@ function SettingsForm({
         </button>
       </div>
       {save.error && <FormError>{save.error}</FormError>}
+      <BusinessDateInput
+        value={inputs[BUSINESS_DATE] ?? ""}
+        onChange={(value) => {
+          setInputs({ ...inputs, [BUSINESS_DATE]: value });
+        }}
+      />
       {settingGroups.map((group) => (
         <fieldset className="panel" key={group}>
           <legend>{GROUPS[group].title}</legend>
@@ -135,6 +149,51 @@ function SettingsForm({
         </ul>
       </ConfirmDialog>
     </form>
+  );
+}
+
+// The app's today, which every period the Copilot is asked about is resolved
+// from; blank is the real date.
+function BusinessDateInput({
+  value,
+  onChange,
+}: Readonly<{ value: string; onChange: (value: string) => void }>) {
+  const id = useId();
+  return (
+    <fieldset className="panel">
+      <legend>Business date</legend>
+      <p className="muted small">
+        The app&apos;s today. Last week, this month and the late and missing
+        payrolls are worked out from it.
+      </p>
+      <div className="setting-fields">
+        <div className="setting">
+          <label htmlFor={id}>Business date</label>
+          <span className="setting-input">
+            <input
+              id={id}
+              type="date"
+              value={value}
+              onChange={(event) => {
+                onChange(event.target.value);
+              }}
+            />
+            <button
+              type="button"
+              className="button quiet"
+              disabled={value === ""}
+              onClick={() => {
+                onChange("");
+              }}
+            >
+              <CalendarClock />
+              Use the real date
+            </button>
+          </span>
+          {value === "" && <p className="muted small">The real date</p>}
+        </div>
+      </div>
+    </fieldset>
   );
 }
 

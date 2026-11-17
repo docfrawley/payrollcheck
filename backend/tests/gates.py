@@ -58,6 +58,7 @@ TURN = "/api/copilot/turns/turn-1"
 # Every operation only a signed-in reviewer may use, with a body it would accept.
 REVIEWER_OPERATIONS = {
     "get_signed_in_reviewer": ("GET", "/api/me", None),
+    "get_business_date": ("GET", "/api/business-date", None),
     "list_steps": ("GET", "/api/cases/PC-1202/steps", None),
     "list_projects": ("GET", "/api/projects", None),
     "upload_payroll": (

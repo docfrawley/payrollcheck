@@ -171,7 +171,7 @@ def change_settings(
     db.execute(
         insert(settings).values(
             number=current_settings(db).number + 1,
-            **request.model_dump(),
+            **request.model_dump(mode="json"),
             changed_by=reviewer.name,
             changed_at=now(),
         )

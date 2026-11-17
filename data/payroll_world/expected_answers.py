@@ -99,7 +99,7 @@ class Answers:
         ]
         return {
             "subcontractor_id": subcontractor_id,
-            "period": period_record(period),
+            "period": period.record(),
             "case_ids": sorted({label.case_id for label in exceptions}),
             "flagged_cents": money(exceptions),
             "outstanding_cents": money(exceptions),
@@ -135,7 +135,7 @@ class Answers:
             if filing.engagement.project_id in self.projects
             and period.holds(filing.week_ending)
         ]
-        return {"period": period_record(period), "late": late, "missing": missing}
+        return {"period": period.record(), "late": late, "missing": missing}
 
     def classification_changes(self, period: Period) -> list[dict[str, Any]]:
         """Every worker on a case in the period whose classification on its latest
@@ -184,13 +184,6 @@ def money(labels: list[Label]) -> int:
     )
 
 
-def period_record(period: Period) -> dict[str, str]:
-    return {
-        "first_week_ending": period.first.isoformat(),
-        "last_week_ending": period.last.isoformat(),
-    }
-
-
 def rate_answer(world: World, project_id: str, craft: str) -> dict[str, Any]:
     """The journeyman rate the project's award-date determination gives on the
     business date, and the row it comes from."""
@@ -233,7 +226,7 @@ def expected_answers(world: World, seeded: SeededSet, reviewer: str) -> dict[str
                     answers.late_or_missing(periods.last_week(business_date)),
                     rate_answer(world, LINCOLN, ELECTRICIAN),
                     {
-                        "period": period_record(four_weeks),
+                        "period": four_weeks.record(),
                         "changes": answers.classification_changes(four_weeks),
                     },
                     answers.case_exceptions(NOTICE_CASE),

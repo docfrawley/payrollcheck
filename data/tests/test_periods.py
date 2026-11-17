@@ -39,3 +39,10 @@ def test_this_month_holds_the_week_endings_in_the_business_dates_month():
     assert not november.holds(date(2026, 10, 25))
     december = periods.this_month(date(2026, 12, 31))
     assert (december.first, december.last) == (date(2026, 12, 6), date(2026, 12, 27))
+
+
+def test_between_holds_both_week_endings():
+    weeks = periods.between(date(2026, 10, 4), date(2026, 11, 1))
+    assert weeks.holds(date(2026, 10, 4))
+    assert weeks.holds(date(2026, 11, 1))
+    assert not weeks.holds(date(2026, 11, 8))

@@ -1,6 +1,6 @@
 import { MOST_AGENTS } from "./components/AgentsChoice";
 import type { Settings, SettingsValues } from "./settings";
-import { money } from "./format";
+import { date, money } from "./format";
 
 // How the Settings page shows each setting: its group, its label, its unit and
 // its limits. The catch rate, shortfall accuracy and the fractions of cost and
@@ -200,17 +200,22 @@ function shown(unit: Unit, value: number): string {
 
 export type Inputs = Record<string, string>;
 
+// The business date's input, a date or blank for the real date.
+export const BUSINESS_DATE = "business_date";
+
 export function inputsOf(values: SettingsValues): Inputs {
-  return Object.fromEntries(
-    SETTING_FIELDS.map((field) => [
-      field.id,
-      toInput(field.unit, field.get(values)),
-    ]),
-  );
+  return {
+    ...Object.fromEntries(
+      SETTING_FIELDS.map((field) => [
+        field.id,
+        toInput(field.unit, field.get(values)),
+      ]),
+    ),
+    [BUSINESS_DATE]: values.business_date ?? "",
+  };
 }
 
-// The settings alone, without who changed them and when. The business date
-// isn't shown and is carried through a save unchanged.
+// The settings alone, without who changed them and when.
 function valuesOnly(settings: Settings): SettingsValues {
   return {
     objectives: settings.objectives,
@@ -223,14 +228,21 @@ function valuesOnly(settings: Settings): SettingsValues {
 }
 
 // The settings as typed: a setting whose input wasn't touched keeps its value
-// exactly, so saving never changes what a reviewer didn't.
+// exactly, so saving never changes what a reviewer didn't. A blank business
+// date is the real date; inputsOf always gives one.
 export function valuesOf(current: Settings, inputs: Inputs): SettingsValues {
-  return SETTING_FIELDS.reduce((values, field) => {
+  const typed = SETTING_FIELDS.reduce((values, field) => {
     const input = inputs[field.id] ?? "";
     return input === toInput(field.unit, field.get(current))
       ? values
       : field.set(values, fromInput(field.unit, input));
   }, valuesOnly(current));
+  return { ...typed, business_date: inputs[BUSINESS_DATE] || null };
+}
+
+// A business date as the page shows it.
+export function businessDateShown(businessDate: string | null): string {
+  return businessDate ? date(businessDate) : "the real date";
 }
 
 // Each setting that differs between two sets of values, from the old to the
@@ -239,10 +251,15 @@ export function changesBetween(
   before: SettingsValues,
   after: SettingsValues,
 ): string[] {
-  return SETTING_FIELDS.filter(
+  const changes = SETTING_FIELDS.filter(
     (field) => field.get(before) !== field.get(after),
   ).map(
     (field) =>
       `${field.name}: ${shown(field.unit, field.get(before))} to ${shown(field.unit, field.get(after))}`,
   );
+  if (before.business_date === after.business_date) return changes;
+  return [
+    `Business date: ${businessDateShown(before.business_date)} to ${businessDateShown(after.business_date)}`,
+    ...changes,
+  ];
 }

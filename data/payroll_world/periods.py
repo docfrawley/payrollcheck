@@ -1,7 +1,7 @@
 """The periods a reviewer asks about, resolved from the business date and matched
-on a payroll's week ending: last week, the last N weeks and this month. The
-generator's expected answers and, from stage 6, the app's tools resolve every
-period here, so they can't disagree."""
+on a payroll's week ending: last week, the last N weeks, this month, and the weeks
+ending between two dates. The generator's expected answers and the app's tools
+resolve every period here, so they can't disagree."""
 
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -18,6 +18,13 @@ class Period:
 
     def holds(self, week_ending: date) -> bool:
         return self.first <= week_ending <= self.last
+
+    def record(self) -> dict[str, str]:
+        """The period as an answer gives it: its first and last week endings."""
+        return {
+            "first_week_ending": self.first.isoformat(),
+            "last_week_ending": self.last.isoformat(),
+        }
 
 
 def last_week_ending(business_date: date) -> date:
@@ -44,3 +51,8 @@ def this_month(business_date: date) -> Period:
     following = (first_day + timedelta(days=31)).replace(day=1)
     first_sunday = first_day + timedelta(days=(SUNDAY - first_day.weekday()) % 7)
     return Period(first_sunday, last_week_ending(following))
+
+
+def between(first: date, last: date) -> Period:
+    """The week endings from one to another, both included."""
+    return Period(first, last)

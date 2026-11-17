@@ -1,15 +1,18 @@
 """The shapes of the backend's requests and responses."""
 
+from datetime import date
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     BaseModel,
     Field,
     StringConstraints,
+    model_validator,
 )
 
 from backend.rule_codes import Severity
+from data.payroll_world.periods import SUNDAY
 
 
 class Status(StrEnum):
@@ -468,8 +471,8 @@ class SettingsValues(BaseModel):
     tolerance: MeasureSettings
     spending_limit: float = Field(gt=0, description="For each round, in US dollars")
     agents: Agents
-    business_date: str | None = Field(
-        description="The app's today, YYYY-MM-DD, or null for the real date"
+    business_date: date | None = Field(
+        description="The app's today, or null for the real date"
     )
 
 
@@ -1164,6 +1167,61 @@ class Improvement(BaseModel):
     first_version: VersionPoint
     versions_tried: list[VersionPoint]
     recipes: list[RecipeSummary]
+
+
+# The periods the Copilot asks about, which backend/periods.py resolves.
+
+NOT_A_WEEK_ENDING = "{day} isn't a week ending, a Sunday"
+BACKWARDS = "The period's first week ending, {first}, is after its last, {last}"
+MOST_WEEKS = 52
+
+
+class LastWeek(BaseModel):
+    """The latest payroll week ending before the business date."""
+
+    kind: Literal["last_week"]
+
+
+class ThisMonth(BaseModel):
+    """Every week ending in the business date's month."""
+
+    kind: Literal["this_month"]
+
+
+class LastWeeks(BaseModel):
+    """The latest number of payroll weeks ending before the business date."""
+
+    kind: Literal["last_weeks"]
+    count: int = Field(ge=1, le=MOST_WEEKS)
+
+
+class Between(BaseModel):
+    """The week endings from one Sunday to another, both included."""
+
+    kind: Literal["between"]
+    first: date = Field(description="A week ending, YYYY-MM-DD")
+    last: date = Field(description="A week ending, YYYY-MM-DD")
+
+    @model_validator(mode="after")
+    def week_endings(self) -> Self:
+        for day in (self.first, self.last):
+            if day.weekday() != SUNDAY:
+                raise ValueError(NOT_A_WEEK_ENDING.format(day=day))
+        if self.first > self.last:
+            raise ValueError(BACKWARDS.format(first=self.first, last=self.last))
+        return self
+
+
+PeriodRequest = Annotated[
+    LastWeek | ThisMonth | LastWeeks | Between, Field(discriminator="kind")
+]
+
+
+class PeriodAnswer(BaseModel):
+    """The week endings a period resolved to, both included."""
+
+    first_week_ending: str
+    last_week_ending: str
 
 
 # The Copilot's conversations and what the Copilot records of them.

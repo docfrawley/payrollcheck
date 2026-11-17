@@ -12,6 +12,7 @@ import type { Notice, OutboxRecord } from "./notices";
 import type { SettingsPage, SettingsValues } from "./settings";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
+import type { BusinessDate } from "./businessDate";
 
 // Where a case stands, in the order the queue shows them.
 export const statuses = [
@@ -536,6 +537,7 @@ export const api = {
       `${CONFIGURATION}/versions/${encodeURIComponent(number)}`,
     ),
   getSignedInReviewer: () => request<Reviewer>("/api/me"),
+  getBusinessDate: () => request<BusinessDate>("/api/business-date"),
   getSettings: () => request<SettingsPage>(SETTINGS),
   changeSettings: (values: SettingsValues) =>
     send<SettingsPage>("PUT", SETTINGS, values),

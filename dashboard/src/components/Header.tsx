@@ -1,5 +1,7 @@
 import { use } from "react";
 import { Link, NavLink, useMatch } from "react-router";
+import { useBusinessDate } from "../businessDate";
+import { date } from "../format";
 import { ReviewerContext, ROLE_TITLES, isComplianceManager } from "../reviewer";
 import {
   CASE_PAGE,
@@ -14,9 +16,9 @@ import { Brand } from "./Brand";
 import { SyntheticData } from "./SyntheticData";
 
 // The band across the top of every signed-in page: the brand, the chip saying
-// the data is synthetic, the main nav, and the reviewer signed in with their
-// menu once they have loaded. Improvement is in the nav for the compliance
-// manager alone.
+// the data is synthetic beside the business date, the main nav, and the
+// reviewer signed in with their menu once they have loaded. Improvement is in
+// the nav for the compliance manager alone.
 export function Header() {
   const reviewer = use(ReviewerContext);
   // A case's page belongs to the queue.
@@ -29,7 +31,10 @@ export function Header() {
         <Link to={QUEUE} className="brand">
           <Brand />
         </Link>
-        <SyntheticData />
+        <div className="band-notes">
+          <SyntheticData />
+          <BusinessDateNote />
+        </div>
         <nav className="nav" aria-label="Main">
           <Link
             to={QUEUE}
@@ -56,5 +61,17 @@ export function Header() {
         )}
       </div>
     </header>
+  );
+}
+
+// The app's today, once it has loaded.
+function BusinessDateNote() {
+  const { businessDate } = useBusinessDate();
+  if (!businessDate) return null;
+  return (
+    <p className="business-date">
+      Business date{" "}
+      <span className="mono">{date(businessDate.business_date)}</span>
+    </p>
   );
 }

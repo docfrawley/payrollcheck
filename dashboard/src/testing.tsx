@@ -86,6 +86,7 @@ export function stubApi(routes: Routes) {
   const signedIn: Routes = {
     "GET /api/me": dana,
     "GET /api/settings": settings,
+    "GET /api/business-date": { business_date: "2026-11-23", real_date: false },
   };
   const fetchMock = vi.fn((path: string, init?: RequestInit) => {
     const answer = { ...signedIn, ...routes }[

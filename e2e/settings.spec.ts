@@ -77,3 +77,39 @@ test.describe("signed in as Priya Raman", () => {
     await expect(page.getByRole("group", { name: "Appearance" })).toBeVisible();
   });
 });
+
+test("a compliance manager changes the business date, sees it in the header, and resets it", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+  const header = page.getByRole("banner");
+  await expect(header.getByText("Business date Nov 23, 2026")).toBeVisible();
+  const field = page
+    .getByRole("group", { name: "Business date" })
+    .getByLabel("Business date");
+  const save = page.getByRole("button", { name: "Save", exact: true });
+  const dialog = page.getByRole("dialog");
+
+  await field.fill("2026-11-30");
+  await save.click();
+  await expect(
+    dialog.getByText("Business date: Nov 23, 2026 to Nov 30, 2026"),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Save the settings" }).click();
+  await expect(header.getByText("Business date Nov 30, 2026")).toBeVisible();
+
+  await page.getByRole("button", { name: "Use the real date" }).click();
+  await save.click();
+  await expect(
+    dialog.getByText("Business date: Nov 30, 2026 to the real date"),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Save the settings" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(header.getByText("Business date Nov 30, 2026")).toBeHidden();
+
+  // Back to the seeded date, for the other files.
+  await field.fill("2026-11-23");
+  await save.click();
+  await dialog.getByRole("button", { name: "Save the settings" }).click();
+  await expect(header.getByText("Business date Nov 23, 2026")).toBeVisible();
+});

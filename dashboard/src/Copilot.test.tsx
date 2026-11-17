@@ -56,6 +56,8 @@ it("collapses on Escape where it sits over the page, on a narrow window, and not
   const narrow = vi.fn((query: string) => ({ matches: query === OVERLAY }));
   vi.stubGlobal("matchMedia", narrow);
   renderAt("/settings");
+  // The page's own frame, once the reviewer has loaded, not the loading one.
+  await screen.findByLabelText("Signed in");
   const escape = async () => {
     fireEvent.keyDown(
       (await openSidebar()).getByRole("button", { name: "New conversation" }),

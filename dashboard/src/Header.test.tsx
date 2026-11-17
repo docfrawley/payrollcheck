@@ -98,3 +98,16 @@ it("shows a reviewer no Improvement or Settings, and their role, with Appearance
     await screen.findByRole("heading", { name: "Appearance", level: 1 }),
   ).toBeDefined();
 });
+
+it("shows the business date beside the chip on every page", async () => {
+  stubApi({ ...QUEUE_ROUTES, "GET /api/projects": [] });
+  for (const path of ["/", "/projects", "/settings"]) {
+    renderAt(path);
+    const shown = (await screen.findByText("Nov 23, 2026")).closest("p");
+    expect(shown?.textContent).toBe("Business date Nov 23, 2026");
+    const band = within(screen.getByRole("banner"));
+    expect(band.getByText("Synthetic data — not real rates")).toBeDefined();
+    expect(band.getByText("Nov 23, 2026")).toBeDefined();
+    cleanup();
+  }
+});

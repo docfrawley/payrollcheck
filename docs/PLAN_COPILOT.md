@@ -179,7 +179,7 @@ After pulling this stage, reseed with `npm run seed`.
 
 `get_business_date`, the header's business date, the Settings page's field with "Use the real date", `between` in `data/payroll_world/periods.py`, and `backend/periods.py`.
 
-- [ ] `backend/tests/test_periods.py`: from a business date of Mon Nov 23, 2026:
+- [x] `backend/tests/test_periods.py`: from a business date of Mon Nov 23, 2026:
   - last week is the week ending Nov 22
   - the last four weeks run Nov 1 to Nov 22
   - this month runs Nov 1 to Nov 29
@@ -187,18 +187,18 @@ After pulling this stage, reseed with `npm run seed`.
   - a week that crosses a month (ending Sun Nov 1, its Monday in October) counts in November, by its week ending
   - a business date that is itself a Sunday has last week end the Sunday before
   - matching is on `week_ending`, shown with a case whose wage payment and received dates fall outside the period
-- [ ] A test that `copilot_expected.json`'s periods are what `backend/periods.py` resolves at its business date.
-- [ ] `backend/tests/test_business_date.py`:
+- [x] A test that `copilot_expected.json`'s periods are what `backend/periods.py` resolves at its business date.
+- [x] `backend/tests/test_business_date.py`:
   - `get_business_date` gives the seeded Nov 23 to Marcus, Priya and Dana, and says it isn't the real date
   - Dana changes it, and the history records who and when
   - Dana resets it to the real date (null), and the route gives today, saying it's the real date
   - Marcus is refused the change with a 403 naming the action
-- [ ] `npm run generate` writes the same files (the periods module's change leaves its output alone).
-- [ ] vitest:
+- [x] `npm run generate` writes the same files (the periods module's change leaves its output alone).
+- [x] vitest:
   - the header shows "Business date Nov 23, 2026" beside the chip on every page
   - the Settings page shows the field, saves a change through the confirmation, and saves null with "Use the real date"
-- [ ] `e2e/settings.spec.ts`: Dana changes the business date and sees it in the header, then resets it.
-- [ ] `npm run check` green.
+- [x] `e2e/settings.spec.ts`: Dana changes the business date and sees it in the header, then resets it.
+- [x] `npm run check` green.
 
 ### Phase 2: exposure, filings and classification changes, with the layer 1 tool tests
 
