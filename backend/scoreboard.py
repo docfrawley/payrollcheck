@@ -13,7 +13,6 @@ from backend.database import (
     case_view,
     cases,
     decoys,
-    exceptions,
     labels,
     model_calls,
     run_cases,
@@ -25,7 +24,6 @@ from backend.lookups import round_numbers
 from backend.models import (
     LABELLED_SET,
     EvaluationSet,
-    ExceptionStatus,
     LabelledSet,
     Measures,
     NoticeGradeRecord,
@@ -36,6 +34,7 @@ from backend.models import (
     ScoredEvaluation,
     VersionScores,
 )
+from backend.open_exceptions import open_exceptions_of
 from backend.success_criteria import success_criteria
 from backend.views import to_summary
 
@@ -150,23 +149,12 @@ def expected_labels(db: Connection) -> Expected:
     return found
 
 
-def open_exceptions_of(
-    db: Connection, case_ids: list[str]
-) -> dict[str, list[scoring.Raised]]:
-    """The open exceptions on each copy's latest submission, in one query."""
-    query = (
-        select(exceptions)
-        .join(cases, cases.c.case_id == exceptions.c.case_id)
-        .where(
-            exceptions.c.case_id.in_(case_ids),
-            exceptions.c.status == ExceptionStatus.OPEN,
-            exceptions.c.submission_no == cases.c.latest_submission_no,
-        )
-        .order_by(exceptions.c.exception_id)
-    )
-    found: dict[str, list[scoring.Raised]] = {case_id: [] for case_id in case_ids}
-    for row in db.execute(query).mappings():
-        found[row["case_id"]].append(
+def raised_on(db: Connection, case_ids: list[str]) -> dict[str, list[scoring.Raised]]:
+    """The open exceptions on each copy's latest submission, as the scoring matches
+    them to the labels."""
+    found = open_exceptions_of(db, case_ids)
+    return {
+        case_id: [
             scoring.Raised(
                 row["exception_id"],
                 row["rule"],
@@ -176,8 +164,10 @@ def open_exceptions_of(
                 row["actual"],
                 row["shortfall_cents"],
             )
-        )
-    return found
+            for row in found.get(case_id, [])
+        ]
+        for case_id in case_ids
+    }
 
 
 def scored_case(
@@ -253,7 +243,7 @@ def score_all(
     run_ids = [row["run_id"] for row in rows]
     copies, costs = cases_of_runs(db, run_ids), model_costs(db, run_ids)
     copy_ids = [copy["case_id"] for found in copies.values() for copy in found]
-    raised, notices = open_exceptions_of(db, copy_ids), grades_of(db, copy_ids)
+    raised, notices = raised_on(db, copy_ids), grades_of(db, copy_ids)
     judged = judge_costs(db, run_ids)
     numbers = round_numbers(db, [row["round_id"] for row in rows])
     return [

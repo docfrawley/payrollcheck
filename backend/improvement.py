@@ -5,7 +5,6 @@ and the dashboard reads it. The backend keeps a proposal from taking effect unti
 reviewer approves it, keeps or rolls back each version by the business's rule, and
 refuses anything a round records once it has finished or been stopped."""
 
-import re
 import uuid
 from functools import partial
 from typing import Annotated, Any
@@ -34,6 +33,7 @@ from backend.diffs import diff, parameter_changes
 from backend.first_version import FIRST_VERSION, INSTRUCTIONS
 from backend.free_models import model_or_free
 from backend.improver_view import cited_cases, improver_view
+from backend.intake import ANY_CASE_ID
 from backend.lookups import (
     allowed_models,
     current_settings,
@@ -104,7 +104,6 @@ from backend.scoreboard import (
 # The improver's model, unless students on free models have one of their own.
 IMPROVER_MODEL = ("openai/gpt-6.1-sol", "medium")
 ROUND_OPEN = "Round {number} is open. Finish or stop it first."
-CASE_ID = re.compile(r"PC-\d{4}")
 NAMES_A_CASE = (
     "The change names {case_id}. A change never names a case: give it in the reason."
 )
@@ -190,7 +189,7 @@ def refuse_a_model_not_allowed(db: Connection, change: ChangeProposalRequest) ->
 def refuse_a_change_naming_a_case(change: ChangeProposalRequest) -> None:
     """Raise a 422 for a change whose instructions name a case: the reason names
     the cases behind it (decision 15)."""
-    named = CASE_ID.search(change.instructions)
+    named = ANY_CASE_ID.search(change.instructions)
     if named:
         raise HTTPException(422, NAMES_A_CASE.format(case_id=named.group()))
 

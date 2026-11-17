@@ -71,10 +71,11 @@ def is_allowed(round: dict[str, Any], model: str, reasoning_effort: str) -> bool
     )
 
 
-def out_of_bounds(round: dict[str, Any], parameters: dict[str, Any]) -> str | None:
+def out_of_bounds(round: dict[str, Any], parameters: dict[str, int]) -> str | None:
     """Say why the parameters don't keep to the ones allowed: every one given, each
-    a whole number inside its bounds, and no other. Or nothing when they do. It
-    answers as the backend's refusal would, so the improver hears the same."""
+    inside its bounds, and no other. Or nothing when they do. `Change` has already
+    made each a whole number. It answers as the backend's refusal would, so the
+    improver hears the same."""
     allowed = {each["name"]: each for each in round["parameters_allowed"]}
     unknown = sorted(set(parameters) - set(allowed))
     if unknown:
@@ -83,8 +84,7 @@ def out_of_bounds(round: dict[str, Any], parameters: dict[str, Any]) -> str | No
         if name not in parameters:
             return f"{name} is missing."
         value = parameters[name]
-        whole = isinstance(value, int) and not isinstance(value, bool)
-        if not whole or not bounds["lowest"] <= value <= bounds["highest"]:
+        if not bounds["lowest"] <= value <= bounds["highest"]:
             return (
                 f"{name} must be a whole number of {bounds['unit']} from "
                 f"{bounds['lowest']} to {bounds['highest']}, not {value}."

@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import type { LabelMatch, ScoredCase } from "../dashboard/src/api";
-import { percent } from "../dashboard/src/format";
-import { NONE_CAUGHT } from "../dashboard/src/measures";
+import {
+  NONE_CAUGHT,
+  perHundred,
+  shareWeighed,
+} from "../dashboard/src/measures";
 import {
   type Finding,
   type Request,
@@ -95,11 +98,11 @@ function measuresShown(
   const hidden = copies.filter((copy) => copy.screening_expected).length;
   return [
     `Tiny set, ${String(size)} payrolls`,
-    `${percent(count / labels)} (${String(count)} of ${String(labels)})`,
-    `1 (${(100 / size).toFixed(1)} per 100)`,
-    withMoney ? "100%" : NONE_CAUGHT,
+    `${shareWeighed(count / labels)} (${String(count)} of ${String(labels)})`,
+    `1 (${perHundred(100 / size)} per 100)`,
+    withMoney ? "100.0%" : NONE_CAUGHT,
     `${String(hidden)} of ${String(hidden)}`,
-    "0.85 (1 graded)",
+    "0.850 (1 graded)",
     "$0.0125",
     "40 s",
   ];

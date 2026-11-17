@@ -9,57 +9,16 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import Connection, func, insert, select
 
 from backend import judge
-from backend.database import (
-    cases,
-    exceptions,
-    notice_grades,
-    now,
-    run_cases,
-    workers,
-)
+from backend.database import notice_grades, now
 from backend.free_models import free_model
 from backend.models import (
-    ExceptionAsRead,
-    ExceptionStatus,
     NoticeGrade,
     NoticeGradeRecord,
     NoticeResult,
     NoticeToGrade,
 )
-from backend.money import dollars
 from backend.notices import drafts_of
-
-
-def open_exceptions_in(db: Connection, run_id: str) -> dict[str, list[ExceptionAsRead]]:
-    """Each of a run's copies with an open exception on its latest submission, with
-    those exceptions as the judge reads them, in one query."""
-    query = (
-        select(exceptions, workers.c.name.label("worker"))
-        .join(cases, cases.c.case_id == exceptions.c.case_id)
-        .join(run_cases, run_cases.c.case_id == cases.c.case_id)
-        .outerjoin(workers, workers.c.worker_id == exceptions.c.worker_id)
-        .where(
-            run_cases.c.run_id == run_id,
-            exceptions.c.status == ExceptionStatus.OPEN,
-            exceptions.c.submission_no == cases.c.latest_submission_no,
-        )
-        .order_by(exceptions.c.case_id, exceptions.c.exception_id)
-    )
-    found: dict[str, list[ExceptionAsRead]] = {}
-    for row in db.execute(query).mappings():
-        shortfall = row["shortfall_cents"]
-        found.setdefault(row["case_id"], []).append(
-            ExceptionAsRead(
-                rule=row["rule"],
-                worker=row["worker"],
-                line_no=row["line_no"],
-                expected=row["expected"],
-                actual=row["actual"],
-                shortfall=dollars(shortfall / 100) if shortfall is not None else None,
-                citation=row["citation"],
-            )
-        )
-    return found
+from backend.open_exceptions import as_read, open_exceptions_in
 
 
 def grade_of(graded: NoticeGrade | None, drafted: bool) -> NoticeGradeRecord:
@@ -105,7 +64,10 @@ def grade_notices(db: Connection, run_id: str) -> None:
     drafts = drafts_of(db, list(found))
     graded = ask_all(
         {
-            case_id: NoticeToGrade(notice=drafts[case_id], exceptions=found[case_id])
+            case_id: NoticeToGrade(
+                notice=drafts[case_id],
+                exceptions=[as_read(row) for row in found[case_id]],
+            )
             for case_id in found
             if case_id in drafts
         }

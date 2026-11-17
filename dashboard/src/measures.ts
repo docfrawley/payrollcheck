@@ -1,5 +1,5 @@
 import type { Measures } from "./api";
-import { duration, modelCost, percent } from "./format";
+import { duration, modelCost } from "./format";
 
 // A run that's running or stopped has no run time.
 const NOT_FINISHED = "Not finished";
@@ -8,11 +8,31 @@ export const NOT_GRADED = "Not graded";
 // Shortfall accuracy with no money label caught.
 export const NONE_CAUGHT = "None caught";
 
-// How a measure the rule weighs is shown, on the Scoreboard and on a round.
+// The measures the rule weighs are shown to one place more than their objectives
+// and rounded toward missing them: a measure better higher rounds down, false
+// exceptions round up. So a score just short of its objective, such as a notice
+// score of 0.7955 against 0.80, never shows as meeting it.
+const PLACES = { share: 1, falsePer100: 2, noticeScore: 3 };
+// Floating point can put an exact value a hair under or over itself.
+const EPSILON = 1e-9;
+const roundedDown = (value: number, places: number) =>
+  (Math.floor(value * 10 ** places + EPSILON) / 10 ** places).toFixed(places);
+const roundedUp = (value: number, places: number) =>
+  (Math.ceil(value * 10 ** places - EPSILON) / 10 ** places).toFixed(places);
+
+export const shareWeighed = (share: number) =>
+  `${roundedDown(share * 100, PLACES.share)}%`;
 export const shortfallAccuracy = (m: Measures) =>
-  m.shortfall_accuracy === null ? NONE_CAUGHT : percent(m.shortfall_accuracy);
+  m.shortfall_accuracy === null
+    ? NONE_CAUGHT
+    : shareWeighed(m.shortfall_accuracy);
 export const noticeScore = (m: Measures) =>
-  m.notice_score === null ? NOT_GRADED : m.notice_score.toFixed(2);
+  m.notice_score === null
+    ? NOT_GRADED
+    : roundedDown(m.notice_score, PLACES.noticeScore);
+export const perHundred = (falsePer100: number) =>
+  roundedUp(falsePer100, PLACES.falsePer100);
+export const falsePer100 = (m: Measures) => perHundred(m.false_per_100);
 
 // The measures a round shows before and after its version, by the labels the
 // Scoreboard gives them.
@@ -20,8 +40,8 @@ export const ROUND_MEASURES: {
   label: string;
   show: (measures: Measures) => string;
 }[] = [
-  { label: "Catch rate", show: (m) => percent(m.catch_rate) },
-  { label: "False per 100", show: (m) => m.false_per_100.toFixed(1) },
+  { label: "Catch rate", show: (m) => shareWeighed(m.catch_rate) },
+  { label: "False per 100", show: falsePer100 },
   { label: "Shortfall accuracy", show: shortfallAccuracy },
   { label: "Notice score", show: noticeScore },
 ];
@@ -34,12 +54,11 @@ export const MEASURES: {
   {
     label: "Catch rate",
     show: (m) =>
-      `${percent(m.catch_rate)} (${String(m.caught)} of ${String(m.labels)})`,
+      `${shareWeighed(m.catch_rate)} (${String(m.caught)} of ${String(m.labels)})`,
   },
   {
     label: "False exceptions",
-    show: (m) =>
-      `${String(m.false_exceptions)} (${m.false_per_100.toFixed(1)} per 100)`,
+    show: (m) => `${String(m.false_exceptions)} (${falsePer100(m)} per 100)`,
   },
   { label: "Shortfall accuracy", show: shortfallAccuracy },
   {
@@ -51,7 +70,7 @@ export const MEASURES: {
     label: "Notice score",
     show: (m) =>
       m.notice_score === null
-        ? NOT_GRADED
+        ? noticeScore(m)
         : `${noticeScore(m)} (${String(m.notices_graded)} graded)`,
   },
   {

@@ -332,10 +332,10 @@ it("lists the rounds with their scores, verdicts, reviews and cost", async () =>
     headings.findIndex((heading) => heading.textContent === name);
   const scores = within(cells[column("Held-out scores")]);
   expect(scores.getByText("Catch rate").nextSibling?.textContent).toBe(
-    "60% to None",
+    "60.0% to None",
   );
   expect(scores.getByText("False per 100").nextSibling?.textContent).toBe(
-    "2.0 to None",
+    "2.00 to None",
   );
   expect(scores.getByText("Notice score").nextSibling?.textContent).toBe(
     "Not graded to None",

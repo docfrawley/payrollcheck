@@ -700,6 +700,20 @@ p {
   width: 6rem;
 }
 
+.col-notice {
+  width: 15rem;
+}
+
+/* Wide enough for the labels and exceptions beside the notice's points; a
+   narrower page scrolls the table. */
+.table.copies {
+  min-width: 86rem;
+}
+
+.table.steady td:has(.scores) {
+  white-space: normal;
+}
+
 /* Headings wrap rather than run into the next column. */
 .table.steady thead th {
   white-space: normal;

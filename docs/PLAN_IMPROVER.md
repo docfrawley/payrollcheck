@@ -175,7 +175,7 @@ The proposal waiting with its parameters before and after and its motivating cas
 - [x] `backend/tests/test_success_criteria.py`: each criterion met and not met, by its figure: 41 caught met and 40 not; a caught `registration.inactive` or `apprentice.unregistered` missing; a wrong shortfall; a screening flag missed; 5 false exceptions met and 6 not; a false exception on the `rate_increase_week` decoy, or a wrong rate shortfall, failing criterion 4.
 - [x] vitest: the proposal panel shows the rounding tolerance before and after and each motivating case linking to its page; an evaluation's page shows the four criteria with their figures, and none on a tiny or held-out evaluation.
 - [x] `e2e/improvement.spec.ts`: a proposal that changes the rounding tolerance, played out through the API, shows its diff, its parameter before and after and its motivating cases on the Improvement page; approving it reaches the agent's stand-in as `carry_round_on`.
-- [ ] Browser check with the Playwright scripts (moved to phase 6, on Supabase after the reseed, so you sign in once for both) (see "How the browser checks run" below), as Dana Whitfield, on `npm run dev` with the database the end-to-end tests leave, or a seeded SQLite one: the Improvement, Configuration, Scoreboard, an evaluation's and Settings pages in light and dark mode, with no console errors.
+- [x] Browser check with the Playwright scripts (moved to phase 6, on Supabase after the reseed, so you sign in once for both) (see "How the browser checks run" below), as Dana Whitfield, on `npm run dev` with the database the end-to-end tests leave, or a seeded SQLite one: the Improvement, Configuration, Scoreboard, an evaluation's and Settings pages in light and dark mode, with no console errors.
 - [x] `npm run check` green.
 
 ### Phase 6: the documents, the live round and the development-set scoring run
@@ -188,7 +188,7 @@ The proposal waiting with its parameters before and after and its motivating cas
 - [x] The development-set scoring run on the current version, from the Scoreboard. Reported: each success criterion with its figure and whether it's met, every missed label and every false exception by case, and the run's model and judge cost.
 - [x] If any criterion isn't met, I report what fell short and stop for you to decide. I don't change the agent outside a round to reach the target.
 - [x] What the live runs spent, from the backend's records and the OpenRouter key's usage, matches.
-- [ ] `npm run check` green, then the review of the whole branch against `main`.
+- [x] `npm run check` green, then the review of the whole branch against `main`.
 
 ## How the browser checks run
 

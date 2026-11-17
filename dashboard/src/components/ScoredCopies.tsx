@@ -112,7 +112,7 @@ export function ScoredCopies({ cases }: Readonly<{ cases: ScoredCase[] }>) {
         exception or a screening the agent got wrong come first, tinted.
       </p>
       <div className="table-scroll">
-        <table className="table steady">
+        <table className="table steady copies">
           <colgroup>
             <col className="col-case" />
             <col className="col-id" />
@@ -120,7 +120,7 @@ export function ScoredCopies({ cases }: Readonly<{ cases: ScoredCase[] }>) {
             <col />
             <col />
             <col className="col-status" />
-            <col />
+            <col className="col-notice" />
             <col className="col-money" />
             <col className="col-time" />
           </colgroup>

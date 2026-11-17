@@ -66,9 +66,9 @@ it("lists the evaluations in the backend's order, with their measures", async ()
   expect(older.getByText("Development set, 207 payrolls")).toBeDefined();
   expect(older.getByText("openai/gpt-6-luna")).toBeDefined();
   for (const shown of [
-    "80% (36 of 45)",
-    "4 (1.9 per 100)",
-    "95%",
+    "80.0% (36 of 45)",
+    "4 (1.90 per 100)",
+    "95.0%",
     "1 of 1",
     "$0.0125",
     "40 s",
@@ -138,12 +138,12 @@ it("shows an evaluation's copies beside their labels", async () => {
   const measures = await panel("Measures");
   const shown = (label: string) =>
     measures.getByText(label).nextSibling?.textContent;
-  expect(shown("Catch rate")).toBe("80% (36 of 45)");
-  expect(shown("False exceptions")).toBe("4 (1.9 per 100)");
-  expect(shown("Shortfall accuracy")).toBe("95%");
+  expect(shown("Catch rate")).toBe("80.0% (36 of 45)");
+  expect(shown("False exceptions")).toBe("4 (1.90 per 100)");
+  expect(shown("Shortfall accuracy")).toBe("95.0%");
   expect(shown("Screening flags")).toBe("1 of 1");
   expect(shown("Run time")).toBe("2 min 41 s");
-  expect(shown("Notice score")).toBe("0.84 (30 graded)");
+  expect(shown("Notice score")).toBe("0.840 (30 graded)");
   expect(measures.getByText(/Started/).textContent).toContain(
     "Model cost $0.3125, judge cost $0.0006.",
   );

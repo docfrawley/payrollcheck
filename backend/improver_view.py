@@ -9,7 +9,6 @@ from sqlalchemy import Connection, RowMapping, select
 
 from backend import verdict
 from backend.database import rounds
-from backend.grading import open_exceptions_in
 from backend.lookups import (
     allowed_models,
     current_version_number,
@@ -29,6 +28,7 @@ from backend.models import (
     WeakNotice,
 )
 from backend.notices import drafts_of, edited_between
+from backend.open_exceptions import as_read, open_exceptions_of
 from backend.overrides import overrides_between
 from backend.parameters import PARAMETERS
 from backend.round_state import spending_of, stored_measures, tried_version
@@ -92,15 +92,16 @@ def weakest_notices(db: Connection, evaluation: ScoredEvaluation) -> Listed[Weak
     ]
     lowest = sorted(graded, key=lambda each: (each[2].score, each[1]))
     shown = lowest[:MOST_WEAK_NOTICES]
-    exceptions = open_exceptions_in(db, evaluation.run_id) if shown else {}
-    drafts = drafts_of(db, [case_id for case_id, _, _ in shown])
+    shown_ids = [case_id for case_id, _, _ in shown]
+    exceptions = open_exceptions_of(db, shown_ids)
+    drafts = drafts_of(db, shown_ids)
     return Listed[WeakNotice](
         total=len(graded),
         shown=[
             WeakNotice(
                 case_id=copy_of,
                 notice=drafts.get(case_id),
-                exceptions=exceptions.get(case_id, []),
+                exceptions=[as_read(row) for row in exceptions.get(case_id, [])],
                 grade=notice,
             )
             for case_id, copy_of, notice in shown
