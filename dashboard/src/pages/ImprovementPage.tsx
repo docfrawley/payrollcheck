@@ -39,7 +39,7 @@ export function ImprovementPage() {
   const header = (
     <PageHeader
       title="Improvement"
-      lead="Use self-improvement and recursive self-improvement with a goal of raising the payroll agent's catch rate."
+      lead="Use self-improvement and recursive self-improvement to make the payroll agent better on the four measures the business weighs: its catch rate, false exceptions, shortfall accuracy and notice score."
       action={page && <RoundAction open={open} onDone={reload} />}
     />
   );

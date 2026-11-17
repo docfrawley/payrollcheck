@@ -12,20 +12,21 @@ from backend.database import (
     SCREENING,
     case_view,
     cases,
-    exceptions,
+    decoys,
     labels,
     model_calls,
     run_cases,
     runs,
     work_times,
 )
+from backend.grading import grades_of, judge_costs
 from backend.lookups import round_numbers
 from backend.models import (
     LABELLED_SET,
     EvaluationSet,
-    ExceptionStatus,
     LabelledSet,
     Measures,
+    NoticeGradeRecord,
     RunCase,
     RunKind,
     RunStatus,
@@ -33,6 +34,8 @@ from backend.models import (
     ScoredEvaluation,
     VersionScores,
 )
+from backend.open_exceptions import open_exceptions_of
+from backend.success_criteria import success_criteria
 from backend.views import to_summary
 
 # The labels of every labelled case, by set and case, the expected screening flags
@@ -146,38 +149,35 @@ def expected_labels(db: Connection) -> Expected:
     return found
 
 
-def open_exceptions_of(
-    db: Connection, case_ids: list[str]
-) -> dict[str, list[scoring.Raised]]:
-    """The open exceptions on each copy's latest submission, in one query."""
-    query = (
-        select(exceptions)
-        .join(cases, cases.c.case_id == exceptions.c.case_id)
-        .where(
-            exceptions.c.case_id.in_(case_ids),
-            exceptions.c.status == ExceptionStatus.OPEN,
-            exceptions.c.submission_no == cases.c.latest_submission_no,
-        )
-        .order_by(exceptions.c.exception_id)
-    )
-    found: dict[str, list[scoring.Raised]] = {case_id: [] for case_id in case_ids}
-    for row in db.execute(query).mappings():
-        found[row["case_id"]].append(
+def raised_on(db: Connection, case_ids: list[str]) -> dict[str, list[scoring.Raised]]:
+    """The open exceptions on each copy's latest submission, as the scoring matches
+    them to the labels."""
+    found = open_exceptions_of(db, case_ids)
+    return {
+        case_id: [
             scoring.Raised(
                 row["exception_id"],
                 row["rule"],
                 row["worker_id"],
                 row["line_no"],
+                row["expected"],
+                row["actual"],
                 row["shortfall_cents"],
             )
-        )
-    return found
+            for row in found.get(case_id, [])
+        ]
+        for case_id in case_ids
+    }
 
 
 def scored_case(
-    row: RowMapping, expected: list[scoring.Label], raised: list[scoring.Raised]
+    row: RowMapping,
+    expected: list[scoring.Label],
+    raised: list[scoring.Raised],
+    notice: NoticeGradeRecord | None,
 ) -> ScoredCase:
-    """An evaluation's copy beside its original's labels."""
+    """An evaluation's copy beside its original's labels, with its notice's
+    grade."""
     screening = any(label.rule == SCREENING for label in expected)
     found_labels = [label for label in expected if label.rule != SCREENING]
     matches, found = scoring.match_copy(found_labels, raised, row["screening_flag"])
@@ -190,6 +190,7 @@ def scored_case(
         screening_found=row["screening_flag"],
         misses=sum(m.result == "missed" for m in matches),
         false_exceptions=scoring.false_count(found, row["screening_flag"], screening),
+        notice=notice,
     )
 
 
@@ -197,6 +198,7 @@ def scored_copies(
     row: RowMapping,
     copies: list[RowMapping],
     raised: dict[str, list[scoring.Raised]],
+    notices: dict[str, NoticeGradeRecord],
     expected: Expected,
 ) -> list[ScoredCase]:
     """An evaluation's copies as they stand, each beside its original's labels."""
@@ -206,6 +208,7 @@ def scored_copies(
             case,
             expected.get((labelled_set, case["copy_of"]), []),
             raised[case["case_id"]],
+            notices.get(case["case_id"]),
         )
         for case in copies
     ]
@@ -215,6 +218,7 @@ def scored_evaluation(
     row: RowMapping,
     scored: list[ScoredCase],
     model_cost: float,
+    judge_cost: float,
     round_number: int | None,
 ) -> ScoredEvaluation:
     """An evaluation with its measures from its scored copies."""
@@ -222,28 +226,32 @@ def scored_evaluation(
     return ScoredEvaluation(
         **row,
         model_cost=model_cost,
+        judge_cost=judge_cost,
         seconds=seconds,
         round_number=round_number,
         size=len(scored),
         measures=scoring.measures(scored, model_cost, seconds),
         cases=scored,
+        success_criteria=None,
     )
 
 
 def score_all(
     db: Connection, rows: list[RowMapping], expected: Expected
 ) -> list[ScoredEvaluation]:
-    """Score evaluations, in four queries for them all."""
+    """Score evaluations, in six queries for them all."""
     run_ids = [row["run_id"] for row in rows]
     copies, costs = cases_of_runs(db, run_ids), model_costs(db, run_ids)
     copy_ids = [copy["case_id"] for found in copies.values() for copy in found]
-    raised = open_exceptions_of(db, copy_ids)
+    raised, notices = raised_on(db, copy_ids), grades_of(db, copy_ids)
+    judged = judge_costs(db, run_ids)
     numbers = round_numbers(db, [row["round_id"] for row in rows])
     return [
         scored_evaluation(
             row,
-            scored_copies(row, copies[row["run_id"]], raised, expected),
+            scored_copies(row, copies[row["run_id"]], raised, notices, expected),
             costs[row["run_id"]],
+            judged[row["run_id"]],
             numbers.get(row["round_id"]),
         )
         for row in rows
@@ -253,6 +261,25 @@ def score_all(
 def score(db: Connection, row: RowMapping, expected: Expected) -> ScoredEvaluation:
     """Score one evaluation, as score_all does."""
     return score_all(db, [row], expected)[0]
+
+
+def decoys_of(db: Connection, labelled_set: LabelledSet) -> dict[str, str]:
+    """A labelled set's decoys, the kind of each by case."""
+    query = select(decoys.c.case_id, decoys.c.kind).where(
+        decoys.c.labelled_set == labelled_set
+    )
+    return {case_id: kind for case_id, kind in db.execute(query)}
+
+
+def with_success_criteria(db: Connection, row: RowMapping) -> ScoredEvaluation:
+    """One evaluation scored, with the success criteria on a finished whole
+    development-set evaluation, where the business measures them."""
+    scored = score(db, row, expected_labels(db))
+    whole = row["evaluation_set"] == EvaluationSet.DEVELOPMENT
+    if not whole or row["status"] != RunStatus.FINISHED:
+        return scored
+    found = success_criteria(scored, decoys_of(db, LabelledSet.DEVELOPMENT))
+    return scored.model_copy(update={"success_criteria": found})
 
 
 def average(measures: list[Measures]) -> Measures | None:
@@ -275,21 +302,20 @@ BySet = dict[str, list[RowMapping]]
 
 
 def round_evaluations_of(db: Connection, numbers: list[int]) -> dict[int, BySet]:
-    """Return the finished whole-set evaluations rounds ran on each version, oldest
-    first, on each set, in one query for all the versions. The Scoreboard's own
-    evaluations and any stopped evaluation don't count."""
+    """Return the finished evaluations rounds ran on each version, oldest first,
+    on each set they count as, in one query for all the versions. The Scoreboard's
+    own evaluations and any stopped evaluation don't count."""
     query = select(runs).where(
         runs.c.version.in_(numbers),
         runs.c.kind == RunKind.EVALUATION,
-        runs.c.round_id.is_not(None),
+        runs.c.scored_as.is_not(None),
         runs.c.status == RunStatus.FINISHED,
-        runs.c.evaluation_set != EvaluationSet.TINY,
     )
     by_version: dict[int, BySet] = {
         number: {s: [] for s in LabelledSet} for number in numbers
     }
     for row in db.execute(query.order_by(runs.c.number)).mappings():
-        by_version[row["version"]][row["evaluation_set"]].append(row)
+        by_version[row["version"]][row["scored_as"]].append(row)
     return by_version
 
 

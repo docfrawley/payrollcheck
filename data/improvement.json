@@ -1,17 +1,26 @@
 {
   "objectives": {
-    "catch_rate": 0.92
+    "catch_rate": 0.92,
+    "false_per_100": 2.5,
+    "shortfall_accuracy": 1.0,
+    "notice_score": 0.8
   },
   "noise": {
     "catch_rate": 0.05,
+    "false_per_100": 1.0,
+    "shortfall_accuracy": 0.0,
+    "notice_score": 0.1,
     "cost_per_case": 0.15,
     "seconds_per_case": 0.15
   },
   "tolerance": {
     "catch_rate": 0.05,
+    "false_per_100": 1.0,
+    "shortfall_accuracy": 0.0,
+    "notice_score": 0.1,
     "cost_per_case": 1.0,
     "seconds_per_case": 0.25
   },
-  "spending_limit": 0.5,
+  "spending_limit": 5.0,
   "agents": 25
 }

@@ -11,6 +11,10 @@ test("the header opens the Configuration page, with version 1 current", async ({
     nav.getByRole("link", { name: "Configuration" }),
   ).toHaveAttribute("aria-current", "page");
 
+  const current = page.getByRole("region", { name: "Current version" });
+  await expect(current.getByText("Rounding tolerance")).toBeVisible();
+  await expect(current.getByText("$0.00")).toBeVisible();
+
   const versions = page.getByRole("region", { name: "Versions" });
   const first = versions
     .getByRole("row")

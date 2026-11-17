@@ -66,9 +66,9 @@ it("lists the evaluations in the backend's order, with their measures", async ()
   expect(older.getByText("Development set, 207 payrolls")).toBeDefined();
   expect(older.getByText("openai/gpt-6-luna")).toBeDefined();
   for (const shown of [
-    "80% (36 of 45)",
-    "4 (1.9 per 100)",
-    "95%",
+    "80.0% (36 of 45)",
+    "4 (1.90 per 100)",
+    "95.0%",
     "1 of 1",
     "$0.0125",
     "40 s",
@@ -138,15 +138,15 @@ it("shows an evaluation's copies beside their labels", async () => {
   const measures = await panel("Measures");
   const shown = (label: string) =>
     measures.getByText(label).nextSibling?.textContent;
-  expect(shown("Catch rate")).toBe("80% (36 of 45)");
-  expect(shown("False exceptions")).toBe("4 (1.9 per 100)");
-  expect(shown("Shortfall accuracy")).toBe("95%");
+  expect(shown("Catch rate")).toBe("80.0% (36 of 45)");
+  expect(shown("False exceptions")).toBe("4 (1.90 per 100)");
+  expect(shown("Shortfall accuracy")).toBe("95.0%");
   expect(shown("Screening flags")).toBe("1 of 1");
   expect(shown("Run time")).toBe("2 min 41 s");
+  expect(shown("Notice score")).toBe("0.840 (30 graded)");
   expect(measures.getByText(/Started/).textContent).toContain(
-    "Model cost $0.3125.",
+    "Model cost $0.3125, judge cost $0.0006.",
   );
-  expect(measures.queryByText(/judge/)).toBeNull();
   const copies = await panel("Copies");
   const rows = copies.getAllByRole("row").slice(1);
   // The copy with a miss and a false exception comes first, tinted.
@@ -172,6 +172,17 @@ it("shows an evaluation's copies beside their labels", async () => {
   );
   expect(flagged.getAllByText("None")).toHaveLength(2);
   expect(flagged.getByText("Expected and flagged")).toBeDefined();
+  expect(right.getByText("0.85").parentElement?.textContent).toMatch(
+    /^Score 0.85/,
+  );
+  expect(right.getByText("Plain language").nextSibling?.textContent).toBe(
+    "0.70",
+  );
+  expect(
+    right.getByText("No legal interpretation").nextSibling?.textContent,
+  ).toBe("1.00");
+  expect(wrong.getByText("Not graded")).toBeDefined();
+  expect(flagged.getByText("No notice needed")).toBeDefined();
   const link = right.getByRole("link", { name: "PC-0412-E9" });
   expect(link.getAttribute("href")).toBe("/cases/PC-0412-E9");
 });
@@ -302,4 +313,38 @@ it("shows a stopped evaluation as stopped, with no run time", async () => {
     "Not finished",
   );
   expect(measures.getByText("Stopped by Dana Whitfield")).toBeDefined();
+});
+
+it("shows the success criteria on a development evaluation, and none on a tiny one", async () => {
+  stubApi({
+    "GET /api/evaluations/run-9": {
+      ...scored,
+      evaluation_set: "development",
+      success_criteria: [
+        {
+          title: "At least 41 seeded errors caught",
+          figure: "43 of 45 caught",
+          met: true,
+        },
+        {
+          title: "No more than 5 false exceptions",
+          figure: "6 false exceptions",
+          met: false,
+        },
+      ],
+    },
+  });
+  renderAt("/scoreboard/run-9");
+  const criteria = await panel("Success criteria");
+  const [first, second] = criteria.getAllByRole("listitem");
+  expect(within(first).getByText("Met").className).toBe("chip score-caught");
+  expect(first.textContent).toContain("43 of 45 caught");
+  expect(within(second).getByText("Not met").className).toBe(
+    "chip score-missed",
+  );
+  cleanup();
+  stubApi({ "GET /api/evaluations/run-9": scored });
+  renderAt("/scoreboard/run-9");
+  await panel("Measures");
+  expect(screen.queryByRole("region", { name: "Success criteria" })).toBeNull();
 });

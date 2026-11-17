@@ -5,6 +5,7 @@ wrong, for the payroll agent to find. The first upload for a subcontractor,
 project and week creates its case, Received, and any later one is a correction:
 the case's next submission, which reopens it."""
 
+import re
 from datetime import date
 
 from fastapi import HTTPException
@@ -51,6 +52,8 @@ FRESH = {
     "reviewed_on": None,
 }
 CASE_ID = "PC-{week:02d}{pair:02d}"
+# Any case id the template makes, as it reads in text.
+ANY_CASE_ID = re.compile(r"PC-\d{4}")
 # A case's id holds its week in two digits.
 MOST_WEEKS = 99
 

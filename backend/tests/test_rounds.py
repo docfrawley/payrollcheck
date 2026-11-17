@@ -168,7 +168,7 @@ def test_a_round_keeps_its_settings_when_they_change(client):
     run = round_evaluation(client, round_id).json()
     assert run["agents"] == 25
     [listed] = improvement(client)["rounds"]
-    assert (listed["settings"], listed["spending_limit"]) == (1, 0.5)
+    assert (listed["settings"], listed["spending_limit"]) == (1, 5.0)
 
 
 def test_a_round_stopped_before_its_verdict_leaves_the_current_version(client):

@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { Diff, DiffLine } from "../api";
+import type { Diff, DiffLine } from "../changes";
 import { LineCounts } from "./LineCounts";
 
 // The lines that differ between two versions of a text: removed lines and added

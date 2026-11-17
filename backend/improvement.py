@@ -29,9 +29,11 @@ from backend.dependencies import (
     Database,
     compliance_manager,
 )
-from backend.diffs import diff
+from backend.diffs import diff, parameter_changes
 from backend.first_version import FIRST_VERSION, INSTRUCTIONS
 from backend.free_models import model_or_free
+from backend.improver_view import cited_cases, improver_view
+from backend.intake import ANY_CASE_ID
 from backend.lookups import (
     allowed_models,
     current_settings,
@@ -41,10 +43,8 @@ from backend.lookups import (
 )
 from backend.models import (
     Accepted,
-    CaseResults,
     ChangeProposalRequest,
     Diff,
-    EarlierRound,
     Evaluation,
     EvaluationSet,
     FailureRequest,
@@ -53,7 +53,6 @@ from backend.models import (
     ImproverView,
     Measures,
     NewNumber,
-    PayrollAgentVersion,
     Proposal,
     ProposalKind,
     RecipeDetails,
@@ -68,7 +67,6 @@ from backend.models import (
     RoundSummary,
     RoundView,
     RunStatus,
-    ScoredCase,
     Spending,
     Verdict,
     VerdictResult,
@@ -77,6 +75,7 @@ from backend.models import (
     VersionScores,
     WaitingProposal,
 )
+from backend.parameters import PARAMETERS, refuse_out_of_bounds
 from backend.round_state import (
     EVALUATIONS,
     evaluations_of,
@@ -88,6 +87,7 @@ from backend.round_state import (
     spending_of,
     stage_of,
     stop,
+    stored_measures,
     tried_version,
     tried_versions,
     waiting_proposal,
@@ -96,7 +96,6 @@ from backend.scoreboard import (
     Expected,
     expected_labels,
     round_evaluations,
-    score,
     score_all,
     scores_of_versions,
     version_scores,
@@ -105,6 +104,13 @@ from backend.scoreboard import (
 # The improver's model, unless students on free models have one of their own.
 IMPROVER_MODEL = ("openai/gpt-6.1-sol", "medium")
 ROUND_OPEN = "Round {number} is open. Finish or stop it first."
+NAMES_A_CASE = (
+    "The change names {case_id}. A change never names a case: give it in the reason."
+)
+NOT_IN_THE_RESULTS = (
+    "The round's results don't hold {case_ids}. Cite only cases they hold."
+)
+CITE_THE_CASES = "Cite the cases behind the change, from the round's results."
 NOT_WAITING = "Proposal {proposal_id} isn't waiting for a reviewer: it was {review}"
 
 router = APIRouter()
@@ -180,6 +186,27 @@ def refuse_a_model_not_allowed(db: Connection, change: ChangeProposalRequest) ->
         )
 
 
+def refuse_a_change_naming_a_case(change: ChangeProposalRequest) -> None:
+    """Raise a 422 for a change whose instructions name a case: the reason names
+    the cases behind it (decision 15)."""
+    named = ANY_CASE_ID.search(change.instructions)
+    if named:
+        raise HTTPException(422, NAMES_A_CASE.format(case_id=named.group()))
+
+
+def refuse_cases_not_in_the_view(
+    db: Connection, row: RowMapping, change: ChangeProposalRequest
+) -> None:
+    """Raise a 422 for a change citing a case the round's results don't hold, or
+    citing none when they hold some (decision 14)."""
+    cited = cited_cases(improver_view(db, row))
+    unknown = [case_id for case_id in change.case_ids if case_id not in cited]
+    if unknown:
+        raise HTTPException(422, NOT_IN_THE_RESULTS.format(case_ids=", ".join(unknown)))
+    if cited and not change.case_ids:
+        raise HTTPException(422, CITE_THE_CASES)
+
+
 def refuse_while_a_round_is_open(db: Connection) -> None:
     """Raise a 409 naming the round that's open, if there is one."""
     query = select(rounds.c.number).where(rounds.c.status == RoundStatus.OPEN)
@@ -198,8 +225,8 @@ def refuse_while_waiting(db: Connection, row: RowMapping) -> None:
 
 def first_evaluations(db: Connection, version: int) -> list[EvaluationSet]:
     """Return the sets of the evaluations a version still needs before a round can
-    improve on it: one on the evaluation set and two on the held-out set, less the
-    whole-set evaluations rounds have finished on it."""
+    improve on it: one on the development set and two on the held-out set, less
+    the evaluations rounds have finished on it that count as them."""
     have = {s: len(runs_) for s, runs_ in round_evaluations(db, version).items()}
     needed = []
     for evaluation_set in EVALUATIONS:
@@ -222,6 +249,8 @@ def to_proposal(row: RowMapping) -> Proposal:
         instructions=proposed.get("instructions"),
         model=proposed.get("model"),
         reasoning_effort=proposed.get("reasoning_effort"),
+        parameters=proposed.get("parameters"),
+        case_ids=proposed.get("case_ids", []),
         recipe=proposed.get("recipe"),
     )
 
@@ -237,86 +266,8 @@ def for_the_agent(db: Connection, row: RowMapping) -> RoundForTheAgent:
         **row,
         instructions=f"{improver}\n{recipe}",
         models_allowed=allowed_models(db),
+        parameters_allowed=PARAMETERS,
         version_evaluations=EVALUATIONS,
-    )
-
-
-def measures_or_none(stored: dict[str, Any] | None) -> Measures | None:
-    return Measures(**stored) if stored else None
-
-
-# What the improver reads.
-
-
-def to_results(case: ScoredCase) -> CaseResults:
-    """A copy as the improver reads it: under its original's id, with what it
-    missed and what it raised that matched no label."""
-    return CaseResults(
-        case_id=case.copy_of,
-        missed=[label for label in case.labels if label.result != "caught"],
-        false_exceptions=[found for found in case.exceptions if not found.matched],
-        screening_expected=case.screening_expected,
-        screening_found=case.screening_found,
-    )
-
-
-def development_results(
-    db: Connection, version: int, expected: Expected
-) -> list[CaseResults]:
-    """From a version's latest round evaluation on the development set, each case
-    with a miss, a wrong shortfall, a false exception or a screening it got wrong.
-    Nothing from the held-out set."""
-    latest = round_evaluations(db, version)[EvaluationSet.DEVELOPMENT][-1:]
-    if not latest:
-        return []
-    return [
-        to_results(case)
-        for case in score(db, latest[0], expected).cases
-        if case.misses
-        or case.false_exceptions
-        or any(label.result == "shortfall_wrong" for label in case.labels)
-        or case.screening_expected != case.screening_found
-    ]
-
-
-def earlier_round(db: Connection, row: RowMapping) -> EarlierRound:
-    """What an earlier round tried and how it came out."""
-    version = tried_version(db, row["round_id"])
-    tried = dict(version) if version else {}
-    return EarlierRound(
-        round=row["number"],
-        recipe_version=row["recipe"],
-        version=tried.get("number"),
-        model=tried.get("model"),
-        reasoning_effort=tried.get("reasoning_effort"),
-        reason=tried.get("reason"),
-        held_out_before=measures_or_none(row["held_out_before"]),
-        held_out_after=measures_or_none(row["held_out_after"]),
-        verdict=tried.get("verdict"),
-        why=tried.get("verdict_reason"),
-    )
-
-
-def improver_view(db: Connection, row: RowMapping) -> ImproverView:
-    """What the improver reads in a round, as the lab's read_results gives it."""
-    current = version_row(db, current_version_number(db))
-    expected = expected_labels(db)
-    settings = settings_number(db, row["settings"])
-    earlier = select(rounds).where(rounds.c.number < row["number"])
-    return ImproverView(
-        current_version=PayrollAgentVersion(**current),
-        scores=version_scores(db, current["number"], expected),
-        development_set=development_results(db, current["number"], expected),
-        earlier_rounds=[
-            earlier_round(db, earlier_row)
-            for earlier_row in db.execute(earlier.order_by(rounds.c.number)).mappings()
-        ],
-        objectives_on_the_held_out_set=settings.objectives,
-        noise=settings.noise,
-        tolerance=settings.tolerance,
-        rule=verdict.RULE,
-        spending=spending_of(db, row),
-        models_allowed=allowed_models(db),
     )
 
 
@@ -367,8 +318,8 @@ def summaries_of(db: Connection, rows: list[RowMapping]) -> list[RoundSummary]:
                 reason=version["reason"] if version else None,
                 verdict=version["verdict"] if version else None,
                 verdict_reason=version["verdict_reason"] if version else None,
-                held_out_before=measures_or_none(row["held_out_before"]),
-                held_out_after=measures_or_none(row["held_out_after"]),
+                held_out_before=stored_measures(row["held_out_before"]),
+                held_out_after=stored_measures(row["held_out_after"]),
                 reviews=reviews[row["round_id"]],
             )
         )
@@ -395,6 +346,7 @@ def waiting_view(db: Connection, row: RowMapping) -> WaitingProposal | None:
             reasoning_effort_before=None,
             model_after=None,
             reasoning_effort_after=None,
+            parameter_changes=[],
         )
     current = version_row(db, current_version_number(db))
     return WaitingProposal(
@@ -404,6 +356,9 @@ def waiting_view(db: Connection, row: RowMapping) -> WaitingProposal | None:
         reasoning_effort_before=current["reasoning_effort"],
         model_after=proposal.model,
         reasoning_effort_after=proposal.reasoning_effort,
+        parameter_changes=parameter_changes(
+            current["parameters"], proposal.parameters or current["parameters"]
+        ),
     )
 
 
@@ -660,6 +615,9 @@ def record_change_proposal(
     if has_approved(db, row, ProposalKind.CHANGE):
         raise HTTPException(409, f"Round {row['number']} has a change approved")
     refuse_a_model_not_allowed(db, request)
+    refuse_out_of_bounds(request.parameters)
+    refuse_a_change_naming_a_case(request)
+    refuse_cases_not_in_the_view(db, row, request)
     return propose(db, row, ProposalKind.CHANGE, request.model_dump())
 
 
@@ -715,15 +673,14 @@ def create_version(round_id: str, db: Database) -> NewNumber:
     proposal = approved(db, row, ProposalKind.CHANGE)
     change = ChangeProposalRequest(**proposal["proposal"])
     refuse_a_model_not_allowed(db, change)
+    refuse_out_of_bounds(change.parameters)
     number = db.execute(select(func.max(versions.c.number))).scalar_one() + 1
     base = version_row(db, current_version_number(db))
     db.execute(
         insert(versions).values(
             number=number,
-            **change.model_dump(),
-            # The improver can't propose the parameters until stage 5, so a change
-            # keeps its base's.
-            parameters=base["parameters"],
+            **change.model_dump(exclude={"case_ids"}),
+            motivating_cases=change.case_ids,
             proposed_by=proposer(row),
             based_on=base["number"],
             round_id=round_id,

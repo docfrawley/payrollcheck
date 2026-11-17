@@ -1,9 +1,10 @@
 import type { VersionSummary } from "../api";
 import { LineCounts } from "./LineCounts";
 import { ModelName } from "./ModelName";
+import { ParameterChanges } from "./ParameterChanges";
 
 // What a version changed from the one it was based on: lines of its
-// instructions, and its model or reasoning effort.
+// instructions, its model or reasoning effort, and its tunable parameters.
 export function VersionChanges({
   version,
 }: Readonly<{ version: VersionSummary }>) {
@@ -29,6 +30,11 @@ export function VersionChanges({
             model={version.model}
             reasoningEffort={version.reasoning_effort}
           />
+        </>
+      )}
+      {version.parameter_changes.length > 0 && (
+        <>
+          , <ParameterChanges changes={version.parameter_changes} />
         </>
       )}
     </>

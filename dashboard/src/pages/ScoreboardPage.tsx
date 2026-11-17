@@ -18,6 +18,7 @@ import {
   dateTime,
   evaluationSetLabels,
   evaluationSetName,
+  modelCost,
 } from "../format";
 import { MEASURES } from "../measures";
 import { evaluationPage } from "../paths";
@@ -133,6 +134,10 @@ function EvaluationRow({ evaluation }: Readonly<{ evaluation: Evaluation }>) {
             model={evaluation.model}
             reasoningEffort={evaluation.reasoning_effort}
           />
+          , model cost{" "}
+          <span className="mono">{modelCost(evaluation.model_cost)}</span>,
+          judge cost{" "}
+          <span className="mono">{modelCost(evaluation.judge_cost)}</span>
         </p>
       </td>
       <td>

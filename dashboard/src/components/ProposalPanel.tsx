@@ -13,6 +13,8 @@ import { useAction } from "../useAction";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DiffView } from "./DiffView";
 import { ModelName } from "./ModelName";
+import { MotivatingCases } from "./MotivatingCases";
+import { ParameterChanges } from "./ParameterChanges";
 import { ReasonForm } from "./ReasonForm";
 
 // The stage a round is at while each kind of proposal waits.
@@ -40,7 +42,12 @@ export function ProposalPanel({
     <section className="panel" aria-labelledby="proposal-title">
       <h2 id="proposal-title">{stageLabels[WAITING[proposal.kind]]}</h2>
       <p className="reason">{proposal.reason}</p>
-      {proposal.kind === "change" && <ModelChange proposal={proposal} />}
+      {proposal.kind === "change" && (
+        <>
+          <ModelChange proposal={proposal} />
+          <WhatAndWhy proposal={proposal} />
+        </>
+      )}
       <DiffView diff={proposal.diff} />
       <Review
         key={proposal.proposal_id}
@@ -85,6 +92,30 @@ function ModelChange({ proposal }: Readonly<{ proposal: WaitingProposal }>) {
             model={model_after}
             reasoningEffort={reasoning_effort_after}
           />
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+// What else a change changes, and the cases behind it.
+function WhatAndWhy({ proposal }: Readonly<{ proposal: WaitingProposal }>) {
+  return (
+    <dl className="facts">
+      <div className="fact-wide">
+        <dt>Parameters</dt>
+        <dd>
+          {proposal.parameter_changes.length === 0 ? (
+            <span className="muted">Unchanged</span>
+          ) : (
+            <ParameterChanges changes={proposal.parameter_changes} />
+          )}
+        </dd>
+      </div>
+      <div className="fact-wide">
+        <dt>Motivating cases</dt>
+        <dd>
+          <MotivatingCases caseIds={proposal.case_ids} />
         </dd>
       </div>
     </dl>

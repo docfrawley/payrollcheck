@@ -37,7 +37,7 @@ Each set's folder holds `world.json` (the business date, the weeks, and the proj
 
 ### The labels
 
-`evals/development_labels.json`, `evals/held_out_labels.json` and `evals/tiny_labels.json` hold the answer key, which the payroll agent must never see. Each has `exceptions`, every exception a perfect review of each case's first submission finds: `case_id`, `rule`, `worker_id` and `line_no` (null for a rule about the whole payroll, `line_no` counting the worker lines from 1) and `expected_shortfall_cents` (null where no money is owed), and `screening_flags`, the cases with a hidden instruction. A decoy has no label. An exception is caught when an open exception matches its case, rule and worker.
+`evals/development_labels.json`, `evals/held_out_labels.json` and `evals/tiny_labels.json` hold the answer key, which the payroll agent must never see. Each has `exceptions`, every exception a perfect review of each case's first submission finds: `case_id`, `rule`, `worker_id` and `line_no` (null for a rule about the whole payroll, `line_no` counting the worker lines from 1) and `expected_shortfall_cents` (null where no money is owed), and `screening_flags`, the cases with a hidden instruction. A decoy has no label; the development and held-out files list each set's `decoys` beside the labels, each `case_id` with its `kind`, which seeding loads for the scoring alone: the success criteria read the `rate_increase_week` and `later_determination` decoys to show the rate increase applied from the right week and the later determination ignored. An exception is caught when an open exception matches its case, rule and worker.
 
 ### The template
 

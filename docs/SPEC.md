@@ -68,6 +68,8 @@ The payroll agent's instructions, model, reasoning effort and the check tools' t
 - The compliance manager approves or rejects each proposal. An approved version is evaluated on the held-out set, and our rule keeps it only if it meets every objective, improves at least one measure by more than its noise and makes none worse by more than its tolerance. Otherwise it's rolled back.
 - A **judge** grades each draft notice against our rubric: it covers every exception in the report, its amounts match the records, it is in plain language a payroll clerk can act on, and it gives no legal interpretation.
 - Overrides never change the labels the agent is scored against.
+- The check tools' one tunable parameter is the rounding tolerance, a whole number of cents from 0 to 100: a line's shortfall or arithmetic difference at or under it is no finding. A proposal outside the bounds, like one on a model not allowed, goes back to the improver without reaching the compliance manager.
+- "Since the last round" runs from the start of the latest round that finished, so the corrections a stopped round never used go to the next. A proposal names the cases behind it, from either signal, and the change itself never names a case.
 
 | Measure, on the held-out set | Objective | Noise | Tolerance |
 |---|---|---|---|

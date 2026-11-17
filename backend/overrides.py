@@ -7,10 +7,19 @@ override log reads by case, and by date for the improver."""
 from typing import NamedTuple
 
 from fastapi import HTTPException
-from sqlalchemy import Connection, RowMapping, Select, insert, select, update
+from sqlalchemy import (
+    Connection,
+    RowMapping,
+    Select,
+    func,
+    insert,
+    select,
+    update,
+)
 
 from backend.database import exceptions, now, overrides, reviewers, submissions
 from backend.models import (
+    CorrectedException,
     ExceptionSource,
     ExceptionStatus,
     NewException,
@@ -192,10 +201,29 @@ def overrides_of(db: Connection, case_id: str) -> list[Override]:
     return [Override(**row) for row in db.execute(query).mappings()]
 
 
-def overrides_between(db: Connection, start: str, end: str) -> list[Override]:
-    """Every override made from one moment up to another, oldest first, for the
-    improver to read the reviewers' corrections since its last round."""
-    query = the_log().where(
-        overrides.c.created_at >= start, overrides.c.created_at < end
+def overrides_between(
+    db: Connection, start: str, end: str, most: int
+) -> tuple[int, list[CorrectedException]]:
+    """How many overrides were made from one moment up to another, and the newest
+    of them, each with its case and the exception it corrected, for the improver
+    to read the reviewers' corrections since its last round."""
+    window = overrides.c.created_at >= start, overrides.c.created_at < end
+    total = db.execute(select(func.count()).where(*window)).scalar_one()
+    query = (
+        the_log()
+        .add_columns(
+            exceptions.c.rule,
+            exceptions.c.worker_id,
+            exceptions.c.line_no,
+            exceptions.c.expected,
+            exceptions.c.actual,
+            exceptions.c.shortfall_cents,
+            exceptions.c.source,
+        )
+        .join(exceptions, exceptions.c.exception_id == overrides.c.exception_id)
+        .where(*window)
+        .order_by(None)
+        .order_by(overrides.c.override_id.desc())
+        .limit(most)
     )
-    return [Override(**row) for row in db.execute(query).mappings()]
+    return total, [CorrectedException(**row) for row in db.execute(query).mappings()]

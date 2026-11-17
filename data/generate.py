@@ -66,7 +66,10 @@ def write_development(data: Path) -> World:
     manifest = read_manifest(DEVELOPMENT_MANIFEST, world)
     seeded = seeded_set(world, manifest)
     write_set(data / DEVELOPMENT_FOLDER, world, seeded)
-    write_json(data / EVALS / DEVELOPMENT_LABELS, records.labels_record(seeded))
+    write_json(
+        data / EVALS / DEVELOPMENT_LABELS,
+        records.labels_record(seeded, manifest.decoys.values()),
+    )
     write_json(
         data / EVALS / TINY_LABELS, records.tiny_labels_record(seeded, manifest.tiny)
     )
@@ -77,9 +80,13 @@ def write_development(data: Path) -> World:
 def write_held_out(data: Path) -> World:
     """The held-out set and its labels."""
     world = build_world(HELD_OUT)
-    seeded = seeded_set(world, read_manifest(HELD_OUT_MANIFEST, world))
+    manifest = read_manifest(HELD_OUT_MANIFEST, world)
+    seeded = seeded_set(world, manifest)
     write_set(data / HELD_OUT_FOLDER, world, seeded)
-    write_json(data / EVALS / HELD_OUT_LABELS, records.labels_record(seeded))
+    write_json(
+        data / EVALS / HELD_OUT_LABELS,
+        records.labels_record(seeded, manifest.decoys.values()),
+    )
     return world
 
 

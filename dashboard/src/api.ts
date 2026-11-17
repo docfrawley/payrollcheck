@@ -7,7 +7,9 @@ import type {
   RuleEntry,
   Severity,
 } from "./exceptions";
+import type { Diff, ParameterChange, ParameterValue } from "./changes";
 import type { Notice, OutboxRecord } from "./notices";
+import type { SettingsPage, SettingsValues } from "./settings";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
 
@@ -251,6 +253,9 @@ export interface Measures {
   shortfall_accuracy: number | null;
   screening_caught: number;
   screening_expected: number;
+  // The judge's average score of the graded notices, or null with none graded.
+  notice_score: number | null;
+  notices_graded: number;
   model_cost_per_case: number;
   seconds_per_case: number;
   run_seconds: number | null;
@@ -273,6 +278,8 @@ export interface ExceptionMatch {
   rule: string;
   worker_id: string | null;
   line_no: number | null;
+  expected: string;
+  actual: string;
   shortfall_cents: number | null;
   matched: boolean;
 }
@@ -286,16 +293,44 @@ export interface ScoredCase extends RunCase {
   screening_found: boolean;
   misses: number;
   false_exceptions: number;
+  // Its notice's grade, or null when nothing open needs a notice.
+  notice: NoticeGradeRecord | null;
 }
+
+// The rubric's four points, each the chance a notice keeps to it.
+export type RubricPoint =
+  | "covers_every_exception"
+  | "amounts_match"
+  | "plain_language"
+  | "no_legal_interpretation";
+
+// A copy's notice as the evaluation graded it: its four points and score when
+// graded, a score of 0 with no notice, and neither when the judge couldn't.
+export type NoticeGradeRecord = { cost: number } & (
+  | ({ result: "graded"; score: number } & Record<RubricPoint, number>)
+  | ({ result: "no_notice"; score: number } & Record<RubricPoint, null>)
+  | ({ result: "not_graded"; score: null } & Record<RubricPoint, null>)
+);
 
 export interface Evaluation extends RunDetails {
   evaluation_set: EvaluationSet;
   size: number;
+  // The judge's grades of its notices, apart from the model cost.
+  judge_cost: number;
   measures: Measures;
+}
+
+// One of the success criteria, with its figure and whether it's met.
+export interface Criterion {
+  title: string;
+  figure: string;
+  met: boolean;
 }
 
 export interface ScoredEvaluation extends Evaluation {
   cases: ScoredCase[];
+  // On a whole development-set evaluation, the success criteria.
+  success_criteria: Criterion[] | null;
 }
 
 export interface Accepted {
@@ -304,19 +339,6 @@ export interface Accepted {
 
 export type VersionStatus = "current" | "kept" | "rolled_back" | "under_test";
 export type Verdict = "kept" | "rolled_back";
-export type DiffLineKind = "context" | "added" | "removed";
-
-export interface DiffLine {
-  kind: DiffLineKind;
-  text: string;
-}
-
-// The lines that differ between two texts, in hunks with their context.
-export interface Diff {
-  added: number;
-  removed: number;
-  hunks: DiffLine[][];
-}
 
 // A version's scores on each set, from the evaluations rounds ran on it.
 export interface VersionScores {
@@ -344,7 +366,10 @@ export interface VersionSummary {
   verdict: Verdict | null;
   verdict_reason: string | null;
   // The check tools' tunable parameters, such as the rounding tolerance.
-  parameters: Record<string, unknown>;
+  parameters: ParameterValue[];
+  parameter_changes: ParameterChange[];
+  // The cases the approved proposal cited, none for version 1.
+  motivating_cases: string[];
   scores: VersionScores;
 }
 
@@ -356,45 +381,6 @@ export interface VersionDetails extends VersionSummary {
 export interface Configuration {
   current: number;
   versions: VersionSummary[];
-}
-
-// A setting for each measure the rule compares: the catch rate as a
-// difference, cost and time per case as fractions of the old value.
-export interface MeasureSettings {
-  catch_rate: number;
-  cost_per_case: number;
-  seconds_per_case: number;
-}
-
-export interface SettingsValues {
-  // The floors a new version must meet on the held-out set.
-  objectives: { catch_rate: number };
-  noise: MeasureSettings;
-  tolerance: MeasureSettings;
-  spending_limit: number;
-  agents: number;
-  // The app's today, or null for the real date.
-  business_date: string | null;
-}
-
-export interface Settings extends SettingsValues {
-  number: number;
-  changed_by: string | null;
-  changed_at: string;
-}
-
-export interface ModelAllowed {
-  model: string;
-  reasoning_efforts: string[];
-  // US dollars per million tokens.
-  input_price: number;
-  output_price: number;
-}
-
-export interface SettingsPage {
-  current: Settings;
-  changes: Settings[];
-  models_allowed: ModelAllowed[];
 }
 
 export type RoundStatus = "open" | "finished" | "stopped";
@@ -429,6 +415,9 @@ export interface WaitingProposal {
   reasoning_effort_before: string | null;
   model_after: string | null;
   reasoning_effort_after: string | null;
+  parameter_changes: ParameterChange[];
+  // The cases behind a change.
+  case_ids: string[];
 }
 
 export interface RoundSummary {

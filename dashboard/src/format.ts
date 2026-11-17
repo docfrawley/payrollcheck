@@ -8,6 +8,7 @@ import type {
   Verdict,
   VersionStatus,
 } from "./api";
+import type { ParameterUnit } from "./changes";
 import type { ExceptionStatus, OverrideKind, Severity } from "./exceptions";
 import type { Source } from "./sources";
 
@@ -61,6 +62,13 @@ export function money(amount: number): string {
 // An amount the app keeps in cents, in dollars: 128460 is $1,284.60.
 export function cents(amount: number): string {
   return dollars.format(amount / 100);
+}
+
+const UNITS: Record<ParameterUnit, (value: number) => string> = { cents };
+
+// A tunable parameter's value in its unit: 50 cents is $0.50.
+export function inUnit(unit: ParameterUnit, value: number): string {
+  return UNITS[unit](value);
 }
 
 // A share, such as 0.8, as a whole percentage: 80%.

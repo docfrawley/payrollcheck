@@ -26,6 +26,8 @@ export function measures(catchRate: number): Measures {
     shortfall_accuracy: 1,
     screening_caught: 1,
     screening_expected: 1,
+    notice_score: null,
+    notices_graded: 0,
     model_cost_per_case: 0.002,
     seconds_per_case: 20,
     run_seconds: 60,
@@ -48,6 +50,7 @@ export const evaluation: Evaluation = {
   finished_at: "2026-10-04T09:02:00+00:00",
   seconds: 120,
   model_cost: 0.05,
+  judge_cost: 0.0002,
   evaluation_set: "held_out",
   size: 98,
   measures: measures(0.6),
@@ -75,6 +78,16 @@ export const change: WaitingProposal = {
   reasoning_effort_before: "low",
   model_after: "google/gemini-3.5-flash-lite",
   reasoning_effort_after: "minimal",
+  parameter_changes: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      before: 0,
+      after: 2,
+    },
+  ],
+  case_ids: ["PC-0311", "PC-1210"],
 };
 
 export const open: RoundView = {
@@ -90,7 +103,7 @@ export const open: RoundView = {
   stopped_because: null,
   recipe: 1,
   settings: 1,
-  spending_limit: 0.5,
+  spending_limit: 5,
   cost: 0.1234,
   version: null,
   model: null,

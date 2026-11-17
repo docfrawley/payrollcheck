@@ -3,6 +3,7 @@ import { VersionChip } from "../components/Chips";
 import { Approval } from "../components/Approval";
 import { HeldOutCatchRate } from "../components/HeldOutCatchRate";
 import { PageHeader } from "../components/PageHeader";
+import { ParameterValues } from "../components/ParameterValues";
 import { StateMessage } from "../components/StateMessage";
 import { VersionChanges } from "../components/VersionChanges";
 import { VersionLink } from "../components/VersionLink";
@@ -61,6 +62,7 @@ function CurrentVersion({ version }: Readonly<{ version: VersionSummary }>) {
           <dt>Reasoning effort</dt>
           <dd>{label(version.reasoning_effort)}</dd>
         </div>
+        <ParameterValues parameters={version.parameters} />
         <div>
           <dt>Held-out catch rate</dt>
           <dd>

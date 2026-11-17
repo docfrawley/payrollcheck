@@ -6,6 +6,7 @@ when the copy is flagged, and every exception on a flagged copy is false, as is 
 flag on a copy with no screening label. An open exception matching no label is
 false."""
 
+from statistics import fmean
 from typing import NamedTuple
 
 from backend.models import ExceptionMatch, LabelMatch, Measures, ScoredCase
@@ -27,6 +28,8 @@ class Raised(NamedTuple):
     rule: str
     worker_id: str | None
     line_no: int | None
+    expected: str
+    actual: str
     shortfall_cents: int | None
 
 
@@ -81,6 +84,11 @@ def measures(
     caught = [label for label in labelled if label.result != "missed"]
     money = [label for label in caught if label.expected_shortfall_cents is not None]
     false = sum(case.false_exceptions for case in cases)
+    scores = [
+        case.notice.score
+        for case in cases
+        if case.notice is not None and case.notice.score is not None
+    ]
     return Measures(
         catch_rate=len(caught) / len(labelled) if labelled else 1,
         caught=len(caught),
@@ -94,6 +102,8 @@ def measures(
         ),
         screening_caught=sum(c.screening_expected and c.screening_found for c in cases),
         screening_expected=sum(c.screening_expected for c in cases),
+        notice_score=fmean(scores) if scores else None,
+        notices_graded=len(scores),
         model_cost_per_case=model_cost / count if count else 0,
         seconds_per_case=sum(c.seconds for c in cases) / count if count else 0,
         run_seconds=run_seconds,

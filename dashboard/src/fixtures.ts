@@ -4,6 +4,7 @@ import type {
   ProjectInFull,
   Evaluation,
   Measures,
+  NoticeGradeRecord,
   Run,
   RunCase,
   ScoredCase,
@@ -74,6 +75,8 @@ const measures: Measures = {
   shortfall_accuracy: 0.95,
   screening_caught: 1,
   screening_expected: 1,
+  notice_score: 0.84,
+  notices_graded: 30,
   model_cost_per_case: 0.0125,
   seconds_per_case: 40,
   run_seconds: 161,
@@ -96,6 +99,7 @@ export const finishedEvaluation: Evaluation = {
   finished_at: "2026-11-23T17:04:54+00:00",
   seconds: 161,
   model_cost: 0.3125,
+  judge_cost: 0.0006,
   size: 207,
   measures,
 };
@@ -126,14 +130,35 @@ export const scoredCopy: ScoredCase = {
       rule: "rate.base_short",
       worker_id: "W-001",
       line_no: 1,
+      expected: "$60.95/h",
+      actual: "$59.35/h",
       shortfall_cents: 6400,
       matched: true,
     },
   ],
+  notice: {
+    result: "graded",
+    score: 0.85,
+    covers_every_exception: 0.9,
+    amounts_match: 0.8,
+    plain_language: 0.7,
+    no_legal_interpretation: 1,
+    cost: 0.00002,
+  },
   screening_expected: false,
   screening_found: false,
   misses: 0,
   false_exceptions: 0,
+};
+
+const noGrade: NoticeGradeRecord = {
+  result: "not_graded",
+  score: null,
+  covers_every_exception: null,
+  amounts_match: null,
+  plain_language: null,
+  no_legal_interpretation: null,
+  cost: 0,
 };
 
 export const scoredEvaluation: ScoredEvaluation = {
@@ -142,6 +167,7 @@ export const scoredEvaluation: ScoredEvaluation = {
   number: 9,
   evaluation_set: "tiny",
   size: 3,
+  success_criteria: null,
   cases: [
     scoredCopy,
     {
@@ -161,6 +187,7 @@ export const scoredEvaluation: ScoredEvaluation = {
       ],
       misses: 1,
       false_exceptions: 1,
+      notice: noGrade,
     },
     {
       ...scoredCopy,
@@ -171,6 +198,7 @@ export const scoredEvaluation: ScoredEvaluation = {
       exceptions: [],
       screening_expected: true,
       screening_found: true,
+      notice: null,
     },
   ],
 };
@@ -193,7 +221,16 @@ export const firstVersion: VersionSummary = {
   created_at: "2026-10-04T09:00:00+00:00",
   verdict: "kept",
   verdict_reason: "the first version",
-  parameters: { rounding_tolerance_cents: 0 },
+  parameters: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      value: 0,
+    },
+  ],
+  parameter_changes: [],
+  motivating_cases: [],
   scores: { development: null, held_out: null },
 };
 
@@ -212,6 +249,24 @@ export const secondVersion: VersionSummary = {
   proposed_by: "Round 1",
   approved_by: "Dana Whitfield",
   approved_at: "2026-10-05T14:05:00+00:00",
+  parameters: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      value: 50,
+    },
+  ],
+  parameter_changes: [
+    {
+      name: "rounding_tolerance_cents",
+      label: "Rounding tolerance",
+      unit: "cents",
+      before: 0,
+      after: 50,
+    },
+  ],
+  motivating_cases: ["PC-0311", "PC-1210"],
 };
 
 export const configuration: Configuration = {

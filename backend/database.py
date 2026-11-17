@@ -313,6 +313,15 @@ labels = Table(
     Column("expected_shortfall_cents", Integer),
 )
 SCREENING = "screening"
+# Each labelled set's decoys, clean payrolls that look wrong, with their kinds,
+# which only the scoring reads, for the success criteria.
+decoys = Table(
+    "decoys",
+    metadata,
+    Column("labelled_set", Text, primary_key=True),
+    Column("case_id", Text, primary_key=True),
+    Column("kind", Text, nullable=False),
+)
 steps = Table(
     "steps",
     metadata,
@@ -388,6 +397,23 @@ improver_calls = Table(
     Column("cost", Float, nullable=False),
     Column("created_at", Text, nullable=False),
 )
+# The judge's grade of the draft notice of each evaluation copy that needed one:
+# its four points and score, a score of 0 with no notice, or neither when the
+# judge couldn't grade it.
+notice_grades = Table(
+    "notice_grades",
+    metadata,
+    Column("case_id", Text, ForeignKey("cases.case_id"), primary_key=True),
+    Column("run_id", Text, ForeignKey("runs.run_id"), nullable=False, index=True),
+    Column("result", Text, nullable=False),
+    Column("score", Float),
+    Column("covers_every_exception", Float),
+    Column("amounts_match", Float),
+    Column("plain_language", Float),
+    Column("no_legal_interpretation", Float),
+    Column("cost", Float, nullable=False),
+    Column("graded_at", Text, nullable=False),
+)
 versions = Table(
     "versions",
     metadata,
@@ -407,6 +433,8 @@ versions = Table(
     Column("verdict_reason", Text),
     # The check tools' tunable parameters, such as the rounding tolerance.
     Column("parameters", JSON, nullable=False),
+    # The case ids the approved proposal cited, none for version 1.
+    Column("motivating_cases", JSON, nullable=False),
 )
 runs = Table(
     "runs",
@@ -420,6 +448,9 @@ runs = Table(
     Column("model", Text, nullable=False),
     Column("reasoning_effort", Text, nullable=False),
     Column("evaluation_set", Text),
+    # The labelled set a round counts its evaluation as: the set it works, or on
+    # free models the one its tiny set stands in for. None outside a round.
+    Column("scored_as", Text),
     Column("status", Text, nullable=False),
     Column("started_at", Text, nullable=False),
     Column("finished_at", Text),

@@ -4,6 +4,7 @@ import { api, type ScoredEvaluation } from "../api";
 import { RunChip } from "../components/Chips";
 import { ScoredCopies } from "../components/ScoredCopies";
 import { StateMessage } from "../components/StateMessage";
+import { SuccessCriteria } from "../components/SuccessCriteria";
 import { ModelName } from "../components/ModelName";
 import { PageHeader } from "../components/PageHeader";
 import {
@@ -44,6 +45,9 @@ export function EvaluationPage() {
       />
       <div className="column">
         <MeasuresPanel evaluation={evaluation} />
+        {evaluation.success_criteria && (
+          <SuccessCriteria criteria={evaluation.success_criteria} />
+        )}
         <ScoredCopies cases={evaluation.cases} />
       </div>
     </>
@@ -65,7 +69,8 @@ function MeasuresPanel({
         />
         , version {evaluation.version}. Started{" "}
         {dateTime(evaluation.started_at)}. Model cost{" "}
-        <span className="mono">{modelCost(evaluation.model_cost)}</span>.
+        <span className="mono">{modelCost(evaluation.model_cost)}</span>, judge
+        cost <span className="mono">{modelCost(evaluation.judge_cost)}</span>.
       </p>
       {evaluation.stopped_because && (
         <p className="stopped">{evaluation.stopped_because}</p>

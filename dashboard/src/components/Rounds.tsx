@@ -1,12 +1,6 @@
-import type { Measures, RoundReview, RoundSummary } from "../api";
-import {
-  dateTime,
-  inWords,
-  modelCost,
-  money,
-  percent,
-  whereRoundIs,
-} from "../format";
+import type { RoundReview, RoundSummary } from "../api";
+import { dateTime, inWords, modelCost, money, whereRoundIs } from "../format";
+import { ROUND_MEASURES } from "../measures";
 import { RoundChip, VerdictChip } from "./Chips";
 import { None } from "./None";
 import { StateMessage } from "./StateMessage";
@@ -16,7 +10,7 @@ const HEADINGS: [string, string][] = [
   ["Round", ""],
   ["Recipe", ""],
   ["Version tried", ""],
-  ["Held-out catch rate", "num"],
+  ["Held-out scores", ""],
   ["Verdict", ""],
   ["Cost", "num"],
 ];
@@ -76,11 +70,8 @@ function RoundRows({ round }: Readonly<{ round: RoundSummary }>) {
             <VersionLink number={round.version} />
           </td>
         )}
-        <td className="num">
-          <BeforeAfter
-            round={round}
-            show={(measures) => percent(measures.catch_rate)}
-          />
+        <td>
+          <HeldOutScores round={round} />
         </td>
         <td className="round-verdict">
           {round.verdict ? (
@@ -115,19 +106,23 @@ function RoundRows({ round }: Readonly<{ round: RoundSummary }>) {
   );
 }
 
-// A held-out score before the round's version and after it, each side shown
+// The held-out scores before the round's version and after it, each side shown
 // on its own, since a version the round couldn't afford to evaluate has no
 // score after.
-function BeforeAfter({
-  round,
-  show,
-}: Readonly<{ round: RoundSummary; show: (measures: Measures) => string }>) {
+function HeldOutScores({ round }: Readonly<{ round: RoundSummary }>) {
   const { held_out_before: before, held_out_after: after } = round;
   if (!before && !after) return <None />;
   return (
-    <>
-      {before ? show(before) : "None"} to {after ? show(after) : "None"}
-    </>
+    <dl className="scores">
+      {ROUND_MEASURES.map(({ label, show }) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd className="mono">
+            {before ? show(before) : "None"} to {after ? show(after) : "None"}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

@@ -700,6 +700,20 @@ p {
   width: 6rem;
 }
 
+.col-notice {
+  width: 15rem;
+}
+
+/* Wide enough for the labels and exceptions beside the notice's points; a
+   narrower page scrolls the table. */
+.table.copies {
+  min-width: 86rem;
+}
+
+.table.steady td:has(.scores) {
+  white-space: normal;
+}
+
 /* Headings wrap rather than run into the next column. */
 .table.steady thead th {
   white-space: normal;
@@ -2433,4 +2447,45 @@ fieldset.panel legend + * {
 .exception-group h3 {
   font-size: 0.95rem;
   margin: 0 0 8px;
+}
+
+.inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scores {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0 8px;
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+}
+
+.scores div {
+  display: contents;
+}
+
+.scores dt {
+  color: var(--muted);
+}
+
+.scores dd {
+  margin: 0;
+  text-align: right;
+}
+
+.criteria {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.criteria p {
+  margin: 4px 0 0;
 }

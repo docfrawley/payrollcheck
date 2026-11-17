@@ -15,6 +15,7 @@ from backend.database import (
     SCHEMA,
     SCREENING,
     cases,
+    decoys,
     engagements,
     exceptions,
     labelled_cases,
@@ -308,6 +309,10 @@ def seed_labelled_set(
         for case_id in found["screening_flags"]
     ]
     connection.execute(insert(labels), rows)
+    connection.execute(
+        insert(decoys),
+        [{"labelled_set": labelled_set, **decoy} for decoy in found["decoys"]],
+    )
     return found["exceptions"]
 
 

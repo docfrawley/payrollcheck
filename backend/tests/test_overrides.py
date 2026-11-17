@@ -299,21 +299,25 @@ def modules_using(table: str) -> set[str]:
 
 def test_only_seeding_and_scoring_reach_the_labels():
     assert modules_using("labels") == {"seeding", "scoreboard"}
+    assert modules_using("decoys") == {"seeding", "scoreboard"}
     assert "overrides" not in modules_using("labelled_cases")
 
 
-def test_the_override_log_reads_by_date(client):
+def test_the_override_log_reads_by_date_newest_first_with_its_exception(client):
     exception_id = the_exception(client)
     dismiss(client, exception_id)
     restore(client, exception_id)
     with engine().connect() as db:
-        [first, second] = overrides_between(db, "2000-01-01", "2100-01-01")
+        total, [second, first] = overrides_between(db, "2000-01-01", "2100-01-01", 9)
+        assert total == 2
         assert [first.kind, second.kind] == ["dismissed", "restored"]
-        assert overrides_between(db, "2000-01-01", first.created_at) == []
-        assert overrides_between(db, first.created_at, "2100-01-01") == [
-            first,
-            second,
-        ]
+        assert (first.case_id, first.exception_id) == ("PC-1201", exception_id)
+        assert (first.rule, first.source) == ("rate.base_short", "check")
+        assert overrides_between(db, "2000-01-01", first.created_at, 9) == (0, [])
+        assert overrides_between(db, first.created_at, "2100-01-01", 1) == (
+            2,
+            [second],
+        )
 
 
 def test_sign_off_waits_until_every_exception_is_dismissed(dashboard, client):

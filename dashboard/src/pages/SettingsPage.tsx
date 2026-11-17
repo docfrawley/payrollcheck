@@ -1,11 +1,11 @@
 import { Save } from "lucide-react";
 import { useId, useState } from "react";
-import {
-  api,
-  type ModelAllowed,
-  type Settings,
-  type SettingsPage as SettingsData,
-} from "../api";
+import { api } from "../api";
+import type {
+  ModelAllowed,
+  Settings,
+  SettingsPage as SettingsData,
+} from "../settings";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { FormError } from "../components/FormError";
 import { AppearanceChoice } from "../components/AppearanceChoice";

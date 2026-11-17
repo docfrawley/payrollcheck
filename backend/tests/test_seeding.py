@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from backend import seed
 from backend.database import (
     SCREENING,
+    decoys,
     engine,
     exceptions,
     labelled_cases,
@@ -119,6 +120,18 @@ def test_the_labelled_sets_and_their_labels(client):
     assert sum(x["rule"] != SCREENING for x in development) == 45
     assert sum(x["rule"] == SCREENING for x in development) == 3
     assert count(labels) == len(found)
+
+
+def test_each_sets_decoys_are_seeded_with_their_kinds(client):
+    with engine().connect() as db:
+        found = Counter(db.execute(select(decoys.c.labelled_set)).scalars())
+        kinds = set(
+            db.execute(
+                select(decoys.c.kind).where(decoys.c.labelled_set == "development")
+            ).scalars()
+        )
+    assert found == {"development": 10, "held_out": 5}
+    assert {"rate_increase_week", "later_determination"} <= kinds
 
 
 def test_no_held_out_record_is_in_any_list(client):

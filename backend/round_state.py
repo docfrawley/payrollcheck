@@ -2,13 +2,17 @@
 runs router and the case operations all need: finding a round, where it has got
 to, what it has spent against its limit, and stopping it."""
 
+from typing import Any
+
 from fastapi import HTTPException
 from sqlalchemy import ColumnElement, Connection, RowMapping, select, update
 
 from backend import spending
 from backend.database import now, proposals, rounds, runs, settings, versions
+from backend.free_models import free_model
 from backend.models import (
     EvaluationSet,
+    Measures,
     ProposalKind,
     RoundStage,
     RoundStatus,
@@ -22,12 +26,26 @@ from backend.verdict import STOPPED_BEFORE_VERDICT
 
 ROUND_NOT_FOUND = "Round {round_id} not found"
 NOT_OPEN = "Round {number} is {status}"
-# A version's evaluations: once on the evaluation set and twice on the held-out set.
+# A version's evaluations: once on the development set and twice on the held-out
+# set, each of which the tiny set stands in for on free models.
 EVALUATIONS = [
     EvaluationSet.DEVELOPMENT,
     EvaluationSet.HELD_OUT,
     EvaluationSet.HELD_OUT,
 ]
+
+
+def played_on(stands_for: EvaluationSet) -> EvaluationSet:
+    """The set a round's evaluation works: the one it's counted as, or on free
+    models the tiny set, since a whole set needs more requests than a free model
+    allows in a day."""
+    return EvaluationSet.TINY if free_model() else stands_for
+
+
+def stored_measures(stored: dict[str, Any] | None) -> Measures | None:
+    """Measures a round stored with its verdict, such as its held-out scores
+    before and after, or none."""
+    return Measures(**stored) if stored else None
 
 
 def round_row(db: Connection, round_id: str) -> RowMapping:

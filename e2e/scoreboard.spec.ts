@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import type { LabelMatch, ScoredCase } from "../dashboard/src/api";
-import { percent } from "../dashboard/src/format";
-import { NONE_CAUGHT } from "../dashboard/src/measures";
+import {
+  NONE_CAUGHT,
+  perHundred,
+  shareWeighed,
+} from "../dashboard/src/measures";
 import {
   type Finding,
   type Request,
@@ -80,7 +83,8 @@ async function playOut(request: Request, copy: ScoredCase, caught: ScoredCase) {
 
 // The Scoreboard's measures as worked out from the labels: the one copy's
 // labels caught of all, one false exception, every caught shortfall right,
-// each hidden instruction flagged, and each copy's cost and time.
+// each hidden instruction flagged, the caught copy's notice, the only one
+// graded, at the judge's stand-in's 0.85, and each copy's cost and time.
 function measuresShown(
   copies: ScoredCase[],
   caught: ScoredCase,
@@ -94,10 +98,11 @@ function measuresShown(
   const hidden = copies.filter((copy) => copy.screening_expected).length;
   return [
     `Tiny set, ${String(size)} payrolls`,
-    `${percent(count / labels)} (${String(count)} of ${String(labels)})`,
-    `1 (${(100 / size).toFixed(1)} per 100)`,
-    withMoney ? "100%" : NONE_CAUGHT,
+    `${shareWeighed(count / labels)} (${String(count)} of ${String(labels)})`,
+    `1 (${perHundred(100 / size)} per 100)`,
+    withMoney ? "100.0%" : NONE_CAUGHT,
     `${String(hidden)} of ${String(hidden)}`,
+    "0.850 (1 graded)",
     "$0.0125",
     "40 s",
   ];
@@ -155,6 +160,8 @@ test("the Scoreboard shows an evaluation played out through the API", async ({
     caught.labels.length,
   );
   await expect(caughtRow.getByText("False", { exact: true })).toHaveCount(1);
+  await expect(caughtRow.getByText("Plain language")).toBeVisible();
+  await expect(caughtRow.getByText("0.70", { exact: true })).toBeVisible();
   const missedRow = rows.filter({ hasText: missed.case_id });
   await expect(missedRow).toHaveClass("copy-off");
   await expect(missedRow.getByText("Missed", { exact: true })).toHaveCount(

@@ -105,13 +105,13 @@ class VersionStatus(StrEnum):
     UNDER_TEST = "under_test"
 
 
-class Letter(StrEnum):
-    """The judge's levels, from different grounds to better expressed."""
+class NoticeResult(StrEnum):
+    """What came of grading a copy's notice: graded, no notice where one was
+    needed, which scores 0, or one the judge couldn't grade."""
 
-    F = "F"
-    C = "C"
-    B = "B"
-    A = "A"
+    GRADED = "graded"
+    NO_NOTICE = "no_notice"
+    NOT_GRADED = "not_graded"
 
 
 class RoundStatus(StrEnum):
@@ -439,18 +439,27 @@ class Step(BaseModel):
 
 
 class MeasureSettings(BaseModel):
-    """A setting for each measure the rule compares: the catch rate as a
-    difference, cost and time per case as fractions of the old value."""
+    """A setting for each measure the rule compares: the catch rate, false
+    exceptions per 100 payrolls, shortfall accuracy and the notice score as
+    differences in their own units, cost and time per case as fractions of the old
+    value."""
 
     catch_rate: float = Field(ge=0)
+    false_per_100: float = Field(ge=0)
+    shortfall_accuracy: float = Field(ge=0)
+    notice_score: float = Field(ge=0)
     cost_per_case: float = Field(ge=0)
     seconds_per_case: float = Field(ge=0)
 
 
 class Objectives(BaseModel):
-    """The floors a new version must meet on the held-out set."""
+    """What a new version must meet on the held-out set: floors on the catch rate,
+    shortfall accuracy and notice score, and a ceiling on false exceptions."""
 
     catch_rate: float = Field(ge=0, le=1)
+    false_per_100: float = Field(ge=0)
+    shortfall_accuracy: float = Field(ge=0, le=1)
+    notice_score: float = Field(ge=0, le=1)
 
 
 class SettingsValues(BaseModel):
@@ -637,20 +646,62 @@ class Measures(BaseModel):
     )
     screening_caught: int
     screening_expected: int
+    notice_score: float | None = Field(
+        description="The judge's average score of the graded notices, or null "
+        "with none graded"
+    )
+    notices_graded: int
     model_cost_per_case: float
     seconds_per_case: float
     run_seconds: float | None
 
 
-class CaseGrade(BaseModel):
-    """The judge's grade of an explanation: its score from 0 to 3, the likeliest
-    level, and the chances of the same grounds and the same section as the
-    reviewer's."""
+class ExceptionAsRead(BaseModel):
+    """An open exception as the judge reads it beside the notice."""
+
+    rule: str
+    worker: str | None
+    line_no: int | None
+    expected: str
+    actual: str
+    shortfall: str | None = Field(description="In dollars, such as $1,250.00")
+    citation: str
+
+
+class NoticeToGrade(BaseModel):
+    """A draft notice and the exceptions it goes with, as the judge grades it."""
+
+    notice: str
+    exceptions: list[ExceptionAsRead]
+
+
+class RubricPoints(BaseModel):
+    """The chance, from 0 to 1, that a notice keeps to each point of the rubric."""
+
+    covers_every_exception: float
+    amounts_match: float
+    plain_language: float
+    no_legal_interpretation: float
+
+
+class NoticeGrade(RubricPoints):
+    """The judge's grade of a notice: its four points, their average as its score,
+    and what the judge cost."""
 
     score: float
-    letter: Letter
-    same_grounds: float
-    same_section: float
+    cost: float
+
+
+class NoticeGradeRecord(BaseModel):
+    """A copy's notice as the evaluation graded it: its four points and score when
+    graded, a score of 0 with no notice, and neither when the judge couldn't."""
+
+    result: NoticeResult
+    score: float | None
+    covers_every_exception: float | None = None
+    amounts_match: float | None = None
+    plain_language: float | None = None
+    no_legal_interpretation: float | None = None
     cost: float
 
 
@@ -671,6 +722,8 @@ class ExceptionMatch(BaseModel):
     rule: str
     worker_id: str | None
     line_no: int | None
+    expected: str
+    actual: str
     shortfall_cents: int | None
     matched: bool
 
@@ -683,16 +736,31 @@ class ScoredCase(RunCase):
     screening_found: bool
     misses: int
     false_exceptions: int
+    notice: NoticeGradeRecord | None = Field(
+        description="Its notice's grade, or null when nothing open needs a notice"
+    )
 
 
 class Evaluation(RunDetails):
     evaluation_set: EvaluationSet
     size: int
+    judge_cost: float = Field(description="The judge's, apart from the model cost")
     measures: Measures
+
+
+class Criterion(BaseModel):
+    """One of the success criteria, with its figure and whether it's met."""
+
+    title: str
+    figure: str
+    met: bool
 
 
 class ScoredEvaluation(Evaluation):
     cases: list[ScoredCase]
+    success_criteria: list[Criterion] | None = Field(
+        description="On a whole development-set evaluation, the success criteria"
+    )
 
 
 class Accepted(BaseModel):
@@ -717,6 +785,43 @@ class PayrollAgentVersion(BaseModel):
         description="The check tools' tunable parameters, such as the rounding "
         "tolerance in cents"
     )
+
+
+ParameterUnit = Literal["cents"]
+
+
+class ParameterLabel(BaseModel):
+    """One of the check tools' tunable parameters, as a page names it."""
+
+    name: str
+    label: str
+    unit: ParameterUnit
+
+
+class ParameterAllowed(ParameterLabel):
+    """A parameter in the catalogue, with its bounds."""
+
+    description: str
+    lowest: int
+    highest: int
+    first: int = Field(description="Its value in version 1")
+
+    def labelled(self) -> dict[str, Any]:
+        """Its name, label and unit, for a value or a change of it."""
+        return self.model_dump(include=set(ParameterLabel.model_fields))
+
+
+class ParameterValue(ParameterLabel):
+    """A version's value of a parameter."""
+
+    value: int
+
+
+class ParameterChange(ParameterLabel):
+    """A parameter a version changed from the one it was based on."""
+
+    before: int
+    after: int
 
 
 class DiffLine(BaseModel):
@@ -755,7 +860,11 @@ class VersionSummary(BaseModel):
     created_at: str
     verdict: Verdict | None
     verdict_reason: str | None
-    parameters: dict[str, Any]
+    parameters: list[ParameterValue]
+    parameter_changes: list[ParameterChange]
+    motivating_cases: list[str] = Field(
+        description="The cases the approved proposal cited, none for version 1"
+    )
     scores: VersionScores
 
 
@@ -786,6 +895,7 @@ class RoundForTheAgent(BaseModel):
     improver_reasoning_effort: str
     instructions: str = Field(description="The improver's, around the recipe")
     models_allowed: list[ModelAllowed]
+    parameters_allowed: list[ParameterAllowed]
     first_evaluations: list[EvaluationSet] = Field(
         description="The first evaluations the round needed as it started, in order"
     )
@@ -798,7 +908,14 @@ class ChangeProposalRequest(BaseModel):
     instructions: str = Field(min_length=1)
     model: str = Field(min_length=1)
     reasoning_effort: str = Field(min_length=1)
+    parameters: dict[str, Any] = Field(
+        description="Every one of the check tools' tunable parameters, each inside "
+        "its bounds"
+    )
     reason: str = Field(min_length=1)
+    case_ids: list[str] = Field(
+        description="The cases behind the change, each one the round's results hold"
+    )
 
 
 class RecipeProposalRequest(BaseModel):
@@ -814,6 +931,8 @@ class Proposal(BaseModel):
     instructions: str | None
     model: str | None
     reasoning_effort: str | None
+    parameters: dict[str, Any] | None
+    case_ids: list[str]
     recipe: str | None
     proposed_at: str
     review: Review | None
@@ -863,6 +982,47 @@ class CaseResults(BaseModel):
     screening_found: bool
 
 
+class WeakNotice(BaseModel):
+    """A development copy's notice the judge scored low, with the exceptions it
+    goes with and the judge's four points."""
+
+    case_id: str
+    notice: str | None
+    exceptions: list[ExceptionAsRead]
+    grade: NoticeGradeRecord
+
+
+class CorrectedException(Override):
+    """A reviewer's override, with the case and the exception it corrected."""
+
+    case_id: str
+    rule: str
+    worker_id: str | None
+    line_no: int | None
+    expected: str
+    actual: str
+    shortfall_cents: int | None
+    source: ExceptionSource = Field(description="What raised the exception")
+
+
+class NoticeEdit(BaseModel):
+    """A notice a reviewer rewrote before sending, beside the agent's draft."""
+
+    case_id: str
+    submission_no: int
+    draft: str
+    edited_text: str
+    edited_by: str
+    edited_at: str
+
+
+class Listed[Item](BaseModel):
+    """Some of a list, the most telling first, with how many there are in all."""
+
+    total: int
+    shown: list[Item]
+
+
 class EarlierRound(BaseModel):
     round: int
     recipe_version: int
@@ -887,9 +1047,22 @@ class ImproverView(BaseModel):
         description="Its instructions, model, reasoning effort and parameters"
     )
     scores: VersionScores
-    development_set: list[CaseResults] = Field(
-        description="The latest development evaluation's cases with a miss or a "
-        "false exception"
+    development_mistakes: Listed[CaseResults] = Field(
+        description="From the latest development evaluation, the cases with a "
+        "miss, a wrong shortfall, a false exception or a wrong screening"
+    )
+    weakest_notices: Listed[WeakNotice] = Field(
+        description="From the same evaluation, the notices the judge scored lowest"
+    )
+    corrections_since: str | None = Field(
+        description="When the newest earlier round that finished started, from "
+        "which the reviewers' corrections are read, or null for every one"
+    )
+    overrides: Listed[CorrectedException] = Field(
+        description="Exceptions reviewers dismissed or added, newest first"
+    )
+    notice_edits: Listed[NoticeEdit] = Field(
+        description="Notices reviewers rewrote, newest first"
     )
     earlier_rounds: list[EarlierRound]
     objectives_on_the_held_out_set: Objectives
@@ -898,6 +1071,7 @@ class ImproverView(BaseModel):
     rule: str
     spending: Spending
     models_allowed: list[ModelAllowed]
+    parameters_allowed: list[ParameterAllowed]
 
 
 # What the Improvement page shows.
@@ -923,6 +1097,8 @@ class WaitingProposal(BaseModel):
     reasoning_effort_before: str | None
     model_after: str | None
     reasoning_effort_after: str | None
+    parameter_changes: list[ParameterChange]
+    case_ids: list[str] = Field(description="The cases behind a change")
 
 
 class RoundSummary(BaseModel):

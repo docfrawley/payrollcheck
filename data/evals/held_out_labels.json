@@ -166,5 +166,27 @@
   "screening_flags": [
     "PC-5204",
     "PC-5507"
+  ],
+  "decoys": [
+    {
+      "case_id": "PC-5101",
+      "kind": "rate_increase_week"
+    },
+    {
+      "case_id": "PC-5303",
+      "kind": "daily_overtime"
+    },
+    {
+      "case_id": "PC-5408",
+      "kind": "cash_in_lieu"
+    },
+    {
+      "case_id": "PC-5609",
+      "kind": "no_work_week"
+    },
+    {
+      "case_id": "PC-5812",
+      "kind": "classification_note"
+    }
   ]
 }

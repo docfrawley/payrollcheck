@@ -23,6 +23,7 @@ from backend.database import (
     runs,
 )
 from backend.dependencies import AgentKey, Database, SignedInReviewer
+from backend.grading import grade_notices
 from backend.lookups import (
     CASE_NOT_FOUND,
     RUN_NOT_FOUND,
@@ -56,6 +57,7 @@ from backend.round_state import (
     evaluations_of,
     left_to_spend,
     open_round,
+    played_on,
     round_row,
     stop,
     tried_version,
@@ -65,10 +67,10 @@ from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
 from backend.scoreboard import (
     cases_of,
     expected_labels,
-    score,
     score_all,
     seconds_between,
     to_run_case,
+    with_success_criteria,
 )
 from backend.stops import stop_runs
 
@@ -229,7 +231,7 @@ def refuse_what_the_round_cant_afford(
     more than what's left of the round's limit, so the first of the three checks
     all three."""
     done = len(evaluations_of(db, row["round_id"], version["number"]))
-    cases_left = sum(set_size(db, s) for s in EVALUATIONS[done:])
+    cases_left = sum(set_size(db, played_on(s)) for s in EVALUATIONS[done:])
     models = {model.model: model for model in allowed_models(db)}
     current = version_row(db, current_version_number(db))
     per_case = spending.cost_per_case(
@@ -297,11 +299,12 @@ def evaluation_row(db: Connection, run_id: str) -> RowMapping:
 def create_round_evaluation(round_id: str, db: Database) -> Run:
     """Record a round's next whole-set evaluation, on the set it needs next."""
     row = open_round(db, round_id)
-    version, evaluation_set = next_evaluation(db, row)
+    version, scored_as = next_evaluation(db, row)
     if version["number"] != row["starting_version"]:
         refuse_what_the_round_cant_afford(db, row, version)
     fields = {
-        "evaluation_set": evaluation_set,
+        "evaluation_set": played_on(scored_as),
+        "scored_as": scored_as,
         "agents": settings_number(db, row["settings"]).agents,
         "round_id": round_id,
     }
@@ -329,7 +332,7 @@ def record_run_cases(run_id: str, request: RunCasesRequest, db: Database) -> Run
     "/api/runs/{run_id}/finish", operation_id="finish_run", dependencies=[AgentKey]
 )
 def finish_run(run_id: str, db: Database) -> Run:
-    """Finish a run: a dispatch gets its summary, an evaluation its finish or a stop."""
+    """Finish a run: summarize a dispatch, grade an evaluation's notices, or stop."""
     row = run_row(db, run_id)
     if row["status"] == RunStatus.STOPPED:
         return find_run(db, run_id, EVERYTHING)
@@ -340,6 +343,7 @@ def finish_run(run_id: str, db: Database) -> Run:
     elif because := why_cut_short(db, row):
         end_cut_short(db, row, because)
     else:
+        grade_notices(db, run_id)
         mark_finished(db, run_id, None)
     return find_run(db, run_id, EVERYTHING)
 
@@ -434,7 +438,7 @@ def list_evaluations(db: Database) -> list[Evaluation]:
 )
 def get_evaluation(run_id: str, db: Database) -> ScoredEvaluation:
     """Get one evaluation with its measures and its copies beside their labels."""
-    return score(db, evaluation_row(db, run_id), expected_labels(db))
+    return with_success_criteria(db, evaluation_row(db, run_id))
 
 
 @router.post(

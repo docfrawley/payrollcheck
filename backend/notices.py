@@ -8,14 +8,15 @@ from sqlalchemy import (
     ColumnElement,
     Connection,
     RowMapping,
+    and_,
     func,
     insert,
     select,
     update,
 )
 
-from backend.database import notices, now
-from backend.models import Reviewer
+from backend.database import cases, notices, now
+from backend.models import NoticeEdit, Reviewer
 
 NOTHING_TO_SEND = (
     "{case_id} has no notice to send: write one for its subcontractor first"
@@ -66,3 +67,38 @@ def mark_sent(
         .where(*latest(case))
         .values(sent_by=reviewer.name, sent_at=sent_at)
     )
+
+
+def drafts_of(db: Connection, case_ids: list[str]) -> dict[str, str]:
+    """The agent's draft of each case's latest submission's notice, where it wrote
+    one, in one query."""
+    query = (
+        select(notices.c.case_id, notices.c.draft)
+        .join(
+            cases,
+            and_(
+                cases.c.case_id == notices.c.case_id,
+                cases.c.latest_submission_no == notices.c.submission_no,
+            ),
+        )
+        .where(notices.c.case_id.in_(case_ids), notices.c.draft.is_not(None))
+    )
+    return {case_id: draft for case_id, draft in db.execute(query)}
+
+
+def edited_between(
+    db: Connection, start: str, end: str, most: int
+) -> tuple[int, list[NoticeEdit]]:
+    """How many of the agent's drafts a reviewer rewrote from one moment up to
+    another, and the newest of them, each beside the edit."""
+    edited = (
+        notices.c.edited_at >= start,
+        notices.c.edited_at < end,
+        notices.c.draft.is_not(None),
+        notices.c.edited_text != notices.c.draft,
+    )
+    total = db.execute(select(func.count()).where(*edited)).scalar_one()
+    query = (
+        select(notices).where(*edited).order_by(notices.c.edited_at.desc()).limit(most)
+    )
+    return total, [NoticeEdit(**row) for row in db.execute(query).mappings()]

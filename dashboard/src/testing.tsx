@@ -2,14 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { vi } from "vitest";
 import { App } from "./App";
-import type {
-  Case,
-  CaseSummary,
-  Reviewer,
-  Settings,
-  SettingsPage,
-  Submission,
-} from "./api";
+import type { Case, CaseSummary, Reviewer, Submission } from "./api";
+import type { Settings, SettingsPage } from "./settings";
 
 // Stands in for the backend: answers "METHOD /path" with the JSON given, or
 // with the status and detail given as an error, and a 404 for anything else.
@@ -45,18 +39,29 @@ export const priya: Reviewer = {
 
 const startingSettings: Settings = {
   number: 1,
-  objectives: { catch_rate: 0.6 },
+  objectives: {
+    catch_rate: 0.92,
+    false_per_100: 2.5,
+    shortfall_accuracy: 1,
+    notice_score: 0.8,
+  },
   noise: {
-    catch_rate: 0.1,
+    catch_rate: 0.05,
+    false_per_100: 1,
+    shortfall_accuracy: 0,
+    notice_score: 0.1,
     cost_per_case: 0.15,
     seconds_per_case: 0.15,
   },
   tolerance: {
-    catch_rate: 0.1,
+    catch_rate: 0.05,
+    false_per_100: 1,
+    shortfall_accuracy: 0,
+    notice_score: 0.1,
     cost_per_case: 1,
     seconds_per_case: 0.25,
   },
-  spending_limit: 0.5,
+  spending_limit: 5,
   agents: 25,
   business_date: "2026-11-23",
   changed_by: null,
