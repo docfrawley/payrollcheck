@@ -11,9 +11,8 @@ from fastapi import FastAPI
 from sqlalchemy import insert
 
 from backend.database import engine, project_reviewers
-from backend.lookups import CASE_NOT_FOUND, PROJECT_NOT_FOUND
+from backend.lookups import CASE_NOT_FOUND, PROJECT_NOT_FOUND, SUBCONTRACTOR_NOT_FOUND
 from backend.main import app
-from backend.subcontractors import SUBCONTRACTOR_NOT_FOUND
 from backend.tests.case_requests import awaiting_review
 from backend.tests.gates import AGENT_OPERATIONS, REVIEWER_OPERATIONS
 from backend.tests.run_requests import fail_run

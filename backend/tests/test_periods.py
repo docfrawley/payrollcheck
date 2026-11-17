@@ -2,26 +2,26 @@
 module the generator's expected answers use, and matched on a case's week
 ending."""
 
-import json
 from datetime import date
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import select
 
+from backend.business_date import business_date
 from backend.database import cases, engine, submissions
 from backend.models import PeriodRequest
 from backend.periods import answer_of, resolve
 from backend.seeding import DATA
 from backend.tests.settings_requests import change_settings
-from data.payroll_world.expected_answers import QUESTIONS
+from data.payroll_world.expected_answers import answer_to, read_expected
 
 PERIOD = TypeAdapter(PeriodRequest)
 
 
 def resolved(period):
     with engine().connect() as db:
-        return resolve(db, PERIOD.validate_python(period))
+        return resolve(business_date(db), PERIOD.validate_python(period))
 
 
 def weeks(found):
@@ -93,13 +93,12 @@ def test_a_period_that_isnt_one_is_refused(period):
 
 
 def test_the_copilots_expected_answers_have_the_periods_the_backend_resolves():
-    expected = json.loads((DATA / "copilot_expected.json").read_text())
+    expected = read_expected(DATA)
     assert expected["business_date"] == "2026-11-23"
-    answers = {a["question"]: a["answer"] for a in expected["answers"]}
     periods = {
-        "this_month": answers[QUESTIONS[1]]["period"],
-        "last_week": answers[QUESTIONS[2]]["period"],
-        "last_weeks": answers[QUESTIONS[4]]["period"],
+        "this_month": answer_to(expected, 2)["period"],
+        "last_week": answer_to(expected, 3)["period"],
+        "last_weeks": answer_to(expected, 5)["period"],
     }
     asked = {"this_month": {}, "last_week": {}, "last_weeks": {"count": 4}}
     for kind, period in periods.items():

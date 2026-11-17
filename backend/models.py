@@ -1364,3 +1364,179 @@ class RunStarted(Accepted):
 
     run_id: str
     number: int
+
+
+# The Copilot's reads: every filter required, null for any, and every amount in
+# cents and as dollars, such as $1,250.00, so no model formats or adds one.
+
+CaseFlag = Literal["screening", "agent_failed"]
+
+
+class CaseFilters(BaseModel):
+    project_id: str | None
+    subcontractor_id: str | None
+    status: Status | None
+    period: PeriodRequest | None
+    has_open_exceptions: bool | None
+    flag: CaseFlag | None = Field(description="Flagged by the screening, or failed")
+
+
+class FoundCase(CaseSummary):
+    shortfall: str = Field(description="Of the open exceptions, in dollars")
+
+
+class SubcontractorCases(BaseModel):
+    subcontractor_id: str
+    name: str
+    case_ids: list[str]
+    open_exceptions: int
+
+
+class FoundCases(BaseModel):
+    period: PeriodAnswer | None
+    cases: list[FoundCase] = Field(description="In id order")
+    by_subcontractor: list[SubcontractorCases]
+
+
+class OpenException(BaseModel):
+    """An exception open on a case's latest submission, with its citation."""
+
+    exception_id: int
+    rule: str
+    severity: Severity
+    worker_id: str | None
+    worker_name: str | None = Field(description="From our worker records")
+    line_no: int | None
+    expected: str
+    actual: str
+    shortfall_cents: int | None
+    shortfall: str | None = Field(description="In dollars, or null")
+    citation: str
+
+
+class CaseExceptions(BaseModel):
+    case_id: str
+    status: Status
+    project_id: str
+    subcontractor_id: str
+    week_ending: str
+    exceptions: list[OpenException]
+    shortfall_cents: int
+    shortfall: str
+
+
+class ExposureRequest(BaseModel):
+    project_id: str | None
+    subcontractor_id: str | None
+    period: PeriodRequest | None
+
+
+class ExposedException(BaseModel):
+    case_id: str
+    status: Status
+    rule: str
+    worker_id: str | None
+    worker_name: str | None = Field(description="From our worker records")
+    line_no: int | None
+    shortfall_cents: int
+    shortfall: str
+    outstanding: bool = Field(description="Open on a case Awaiting review or Returned")
+
+
+class RuleExposure(BaseModel):
+    rule: str
+    flagged_cents: int
+    flagged: str
+    outstanding_cents: int
+    outstanding: str
+    case_ids: list[str]
+
+
+class Exposure(BaseModel):
+    period: PeriodAnswer | None
+    project_id: str | None
+    subcontractor_id: str | None
+    flagged_cents: int
+    flagged: str
+    outstanding_cents: int
+    outstanding: str
+    case_ids: list[str]
+    by_rule: list[RuleExposure]
+    exceptions: list[ExposedException]
+
+
+class FilingsRequest(BaseModel):
+    period: PeriodRequest
+    project_id: str | None
+
+
+class Filing(BaseModel):
+    """A case filed, as its first submission was received."""
+
+    case_id: str
+    subcontractor_id: str
+    subcontractor_name: str
+    project_id: str
+    week_ending: str
+    wage_payment_date: str
+    received_on: str
+    days_after_payment: int
+
+
+class MissingFiling(BaseModel):
+    """An expected filing with no case."""
+
+    subcontractor_id: str
+    subcontractor_name: str
+    project_id: str
+    week_ending: str
+    deadline: str
+    late: bool = Field(description="Past its deadline on the business date")
+
+
+class Filings(BaseModel):
+    period: PeriodAnswer
+    business_date: str
+    late: list[Filing]
+    missing: list[MissingFiling]
+    on_time: list[str] = Field(description="The case ids filed on time")
+
+
+class ClassificationChangesRequest(BaseModel):
+    period: PeriodRequest
+    project_id: str | None
+
+
+class ExceptionOnLine(BaseModel):
+    exception_id: int
+    rule: str
+    severity: Severity
+
+
+class ClassificationChange(BaseModel):
+    case_id: str
+    project_id: str
+    subcontractor_id: str
+    subcontractor_name: str
+    worker_id: str
+    worker_name: str | None = Field(description="From our worker records")
+    week_ending: str
+    line_no: int
+    classification_before: str
+    classification_after: str
+    line_notes: str
+    established_craft: str | None
+    exception: ExceptionOnLine | None = Field(
+        description="An open classification exception on the line, if any"
+    )
+
+
+class ClassificationChanges(BaseModel):
+    period: PeriodAnswer
+    changes: list[ClassificationChange]
+
+
+class ProjectMatch(BaseModel):
+    project_id: str
+    name: str
+    county: str

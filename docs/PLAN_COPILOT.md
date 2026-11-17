@@ -204,35 +204,35 @@ After pulling this stage, reseed with `npm run seed`.
 
 `exposure.py`, `filings.py`, `classification_changes.py`, the filtered case list, `get_exceptions` and `find_projects`, the `copilot_reads.py` router (withholding comes in phase 3), and the context layer's dollars.
 
-- [ ] **Layer 1**, `backend/tests/test_copilot_questions.py`, on a freshly seeded database, as Marcus, through the routes with the inputs each question implies:
+- [x] **Layer 1**, `backend/tests/test_copilot_questions.py`, on a freshly seeded database, as Marcus, through the routes with the inputs each question implies:
   - (1) `find_cases` with PRJ-01 and open exceptions gives `copilot_expected.json`'s subcontractors with their case ids and counts
   - (2) `exposure_summary` for SUB-01 this month gives PC-1009, flagged and outstanding 19875 cents and "$198.75", and its two exceptions
   - (3) `filings_status` for last week gives PC-1208 late and SUB-06's PRJ-02 filing missing
   - (5) `classification_changes` for the last four weeks gives the four changes
   - (6) `get_exceptions` for PC-0311 gives its three open exceptions, 50375 cents in all
   - each compared field by field with the file
-- [ ] **Question 4**, in `context/tests/`: `get_wage_rate` for a journeyman electrician in Middlesex, on PRJ-01's award date with Nov 23 as the work date, gives `MID-2025-11`, effective 2026-10-01, with the expected cents and the dollars `$61.10`, `$35.40` and `$96.50`, and its source.
-- [ ] `backend/tests/test_exposure.py`:
+- [x] **Question 4**, in `context/tests/`: `get_wage_rate` for a journeyman electrician in Middlesex, on PRJ-01's award date with Nov 23 as the work date, gives `MID-2025-11`, effective 2026-10-01, with the expected cents and the dollars `$61.10`, `$35.40` and `$96.50`, and its source.
+- [x] `backend/tests/test_exposure.py`:
   - only latest submissions count: a reopened case's superseded exceptions are left out
   - a dismissed exception is left out
   - an open money exception on a case Awaiting review or Returned to sub is flagged and outstanding
   - an exception without a shortfall isn't counted
   - the breakdown by rule adds up to the totals in cents and dollars
-- [ ] `backend/tests/test_filings.py`:
+- [x] `backend/tests/test_filings.py`:
   - the expected filings come from engagement windows, never a stored list
   - a filing received 11 days after its wage payment date is late, and 10 days isn't
   - a correction received late doesn't make it late
   - a missing filing is missing, and late too only after its week ending plus 10 days, as of the business date
   - a week ending after the business date isn't missing
   - a test that the backend's 10 days equal the filing rules' `due_days`
-- [ ] `backend/tests/test_classification_changes.py`: a change from the week before is listed with its note, its established craft and its open exception; no change, and a first week with no week before, aren't.
-- [ ] **Scope**, `backend/tests/test_copilot_scope.py`, as Marcus:
+- [x] `backend/tests/test_classification_changes.py`: a change from the week before is listed with its note, its established craft and its open exception; no change, and a first week with no week before, aren't.
+- [x] **Scope**, `backend/tests/test_copilot_scope.py`, as Marcus:
   - `find_projects("road")` finds nothing
   - `exposure_summary` for PRJ-03 is a 404
   - exposure, filings and classification changes over every project hold only PRJ-01's and PRJ-02's cases
   - the agent's key is refused every `/api/copilot/` route with a 403
-- [ ] `test_openapi.py` still finds no rule break: every new request's fields are required.
-- [ ] `npm run check` green.
+- [x] `test_openapi.py` still finds no rule break: every new request's fields are required.
+- [x] `npm run check` green.
 
 ### Phase 3: withheld text
 

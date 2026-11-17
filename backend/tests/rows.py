@@ -65,3 +65,9 @@ def everything_recorded():
             table.name: [dict(row) for row in db.execute(select(table)).mappings()]
             for table in metadata.sorted_tables
         }
+
+
+def change(table: Table, *where, **values) -> None:
+    """Change the rows of a table that match, straight in the database."""
+    with engine().begin() as db:
+        db.execute(update(table).where(*where).values(**values))

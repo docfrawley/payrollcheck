@@ -1,7 +1,7 @@
-"""Finding a case, a project, a run, a version, the settings and the models
-allowed, and the messages for what isn't found, which more than one of the
-backend's modules need. A case or a project outside the caller's scope isn't
-found, with the same message as one that doesn't exist."""
+"""Finding a case, a project, a subcontractor, a run, a version, the settings and
+the models allowed, and the messages for what isn't found, which more than one of
+the backend's modules need. A case, a project or a subcontractor outside the
+caller's scope isn't found, with the same message as one that doesn't exist."""
 
 from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, func, select
@@ -14,15 +14,17 @@ from backend.database import (
     rounds,
     runs,
     settings,
+    subcontractors,
     versions,
 )
 from backend.models import ModelAllowed, Settings, Verdict
-from backend.scope import Scope, cases_in, projects_in
+from backend.scope import Scope, cases_in, projects_in, subcontractors_in
 
 RUN_NOT_FOUND = "Run {run_id} not found"
 CASE_NOT_FOUND = "Case {case_id} not found"
 VERSION_NOT_FOUND = "Version {number} not found"
 PROJECT_NOT_FOUND = "Project {project_id} not found"
+SUBCONTRACTOR_NOT_FOUND = "Subcontractor {subcontractor_id} not found"
 
 
 def find_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
@@ -42,6 +44,21 @@ def project_row(db: Connection, project_id: str, scope: Scope) -> RowMapping:
     row = db.execute(query).mappings().first()
     if row is None:
         raise HTTPException(404, PROJECT_NOT_FOUND.format(project_id=project_id))
+    return row
+
+
+def subcontractor_row(
+    db: Connection, subcontractor_id: str, scope: Scope
+) -> RowMapping:
+    """Return one subcontractor's row in the scope, or raise a 404."""
+    query = select(subcontractors).where(
+        subcontractors.c.subcontractor_id == subcontractor_id,
+        subcontractors_in(scope),
+    )
+    row = db.execute(query).mappings().first()
+    if row is None:
+        message = SUBCONTRACTOR_NOT_FOUND.format(subcontractor_id=subcontractor_id)
+        raise HTTPException(404, message)
     return row
 
 

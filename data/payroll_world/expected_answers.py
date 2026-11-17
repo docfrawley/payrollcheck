@@ -5,6 +5,8 @@ and none yet on the last week's Received cases. Each is for one reviewer's scope
 the projects they review, at the business date, with every period resolved by the
 periods module."""
 
+import json
+from pathlib import Path
 from typing import Any
 
 from context.sources import (
@@ -34,6 +36,8 @@ QUESTIONS = (
     "Draft a send-back notice for PC-0311 covering all three exceptions.",
 )
 LAST_WEEKS = 4
+# The file the generator writes them to, in data/.
+COPILOT_EXPECTED = "copilot_expected.json"
 # Read from the hand-written filing rules alone, so the generator runs before the
 # files it writes exist.
 DUE_DAYS: int = read_yaml(FILING_RULES)["due_days"]
@@ -235,3 +239,18 @@ def expected_answers(world: World, seeded: SeededSet, reviewer: str) -> dict[str
             )
         ],
     }
+
+
+def read_expected(data: Path) -> dict[str, Any]:
+    """The expected answers as the generator wrote them in the data folder."""
+    return json.loads((data / COPILOT_EXPECTED).read_text(encoding="utf-8"))
+
+
+def answer_to(expected: dict[str, Any], number: int) -> dict[str, Any]:
+    """The expected answer to the question of this number, from 1."""
+    [answer] = [
+        a["answer"]
+        for a in expected["answers"]
+        if a["question"] == QUESTIONS[number - 1]
+    ]
+    return answer

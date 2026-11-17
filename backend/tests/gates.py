@@ -1,6 +1,12 @@
 """Who may call each of the backend's operations: anyone, the agent with its key, a
 signed-in reviewer or the agent, or a signed-in reviewer alone."""
 
+from backend.tests.copilot_reads import (
+    CASE_FILTERS,
+    EXPOSURE_FILTERS,
+    LAST_WEEK,
+    with_nulls,
+)
 from backend.tests.settings_requests import STARTING
 
 ROUND = "/api/improvement/rounds/round-1"
@@ -131,6 +137,25 @@ REVIEWER_OPERATIONS = {
         {"message": "And the latest dispatch?"},
     ),
     "get_copilot_model": ("GET", "/api/copilot/model", None),
+    "find_cases": ("POST", "/api/copilot/cases", with_nulls(CASE_FILTERS)),
+    "read_case": ("GET", "/api/copilot/cases/PC-1202", None),
+    "get_exceptions": ("GET", "/api/copilot/cases/PC-1202/exceptions", None),
+    "exposure_summary": (
+        "POST",
+        "/api/copilot/exposure",
+        with_nulls(EXPOSURE_FILTERS),
+    ),
+    "filings_status": (
+        "POST",
+        "/api/copilot/filings",
+        {"period": LAST_WEEK, "project_id": None},
+    ),
+    "classification_changes": (
+        "POST",
+        "/api/copilot/classification-changes",
+        {"period": LAST_WEEK, "project_id": None},
+    ),
+    "find_projects": ("GET", "/api/copilot/projects?name=school", None),
     "start_copilot_step": (
         "POST",
         f"{TURN}/steps",

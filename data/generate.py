@@ -14,7 +14,7 @@ from context.sources import (
 from data.payroll_world import determinations, records
 from data.payroll_world.cases import SeededSet, seeded_set
 from data.payroll_world.clean import clean_payroll
-from data.payroll_world.expected_answers import expected_answers
+from data.payroll_world.expected_answers import COPILOT_EXPECTED, expected_answers
 from data.payroll_world.manifest import read_manifest
 from data.payroll_world.template import write_payroll
 from data.payroll_world.world import World, build_world
@@ -31,7 +31,6 @@ HELD_OUT_FOLDER = "held_out"
 HELD_OUT_MANIFEST = DATA / "held_out_manifest.yaml"
 HELD_OUT_LABELS = "held_out_labels.json"
 TINY_LABELS = "tiny_labels.json"
-COPILOT_EXPECTED = "copilot_expected.json"
 # The Copilot's expected answers are for this reviewer's scope.
 ASKED_BY = MARCUS
 PAYROLLS = "payrolls"

@@ -3,25 +3,18 @@ name, and one subcontractor with its record, its projects and its cases in the
 queue, each in the reviewer's scope. A subcontractor is in a scope while it is on
 a project in it, so a held-out subcontractor is never found."""
 
-from typing import Annotated
-
-from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import func, select
+from fastapi import APIRouter
+from sqlalchemy import select
 
 from backend.database import case_view, cases, engagements, projects, subcontractors
 from backend.dependencies import Database
+from backend.lookups import subcontractor_row
 from backend.models import Project, Subcontractor, SubcontractorMatch
+from backend.names import Name, holding_every_word
 from backend.scope import Scoped, cases_in, projects_in, subcontractors_in
 from backend.views import to_summary
 
-SUBCONTRACTOR_NOT_FOUND = "Subcontractor {subcontractor_id} not found"
-
 router = APIRouter()
-
-# A name to look for, with something in it besides spaces.
-Name = Annotated[
-    str, Query(pattern=r"\S", description="Words in the subcontractor's legal name")
-]
 
 
 @router.get("/api/subcontractors", operation_id="find_subcontractors")
@@ -32,10 +25,7 @@ def find_subcontractors(
     query = select(
         subcontractors.c.subcontractor_id, subcontractors.c.legal_name
     ).where(subcontractors_in(scope))
-    for word in name.lower().split():
-        query = query.where(
-            func.lower(subcontractors.c.legal_name).contains(word, autoescape=True)
-        )
+    query = holding_every_word(query, subcontractors.c.legal_name, name)
     rows = db.execute(query.order_by(subcontractors.c.legal_name)).mappings()
     return [SubcontractorMatch(**row) for row in rows]
 
@@ -45,13 +35,7 @@ def get_subcontractor(
     subcontractor_id: str, db: Database, scope: Scoped
 ) -> Subcontractor:
     """Get a subcontractor with its record, its projects and its cases in our queue."""
-    query = select(subcontractors).where(
-        subcontractors.c.subcontractor_id == subcontractor_id, subcontractors_in(scope)
-    )
-    record = db.execute(query).mappings().first()
-    if record is None:
-        message = SUBCONTRACTOR_NOT_FOUND.format(subcontractor_id=subcontractor_id)
-        raise HTTPException(404, message)
+    record = subcontractor_row(db, subcontractor_id, scope)
     on = (
         select(projects)
         .join(engagements, engagements.c.project_id == projects.c.project_id)

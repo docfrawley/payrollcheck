@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 SUNDAY = 6
+WEEK = timedelta(weeks=1)
 
 
 @dataclass(frozen=True)

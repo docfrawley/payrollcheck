@@ -15,6 +15,7 @@ from backend.business_date import router as business_date_router
 from backend.candidates import keep_findings
 from backend.configuration import router as configuration
 from backend.copilot import router as copilot
+from backend.copilot_reads import router as copilot_reads
 from backend.database import (
     case_view,
     cases,
@@ -102,6 +103,7 @@ app.include_router(copilot)
 app.include_router(projects)
 app.include_router(subcontractors_router)
 app.include_router(business_date_router)
+app.include_router(copilot_reads)
 
 
 def move_case(
