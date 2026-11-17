@@ -69,6 +69,10 @@ Every phase ends with `npm run check` green and coverage of at least 80%. Tests 
     - **The record:** the notice is saved as the latest submission's draft, `drafted_by` "PayrollCheck Copilot for Marcus Oyelaran".
     - **The live check:** the judge scores it on the rubric, and the score is reported.
 14. **A reviewer's unsent edit is never overwritten.** `draft_notice` refuses with a 409 when the latest submission's notice holds a reviewer's edit that hasn't been sent: "PC-0311's notice has Marcus Oyelaran's edit of Nov 23. Edit it on the case page." Where the notice was already sent, or there is only a draft, the new draft replaces the draft and clears the sent edit. The outbox keeps what was sent.
+    - **The Copilot's draft is told apart** (amended in phase 4, with the user): it is kept in the notice's `draft`, with `drafted_by` naming the Copilot and `drafted_for` the reviewer. The judge's and the improver's readers of the payroll agent's drafts leave it out, and the page labels each draft by who drafted it.
+    - **A send carries the text the reviewer saw** (amended in phase 4, with the user): Send back and Send again take the notice as the page showed it, and the app refuses with a 409 when the notice on record differs, as when the Copilot drafted it again meanwhile.
+    - **Each outbox record keeps the draft it was sent from**, and who drafted it, as they were at the send.
+
 15. **The tools.**
     - **The brief's list:** `list_cases`, `get_case`, `get_exceptions`, `exposure_summary`, `filings_status`, `classification_changes`, `find_subcontractors`, `find_projects`, `draft_notice`, `start_dispatch` and `start_evaluation`, and the five context layer lookups on the route.
     - **Kept as well:** `wait_for_run`, the wait in code (`waiting.py`, which still says what needs a reviewer with `needs_a_reviewer.py`), and `get_latest_dispatch`, for "How did the latest dispatch go?".
@@ -253,29 +257,29 @@ After pulling this stage, reseed with `npm run seed`.
 
 The tools of decision 15 on `app_api.py`'s new functions, the removed tools with their tests, `notice_drafts.py` and the `asks` wording, notices on a case Returned to sub with Send again, the business date in the instructions, and `instructions.md` rewritten.
 
-- [ ] `backend/tests/test_notice_drafts.py`:
+- [x] `backend/tests/test_notice_drafts.py`:
   - PC-0311's draft names each of its three exceptions with its worker, line, expected, paid and amount, and the total owed, $503.75
   - it is saved as the latest submission's draft, drafted by "PayrollCheck Copilot for Marcus Oyelaran"
   - a case with nothing open is refused with a 409
   - an unsent edit by the reviewer is refused with a 409 that names who edited it and when
   - a notice already sent is replaced by the new draft
   - the agent's key is refused with a 403
-- [ ] `backend/tests/test_send_back.py` gains:
+- [x] `backend/tests/test_send_back.py` gains:
   - on a case Returned to sub, the reviewer saves an edit and sends it again: a second outbox record, and the case still Returned to sub
   - Send again is refused on a case Awaiting review or Accepted
-- [ ] `agent/tests/test_copilot.py` (adapted), with the stub model keeping every input it's given:
+- [x] `agent/tests/test_copilot.py` (adapted), with the stub model keeping every input it's given:
   - each tool calls its one route with `null` for an input left out
   - a period goes through as the union, never a date the model wrote
   - the tool set is exactly decision 15's, with no tool whose name or route signs off, sends back, overrides or saves a notice but `draft_notice`'s
   - the business date reaches the instructions
   - asked to sign off, a scripted turn's tools have no way to, and the refusal path is the model's own words. The live check covers what it says.
   - a flagged case's text cells appear in no prompt the stub model kept, after `get_case`, `get_exceptions` and `classification_changes` on it
-- [ ] `grep -rnE "check_sign_off|pause_turn|answer_confirmation|send_back_claim|count_payouts|interrupt\(" agent backend dashboard/src e2e` finds nothing.
-- [ ] `agent/tests/test_boundaries.py`: `app_api.py` reaches no route under `/api/cases/{id}/sign-off`, `/send-back`, `/notice` (but the Copilot's draft), `/exceptions` or `/settings`.
-- [ ] A fresh reviewer reads `instructions.md` against rule 14 of `docs/CODE_STANDARDS.md` and finds goals, not steps.
-- [ ] vitest: the case page on a case Returned to sub shows the notice editable with Send again, and the earlier sends.
-- [ ] `e2e/send_back.spec.ts` gains a case Returned to sub sent again.
-- [ ] `npm run check` green.
+- [x] `grep -rnE "check_sign_off|pause_turn|answer_confirmation|send_back_claim|count_payouts|interrupt\(" agent backend dashboard/src e2e` finds nothing.
+- [x] `agent/tests/test_boundaries.py`: `app_api.py` reaches no route under `/api/cases/{id}/sign-off`, `/send-back`, `/notice` (but the Copilot's draft), `/exceptions` or `/settings`.
+- [x] A fresh reviewer reads `instructions.md` against rule 14 of `docs/CODE_STANDARDS.md` and finds goals, not steps.
+- [x] vitest: the case page on a case Returned to sub shows the notice editable with Send again, and the earlier sends.
+- [x] `e2e/send_back.spec.ts` gains a case Returned to sub sent again.
+- [x] `npm run check` green.
 
 ### Phase 5: the success-criteria table and the sidebar
 

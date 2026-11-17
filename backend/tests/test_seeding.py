@@ -17,8 +17,10 @@ from backend.database import (
     submissions,
     versions,
 )
+from backend.tests.copilot_reads import find_cases
 from backend.tests.dashboard_reads import read
 from backend.tests.rows import count
+from backend.tests.sign_in import DANA
 
 WEEK_12 = "2026-11-22"
 
@@ -141,7 +143,7 @@ def test_no_held_out_record_is_in_any_list(client):
     found = read(client, "/api/subcontractors?name=e").json()
     assert found
     assert all(s["subcontractor_id"].startswith("SUB-0") for s in found)
-    assert read(client, "/api/subcontractors/SUB-51").status_code == 404
+    assert find_cases(client, DANA, subcontractor_id="SUB-51").status_code == 404
 
 
 def test_the_seed_command_says_what_it_seeded(capsys):

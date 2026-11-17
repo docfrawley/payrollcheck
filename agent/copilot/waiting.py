@@ -7,6 +7,7 @@ from typing import Any
 
 from agent.app_terms import DISPATCH, EVALUATION, RUNNING, STOPPED
 from agent.copilot import app_api
+from agent.copilot.filters import EVERY_CASE, body
 from agent.copilot.needs_a_reviewer import needs_a_reviewer
 
 POLL = 5
@@ -44,7 +45,7 @@ def how_it_went(sign_in: str, run: dict[str, Any]) -> dict[str, Any]:
     if run["status"] == STOPPED:
         return went | {"stopped_because": run["stopped_because"]}
     if run["kind"] == DISPATCH:
-        queue = app_api.list_cases(sign_in)
+        queue = app_api.find_cases(sign_in, body(EVERY_CASE))
         return went | {
             "summary": run["summary"],
             "seconds": run["seconds"],

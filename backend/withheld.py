@@ -2,10 +2,10 @@
 everything the subcontractor wrote before they answer, so no model sees it: every
 text cell of every submission (template.TEXT), the file's name, a worker id that
 isn't one of our workers, each exception's and finding's expected and actual,
-which can quote a cell, and the screening's reason, which can quote the
-instruction it found. Numbers, dates, our records' ids and names, rule codes,
-shortfalls and citations pass, and so do the reviewers' own notices and overrides,
-written after reading the case page. Pure: our records' names say which workers
+which can quote a cell, the screening's reason, which can quote the instruction
+it found, and the case's notices, whose drafts are written from the exceptions.
+Numbers, dates, our records' ids and names, rule codes, shortfalls, citations and
+the reviewers' overrides pass. Pure: our records' names say which workers
 are ours, and the answers which cases are flagged."""
 
 from typing import Any
@@ -24,6 +24,8 @@ WITHHELD = "[withheld: screening flag — see case page]"
 SCREENED = "Flagged by the screening for an instruction in its text — see case page"
 # An exception's or a finding's words, which can quote a cell.
 QUOTED = {"expected": WITHHELD, "actual": WITHHELD}
+# A notice's words, drafted from the exceptions.
+NOTICE_TEXT = {"draft": WITHHELD, "edited_text": WITHHELD}
 
 
 def worker(worker_id: str | None, ours: set[str]) -> str | None:
@@ -66,6 +68,11 @@ def case(found: Case) -> Case:
             "candidates": [
                 c.model_copy(update=QUOTED | {"worker_id": worker(c.worker_id, ours)})
                 for c in found.candidates
+            ],
+            "notice": found.notice and found.notice.model_copy(update=NOTICE_TEXT),
+            "sent_notices": [
+                n.model_copy(update={"body": WITHHELD, "draft": WITHHELD})
+                for n in found.sent_notices
             ],
         }
     )

@@ -9,6 +9,7 @@ from fastapi.routing import APIRoute
 from backend.copilot_reads import router
 from backend.tests.copilot_reads import (
     LAST_WEEK,
+    ask,
     classification_changes,
     exposure,
     filings,
@@ -20,7 +21,13 @@ from backend.tests.sign_in import DANA, signed_in
 from backend.withheld import SCREENED, WITHHELD
 
 # The reads that can give a flagged case's cells, and those that give none.
-WITH_CELLS = {"find_cases", "read_case", "get_exceptions", "classification_changes"}
+WITH_CELLS = {
+    "find_cases",
+    "read_case",
+    "get_exceptions",
+    "classification_changes",
+    "draft_notice",
+}
 WITHOUT_CELLS = {"exposure_summary", "filings_status", "find_projects"}
 
 
@@ -34,6 +41,7 @@ def answers(client):
         "exposure_summary": exposure(client, DANA),
         "filings_status": filings(client, LAST_WEEK, DANA),
         "find_projects": read(client, "/projects?name=renovation", DANA),
+        "draft_notice": ask(client, f"/cases/{FLAGGED}/notice-draft", None, DANA),
     }
 
 
@@ -48,6 +56,11 @@ def test_no_read_gives_a_flagged_cases_text(dashboard):
         assert answer.status_code == 200, operation
         for text in planted:
             assert text not in answer.text, (operation, text)
+    # Once its notice is drafted from the exceptions, its case in full too.
+    again = read(dashboard, f"/cases/{FLAGGED}", DANA)
+    assert again.json()["notice"]["draft"] == WITHHELD
+    for text in planted:
+        assert text not in again.text, text
 
 
 def test_a_flagged_case_in_full_passes_what_isnt_its_text(dashboard):

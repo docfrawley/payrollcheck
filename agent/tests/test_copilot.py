@@ -4,6 +4,7 @@ message after it, and the reviewer's sign-in on every request it sends."""
 
 import itertools
 import json
+import re
 
 import pytest
 from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
@@ -13,11 +14,15 @@ from agent.copilot import app_api, turns
 from agent.copilot.tools import COPILOT_TOOLS, KINDS
 from agent.gateway import GATEWAY_URL
 from agent.tests.copilot_driver import Copilot
-from agent.tests.stubs import USAGE, call, stub
+from agent.tests.stubs import USAGE, call, call_with, stub
 from backend.tests.case_requests import awaiting_review, finding
+from backend.tests.copilot_reads import LAST_FOUR_WEEKS as FOUR_WEEKS
+from backend.tests.copilot_reads import LAST_WEEK, THIS_MONTH
 from backend.tests.copilot_requests import latest, started
+from backend.tests.flagged import FLAGGED, flag_with_planted_text
 from backend.tests.run_requests import another_running_dispatch, fail_run, run_path
 from backend.tests.sign_in import DANA, MARCUS, OTHER_KEY, token
+from backend.withheld import WITHHELD
 
 WHY = "Why does PC-1201 need me?"
 ANSWER = "PC-1201 has one open exception: a base rate $0.32 short."
@@ -39,7 +44,7 @@ def test_the_loop(client, copilot: Copilot):
     awaiting_review(client, "PC-1201", finding())
     copilot.model = stub(
         call("get_case", case_id="PC-1201"),
-        call("list_steps", case_id="PC-1201"),
+        call("get_exceptions", case_id="PC-1201"),
         call("lookup_payroll_term", term=TERM),
         ANSWER,
     )
@@ -47,7 +52,7 @@ def test_the_loop(client, copilot: Copilot):
     [turn] = conversation["turns"]
     assert cards_of(turn) == [
         ("get_case", "PC-1201", "done"),
-        ("list_steps", "PC-1201", "done"),
+        ("get_exceptions", "PC-1201", "done"),
         ("lookup_payroll_term", TERM, "done"),
     ]
     assert all(card["finished_at"] and card["seconds"] >= 0 for card in turn["steps"])
@@ -70,7 +75,8 @@ def test_the_model_knows_who_it_works_for(copilot: Copilot):
     [system, *_] = copilot.model.prompts[0]
     assert isinstance(system, SystemMessage)
     assert "You work for Dana Whitfield, the compliance manager," in system.text
-    assert "You never sign off a case or send one back" in system.text
+    assert "You never decide a case." in system.text
+    assert "Today, the business date, is 2026-11-23." in system.text
     copilot.model = stub("Hello, Marcus.")
     copilot.ask("Hello", email=MARCUS)
     [system, *_] = copilot.model.prompts[0]
@@ -141,7 +147,7 @@ def test_one_tool_at_a_time_in_order(client, copilot: Copilot):
     awaiting_review(client, "PC-1201", finding())
     calls = [
         call("get_case", case_id="PC-1201"),
-        call("get_subcontractor", subcontractor_id="SUB-01"),
+        call_with("find_projects", {"name": "school"}),
         call("lookup_payroll_term", term=TERM),
     ]
     together = AIMessage(content="", tool_calls=[c.tool_calls[0] for c in calls])
@@ -149,7 +155,7 @@ def test_one_tool_at_a_time_in_order(client, copilot: Copilot):
     [turn] = copilot.ask(WHY)["turns"]
     assert [card["tool"] for card in turn["steps"]] == [
         "get_case",
-        "get_subcontractor",
+        "find_projects",
         "lookup_payroll_term",
     ]
     for before, after in itertools.pairwise(turn["steps"]):
@@ -158,7 +164,7 @@ def test_one_tool_at_a_time_in_order(client, copilot: Copilot):
 
 
 def test_a_turn_makes_25_model_calls_at_most(copilot: Copilot):
-    copilot.model = stub(*[call("get_settings") for _ in range(26)])
+    copilot.model = stub(*[call("get_latest_dispatch") for _ in range(26)])
     conversation = copilot.ask("Keep looking")
     [turn] = conversation["turns"]
     assert (turn["status"], turn["failure"]) == (
@@ -172,10 +178,10 @@ def test_a_turn_makes_25_model_calls_at_most(copilot: Copilot):
 
 
 def test_a_failed_turn_and_a_message_after_it(copilot: Copilot, monkeypatch):
-    def broken(sign_in):
+    def broken(sign_in, filters):
         raise RuntimeError("The queue broke\nwith a long story")
 
-    monkeypatch.setattr(app_api, "list_cases", broken)
+    monkeypatch.setattr(app_api, "find_cases", broken)
     asked = call("list_cases")
     copilot.model = stub(asked)
     conversation = copilot.ask("What's in the queue?")
@@ -249,19 +255,20 @@ def test_the_copilots_tools(copilot: Copilot):
     assert named == [
         "list_cases",
         "get_case",
-        "list_steps",
-        "what_needs_a_reviewer",
+        "get_exceptions",
         "find_subcontractors",
-        "get_subcontractor",
+        "find_projects",
         "get_wage_rate",
         "check_registration",
         "check_apprentice",
         "get_filing_rules",
         "lookup_payroll_term",
+        "exposure_summary",
+        "filings_status",
+        "classification_changes",
         "get_latest_dispatch",
-        "list_evaluations",
-        "get_settings",
         "wait_for_run",
+        "draft_notice",
         "start_dispatch",
         "start_evaluation",
     ]
@@ -271,23 +278,147 @@ def test_the_copilots_tools(copilot: Copilot):
     assert KINDS == {
         "list_cases": "cases",
         "get_case": "cases",
-        "list_steps": "cases",
-        "what_needs_a_reviewer": "cases",
+        "get_exceptions": "cases",
         "find_subcontractors": "subcontractors",
-        "get_subcontractor": "subcontractors",
+        "find_projects": "projects",
         "get_wage_rate": "context",
         "check_registration": "context",
         "check_apprentice": "context",
         "get_filing_rules": "context",
         "lookup_payroll_term": "context",
+        "exposure_summary": "work",
+        "filings_status": "work",
+        "classification_changes": "work",
         "get_latest_dispatch": "work",
-        "list_evaluations": "work",
-        "get_settings": "work",
         "wait_for_run": "work",
         "search_memory": "memory",
+        "draft_notice": "action",
         "start_dispatch": "action",
         "start_evaluation": "action",
     }
+
+
+DECIDES = re.compile(r"sign|send|back|overrid|dismiss|restor|setting|notice")
+
+
+def test_no_tool_decides_a_case():
+    """No tool's name says it signs off, sends back, overrides or changes the
+    settings, and the one that writes a notice only drafts it. The routes they
+    reach are checked in test_boundaries.py."""
+    deciding = [t.name for t in COPILOT_TOOLS if DECIDES.search(t.name)]
+    assert deciding == ["draft_notice"]
+
+
+# The Copilot's own bookkeeping with the app, around the tools' reads.
+BOOKKEEPING = ("/me", "/business-date", "/copilot/conversations", "/copilot/turns")
+
+
+def test_each_read_calls_its_one_route_with_null_for_what_was_left_out(
+    copilot: Copilot, monkeypatch
+):
+    sent = []
+    call_as = app_api.call_as
+
+    def keep(sign_in, method, path, **request):
+        sent.append((method, path, request.get("json")))
+        return call_as(sign_in, method, path, **request)
+
+    monkeypatch.setattr(app_api, "call_as", keep)
+    open_on_lincoln = {"project_id": "PRJ-01", "has_open_exceptions": True}
+    copilot.model = stub(
+        call("list_cases", filters=open_on_lincoln),
+        call(
+            "exposure_summary",
+            filters={"subcontractor_id": "SUB-01", "period": THIS_MONTH},
+        ),
+        call("filings_status", filters={"period": LAST_WEEK}),
+        call("classification_changes", filters={"period": FOUR_WEEKS}),
+        call("get_exceptions", case_id="PC-0311"),
+        call_with("find_projects", {"name": "school"}),
+        "Found.",
+    )
+    [turn] = copilot.ask("Tell me everything", email=MARCUS)["turns"]
+    assert [c["status"] for c in turn["steps"]] == ["done"] * 6
+    reads = [
+        r for r in sent if not r[1].startswith(BOOKKEEPING) and r[1] != "/copilot/model"
+    ]
+    assert reads == [
+        (
+            "POST",
+            "/copilot/cases",
+            {
+                "project_id": "PRJ-01",
+                "subcontractor_id": None,
+                "status": None,
+                "period": None,
+                "has_open_exceptions": True,
+                "flag": None,
+            },
+        ),
+        (
+            "POST",
+            "/copilot/exposure",
+            {"project_id": None, "subcontractor_id": "SUB-01", "period": THIS_MONTH},
+        ),
+        ("POST", "/copilot/filings", {"period": LAST_WEEK, "project_id": None}),
+        (
+            "POST",
+            "/copilot/classification-changes",
+            {"period": FOUR_WEEKS, "project_id": None},
+        ),
+        ("GET", "/copilot/cases/PC-0311/exceptions", None),
+        ("GET", "/copilot/projects", None),
+    ]
+    flagged = json.loads(copilot.model.prompts[2][-1].text)
+    assert (flagged["case_ids"], flagged["flagged"]) == (["PC-1009"], "$198.75")
+
+
+def test_a_date_the_model_wrote_isnt_a_period(copilot: Copilot):
+    copilot.model = stub(
+        call("filings_status", filters={"period": "2026-11-16"}),
+        call("filings_status", filters={"period": {"kind": "last_weeks", "count": 0}}),
+        "Which week?",
+    )
+    asked = "Late payrolls for the week of Nov 16?"
+    [turn] = copilot.ask(asked, email=MARCUS)["turns"]
+    assert [c["status"] for c in turn["steps"]] == ["refused", "refused"]
+    assert copilot.model.prompts[1][-1].text.startswith("Refused: ")
+
+
+def test_the_draft_notice_is_saved_on_the_case(client, copilot: Copilot):
+    copilot.model = stub(call("draft_notice", case_id="PC-0311"), "Drafted.")
+    [turn] = copilot.ask("Draft a notice for PC-0311", email=MARCUS)["turns"]
+    [card] = turn["steps"]
+    assert (card["tool"], card["kind"], card["status"]) == (
+        "draft_notice",
+        "action",
+        "done",
+    )
+    drafted = json.loads(copilot.model.prompts[1][-1].text)
+    assert drafted["send_from"] == "the case page"
+    case = client.get("/api/cases/PC-0311").json()
+    assert case["notice"]["draft"] == drafted["draft"]
+    assert case["notice"]["drafted_by"] == "PayrollCheck Copilot for Marcus Oyelaran"
+    assert case["status"] == "returned_to_sub"
+
+
+def test_a_flagged_cases_text_reaches_no_prompt(copilot: Copilot):
+    planted = flag_with_planted_text()
+    copilot.model = stub(
+        call("get_case", case_id=FLAGGED),
+        call("get_exceptions", case_id=FLAGGED),
+        call("classification_changes", filters={"period": LAST_WEEK}),
+        call("draft_notice", case_id=FLAGGED),
+        call("get_case", case_id=FLAGGED),
+        "It's flagged; see the case page.",
+    )
+    [turn] = copilot.ask(f"What's on {FLAGGED}?", email=MARCUS)["turns"]
+    assert [c["status"] for c in turn["steps"]] == ["done"] * 5
+    prompts = "\n".join(m.text for prompt in copilot.model.prompts for m in prompt)
+    assert WITHHELD in prompts
+    for text in planted:
+        assert text not in prompts
+        assert all(text not in (card["answer"] or "") for card in turn["steps"])
 
 
 def test_the_lookups_each_with_a_card(copilot: Copilot):
@@ -298,31 +429,28 @@ def test_the_lookups_each_with_a_card(copilot: Copilot):
                 {"name": "find_subcontractors", "args": {"name": "garden"}, "id": "f"}
             ],
         ),
-        call("get_subcontractor", subcontractor_id="SUB-01"),
-        call("list_cases"),
+        call_with("find_projects", {"name": "school"}),
+        call("list_cases", filters={"subcontractor_id": "SUB-01"}),
         call("get_latest_dispatch"),
-        call("list_evaluations"),
-        call("get_settings"),
         "Garden State Electric works on three projects.",
     )
     [turn] = copilot.ask("Tell me about Garden State Electric")["turns"]
     assert [(c["tool"], c["kind"], c["status"]) for c in turn["steps"]] == [
         ("find_subcontractors", "subcontractors", "done"),
-        ("get_subcontractor", "subcontractors", "done"),
+        ("find_projects", "projects", "done"),
         ("list_cases", "cases", "done"),
         ("get_latest_dispatch", "work", "done"),
-        ("list_evaluations", "work", "done"),
-        ("get_settings", "work", "done"),
     ]
     found = copilot.model.prompts[1][-1]
     assert json.loads(found.text) == [
         {"subcontractor_id": "SUB-01", "legal_name": "Garden State Electric LLC"}
     ]
-    subcontractor = json.loads(copilot.model.prompts[2][-1].text)
-    assert subcontractor["legal_name"] == "Garden State Electric LLC"
-    assert "PC-1201" in [c["case_id"] for c in subcontractor["cases"]]
-    queue = {c["case_id"]: c for c in json.loads(copilot.model.prompts[3][-1].text)}
-    assert queue["PC-0311"]["status"] == "returned_to_sub"
+    projects = json.loads(copilot.model.prompts[2][-1].text)
+    assert [p["project_id"] for p in projects] == ["PRJ-01"]
+    queue = json.loads(copilot.model.prompts[3][-1].text)
+    cases = {c["case_id"]: c for c in queue["cases"]}
+    assert cases["PC-1009"]["status"] == "returned_to_sub"
+    assert cases["PC-1009"]["shortfall"] == "$198.75"
 
 
 def test_the_five_payroll_lookups_each_with_a_card_and_its_sources(copilot: Copilot):
@@ -375,7 +503,8 @@ def test_a_lookup_the_context_layer_refuses_goes_back_to_the_model(copilot: Copi
         ("pay_case", {"case_id": "PC-1201"}),
         ("sign_off_case", {"case_id": "PC-1201"}),
         ("send_back_case", {"case_id": "PC-1201", "note": "Fix line 1."}),
-        ("check_success_criteria", {}),
+        ("dismiss_exception", {"case_id": "PC-1201", "exception_id": 1}),
+        ("save_notice", {"case_id": "PC-1201", "text": "Fix line 1."}),
     ],
 )
 def test_a_tool_the_copilot_doesnt_have_goes_back_to_the_model(
@@ -415,7 +544,7 @@ def test_a_sign_in_that_runs_out_partway_leaves_the_turn_for_the_app_to_stop(
 
     def runs_out_at_the_queue(sign_in: str, method: str, path: str, **request):
         nonlocal ran_out
-        ran_out = ran_out or path == "/cases"
+        ran_out = ran_out or path == "/copilot/cases"
         if ran_out:
             raise Refused(401, "The sign-in isn't valid. Please sign in again.")
         return call_as(sign_in, method, path, **request)

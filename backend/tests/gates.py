@@ -86,7 +86,7 @@ REVIEWER_OPERATIONS = {
         {"evaluation_set": "tiny", "agents": 5},
     ),
     "sign_off_case": ("POST", "/api/cases/PC-1202/sign-off", None),
-    "send_back_case": ("POST", "/api/cases/PC-1202/send-back", None),
+    "send_back_case": ("POST", "/api/cases/PC-1202/send-back", {"text": "Fix it."}),
     "list_rules": ("GET", "/api/rules", None),
     "save_notice": (
         "PUT",
@@ -123,7 +123,6 @@ REVIEWER_OPERATIONS = {
     "approve_proposal": ("POST", f"{PROPOSAL}/approval", None),
     "reject_proposal": ("POST", f"{PROPOSAL}/rejection", {"reason": "Too broad"}),
     "find_subcontractors": ("GET", "/api/subcontractors?name=garden", None),
-    "get_subcontractor": ("GET", "/api/subcontractors/SUB-01", None),
     "list_conversations": ("GET", "/api/copilot/conversations", None),
     "start_conversation": (
         "POST",
@@ -156,6 +155,12 @@ REVIEWER_OPERATIONS = {
         {"period": LAST_WEEK, "project_id": None},
     ),
     "find_projects": ("GET", "/api/copilot/projects?name=school", None),
+    "draft_notice": ("POST", "/api/copilot/cases/PC-0311/notice-draft", None),
+    "resend_notice": (
+        "POST",
+        "/api/cases/PC-0311/notice/resend",
+        {"text": "Fix it."},
+    ),
     "start_copilot_step": (
         "POST",
         f"{TURN}/steps",

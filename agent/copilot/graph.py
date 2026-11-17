@@ -143,8 +143,9 @@ def call_model(
     if calls >= TURN_MODEL_CALLS:
         message = f"The Copilot made {calls} model calls without finishing"
         raise TooManyModelCalls(message)
+    context = runtime.context
     system = SystemMessage(
-        instructions_for(runtime.context.reviewer, state["remembered"])
+        instructions_for(context.reviewer, context.business_date, state["remembered"])
     )
     reply = llm.invoke([system, *state["messages"]])
     return {"messages": [reply], "model_calls": 1, "cost": usage_of(reply).cost}

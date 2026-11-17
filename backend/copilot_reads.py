@@ -1,18 +1,19 @@
-"""The Copilot's reads, under /api/copilot/, for a signed-in reviewer in their
-scope: the queue's cases found by filters, a case in full and its open exceptions,
-exposure, filings, classification changes and projects found by name. The case
+"""The Copilot's reads, and its one write, under /api/copilot/, for a signed-in
+reviewer in their scope: the queue's cases found by filters, a case in full and
+its open exceptions, exposure, filings, classification changes and projects found
+by name, and the send-back notice it drafts and saves for the reviewer. The case
 page's reads are the dashboard's; the Copilot's are these, which pass every
 answer that can hold what a flagged case's subcontractor wrote through
 withheld.py. The rest hold none: their names and ids come from our records."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import Connection, select
 
-from backend import withheld
+from backend import notice_drafts, notices, withheld
 from backend.case_search import find_cases as search
 from backend.classification_changes import classification_changes as changes_in
 from backend.database import projects
-from backend.dependencies import Database
+from backend.dependencies import Database, SignedIn
 from backend.exposure import exposure
 from backend.filings import filings
 from backend.lookups import find_case, project_row, subcontractor_row
@@ -27,10 +28,12 @@ from backend.models import (
     Filings,
     FilingsRequest,
     FoundCases,
+    NoticeDrafted,
     ProjectMatch,
 )
 from backend.names import Name, holding_every_word
 from backend.open_exceptions import case_exceptions
+from backend.reviewing import NOTICED, hold_for_review, in_review
 from backend.scope import Scope, Scoped, projects_in
 from backend.views import case_in_full
 
@@ -101,3 +104,26 @@ def find_projects(name: Name, db: Database, scope: Scoped) -> list[ProjectMatch]
     query = holding_every_word(query, projects.c.name, name)
     rows = db.execute(query.order_by(projects.c.project_id)).mappings()
     return [ProjectMatch(**row) for row in rows]
+
+
+SEND_FROM = "the case page"
+NOTHING_OPEN = "{case_id} has no open exception to put in a notice"
+
+
+@router.post("/cases/{case_id}/notice-draft", operation_id="draft_notice")
+def draft_notice(
+    case_id: str, reviewer: SignedIn, db: Database, scope: Scoped
+) -> NoticeDrafted:
+    """Draft the case's send-back notice from its open exceptions, and save it."""
+    case = in_review(db, case_id, scope, "given a notice", NOTICED)
+    hold_for_review(db, case, NOTICED)
+    found = case_exceptions(db, case)
+    if not found.exceptions:
+        raise HTTPException(409, NOTHING_OPEN.format(case_id=case_id))
+    text = notice_drafts.draft(found, case["project_name"])
+    drafted_by = notices.save_draft(db, case, text, reviewer)
+    # The model reads the notice as it reads the exceptions.
+    shown = notice_drafts.draft(withheld.exceptions(found), case["project_name"])
+    return NoticeDrafted(
+        case_id=case_id, drafted_by=drafted_by, draft=shown, send_from=SEND_FROM
+    )

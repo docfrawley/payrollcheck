@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException
 from mangum import Mangum
-from sqlalchemy import Connection, RowMapping, func, insert, select, update
+from sqlalchemy import Connection, RowMapping, func, insert, select
 
 from backend import agent_api, dashboard, notices, outbox, overrides
 from backend.business_date import business_date
@@ -56,6 +56,7 @@ from backend.models import (
     Reviewer,
     RuleEntry,
     ScreeningFlagRequest,
+    SendRequest,
     StartRequest,
     Status,
     Step,
@@ -66,6 +67,14 @@ from backend.models import (
 from backend.overrides import Overriding
 from backend.projects import router as projects
 from backend.reports import record_report
+from backend.reviewing import (
+    AWAITING,
+    NOTICED,
+    RETURNED,
+    hold_for_review,
+    in_review,
+    move_case,
+)
 from backend.round_state import round_row, why_no_case_starts
 from backend.rule_codes import RULES
 from backend.runs import router as runs
@@ -79,8 +88,6 @@ ATTEMPTS = 2
 NOT_STARTED = "Case {case_id} has not been started"
 NOT_IN_PROGRESS = "Case {case_id} is not in progress"
 NOT_RECEIVED = "Case {case_id} is not Received"
-NOT_AWAITING_REVIEW = "Case {case_id} is not awaiting review"
-A_COPY = "Case {case_id} is a copy in an evaluation and can't be {answered}"
 STILL_OPEN = (
     "Case {case_id} has {count} open {exceptions}, so it can't be signed off: "
     "dismiss each with a reason, or send it back to its subcontractor"
@@ -106,20 +113,6 @@ app.include_router(business_date_router)
 app.include_router(copilot_reads)
 
 
-def move_case(
-    db: Connection, case_id: str, old: Status, new: Status, **columns: Any
-) -> bool:
-    """Move a case from one status to another, setting any other columns given, and
-    say whether it moved: only the first of two requests at the same moment finds
-    it in the old status."""
-    moved = db.execute(
-        update(cases)
-        .where(cases.c.case_id == case_id, cases.c.status == old)
-        .values(status=new, **columns)
-    )
-    return moved.rowcount == 1
-
-
 def in_progress(db: Connection, case_id: str) -> RowMapping:
     """A case's row if it is in progress, for the agent, or raise a 404 or a 409."""
     case = find_case(db, case_id, EVERYTHING)
@@ -138,24 +131,8 @@ def move_on(db: Connection, case_id: str, new: Status, **columns: Any) -> None:
 def awaiting_review(
     db: Connection, case_id: str, scope: Scope, answered: str
 ) -> RowMapping:
-    """A case a reviewer can answer: its row, or raise a 404, or a 409 for an
-    evaluation's copy, which nobody answers, or a case not awaiting review."""
-    case = find_case(db, case_id, scope)
-    if case["evaluation_id"] is not None:
-        raise HTTPException(409, A_COPY.format(case_id=case_id, answered=answered))
-    if case["status"] != Status.AWAITING_REVIEW:
-        raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
-    return case
-
-
-def hold_for_review(db: Connection, case_id: str) -> None:
-    """Hold a case awaiting review while a reviewer overrides its exceptions or
-    edits its notice, by taking its row's lock with a conditional update, or raise
-    a 409. A sign-off takes the same lock first, so the two never interleave:
-    whichever comes second finds what the first one did."""
-    held = move_case(db, case_id, Status.AWAITING_REVIEW, Status.AWAITING_REVIEW)
-    if not held:
-        raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
+    """A case a reviewer can answer, awaiting review."""
+    return in_review(db, case_id, scope, answered, AWAITING)
 
 
 def decide(db: Connection, case_id: str, outcome: Status, reviewer: Reviewer) -> None:
@@ -172,7 +149,7 @@ def decide(db: Connection, case_id: str, outcome: Status, reviewer: Reviewer) ->
         reviewed_on=business_date(db).isoformat(),
     )
     if not decided:
-        raise HTTPException(409, NOT_AWAITING_REVIEW.format(case_id=case_id))
+        raise HTTPException(409, AWAITING.refusal.format(case_id=case_id))
 
 
 def started_thread(db: Connection, case_id: str) -> str:
@@ -417,17 +394,18 @@ def sign_off_case(
 
 @app.post("/api/cases/{case_id}/send-back", operation_id="send_back_case")
 def send_back_case(
-    case_id: str, reviewer: SignedIn, scope: Scoped, db: Database
+    case_id: str,
+    request: SendRequest,
+    reviewer: SignedIn,
+    scope: Scoped,
+    db: Database,
 ) -> Case:
-    """Send a case back to its subcontractor with its notice, through the outbox."""
+    """Send a case back to its subcontractor with the notice its reviewer saw."""
     case = awaiting_review(db, case_id, scope, "sent back")
     decide(db, case_id, Status.RETURNED_TO_SUB, reviewer)
     # Read after the move, which holds the case, so no edit lands in between; a
     # refusal undoes the move with the rest of the request.
-    body = notices.notice_to_send(db, case)
-    sent_at = now()
-    notices.mark_sent(db, case, reviewer, sent_at)
-    outbox.send(db, case, body, reviewer, sent_at)
+    outbox.send_notice(db, case, reviewer, request.text)
     return case_in_full(db, case_id, scope)
 
 
@@ -440,9 +418,24 @@ def save_notice(
     db: Database,
 ) -> Case:
     """Save the reviewer's edit of the latest submission's notice, without sending."""
-    case = awaiting_review(db, case_id, scope, "edited")
-    hold_for_review(db, case_id)
+    case = in_review(db, case_id, scope, "edited", NOTICED)
+    hold_for_review(db, case, NOTICED)
     notices.save_notice(db, case, request.text, reviewer)
+    return case_in_full(db, case_id, scope)
+
+
+@app.post("/api/cases/{case_id}/notice/resend", operation_id="resend_notice")
+def resend_notice(
+    case_id: str,
+    request: SendRequest,
+    reviewer: SignedIn,
+    scope: Scoped,
+    db: Database,
+) -> Case:
+    """Send a returned case's notice again as its reviewer saw it, unmoved."""
+    case = in_review(db, case_id, scope, "sent again", RETURNED)
+    hold_for_review(db, case, RETURNED)
+    outbox.send_notice(db, case, reviewer, request.text)
     return case_in_full(db, case_id, scope)
 
 
@@ -465,7 +458,7 @@ def overriding(
     the request, or a 404 or a 409 for a case they can't override: one not
     awaiting review, or an evaluation's copy."""
     case = awaiting_review(db, case_id, scope, OVERRIDDEN)
-    hold_for_review(db, case_id)
+    hold_for_review(db, case, AWAITING)
     return Overriding(case=case, reviewer=reviewer, scope=scope)
 
 

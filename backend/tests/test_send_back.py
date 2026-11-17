@@ -15,10 +15,11 @@ from backend.tests.case_requests import (
     awaiting_review,
     finding,
     save_notice,
+    send_again,
     send_back,
 )
 from backend.tests.rows import committed_case, count, everything_recorded
-from backend.tests.sign_in import MARCUS
+from backend.tests.sign_in import MARCUS, signed_in
 
 CASE = "PC-1201"
 EDITED = "Please pay Kim Dimitrov the journeyman base rate on line 1 and resubmit."
@@ -146,3 +147,55 @@ def test_a_notice_that_cant_be_delivered_leaves_the_case_awaiting_review(
             select(notices.c.sent_by).where(notices.c.case_id == CASE)
         ).scalar_one()
     assert sent_by is None
+
+
+def test_a_returned_case_is_edited_and_sent_again(dashboard, client, delivered):
+    awaiting_review(client, CASE, finding())
+    save_notice(client, CASE, EDITED, MARCUS)
+    send_back(dashboard, CASE, MARCUS)
+    again = "Line 1 is still short: please pay Kim Dimitrov the base rate."
+    assert save_notice(dashboard, CASE, again, MARCUS).status_code == 200
+    sent = send_again(dashboard, CASE, MARCUS)
+    assert (sent.status_code, sent.json()["status"]) == (200, "returned_to_sub")
+    assert [n["body"] for n in sent.json()["sent_notices"]] == [again, EDITED]
+    assert [row["body"] for row in delivered] == [EDITED, again]
+    assert count(outbox_table) == 2
+
+
+def test_send_again_is_refused_unless_the_case_is_returned(dashboard, client):
+    awaiting_review(client, CASE, finding())
+    refused = send_again(dashboard, CASE, MARCUS, shown="Fix line 1.")
+    assert (refused.status_code, refused.json()["detail"]) == (
+        409,
+        "Case PC-1201 is not returned to its subcontractor",
+    )
+    # PC-0101 is Accepted.
+    assert send_again(dashboard, "PC-0101", MARCUS, shown="Fix it.").status_code == 409
+    assert count(outbox_table) == 0
+
+
+def test_a_notice_changed_since_the_page_showed_it_isnt_sent(
+    dashboard, client, delivered
+):
+    """The Copilot drafted the notice again after the reviewer opened the case."""
+    awaiting_review(client, CASE, finding())
+    refused = send_back(dashboard, CASE, MARCUS, shown="An older draft.")
+    assert (refused.status_code, refused.json()["detail"]) == (
+        409,
+        "PC-1201's notice has changed since the page showed it. Read it again "
+        "before you send it.",
+    )
+    assert committed_case(CASE)["status"] == "awaiting_review"
+    assert delivered == []
+
+
+def test_each_send_keeps_the_draft_it_came_from(dashboard, client, delivered):
+    awaiting_review(client, CASE, finding())
+    send_back(dashboard, CASE, MARCUS)
+    save_notice(dashboard, CASE, EDITED, MARCUS)
+    send_again(dashboard, CASE, MARCUS)
+    sent = dashboard.get(f"/api/cases/{CASE}", headers=signed_in(MARCUS)).json()
+    [again, first] = sent["sent_notices"]
+    assert (first["body"], first["draft"]) == (NOTICE, NOTICE)
+    assert (again["body"], again["draft"]) == (EDITED, NOTICE)
+    assert first["drafted_by"] == again["drafted_by"]

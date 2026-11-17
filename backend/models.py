@@ -346,6 +346,10 @@ class NoticeRequest(BaseModel):
     text: Text = Field(description="The notice to the subcontractor, as edited")
 
 
+class SendRequest(BaseModel):
+    text: str = Field(description="The notice as the reviewer saw it, to send")
+
+
 class OutboxRecord(BaseModel):
     """A notice sent to a subcontractor's payroll contact, with the agent's draft of
     it, if it wrote one."""
@@ -357,7 +361,8 @@ class OutboxRecord(BaseModel):
     body: str
     sent_by: str
     sent_at: str
-    draft: str | None
+    draft: str | None = Field(description="The draft the notice was sent from")
+    drafted_by: str | None
 
 
 class CaseSummary(BaseModel):
@@ -1244,11 +1249,13 @@ class TurnStatus(StrEnum):
 
 
 class CardKind(StrEnum):
-    """What a card's tool does: looks up cases, subcontractors and policies or the
-    context layer, works with the agent's work or the memory, or acts."""
+    """What a card's tool does: looks up cases, subcontractors, projects or the
+    context layer, works with the agent's work, exposure, filings and changes or
+    the memory, or acts."""
 
     CASES = "cases"
     SUBCONTRACTORS = "subcontractors"
+    PROJECTS = "projects"
     CONTEXT = "context"
     WORK = "work"
     MEMORY = "memory"
@@ -1272,7 +1279,7 @@ class CopilotStep(BaseModel):
     step_id: int
     tool: str
     kind: CardKind
-    input: str = Field(description="The tool's main input, such as CLM-1012")
+    input: str = Field(description="The tool's main input, such as PC-0311")
     asked: str
     status: CardStatus
     answer: str | None
@@ -1546,3 +1553,13 @@ class ProjectMatch(BaseModel):
     project_id: str
     name: str
     county: str
+
+
+class NoticeDrafted(BaseModel):
+    """A send-back notice the Copilot drafted and saved for a reviewer, who edits
+    and sends it on the case page."""
+
+    case_id: str
+    drafted_by: str
+    draft: str
+    send_from: str = Field(description="Where the reviewer edits and sends it")

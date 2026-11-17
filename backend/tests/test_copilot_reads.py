@@ -1,9 +1,10 @@
 """The app's reads the Copilot uses with the reviewer's sign-in: finding
-subcontractors by legal name and reading one with its record, projects and cases,
+subcontractors by legal name and the cases of one,
 the run a start names, and the Copilot's model."""
 
 import json
 
+from backend.tests.copilot_reads import find_cases
 from backend.tests.dashboard_reads import read
 from backend.tests.run_requests import start_dispatch
 from backend.tests.sign_in import DANA
@@ -25,18 +26,14 @@ def test_a_blank_name_finds_nothing(dashboard):
     assert read(dashboard, "/api/subcontractors").status_code == 422
 
 
-def test_a_subcontractor_with_its_projects_and_cases(dashboard):
-    subcontractor = read(dashboard, "/api/subcontractors/SUB-01").json()
-    assert subcontractor["legal_name"] == "Garden State Electric LLC"
-    assert subcontractor["registration_no"] == "177511"
-    assert [p["project_id"] for p in subcontractor["projects"]] == [
-        "PRJ-01",
-        "PRJ-02",
-        "PRJ-03",
+def test_the_cases_of_a_subcontractor_found_by_name(dashboard):
+    found = find_cases(dashboard, DANA, subcontractor_id="SUB-01").json()
+    assert "PC-0101" in [c["case_id"] for c in found["cases"]]
+    assert [g["name"] for g in found["by_subcontractor"]] == [
+        "Garden State Electric LLC"
     ]
-    assert "PC-0101" in [c["case_id"] for c in subcontractor["cases"]]
-    assert "payroll@gardenstateelectric.example" not in json.dumps(subcontractor)
-    unknown = read(dashboard, "/api/subcontractors/SUB-99")
+    assert "payroll@gardenstateelectric.example" not in json.dumps(found)
+    unknown = find_cases(dashboard, DANA, subcontractor_id="SUB-99")
     assert (unknown.status_code, unknown.json()["detail"]) == (
         404,
         "Subcontractor SUB-99 not found",

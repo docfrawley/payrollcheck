@@ -33,3 +33,8 @@ export function whereOnPayroll(
 // and answer it, only while it awaits review, and never on an evaluation's copy.
 export const reviewable = (caseRecord: Case) =>
   caseRecord.status === "awaiting_review" && caseRecord.evaluation_id === null;
+
+// Whether a case's notice can be edited and sent again: once it is returned to
+// its subcontractor, and never on an evaluation's copy.
+export const resendable = (caseRecord: Case) =>
+  caseRecord.status === "returned_to_sub" && caseRecord.evaluation_id === null;

@@ -549,7 +549,10 @@ export const api = {
   startEvaluation: (evaluationSet: EvaluationSet, agents: number) =>
     post<Accepted>(EVALUATIONS, { evaluation_set: evaluationSet, agents }),
   signOffCase: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
-  sendBackCase: (caseId: string) => post<Case>(`${casePath(caseId)}/send-back`),
+  sendBackCase: (caseId: string, text: string) =>
+    post<Case>(`${casePath(caseId)}/send-back`, { text }),
+  resendNotice: (caseId: string, text: string) =>
+    post<Case>(`${casePath(caseId)}/notice/resend`, { text }),
   saveNotice: (caseId: string, text: string) =>
     send<Case>("PUT", `${casePath(caseId)}/notice`, { text }),
   listRules: () => request<RuleEntry[]>("/api/rules"),

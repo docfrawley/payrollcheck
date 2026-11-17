@@ -89,6 +89,7 @@ export const awaiting: Case = {
     draft: "Please correct Kim Dimitrov's base rate and sign the payroll.",
     drafted_by: "PayrollCheck Agent, version 1",
     drafted_at: checkedAt,
+    drafted_for: null,
     ...notEdited,
   },
 };
@@ -98,6 +99,7 @@ const cleanNotice = {
   draft: "",
   drafted_by: "PayrollCheck Agent, version 1",
   drafted_at: checkedAt,
+  drafted_for: null,
   ...notEdited,
 };
 

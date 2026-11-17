@@ -42,12 +42,16 @@ def test_a_blank_notice_isnt_saved(client):
     assert save_notice(client, CASE, "   ", MARCUS).status_code == 422
 
 
-def test_a_notice_is_saved_only_on_a_case_awaiting_review_in_scope(client):
+def test_a_notice_is_saved_only_on_a_case_in_review_in_scope(client):
     refused = save_notice(client, "PC-1202", EDITED, MARCUS)
     assert (refused.status_code, refused.json()["detail"]) == (
         409,
-        "Case PC-1202 is not awaiting review",
+        "Case PC-1202's notice is written while it awaits review or is returned to "
+        "its subcontractor",
     )
+    assert save_notice(client, "PC-0101", EDITED, MARCUS).status_code == 409
+    # PC-0311 is Returned to sub.
+    assert save_notice(client, "PC-0311", EDITED, MARCUS).status_code == 200
     awaiting_review(client, CASE, finding())
     assert save_notice(client, CASE, EDITED, PRIYA).status_code == 404
 

@@ -242,7 +242,7 @@ NOT_A_SIGN_IN = "sign_in: String should match pattern '^[A-Za-z0-9_.-]+$'"
     ("payload", "error"),
     [
         ({"operation": "dance-secret"}, UNKNOWN),
-        ({"operation": "answer_confirmation", "conversation_id": "c",
+        ({"operation": "sign_off_case", "conversation_id": "c",
           "turn_id": "t", "sign_in": "secret-token"},
          UNKNOWN),
         ({"operation": "take_turn", "conversation_id": "c", "turn_id": "t"},

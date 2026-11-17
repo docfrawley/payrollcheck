@@ -8,7 +8,9 @@ import time
 import pytest
 
 from agent import connection
-from agent.copilot import waiting
+from agent.copilot import app_api, waiting
+from agent.copilot.filters import EVERY_CASE, body
+from agent.copilot.needs_a_reviewer import needs_a_reviewer
 from agent.tests.copilot_driver import Copilot, started_run
 from agent.tests.stubs import call, stub
 from backend.tests.case_requests import (
@@ -20,6 +22,7 @@ from backend.tests.case_requests import (
     start,
 )
 from backend.tests.run_requests import fail_run, finish, record_cases, run_path
+from backend.tests.sign_in import DANA, MARCUS, token
 
 SUMMARY = "PC-1201 has an exception to review and PC-1202 is clean."
 
@@ -87,24 +90,30 @@ def test_the_wait_for_a_dispatch(client, copilot: Copilot, agent_calls, monkeypa
         "agent_failed": [],
         "unfinished": [],
     }
-    assert went["needs_a_reviewer"] == {
-        "awaiting_review": [
-            {"case_id": "PC-1201", "open_exceptions": 1, "shortfall_cents": 32},
-            {"case_id": "PC-1202", "open_exceptions": 0, "shortfall_cents": 0},
-        ],
-        "screening_flagged": [],
-        "agent_failed": [],
-    }
+    needs = went["needs_a_reviewer"]
+    assert needs["with_open_exceptions"] == [
+        {"case_id": "PC-1201", "open_exceptions": 1, "shortfall": "$0.32"}
+    ]
+    assert needs["to_sign_off"] == ["PC-1202"]
+    assert (needs["screening_flagged"], needs["agent_failed"]) == ([], [])
+    assert "PC-1201" not in needs["received"]
+    assert "PC-1203" in needs["received"]
     run_reads = [h for _, path, h in reads.sent if path.startswith("/runs/")]
     assert len(run_reads) > 1
     sign_in = copilot.last_payload()["sign_in"]
     assert all(h == {"Authorization": f"Bearer {sign_in}"} for h in run_reads)
 
 
-def test_what_needs_a_reviewer(client, copilot: Copilot):
-    """The cases awaiting review, with those the screening flagged and those the
-    agent failed twice apart; a case received, failed once or returned isn't
-    listed."""
+def what_needs(email=DANA):
+    """What needs the reviewer, worked out as the wait works it out."""
+    found = app_api.find_cases(token(email), body(EVERY_CASE))
+    return needs_a_reviewer(found)
+
+
+def test_what_needs_a_reviewer(client):
+    """The cases awaiting review with open exceptions and with none, those the
+    screening flagged and those the agent failed twice apart, and those Received;
+    a case failed once is Received again, and one returned isn't listed."""
     awaiting_review(client, "PC-1201", finding(), finding(worker_id="W-002"))
     awaiting_review(client, "PC-1202")
     start(client, "PC-1203")
@@ -114,29 +123,23 @@ def test_what_needs_a_reviewer(client, copilot: Copilot):
         fail(client, "PC-1204")
     start(client, "PC-1205")
     fail(client, "PC-1205")
-    copilot.model = stub(call("what_needs_a_reviewer"), "Four cases need you.")
-    [turn] = copilot.ask("What needs me today?")["turns"]
-    assert [(c["tool"], c["kind"]) for c in turn["steps"]] == [
-        ("what_needs_a_reviewer", "cases")
+    needs = what_needs()
+    assert needs["with_open_exceptions"] == [
+        {"case_id": "PC-1201", "open_exceptions": 2, "shortfall": "$0.64"}
     ]
-    assert json.loads(copilot.model.prompts[1][-1].text) == {
-        "awaiting_review": [
-            {"case_id": "PC-1201", "open_exceptions": 2, "shortfall_cents": 64},
-            {"case_id": "PC-1202", "open_exceptions": 0, "shortfall_cents": 0},
-        ],
-        "screening_flagged": ["PC-1203"],
-        "agent_failed": ["PC-1204"],
-    }
+    assert needs["to_sign_off"] == ["PC-1202"]
+    assert needs["screening_flagged"] == ["PC-1203"]
+    assert needs["agent_failed"] == ["PC-1204"]
+    assert "PC-1205" in needs["received"]
+    assert "PC-0311" not in str(needs)
 
 
-def test_nothing_needs_a_reviewer_in_the_seeded_queue(copilot: Copilot):
-    copilot.model = stub(call("what_needs_a_reviewer"), "Nothing needs you.")
-    copilot.ask("What needs me today?")
-    assert json.loads(copilot.model.prompts[1][-1].text) == {
-        "awaiting_review": [],
-        "screening_flagged": [],
-        "agent_failed": [],
-    }
+def test_only_the_received_wave_needs_a_reviewer_in_the_seeded_queue():
+    needs = what_needs(MARCUS)
+    assert needs["with_open_exceptions"] == needs["to_sign_off"] == []
+    assert (needs["screening_flagged"], needs["agent_failed"]) == ([], [])
+    assert len(needs["received"]) == 15
+    assert all(case_id.startswith("PC-12") for case_id in needs["received"])
 
 
 def test_a_run_still_going_and_a_run_that_stopped(

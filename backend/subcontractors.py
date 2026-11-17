@@ -6,13 +6,11 @@ a project in it, so a held-out subcontractor is never found."""
 from fastapi import APIRouter
 from sqlalchemy import select
 
-from backend.database import case_view, cases, engagements, projects, subcontractors
+from backend.database import subcontractors
 from backend.dependencies import Database
-from backend.lookups import subcontractor_row
-from backend.models import Project, Subcontractor, SubcontractorMatch
+from backend.models import SubcontractorMatch
 from backend.names import Name, holding_every_word
-from backend.scope import Scoped, cases_in, projects_in, subcontractors_in
-from backend.views import to_summary
+from backend.scope import Scoped, subcontractors_in
 
 router = APIRouter()
 
@@ -28,27 +26,3 @@ def find_subcontractors(
     query = holding_every_word(query, subcontractors.c.legal_name, name)
     rows = db.execute(query.order_by(subcontractors.c.legal_name)).mappings()
     return [SubcontractorMatch(**row) for row in rows]
-
-
-@router.get("/api/subcontractors/{subcontractor_id}", operation_id="get_subcontractor")
-def get_subcontractor(
-    subcontractor_id: str, db: Database, scope: Scoped
-) -> Subcontractor:
-    """Get a subcontractor with its record, its projects and its cases in our queue."""
-    record = subcontractor_row(db, subcontractor_id, scope)
-    on = (
-        select(projects)
-        .join(engagements, engagements.c.project_id == projects.c.project_id)
-        .where(engagements.c.subcontractor_id == subcontractor_id, projects_in(scope))
-        .order_by(projects.c.project_id)
-    )
-    in_the_queue = case_view.where(
-        cases.c.subcontractor_id == subcontractor_id,
-        cases.c.evaluation_id.is_(None),
-        cases_in(scope),
-    ).order_by(cases.c.case_id)
-    return Subcontractor(
-        **record,
-        projects=[Project(**row) for row in db.execute(on).mappings()],
-        cases=[to_summary(row) for row in db.execute(in_the_queue).mappings()],
-    )

@@ -83,8 +83,32 @@ def sign_off(client, case_id, email=DANA):
     return client.post(f"/api/cases/{case_id}/sign-off", headers=signed_in(email))
 
 
-def send_back(client, case_id, email=DANA):
-    return client.post(f"/api/cases/{case_id}/send-back", headers=signed_in(email))
+def shown_notice(client, case_id, email=DANA):
+    """A case's notice as its page shows it: the reviewer's edit, or the draft."""
+    found = client.get(f"/api/cases/{case_id}", headers=signed_in(email)).json()
+    notice = found.get("notice") or {}
+    return notice.get("edited_text") or notice.get("draft") or ""
+
+
+def send_back(client, case_id, email=DANA, shown=None):
+    """Send a case back with its notice as the reviewer saw it: as its page shows
+    it now, unless the test says what they saw."""
+    text = shown_notice(client, case_id, email) if shown is None else shown
+    return client.post(
+        f"/api/cases/{case_id}/send-back",
+        json={"text": text},
+        headers=signed_in(email),
+    )
+
+
+def send_again(client, case_id, email=DANA, shown=None):
+    """Send a returned case's notice again, as the reviewer saw it."""
+    text = shown_notice(client, case_id, email) if shown is None else shown
+    return client.post(
+        f"/api/cases/{case_id}/notice/resend",
+        json={"text": text},
+        headers=signed_in(email),
+    )
 
 
 def save_notice(client, case_id, text, email=DANA):

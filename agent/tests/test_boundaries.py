@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 from agent import api, improver, improver_api
+from agent.copilot import app_api as copilot_app_api
 from backend.database import metadata
 from backend.main import app
 
@@ -262,3 +263,26 @@ def test_the_check_tools_import_the_rate_logic_and_nothing_else_of_ours():
         name for name in imported if name.startswith("context.wage_rules.")
     }
     assert "context.wage_rules" in imported
+
+
+def copilot_paths() -> list[str]:
+    """The paths the Copilot's API on the app calls, with the reviewer's sign-in."""
+    pattern = r'call_as\(\s*sign_in,\s*"[A-Z]+",\s*f?"([^"]+)"'
+    return re.findall(pattern, inspect.getsource(copilot_app_api))
+
+
+def test_the_copilots_api_reaches_no_decision_and_no_settings():
+    """It signs off, sends back, overrides and edits nothing: the only notice it
+    reaches is its own draft, and the only exceptions its own read of them."""
+    paths = copilot_paths()
+    source = inspect.getsource(copilot_app_api)
+    calls = len(re.findall(r"call_as\(\s*sign_in,", source))
+    assert len(paths) == calls, "A path the test can't read"
+    assert "/copilot/cases/{case_id}/notice-draft" in paths
+    for word in ("sign-off", "send-back", "resend", "settings", "dismissal"):
+        assert [path for path in paths if word in path] == [], word
+    for word in ("/notice", "/exceptions"):
+        reached = [path for path in paths if word in path]
+        assert all(path.startswith("/copilot/") for path in reached), word
+    cases = [path for path in paths if path.startswith("/cases")]
+    assert cases == [], "The Copilot reads cases only through its own reads"
