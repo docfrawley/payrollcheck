@@ -1,12 +1,14 @@
 """The Copilot's reads, under /api/copilot/, for a signed-in reviewer in their
 scope: the queue's cases found by filters, a case in full and its open exceptions,
 exposure, filings, classification changes and projects found by name. The case
-page's reads are the dashboard's; the Copilot's are these, which never give a
-flagged case's text."""
+page's reads are the dashboard's; the Copilot's are these, which pass every
+answer that can hold what a flagged case's subcontractor wrote through
+withheld.py. The rest hold none: their names and ids come from our records."""
 
 from fastapi import APIRouter
 from sqlalchemy import Connection, select
 
+from backend import withheld
 from backend.case_search import find_cases as search
 from backend.classification_changes import classification_changes as changes_in
 from backend.database import projects
@@ -58,20 +60,20 @@ def find_cases(request: CaseFilters, db: Database, scope: Scoped) -> FoundCases:
 @router.get("/cases/{case_id}", operation_id="read_case")
 def read_case(case_id: str, db: Database, scope: Scoped) -> Case:
     """Read a case in full, as the Copilot may see it."""
-    return case_in_full(db, case_id, scope)
+    return withheld.case(case_in_full(db, case_id, scope))
 
 
 @router.get("/cases/{case_id}/exceptions", operation_id="get_exceptions")
 def get_exceptions(case_id: str, db: Database, scope: Scoped) -> CaseExceptions:
     """Get the exceptions open on a case's latest submission, with their citations."""
-    return case_exceptions(db, find_case(db, case_id, scope))
+    return withheld.exceptions(case_exceptions(db, find_case(db, case_id, scope)))
 
 
 @router.post("/exposure", operation_id="exposure_summary")
 def exposure_summary(request: ExposureRequest, db: Database, scope: Scoped) -> Exposure:
     """Sum the flagged and outstanding underpayment, null for any filter."""
     check_filters(db, scope, request.project_id, request.subcontractor_id)
-    return exposure(db, request, scope)
+    return withheld.exposure(exposure(db, request, scope))
 
 
 @router.post("/filings", operation_id="filings_status")
@@ -87,7 +89,7 @@ def classification_changes(
 ) -> ClassificationChanges:
     """List the workers whose classification changed from the week before."""
     check_filters(db, scope, request.project_id)
-    return changes_in(db, request, scope)
+    return withheld.changes(changes_in(db, request, scope))
 
 
 @router.get("/projects", operation_id="find_projects")

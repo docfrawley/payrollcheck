@@ -51,6 +51,9 @@ def classification_changes(
         changes=[
             ClassificationChange(
                 case_id=case["case_id"],
+                case_id_before=by_week[week_before(case)]["case_id"],
+                screening_flag=case["screening_flag"],
+                screening_flag_before=by_week[week_before(case)]["screening_flag"],
                 project_id=case["project_id"],
                 subcontractor_id=case["subcontractor_id"],
                 subcontractor_name=case["legal_name"],
@@ -85,6 +88,7 @@ def latest_payrolls(
             cases.c.subcontractor_id,
             cases.c.project_id,
             cases.c.week_ending,
+            cases.c.screening_flag,
             subcontractors.c.legal_name,
             submissions.c.lines,
         )
@@ -109,13 +113,18 @@ def latest_payrolls(
     return list(db.execute(query).mappings())
 
 
+def week_before(case: RowMapping) -> tuple[str, str, str]:
+    """The subcontractor, project and week ending of a case's week before."""
+    week = (date.fromisoformat(case["week_ending"]) - WEEK).isoformat()
+    return (case["subcontractor_id"], case["project_id"], week)
+
+
 def changes_on(
     case: RowMapping, by_week: dict[tuple[str, str, str], RowMapping]
 ) -> list[tuple[int, dict[str, Any], dict[str, Any]]]:
     """Each line of a case whose classification differs from the worker's line the
     week before, with its number and that earlier line."""
-    week_before = (date.fromisoformat(case["week_ending"]) - WEEK).isoformat()
-    before = by_week.get((case["subcontractor_id"], case["project_id"], week_before))
+    before = by_week.get(week_before(case))
     if before is None:
         return []
     earlier = {line["worker_id"]: line for line in before["lines"]}

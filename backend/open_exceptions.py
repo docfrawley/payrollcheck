@@ -25,6 +25,7 @@ def open_on_latest(
             exceptions,
             workers.c.name.label("worker"),
             cases.c.status.label("case_status"),
+            cases.c.screening_flag,
         )
         .join(cases, cases.c.case_id == exceptions.c.case_id)
         .outerjoin(workers, workers.c.worker_id == exceptions.c.worker_id)
@@ -85,6 +86,8 @@ def case_exceptions(db: Connection, case: RowMapping) -> CaseExceptions:
     return CaseExceptions(
         case_id=case["case_id"],
         status=case["status"],
+        screening_flag=case["screening_flag"],
+        screening_reason=case["screening_reason"],
         project_id=case["project_id"],
         subcontractor_id=case["subcontractor_id"],
         week_ending=case["week_ending"],

@@ -1417,6 +1417,8 @@ class OpenException(BaseModel):
 class CaseExceptions(BaseModel):
     case_id: str
     status: Status
+    screening_flag: bool
+    screening_reason: str | None
     project_id: str
     subcontractor_id: str
     week_ending: str
@@ -1441,6 +1443,7 @@ class ExposedException(BaseModel):
     shortfall_cents: int
     shortfall: str
     outstanding: bool = Field(description="Open on a case Awaiting review or Returned")
+    screening_flag: bool
 
 
 class RuleExposure(BaseModel):
@@ -1515,6 +1518,9 @@ class ExceptionOnLine(BaseModel):
 
 class ClassificationChange(BaseModel):
     case_id: str
+    case_id_before: str = Field(description="The case of the week before")
+    screening_flag: bool
+    screening_flag_before: bool
     project_id: str
     subcontractor_id: str
     subcontractor_name: str

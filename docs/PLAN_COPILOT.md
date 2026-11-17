@@ -54,10 +54,13 @@ Every phase ends with `npm run check` green and coverage of at least 80%. Tests 
     - **The answer:** the matching cases, each with its subcontractor, project, week ending, status, flags and open exceptions, plus the cases grouped by subcontractor with their case ids and open exceptions counted.
     - **Why the grouping:** the backend counts, so question 1's answer comes from the tool, not the model.
 12. **What is withheld.**
-    - **The cells:** on a case with a screening flag, every text cell of every submission is replaced with `[withheld: screening flag — see case page]`. Those are the template's `FREE_TEXT` columns (contractor name, signed by, worker name, line notes, payroll notes) and its `classification` and `apprentice_level`. The template names them once, as `TEXT`, in `data/payroll_world/template.py`.
-    - **Exceptions too:** the same goes for each exception's `expected` and `actual` on that case, since they can quote a cell.
-    - **What passes:** numbers, dates, ids, rule codes, shortfalls, citations, the screening reason and our own records (a subcontractor's legal name, a worker's name from `workers`).
-    - **Where:** `backend/withheld.py` does it, the one place, applied by every `/api/copilot/` read before it answers.
+    - **The cells:** on a case with a screening flag, every text cell of every submission is replaced with `[withheld: screening flag — see case page]`. Those are the template's `FREE_TEXT` columns (contractor name, signed by, worker name, line notes, payroll notes), its `classification`, and the ids intake keeps as written without checking them (`fein`, `registration_no`, the certification's `project_id`). The template names them once, as `TEXT`, in `data/payroll_world/template.py`. The submission's file name is withheld too.
+    - **Worker ids:** a line's worker id passes when it is one of our workers, and is withheld otherwise, in the lines and in every exception, finding, exposure row and classification change that carries it. (Amended in phase 3, on the review's finding, with the user.)
+    - **Exceptions too:** the same goes for each exception's and finding's `expected` and `actual` on that case, since they can quote a cell.
+    - **The screening reason is withheld as well**, as "Flagged by the screening for an instruction in its text — see case page": the screening is told to quote the instruction it finds. (Amended in phase 3, with the user; the plan first let it pass.)
+    - **What passes:** numbers, dates, our records' ids and names (a subcontractor's legal name, a worker's name from `workers`), rule codes, shortfalls, citations, and the reviewers' own notices and overrides, written after reading the case page.
+    - **A classification change** withholds each side whose case is flagged: the week before's classification for a flagged week before, and this week's classification, note and an unknown worker id for a flagged case.
+    - **Where:** `backend/withheld.py` does it, the one place, applied by every `/api/copilot/` read that can hold a flagged case's text before it answers.
 13. **The draft notice's wording is the backend's, from the case's records.** `draft_notice(case_id)` takes only the case, so the model writes nothing in it. `backend/notice_drafts.py` writes the draft from the latest submission's open exceptions:
     - an opening line naming the case, project and week ending
     - one paragraph per exception, saying what was found, the worker and line, expected and paid, the amount owed in dollars, and what to correct, in each rule's own words. Those words are a new `asks` field in `backend/rule_codes.py`'s catalogue.
@@ -238,13 +241,13 @@ After pulling this stage, reseed with `npm run seed`.
 
 `TEXT` in the template, `backend/withheld.py`, applied by every `/api/copilot/` route.
 
-- [ ] `backend/tests/test_withheld.py`:
+- [x] `backend/tests/test_withheld.py`:
   - on a flagged case, every text cell of every submission is the withheld line, and so are its exceptions' expected and actual
   - its numbers, dates, ids, rule codes, shortfalls, citations and screening reason are unchanged
   - an unflagged case is untouched
-- [ ] **Every route:** a test walks every route in `copilot_reads.py`. For each that can return a flagged case's cells (`find_cases`, `read_case`, `get_exceptions`, `classification_changes`, `draft_notice`), it asks as Dana about a seeded flagged case and finds none of the case's text cells in the JSON answer, and its screening reason there. For the rest (exposure, filings, projects, success criteria), it finds no text cell of any flagged case in their answers.
-- [ ] The case page's `get_case` still gives the reviewer the full text (in `backend/tests/test_copilot_reads.py` beside the Copilot's reads).
-- [ ] `npm run check` green.
+- [x] **Every route:** a test walks every route in `copilot_reads.py`. For each that can return a flagged case's cells (`find_cases`, `read_case`, `get_exceptions`, `classification_changes`, `draft_notice`), it asks as Dana about a seeded flagged case and finds none of the case's text cells in the JSON answer, and its screening reason there. For the rest (exposure, filings, projects, success criteria), it finds no text cell of any flagged case in their answers.
+- [x] The case page's `get_case` still gives the reviewer the full text, the screening's reason included (in `backend/tests/test_withheld.py`, beside the reads it is set against).
+- [x] `npm run check` green.
 
 ### Phase 4: the Copilot's tools, its instructions and the draft notice
 

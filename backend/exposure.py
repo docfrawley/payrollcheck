@@ -57,6 +57,7 @@ def exposure(db: Connection, request: ExposureRequest, scope: Scope) -> Exposure
             shortfall_cents=row["shortfall_cents"],
             shortfall=cents_in_dollars(row["shortfall_cents"]),
             outstanding=row["case_status"] in OUTSTANDING,
+            screening_flag=row["screening_flag"],
         )
         for rows in found.values()
         for row in rows
