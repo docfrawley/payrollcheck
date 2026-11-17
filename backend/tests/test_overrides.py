@@ -114,8 +114,10 @@ def test_nothing_edits_or_deletes_an_override():
             ):
                 [table] = node.args
                 assert not (isinstance(table, ast.Name) and table.id == "overrides")
+    # The override routes are a case's; the Copilot's read of a case's open
+    # exceptions overrides nothing.
     for route_path, methods in app.openapi()["paths"].items():
-        if "exceptions" in route_path:
+        if route_path.startswith("/api/cases/") and "exceptions" in route_path:
             assert set(methods) <= {"post"}, route_path
 
 

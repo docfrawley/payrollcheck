@@ -253,8 +253,9 @@ overrides = Table(
     Column("reason", Text, nullable=False),
     Column("created_at", Text, nullable=False, index=True),
 )
-# Each submission's send-back notice: the agent's draft, if it wrote one, the
-# reviewer's edit, both kept, and who sent it and when.
+# Each submission's send-back notice: the payroll agent's draft, if it wrote one,
+# or the Copilot's, written for the reviewer it names, the reviewer's edit, both
+# kept, and who sent it last and when.
 notices = Table(
     "notices",
     metadata,
@@ -263,14 +264,16 @@ notices = Table(
     Column("draft", Text),
     Column("drafted_by", Text),
     Column("drafted_at", Text),
+    # The reviewer a draft of the Copilot's was written for; none for the agent's.
+    Column("drafted_for", Text),
     Column("edited_text", Text),
     Column("edited_by", Text),
     Column("edited_at", Text),
     Column("sent_by", Text),
     Column("sent_at", Text),
 )
-# Each notice sent to a subcontractor, one for each submission: no real email is
-# sent, and this is the record of it.
+# Each notice sent to a subcontractor, one for each send, a notice sent again
+# included: no real email is sent, and this is the record of it.
 outbox = Table(
     "outbox",
     metadata,
@@ -280,9 +283,11 @@ outbox = Table(
     Column("to_address", Text, nullable=False),
     Column("subject", Text, nullable=False),
     Column("body", Text, nullable=False),
+    # The draft it was sent from, and who drafted it, as they were then.
+    Column("draft", Text),
+    Column("drafted_by", Text),
     Column("sent_by", Text, nullable=False),
     Column("sent_at", Text, nullable=False),
-    UniqueConstraint("case_id", "submission_no"),
 )
 # The labelled sets' cases, out of the queue, with their submissions as the
 # generator wrote them, and their labels: the answer key only scoring reads.

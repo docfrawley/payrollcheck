@@ -1,9 +1,10 @@
 // Stands in for the Copilot's AgentCore app in the end-to-end tests: it answers
 // /ping and the health check, and takes each turn the backend posts to
 // /invocations, with no key. It then plays a scripted turn through the backend
-// with the reviewer's sign-in it was given:
-// it checks the sign-in with /api/me, stopping if it's refused, reads the
-// turn's message, records its cards and answers, as the Copilot does.
+// with the reviewer's sign-in it was given, picked by the message's words: a
+// lookup, a draft notice, a refusal to sign off, or a formatted answer. It
+// checks the sign-in with /api/me, stopping if it's refused, reads the turn's
+// message, records its cards and answers, as the Copilot does.
 import { createServer } from "node:http";
 import { json } from "node:stream/consumers";
 import { reply } from "./stand_in.ts";
@@ -23,24 +24,18 @@ interface Turn {
 const app = process.env.PAYROLLCHECK_API ?? "";
 // A pause between steps, so the sidebar shows each card working.
 const STEP_MS = 250;
-const SOURCE = {
-  file: "payroll_glossary.yaml",
-  system: "Compliance manual, glossary",
-  owner: "Compliance manager",
-  reviewed: "2026-09-01",
+// The case the scripted turns draft a notice for, and the project they look up.
+const NOTICE_CASE = "PC-0311";
+const LINCOLN = "PRJ-01";
+// What a search of the queue filters on: null for any.
+const ANY_CASE = {
+  project_id: null,
+  subcontractor_id: null,
+  status: null,
+  period: null,
+  has_open_exceptions: null,
+  flag: null,
 };
-// The case the scripted turn links to, and one it asks for that doesn't exist,
-// so the app refuses.
-const LINKED = "PC-0311";
-const MISSING = "PC-9999";
-const ANSWER = [
-  `I started a dispatch and looked up a term. ${LINKED} is worth a look.`,
-  "",
-  "| What | Where it stands |",
-  "| --- | --- |",
-  "| The dispatch | Started with 3 payroll agents |",
-  `| ${LINKED} | Returned to sub, with three open exceptions |`,
-].join("\n");
 
 const pause = () => new Promise((resolve) => setTimeout(resolve, STEP_MS));
 
@@ -124,25 +119,111 @@ async function theTurn(payload: Payload): Promise<Turn> {
   return turn;
 }
 
-// A message gets a lookup, an action, a refusal and a formatted answer.
+interface Found {
+  by_subcontractor: { name: string; case_ids: string[] }[];
+}
+
+interface Exposed {
+  flagged: string;
+  outstanding: string;
+  case_ids: string[];
+}
+
+// A lookup: the subs on the Lincoln School renovation with open exceptions.
+async function lookUp(payload: Payload) {
+  let found: Found = { by_subcontractor: [] };
+  await card(
+    payload,
+    { tool: "list_cases", kind: "cases", input: LINCOLN },
+    async () => {
+      const read = await asTheReviewer(
+        payload.sign_in,
+        "POST",
+        "/copilot/cases",
+        {
+          ...ANY_CASE,
+          project_id: LINCOLN,
+          has_open_exceptions: true,
+        },
+      );
+      found = read.answer as unknown as Found;
+      return read;
+    },
+  );
+  const lines = found.by_subcontractor.map(
+    (sub) => `- ${sub.name}: ${sub.case_ids.join(", ")}`,
+  );
+  return ["These subs have open exceptions:", "", ...lines].join("\n");
+}
+
+// A draft notice, which the reviewer then sends from the case page.
+async function draft(payload: Payload) {
+  await card(
+    payload,
+    { tool: "draft_notice", kind: "action", input: NOTICE_CASE },
+    () =>
+      asTheReviewer(
+        payload.sign_in,
+        "POST",
+        `/copilot/cases/${NOTICE_CASE}/notice-draft`,
+      ),
+  );
+  return `I drafted the notice for ${NOTICE_CASE}. Edit and send it on the case page.`;
+}
+
+// A formatted answer: this month's exposure, as a table with its total.
+async function exposure(payload: Payload) {
+  let exposed: Exposed = { flagged: "", outstanding: "", case_ids: [] };
+  await card(
+    payload,
+    { tool: "exposure_summary", kind: "work", input: "this_month" },
+    async () => {
+      const read = await asTheReviewer(
+        payload.sign_in,
+        "POST",
+        "/copilot/exposure",
+        {
+          project_id: null,
+          subcontractor_id: null,
+          period: { kind: "this_month" },
+        },
+      );
+      exposed = read.answer as unknown as Exposed;
+      return read;
+    },
+  );
+  return [
+    "This month's underpayment:",
+    "",
+    "| Flagged | Outstanding |",
+    "| --- | --- |",
+    `| ${exposed.flagged} | ${exposed.outstanding} |`,
+    "",
+    `From ${exposed.case_ids.join(", ")}.`,
+  ].join("\n");
+}
+
+// A refusal: the Copilot never signs off, and calls no tool to.
+function refusal() {
+  return Promise.resolve(
+    `I can't sign off ${NOTICE_CASE}: a reviewer signs off on its case page.`,
+  );
+}
+
+// Each message gets the scripted turn its words ask for.
+function scriptFor(message: string): (payload: Payload) => Promise<string> {
+  const asked = message.toLowerCase();
+  if (asked.includes("sign off")) return refusal;
+  if (asked.includes("draft")) return draft;
+  if (asked.includes("open exceptions")) return lookUp;
+  return exposure;
+}
+
 async function takeTurn(payload: Payload) {
-  await theTurn(payload);
-  await card(
-    payload,
-    { tool: "lookup_payroll_term", kind: "context", input: "fringe" },
-    () => Promise.resolve({ ok: true, answer: { term: "fringe" } }),
-    [SOURCE],
-  );
-  await card(
-    payload,
-    { tool: "start_dispatch", kind: "action", input: "3" },
-    () => asTheReviewer(payload.sign_in, "POST", "/dispatches", { agents: 3 }),
-  );
-  await card(payload, { tool: "get_case", kind: "cases", input: MISSING }, () =>
-    asTheReviewer(payload.sign_in, "GET", `/cases/${MISSING}`),
-  );
+  const turn = await theTurn(payload);
+  const answer = await scriptFor(turn.message)(payload);
   await pause();
-  await finish(payload, ANSWER);
+  await finish(payload, answer);
 }
 
 createServer((request, response) => {

@@ -1,21 +1,32 @@
-"""The one reader of the open exceptions on each copy's latest submission, each with
-its worker's name: the scoring matches them to the labels, and the judge and the
-improver read them beside a notice (`as_read`)."""
+"""The one reader of the open exceptions on each case's latest submission, each with
+its worker's name and its case's status: the scoring matches an evaluation's
+copies' to the labels, the judge and the improver read them beside a notice
+(`as_read`), and the Copilot's reads give a case's and its exposure."""
 
 from sqlalchemy import ColumnElement, Connection, RowMapping, select
 
 from backend.database import cases, exceptions, run_cases, workers
-from backend.models import ExceptionAsRead, ExceptionStatus
-from backend.money import dollars
+from backend.models import (
+    CaseExceptions,
+    ExceptionAsRead,
+    ExceptionStatus,
+    OpenException,
+)
+from backend.money import cents_in_dollars, cents_in_dollars_or_none
 
 
 def open_on_latest(
     db: Connection, which: ColumnElement[bool]
 ) -> dict[str, list[RowMapping]]:
-    """The open exceptions on the latest submission of each copy `which` picks, by
-    copy, in the order they were raised, in one query."""
+    """The open exceptions on the latest submission of each case `which` picks, by
+    case, in the order they were raised, in one query."""
     query = (
-        select(exceptions, workers.c.name.label("worker"))
+        select(
+            exceptions,
+            workers.c.name.label("worker"),
+            cases.c.status.label("case_status"),
+            cases.c.screening_flag,
+        )
         .join(cases, cases.c.case_id == exceptions.c.case_id)
         .outerjoin(workers, workers.c.worker_id == exceptions.c.worker_id)
         .where(
@@ -49,13 +60,38 @@ def open_exceptions_in(db: Connection, run_id: str) -> dict[str, list[RowMapping
 def as_read(row: RowMapping) -> ExceptionAsRead:
     """An exception as the judge and the improver read it beside a notice: the
     worker by name and the shortfall in dollars."""
-    shortfall = row["shortfall_cents"]
     return ExceptionAsRead(
         rule=row["rule"],
         worker=row["worker"],
         line_no=row["line_no"],
         expected=row["expected"],
         actual=row["actual"],
-        shortfall=dollars(shortfall / 100) if shortfall is not None else None,
+        shortfall=cents_in_dollars_or_none(row["shortfall_cents"]),
         citation=row["citation"],
+    )
+
+
+def case_exceptions(db: Connection, case: RowMapping) -> CaseExceptions:
+    """A case's open exceptions on its latest submission, each with its citation and
+    its shortfall in dollars, and their shortfall together."""
+    found = [
+        OpenException(
+            **row,
+            worker_name=row["worker"],
+            shortfall=cents_in_dollars_or_none(row["shortfall_cents"]),
+        )
+        for row in open_exceptions_of(db, [case["case_id"]]).get(case["case_id"], [])
+    ]
+    total = sum(e.shortfall_cents or 0 for e in found)
+    return CaseExceptions(
+        case_id=case["case_id"],
+        status=case["status"],
+        screening_flag=case["screening_flag"],
+        screening_reason=case["screening_reason"],
+        project_id=case["project_id"],
+        subcontractor_id=case["subcontractor_id"],
+        week_ending=case["week_ending"],
+        exceptions=found,
+        shortfall_cents=total,
+        shortfall=cents_in_dollars(total),
     )

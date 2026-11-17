@@ -53,7 +53,7 @@ it("sends the session's access token with every request", async () => {
   });
   await api.getCase("PC-1201");
   await api.signOffCase("PC-1201");
-  await api.sendBackCase("PC-1201");
+  await api.sendBackCase("PC-1201", "Please fix line 1.");
   const headers = fetchMock.mock.calls.map(([, init]) =>
     new Headers(init?.headers).get("Authorization"),
   );

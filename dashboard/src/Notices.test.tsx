@@ -47,6 +47,7 @@ it("lets any reviewer edit the notice and send the case back with it", async () 
         sent_by: "Marcus Oyelaran <marcus.oyelaran@payrollcheck.example>",
         sent_at: "2026-11-23T15:00:00+00:00",
         draft: awaiting.notice?.draft ?? null,
+        drafted_by: awaiting.notice?.drafted_by ?? null,
       },
     ],
   };
@@ -63,7 +64,7 @@ it("lets any reviewer edit the notice and send the case back with it", async () 
     { text: EDITED },
   ]);
   expect(sent(fetchMock, "POST /api/cases/PC-1201/send-back")).toEqual([
-    undefined,
+    { text: EDITED },
   ]);
   const email = await panel("Sent to the subcontractor");
   expect(email.getByText("payroll@gardenstateelectric.example")).toBeDefined();
@@ -71,7 +72,7 @@ it("lets any reviewer edit the notice and send the case back with it", async () 
     email.getByText(/week ending Nov 22, 2026: corrections needed/),
   ).toBeDefined();
   expect(email.getByText(EDITED)).toBeDefined();
-  expect(email.getByText("The agent's draft")).toBeDefined();
+  expect(email.getByText(/^Drafted by /)).toBeDefined();
 });
 
 it("saves an edit of the notice without sending it", async () => {
@@ -131,9 +132,7 @@ it("says when the agent drafted no notice and the reviewer wrote one", async () 
     },
   });
   const notice = await panel("Send-back notice");
-  expect(
-    notice.getByText(/^No draft from the agent; edited by Dana Whitfield/),
-  ).toBeDefined();
+  expect(notice.getByText(/^No draft; edited by Dana Whitfield/)).toBeDefined();
 });
 
 it("keeps a saved edit and reloads the case when the send back fails", async () => {
@@ -171,4 +170,59 @@ it("sends an unchanged draft back without saving it as an edit", async () => {
     );
   });
   expect(sent(fetchMock, "PUT /api/cases/PC-1201/notice")).toHaveLength(0);
+});
+
+it("on a case returned to its subcontractor, edits the notice and sends it again, with the earlier sends", async () => {
+  const first = {
+    outbox_id: 1,
+    submission_no: 1,
+    to_address: "payroll@gardenstateelectric.example",
+    subject: "Certified payroll PC-1201: corrections needed",
+    body: "Please correct line 1.",
+    sent_by: "Marcus Oyelaran <marcus.oyelaran@payrollcheck.example>",
+    sent_at: "2026-11-23T15:00:00+00:00",
+    draft: null,
+    drafted_by: null,
+  };
+  const returned: Case = {
+    ...awaiting,
+    status: "returned_to_sub",
+    reviewed_by: "HND-02",
+    reviewed_on: "2026-11-23",
+    notice: {
+      ...noNotice,
+      draft: "Please correct line 1.",
+      drafted_by: "PayrollCheck Copilot for Marcus Oyelaran",
+      drafted_at: "2026-11-23T14:00:00+00:00",
+      sent_by: "Marcus Oyelaran",
+      sent_at: "2026-11-23T15:00:00+00:00",
+    },
+    sent_notices: [first],
+  };
+  const { routes, fetchMock } = showCase(returned);
+  const notice = await panel("Send-back notice");
+  expect(
+    notice.getByText(/^Drafted by PayrollCheck Copilot for Marcus Oyelaran/),
+  ).toBeDefined();
+  expect(notice.queryByRole("button", { name: "Send back" })).toBeNull();
+  fireEvent.change(notice.getByLabelText("The notice to the subcontractor"), {
+    target: { value: EDITED },
+  });
+  const again = {
+    ...returned,
+    sent_notices: [{ ...first, outbox_id: 2, body: EDITED }, first],
+  };
+  routes["PUT /api/cases/PC-1201/notice"] = returned;
+  routes["POST /api/cases/PC-1201/notice/resend"] = again;
+  routes["GET /api/cases/PC-1201"] = again;
+  fireEvent.click(notice.getByRole("button", { name: "Send again" }));
+  const emails = await panel("Sent to the subcontractor");
+  expect(await emails.findByText(EDITED)).toBeDefined();
+  expect(emails.getByText("Please correct line 1.")).toBeDefined();
+  expect(sent(fetchMock, "PUT /api/cases/PC-1201/notice")).toEqual([
+    { text: EDITED },
+  ]);
+  expect(sent(fetchMock, "POST /api/cases/PC-1201/notice/resend")).toEqual([
+    { text: EDITED },
+  ]);
 });

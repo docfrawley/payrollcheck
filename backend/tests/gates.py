@@ -1,6 +1,12 @@
 """Who may call each of the backend's operations: anyone, the agent with its key, a
 signed-in reviewer or the agent, or a signed-in reviewer alone."""
 
+from backend.tests.copilot_reads import (
+    CASE_FILTERS,
+    EXPOSURE_FILTERS,
+    LAST_WEEK,
+    with_nulls,
+)
 from backend.tests.settings_requests import STARTING
 
 ROUND = "/api/improvement/rounds/round-1"
@@ -58,6 +64,7 @@ TURN = "/api/copilot/turns/turn-1"
 # Every operation only a signed-in reviewer may use, with a body it would accept.
 REVIEWER_OPERATIONS = {
     "get_signed_in_reviewer": ("GET", "/api/me", None),
+    "get_business_date": ("GET", "/api/business-date", None),
     "list_steps": ("GET", "/api/cases/PC-1202/steps", None),
     "list_projects": ("GET", "/api/projects", None),
     "upload_payroll": (
@@ -79,7 +86,7 @@ REVIEWER_OPERATIONS = {
         {"evaluation_set": "tiny", "agents": 5},
     ),
     "sign_off_case": ("POST", "/api/cases/PC-1202/sign-off", None),
-    "send_back_case": ("POST", "/api/cases/PC-1202/send-back", None),
+    "send_back_case": ("POST", "/api/cases/PC-1202/send-back", {"text": "Fix it."}),
     "list_rules": ("GET", "/api/rules", None),
     "save_notice": (
         "PUT",
@@ -116,7 +123,6 @@ REVIEWER_OPERATIONS = {
     "approve_proposal": ("POST", f"{PROPOSAL}/approval", None),
     "reject_proposal": ("POST", f"{PROPOSAL}/rejection", {"reason": "Too broad"}),
     "find_subcontractors": ("GET", "/api/subcontractors?name=garden", None),
-    "get_subcontractor": ("GET", "/api/subcontractors/SUB-01", None),
     "list_conversations": ("GET", "/api/copilot/conversations", None),
     "start_conversation": (
         "POST",
@@ -130,6 +136,32 @@ REVIEWER_OPERATIONS = {
         {"message": "And the latest dispatch?"},
     ),
     "get_copilot_model": ("GET", "/api/copilot/model", None),
+    "find_cases": ("POST", "/api/copilot/cases", with_nulls(CASE_FILTERS)),
+    "read_case": ("GET", "/api/copilot/cases/PC-1202", None),
+    "get_exceptions": ("GET", "/api/copilot/cases/PC-1202/exceptions", None),
+    "exposure_summary": (
+        "POST",
+        "/api/copilot/exposure",
+        with_nulls(EXPOSURE_FILTERS),
+    ),
+    "filings_status": (
+        "POST",
+        "/api/copilot/filings",
+        {"period": LAST_WEEK, "project_id": None},
+    ),
+    "classification_changes": (
+        "POST",
+        "/api/copilot/classification-changes",
+        {"period": LAST_WEEK, "project_id": None},
+    ),
+    "find_projects": ("GET", "/api/copilot/projects?name=school", None),
+    "draft_notice": ("POST", "/api/copilot/cases/PC-0311/notice-draft", None),
+    "check_success_criteria": ("GET", "/api/copilot/success-criteria", None),
+    "resend_notice": (
+        "POST",
+        "/api/cases/PC-0311/notice/resend",
+        {"text": "Fix it."},
+    ),
     "start_copilot_step": (
         "POST",
         f"{TURN}/steps",

@@ -8,7 +8,13 @@ export type TurnStatus =
   // A turn still working long after it started, which the app reads as stopped.
   | "stopped";
 export type CardKind =
-  "cases" | "subcontractors" | "context" | "work" | "memory" | "action";
+  | "cases"
+  | "subcontractors"
+  | "projects"
+  | "context"
+  | "work"
+  | "memory"
+  | "action";
 export type CardStatus = "working" | "done" | "refused" | "failed";
 
 // A card: one tool the Copilot called, what was asked and what came back.

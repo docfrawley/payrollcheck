@@ -1,7 +1,7 @@
-"""Working a turn of a conversation: the turn checked with the app first, then its
-model, graph and context built, any tool call a stopped turn left open closed, the
-graph run on the conversation's thread, and the app told how the turn ended:
-answered or failed."""
+"""Working a turn of a conversation: the turn and the business date read from the
+app first, then the turn's model, graph and context built, any tool call a stopped
+turn left open closed, the graph run on the conversation's thread, and the app
+told how the turn ended: answered or failed."""
 
 import logging
 from collections.abc import Callable
@@ -47,6 +47,7 @@ class Turn:
     reviewer: dict[str, Any]
     conversation_id: str
     record: dict[str, Any]
+    business_date: str
 
     @property
     def turn_id(self) -> str:
@@ -55,14 +56,16 @@ class Turn:
 
 def the_turn(sign_in: str, conversation_id: str, turn_id: str) -> Turn:
     """Ask the app who is signed in, before any model call, and read the
-    conversation with their sign-in, which the app finds only for its own reviewer.
+    conversation with their sign-in, which the app finds only for its own reviewer,
+    and the business date, the app's today.
     The app refuses a sign-in it doesn't accept and another reviewer's conversation;
     a turn that isn't the conversation's latest working one is refused here."""
     reviewer = app_api.get_signed_in_reviewer(sign_in)
     latest = app_api.get_conversation(sign_in, conversation_id)["turns"][-1]
     if latest["turn_id"] != turn_id or latest["status"] != app_api.WORKING:
         raise NotThisTurn(NOT_THE_TURN.format(turn_id=turn_id))
-    return Turn(sign_in, reviewer, conversation_id, latest)
+    today = app_api.get_business_date(sign_in)["business_date"]
+    return Turn(sign_in, reviewer, conversation_id, latest, today)
 
 
 def copilot_model(sign_in: str) -> ChatOpenAI:
@@ -117,6 +120,7 @@ def work(turn: Turn, start: Start, saver: BaseCheckpointSaver[Any]) -> None:
             turn.conversation_id,
             turn.turn_id,
             tool_route.from_environment(),
+            turn.business_date,
         )
         graph.invoke(start(graph, config), config, context=context, durability="sync")
         tell_the_app(turn, graph.get_state(config))

@@ -59,6 +59,18 @@ FREE_TEXT = (
     "line_notes",
     "payroll_notes",
 )
+# Every cell a subcontractor writes as text and the template keeps as it is: the
+# free text, the classification and the ids intake doesn't check. The app
+# withholds them from the Copilot on a case the screening flagged, the worker id
+# where it isn't one of our workers.
+TEXT = (
+    *FREE_TEXT,
+    "classification",
+    "fein",
+    "registration_no",
+    "project_id",
+)
+WORKER_ID = "worker_id"
 TRUE = "true"
 FALSE = "false"
 

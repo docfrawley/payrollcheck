@@ -98,6 +98,11 @@ def swarm(scripts, pause=0.0, fill=0):
 
 def call(name, text="", **args):
     """A reply that calls one tool, with an id of its own as a real model gives."""
+    return call_with(name, args, text)
+
+
+def call_with(name, args, text=""):
+    """A reply that calls one tool with these inputs, which may hold a name."""
     tool_call = {"name": name, "args": args, "id": f"call-{next(CALL_IDS)}"}
     return AIMessage(content=text, tool_calls=[tool_call])
 

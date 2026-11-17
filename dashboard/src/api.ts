@@ -12,6 +12,7 @@ import type { Notice, OutboxRecord } from "./notices";
 import type { SettingsPage, SettingsValues } from "./settings";
 import type { Conversation, ConversationSummary } from "./conversation";
 import type { Source } from "./sources";
+import type { BusinessDate } from "./businessDate";
 
 // Where a case stands, in the order the queue shows them.
 export const statuses = [
@@ -536,6 +537,7 @@ export const api = {
       `${CONFIGURATION}/versions/${encodeURIComponent(number)}`,
     ),
   getSignedInReviewer: () => request<Reviewer>("/api/me"),
+  getBusinessDate: () => request<BusinessDate>("/api/business-date"),
   getSettings: () => request<SettingsPage>(SETTINGS),
   changeSettings: (values: SettingsValues) =>
     send<SettingsPage>("PUT", SETTINGS, values),
@@ -547,7 +549,10 @@ export const api = {
   startEvaluation: (evaluationSet: EvaluationSet, agents: number) =>
     post<Accepted>(EVALUATIONS, { evaluation_set: evaluationSet, agents }),
   signOffCase: (caseId: string) => post<Case>(`${casePath(caseId)}/sign-off`),
-  sendBackCase: (caseId: string) => post<Case>(`${casePath(caseId)}/send-back`),
+  sendBackCase: (caseId: string, text: string) =>
+    post<Case>(`${casePath(caseId)}/send-back`, { text }),
+  resendNotice: (caseId: string, text: string) =>
+    post<Case>(`${casePath(caseId)}/notice/resend`, { text }),
   saveNotice: (caseId: string, text: string) =>
     send<Case>("PUT", `${casePath(caseId)}/notice`, { text }),
   listRules: () => request<RuleEntry[]>("/api/rules"),

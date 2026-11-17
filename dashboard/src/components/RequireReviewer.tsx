@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Navigate, useLocation } from "react-router";
 import { api } from "../api";
+import { BusinessDateContext } from "../businessDate";
 import { ReviewerContext, type SignInState, useSignedIn } from "../reviewer";
 import { SIGN_IN } from "../paths";
 import { useLoad } from "../useLoad";
@@ -23,9 +24,15 @@ export function RequireReviewer({
   return <ReviewerProvider>{children}</ReviewerProvider>;
 }
 
-// Loads the reviewer signed in for the pages, or says why it can't.
+// Loads the reviewer signed in for the pages, or says why it can't, and the
+// business date for the header.
 function ReviewerProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { data: reviewer, error } = useLoad(api.getSignedInReviewer);
+  const { data: businessDate, reload } = useLoad(api.getBusinessDate);
+  const dated = useMemo(
+    () => ({ businessDate, reload }),
+    [businessDate, reload],
+  );
   if (!reviewer)
     return (
       <PageFrame>
@@ -33,5 +40,9 @@ function ReviewerProvider({ children }: Readonly<{ children: ReactNode }>) {
         {error && <SignOutButton className="button" />}
       </PageFrame>
     );
-  return <ReviewerContext value={reviewer}>{children}</ReviewerContext>;
+  return (
+    <ReviewerContext value={reviewer}>
+      <BusinessDateContext value={dated}>{children}</BusinessDateContext>
+    </ReviewerContext>
+  );
 }

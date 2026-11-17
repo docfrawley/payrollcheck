@@ -1,15 +1,18 @@
 """The shapes of the backend's requests and responses."""
 
+from datetime import date
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     BaseModel,
     Field,
     StringConstraints,
+    model_validator,
 )
 
 from backend.rule_codes import Severity
+from data.payroll_world.periods import SUNDAY
 
 
 class Status(StrEnum):
@@ -343,6 +346,12 @@ class NoticeRequest(BaseModel):
     text: Text = Field(description="The notice to the subcontractor, as edited")
 
 
+class SendRequest(BaseModel):
+    text: Annotated[str, StringConstraints(strip_whitespace=True)] = Field(
+        description="The notice as the reviewer saw it, trimmed as a save trims it"
+    )
+
+
 class OutboxRecord(BaseModel):
     """A notice sent to a subcontractor's payroll contact, with the agent's draft of
     it, if it wrote one."""
@@ -354,7 +363,8 @@ class OutboxRecord(BaseModel):
     body: str
     sent_by: str
     sent_at: str
-    draft: str | None
+    draft: str | None = Field(description="The draft the notice was sent from")
+    drafted_by: str | None
 
 
 class CaseSummary(BaseModel):
@@ -468,8 +478,8 @@ class SettingsValues(BaseModel):
     tolerance: MeasureSettings
     spending_limit: float = Field(gt=0, description="For each round, in US dollars")
     agents: Agents
-    business_date: str | None = Field(
-        description="The app's today, YYYY-MM-DD, or null for the real date"
+    business_date: date | None = Field(
+        description="The app's today, or null for the real date"
     )
 
 
@@ -1166,6 +1176,61 @@ class Improvement(BaseModel):
     recipes: list[RecipeSummary]
 
 
+# The periods the Copilot asks about, which backend/periods.py resolves.
+
+NOT_A_WEEK_ENDING = "{day} isn't a week ending, a Sunday"
+BACKWARDS = "The period's first week ending, {first}, is after its last, {last}"
+MOST_WEEKS = 52
+
+
+class LastWeek(BaseModel):
+    """The latest payroll week ending before the business date."""
+
+    kind: Literal["last_week"]
+
+
+class ThisMonth(BaseModel):
+    """Every week ending in the business date's month."""
+
+    kind: Literal["this_month"]
+
+
+class LastWeeks(BaseModel):
+    """The latest number of payroll weeks ending before the business date."""
+
+    kind: Literal["last_weeks"]
+    count: int = Field(ge=1, le=MOST_WEEKS)
+
+
+class Between(BaseModel):
+    """The week endings from one Sunday to another, both included."""
+
+    kind: Literal["between"]
+    first: date = Field(description="A week ending, YYYY-MM-DD")
+    last: date = Field(description="A week ending, YYYY-MM-DD")
+
+    @model_validator(mode="after")
+    def week_endings(self) -> Self:
+        for day in (self.first, self.last):
+            if day.weekday() != SUNDAY:
+                raise ValueError(NOT_A_WEEK_ENDING.format(day=day))
+        if self.first > self.last:
+            raise ValueError(BACKWARDS.format(first=self.first, last=self.last))
+        return self
+
+
+PeriodRequest = Annotated[
+    LastWeek | ThisMonth | LastWeeks | Between, Field(discriminator="kind")
+]
+
+
+class PeriodAnswer(BaseModel):
+    """The week endings a period resolved to, both included."""
+
+    first_week_ending: str
+    last_week_ending: str
+
+
 # The Copilot's conversations and what the Copilot records of them.
 
 MESSAGE_LENGTH = 4000
@@ -1186,11 +1251,13 @@ class TurnStatus(StrEnum):
 
 
 class CardKind(StrEnum):
-    """What a card's tool does: looks up cases, subcontractors and policies or the
-    context layer, works with the agent's work or the memory, or acts."""
+    """What a card's tool does: looks up cases, subcontractors, projects or the
+    context layer, works with the agent's work, exposure, filings and changes or
+    the memory, or acts."""
 
     CASES = "cases"
     SUBCONTRACTORS = "subcontractors"
+    PROJECTS = "projects"
     CONTEXT = "context"
     WORK = "work"
     MEMORY = "memory"
@@ -1214,7 +1281,7 @@ class CopilotStep(BaseModel):
     step_id: int
     tool: str
     kind: CardKind
-    input: str = Field(description="The tool's main input, such as CLM-1012")
+    input: str = Field(description="The tool's main input, such as PC-0311")
     asked: str
     status: CardStatus
     answer: str | None
@@ -1291,18 +1358,229 @@ class SubcontractorMatch(BaseModel):
     legal_name: str
 
 
-class Subcontractor(SubcontractorMatch):
-    """A subcontractor's record, its projects with their engagement windows, and
-    its cases in the queue."""
-
-    fein: str
-    registration_no: str
-    projects: list[Project]
-    cases: list[CaseSummary]
-
-
 class RunStarted(Accepted):
     """A dispatch or an evaluation a reviewer started, which the agent works."""
 
     run_id: str
     number: int
+
+
+# The Copilot's reads: every filter required, null for any, and every amount in
+# cents and as dollars, such as $1,250.00, so no model formats or adds one.
+
+CaseFlag = Literal["screening", "agent_failed"]
+
+
+class CaseFilters(BaseModel):
+    project_id: str | None
+    subcontractor_id: str | None
+    status: Status | None
+    period: PeriodRequest | None
+    has_open_exceptions: bool | None
+    flag: CaseFlag | None = Field(description="Flagged by the screening, or failed")
+
+
+class FoundCase(CaseSummary):
+    shortfall: str = Field(description="Of the open exceptions, in dollars")
+
+
+class SubcontractorCases(BaseModel):
+    subcontractor_id: str
+    name: str
+    case_ids: list[str]
+    open_exceptions: int
+
+
+class FoundCases(BaseModel):
+    period: PeriodAnswer | None
+    cases: list[FoundCase] = Field(description="In id order")
+    by_subcontractor: list[SubcontractorCases]
+
+
+class OpenException(BaseModel):
+    """An exception open on a case's latest submission, with its citation."""
+
+    exception_id: int
+    rule: str
+    severity: Severity
+    worker_id: str | None
+    worker_name: str | None = Field(description="From our worker records")
+    line_no: int | None
+    expected: str
+    actual: str
+    shortfall_cents: int | None
+    shortfall: str | None = Field(description="In dollars, or null")
+    citation: str
+
+
+class CaseExceptions(BaseModel):
+    case_id: str
+    status: Status
+    screening_flag: bool
+    screening_reason: str | None
+    project_id: str
+    subcontractor_id: str
+    week_ending: str
+    exceptions: list[OpenException]
+    shortfall_cents: int
+    shortfall: str
+
+
+class ExposureRequest(BaseModel):
+    project_id: str | None
+    subcontractor_id: str | None
+    period: PeriodRequest | None
+
+
+class ExposedException(BaseModel):
+    case_id: str
+    status: Status
+    rule: str
+    worker_id: str | None
+    worker_name: str | None = Field(description="From our worker records")
+    line_no: int | None
+    shortfall_cents: int
+    shortfall: str
+    outstanding: bool = Field(description="Open on a case Awaiting review or Returned")
+    screening_flag: bool
+
+
+class RuleExposure(BaseModel):
+    rule: str
+    flagged_cents: int
+    flagged: str
+    outstanding_cents: int
+    outstanding: str
+    case_ids: list[str]
+
+
+class Exposure(BaseModel):
+    period: PeriodAnswer | None
+    project_id: str | None
+    subcontractor_id: str | None
+    flagged_cents: int
+    flagged: str
+    outstanding_cents: int
+    outstanding: str
+    case_ids: list[str]
+    by_rule: list[RuleExposure]
+    exceptions: list[ExposedException]
+
+
+class FilingsRequest(BaseModel):
+    period: PeriodRequest
+    project_id: str | None
+
+
+class Filing(BaseModel):
+    """A case filed, as its first submission was received."""
+
+    case_id: str
+    subcontractor_id: str
+    subcontractor_name: str
+    project_id: str
+    week_ending: str
+    wage_payment_date: str
+    received_on: str
+    days_after_payment: int
+
+
+class MissingFiling(BaseModel):
+    """An expected filing with no case."""
+
+    subcontractor_id: str
+    subcontractor_name: str
+    project_id: str
+    week_ending: str
+    deadline: str
+    late: bool = Field(description="Past its deadline on the business date")
+
+
+class Filings(BaseModel):
+    period: PeriodAnswer
+    business_date: str
+    late: list[Filing]
+    missing: list[MissingFiling]
+    on_time: list[str] = Field(description="The case ids filed on time")
+
+
+class ClassificationChangesRequest(BaseModel):
+    period: PeriodRequest
+    project_id: str | None
+
+
+class ExceptionOnLine(BaseModel):
+    exception_id: int
+    rule: str
+    severity: Severity
+
+
+class ClassificationChange(BaseModel):
+    case_id: str
+    case_id_before: str = Field(description="The case of the week before")
+    screening_flag: bool
+    screening_flag_before: bool
+    project_id: str
+    subcontractor_id: str
+    subcontractor_name: str
+    worker_id: str
+    worker_name: str | None = Field(description="From our worker records")
+    week_ending: str
+    line_no: int
+    classification_before: str
+    classification_after: str
+    line_notes: str
+    established_craft: str | None
+    exception: ExceptionOnLine | None = Field(
+        description="An open classification exception on the line, if any"
+    )
+
+
+class ClassificationChanges(BaseModel):
+    period: PeriodAnswer
+    changes: list[ClassificationChange]
+
+
+class ProjectMatch(BaseModel):
+    project_id: str
+    name: str
+    county: str
+
+
+class NoticeDrafted(BaseModel):
+    """A send-back notice the Copilot drafted and saved for a reviewer, who edits
+    and sends it on the case page."""
+
+    case_id: str
+    drafted_by: str
+    draft: str
+    send_from: str = Field(description="Where the reviewer edits and sends it")
+
+
+class CriterionReport(BaseModel):
+    """One of the success criteria in docs/SPEC.md as the Copilot reports it: its
+    target, its figure and whether it's met, worked out in code, and where the
+    figure came from."""
+
+    number: int
+    name: str
+    target: str | None = Field(description="Null until an evaluation names it")
+    figure: str | None
+    met: bool | None = Field(description="Null where it can't be checked here")
+    source: str
+
+
+class EvaluationMeasured(BaseModel):
+    run_id: str
+    number: int
+    version: int
+    finished_at: str
+
+
+class SuccessCriteria(BaseModel):
+    current_version: int
+    evaluation: EvaluationMeasured | None = Field(
+        description="The evaluation criteria 1 to 4 come from, or null"
+    )
+    needs: str | None = Field(description="The evaluation it needs, if any")
+    criteria: list[CriterionReport]

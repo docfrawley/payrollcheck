@@ -9,7 +9,7 @@ from functools import partial
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import Connection, RowMapping, delete, func, insert, select, update
+from sqlalchemy import Connection, RowMapping, delete, insert, select, update
 
 from backend import agent_service, spending
 from backend.agent_work import clear_the_way
@@ -17,7 +17,6 @@ from backend.asking import commit_and_ask
 from backend.copies import make_copies
 from backend.database import (
     cases,
-    labelled_cases,
     now,
     run_cases,
     runs,
@@ -31,11 +30,11 @@ from backend.lookups import (
     current_version_number,
     round_number,
     run_row,
+    set_size,
     settings_number,
     version_row,
 )
 from backend.models import (
-    LABELLED_SET,
     DispatchSummary,
     Evaluation,
     EvaluationSet,
@@ -191,14 +190,6 @@ def evaluation_of(db: Connection, fields: dict[str, Any], version: RowMapping) -
     row = new_run(db, RunKind.EVALUATION, fields, version)
     put_cases(db, row["run_id"], make_copies(db, row))
     return find_run(db, row["run_id"], EVERYTHING)
-
-
-def set_size(db: Connection, evaluation_set: EvaluationSet) -> int:
-    """How many cases a labelled set holds."""
-    query = select(func.count()).where(
-        labelled_cases.c.labelled_set == LABELLED_SET[evaluation_set]
-    )
-    return db.execute(query).scalar_one()
 
 
 def next_evaluation(

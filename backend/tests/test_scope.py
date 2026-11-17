@@ -11,10 +11,10 @@ from fastapi import FastAPI
 from sqlalchemy import insert
 
 from backend.database import engine, project_reviewers
-from backend.lookups import CASE_NOT_FOUND, PROJECT_NOT_FOUND
+from backend.lookups import CASE_NOT_FOUND, PROJECT_NOT_FOUND, SUBCONTRACTOR_NOT_FOUND
 from backend.main import app
-from backend.subcontractors import SUBCONTRACTOR_NOT_FOUND
 from backend.tests.case_requests import awaiting_review
+from backend.tests.copilot_reads import find_cases
 from backend.tests.gates import AGENT_OPERATIONS, REVIEWER_OPERATIONS
 from backend.tests.run_requests import fail_run
 from backend.tests.sign_in import DANA, MARCUS, PRIYA, signed_in
@@ -125,8 +125,7 @@ def test_the_projects_and_subcontractors_hold_what_is_in_the_scope(client):
     ids = {match["subcontractor_id"] for match in found}
     assert ids <= {f"SUB-0{n}" for n in range(1, 9)}
     assert ids
-    sub = client.get("/api/subcontractors/SUB-01", headers=signed_in(PRIYA)).json()
-    assert [project["project_id"] for project in sub["projects"]] == ["PRJ-03"]
+    sub = find_cases(client, PRIYA, subcontractor_id="SUB-01").json()
     assert {case["project_id"] for case in sub["cases"]} == {"PRJ-03"}
     engaged = client.get(
         "/api/projects/PRJ-03/subcontractors", headers=signed_in(PRIYA)

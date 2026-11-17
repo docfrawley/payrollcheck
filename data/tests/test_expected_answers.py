@@ -2,17 +2,15 @@
 and the cases give apart from the code that computes them: one for each of the six
 questions, inside Marcus Oyelaran's scope."""
 
-import json
-
-from data.generate import ASKED_BY, COPILOT_EXPECTED, DATA
+from data.generate import ASKED_BY, DATA
 from data.payroll_world import periods
-from data.payroll_world.expected_answers import QUESTIONS
+from data.payroll_world.expected_answers import QUESTIONS, read_expected
 from data.payroll_world.lifecycle import Status
 from data.payroll_world.records import label_record
 from data.payroll_world.worlds import GARDEN_STATE, LINCOLN, NOTICE_CASE
 from data.tests.development_set import CASES, MANIFEST, SEEDED, WORLD
 
-COMMITTED = json.loads((DATA / COPILOT_EXPECTED).read_text(encoding="utf-8"))
+COMMITTED = read_expected(DATA)
 BY_ID = {case.case_id: case for case in CASES}
 SCOPE = {p.id for p in WORLD.spec.projects if p.reviewer == ASKED_BY}
 BUSINESS_DATE = WORLD.spec.business_date

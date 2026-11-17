@@ -72,6 +72,11 @@ def refuse_unknown_rate(craft: str, classification: str, county: str) -> None:
         raise Refused(f"No county {county}. The counties are {', '.join(COUNTIES)}.")
 
 
+def in_dollars(cents: int) -> str:
+    """An amount in cents as a person reads it, such as $61.10."""
+    return f"${cents / 100:,.2f}"
+
+
 def get_wage_rate(
     craft: str, classification: str, county: str, award_date: date, work_date: date
 ) -> dict[str, Any]:
@@ -100,6 +105,9 @@ def get_wage_rate(
             "wage_cents": row.wage,
             "fringe_cents": row.fringe,
             "total_cents": row.total,
+            "wage": in_dollars(row.wage),
+            "fringe": in_dollars(row.fringe),
+            "total": in_dollars(row.total),
         },
         "craft_rules": entry,
         "weekly_overtime_floor": FILES[RATE_DETERMINATIONS]["weekly_overtime_floor"],

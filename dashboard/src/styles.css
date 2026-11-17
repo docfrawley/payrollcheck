@@ -192,6 +192,20 @@ p {
   white-space: nowrap;
 }
 
+/* The chip and the business date beside it, on the band of every page. */
+.band-notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.business-date {
+  color: var(--on-header);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 /* Plain links, with a Hi-Vis Amber bar under the page you're on. */
 .nav {
   display: flex;
@@ -1281,6 +1295,14 @@ fieldset.panel legend + * {
   border-radius: 10px;
   background: var(--inset);
   color: var(--ink);
+}
+
+/* The business date's box, with the button that clears it beside it. */
+.business-date-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
 }
 
 .setting-input input {

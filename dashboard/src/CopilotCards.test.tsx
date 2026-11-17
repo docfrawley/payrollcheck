@@ -154,3 +154,24 @@ it("links a case id once, even in a link, and opens another site in a tab of its
   expect(document.querySelector(".answer a a")).toBeNull();
   expect(links[2].getAttribute("target")).toBe("_blank");
 });
+
+it("shows a project lookup's card with the projects icon", async () => {
+  showConversation(
+    turn({
+      steps: [
+        step({
+          tool: "find_projects",
+          kind: "projects",
+          input: "school",
+          answer: '[{"project_id": "PRJ-01"}]',
+        }),
+      ],
+    }),
+  );
+  const steps = within(
+    await (await openSidebar()).findByRole("list", { name: "Steps" }),
+  );
+  expect(steps.getByText("find_projects")).toBeDefined();
+  const icon = steps.getByLabelText("Projects");
+  expect(icon.classList.contains("lucide-hard-hat")).toBe(true);
+});

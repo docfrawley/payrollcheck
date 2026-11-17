@@ -1,7 +1,7 @@
 // The shapes of a case's send-back notice and what the outbox sent, as the
 // backend gives them.
 
-// A submission's send-back notice: the agent's draft, if it wrote one, and the
+// A submission's send-back notice: the agent's or the Copilot's draft, and the
 // reviewer's edit, both kept.
 export interface Notice {
   submission_no: number;
@@ -24,5 +24,7 @@ export interface OutboxRecord {
   body: string;
   sent_by: string;
   sent_at: string;
+  // The draft it was sent from, and who drafted it.
   draft: string | null;
+  drafted_by: string | null;
 }

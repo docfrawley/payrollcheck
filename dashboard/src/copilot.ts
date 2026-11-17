@@ -3,6 +3,7 @@ import {
   Bot,
   Brain,
   FileText,
+  HardHat,
   type LucideIcon,
   Users,
   Zap,
@@ -20,7 +21,8 @@ import { modelCost } from "./format";
 export const CARD_KINDS: Record<CardKind, { icon: LucideIcon; label: string }> =
   {
     cases: { icon: FileText, label: "Cases" },
-    subcontractors: { icon: Users, label: "Subcontractors and projects" },
+    subcontractors: { icon: Users, label: "Subcontractors" },
+    projects: { icon: HardHat, label: "Projects" },
     context: { icon: BookOpen, label: "The context layer" },
     work: { icon: Bot, label: "The agent's work" },
     memory: { icon: Brain, label: "Memory" },
@@ -75,9 +77,9 @@ export const NO_CONVERSATIONS =
   "No conversations yet. Ask the Copilot something to start one.";
 export const SUGGESTED_QUESTIONS = [
   "What needs me today?",
-  "How did the latest dispatch go?",
-  "Which cases have a screening flag?",
-  "What do the filing rules say about late payrolls?",
+  "Which subs on my projects have open exceptions?",
+  "How much underpayment have we flagged this month?",
+  "Which payrolls are late or missing for last week?",
 ];
 
 // Why the message box can't take a message yet, if it can't.

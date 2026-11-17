@@ -7,6 +7,8 @@ import pytest
 
 from context import payroll_files, wage_rules
 from context.sources import SYNTHETIC, Refused
+from data.generate import DATA
+from data.payroll_world.expected_answers import answer_to, read_expected
 
 
 @pytest.mark.parametrize("file", payroll_files.FILES)
@@ -41,6 +43,9 @@ def test_the_wage_rate_before_and_after_the_pre_listed_increase():
         "wage_cents": 5885,
         "fringe_cents": 3465,
         "total_cents": 9350,
+        "wage": "$58.85",
+        "fringe": "$34.65",
+        "total": "$93.50",
     }
     assert after["row"]["effective"] == "2026-10-01"
     assert after["row"]["total_cents"] == 9650
@@ -53,6 +58,23 @@ def test_the_wage_rate_before_and_after_the_pre_listed_increase():
     assert craft["overtime_rules"][0]["when"] == "daily_over"
     assert len(craft["apprentice_schedule"]) == 5
     assert wage_rules.craft_rules(craft) == payroll_files.RATES.crafts["electrician"]
+
+
+def test_question_4_the_journeyman_electrician_in_middlesex_on_the_business_date():
+    expected = read_expected(DATA)
+    answer = answer_to(expected, 4)
+    rate = wage_rate(date.fromisoformat(expected["business_date"]))
+    assert rate["determination"]["id"] == answer["determination_id"]
+    assert rate["row"] == {
+        "effective": answer["effective"],
+        "wage_cents": answer["wage_cents"],
+        "fringe_cents": answer["fringe_cents"],
+        "total_cents": answer["total_cents"],
+        "wage": "$61.10",
+        "fringe": "$35.40",
+        "total": "$96.50",
+    }
+    assert rate["sources"] == [answer["source"]]
 
 
 def test_a_later_determination_isnt_returned_for_an_earlier_award():

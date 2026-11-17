@@ -1,9 +1,9 @@
 import { type Locator, type Page, expect, test } from "@playwright/test";
-import { nextStarted, started, stopTheWork } from "./api";
+import { stopTheWork } from "./api";
 
 // The Copilot's sidebar on every signed-in page, driving a stand-in for the
 // Copilot, which plays scripted turns through the backend with the reviewer's
-// sign-in.
+// sign-in: a lookup, a draft notice, a refusal and a formatted answer.
 
 test.afterEach(async ({ request }) => {
   await stopTheWork(request);
@@ -69,6 +69,10 @@ test("on a narrow window the sidebar opens over the page, below the header, and 
 }) => {
   await page.setViewportSize({ width: 800, height: 800 });
   await page.goto("/");
+  // The header is laid out in full once the business date is in it.
+  await expect(
+    page.getByRole("banner").getByText(/^Business date/),
+  ).toBeVisible();
   const main = await boxOf(page.getByRole("main"));
   const header = await boxOf(page.getByRole("banner"));
   const copilot = await boxOf(sidebar(page));
@@ -88,34 +92,82 @@ test("on a narrow window the sidebar opens over the page, below the header, and 
   ).toBeFocused();
 });
 
-test("the Copilot's steps show as cards, then its answer, and the page shows its action", async ({
+test("a lookup, a draft notice, a refusal and a formatted answer, each with its cards", async ({
   page,
-  request,
 }) => {
   await page.goto("/");
-  const before = (await started(request)).length;
-  await ask(page, "What needs me today?");
   const copilot = sidebar(page);
-  const lookup = copilot.locator(".card", { hasText: "lookup_payroll_term" });
-  await expect(lookup).toContainText("fringe");
-  await lookup.getByRole("button").click();
-  await expect(lookup).toContainText("Compliance manual, glossary, owned by");
-  const action = copilot.locator(".card", { hasText: "start_dispatch" });
-  await expect(action.getByLabel("Done")).toBeVisible();
-  await expect(action).toHaveClass(/card-action/);
-  const refused = copilot.locator(".card", { hasText: "get_case" });
-  await expect(refused.getByText("Refused")).toBeVisible();
-  await expect(refused).toContainText("Case PC-9999 not found");
-  await expect(copilot.getByRole("table")).toBeVisible();
-  await expect(copilot.getByText("3 model calls, $0.0021")).toBeVisible();
-  expect(await nextStarted(request, before)).toMatchObject({
-    operation: "work_run",
-  });
+  const answers = copilot.locator(".answer");
+
+  await ask(
+    page,
+    "Which subs on the Lincoln School renovation have open exceptions?",
+  );
+  const lookup = copilot.locator(".card", { hasText: "list_cases" });
+  await expect(lookup.getByLabel("Done")).toBeVisible();
+  await expect(lookup.getByLabel("Cases")).toBeVisible();
+  await expect(answers.nth(0)).toContainText("Garden State Electric LLC");
   await expect(
-    page.getByRole("region", { name: "Dispatch" }).getByText("Running"),
+    answers.nth(0).getByRole("link", { name: "PC-0601" }),
   ).toBeVisible();
-  await copilot.getByRole("link", { name: "PC-0311" }).first().click();
+
+  await ask(
+    page,
+    "Draft a send-back notice for PC-0311 covering all three exceptions.",
+  );
+  const drafted = copilot.locator(".card", { hasText: "draft_notice" });
+  await expect(drafted.getByLabel("Done")).toBeVisible();
+  await expect(drafted).toHaveClass(/card-action/);
+  await expect(answers.nth(1)).toContainText(
+    "Edit and send it on the case page",
+  );
+
+  await ask(page, "Sign off PC-0311");
+  await expect(answers.nth(2)).toContainText(
+    "I can't sign off PC-0311: a reviewer signs off on its case page.",
+  );
+
+  await ask(page, "How much underpayment have we flagged this month?");
+  const table = answers.nth(3).getByRole("table");
+  await expect(table).toBeVisible();
+  // The other specs add exceptions to the shared database, so the total isn't
+  // fixed, but it is in dollars, above zero, from PC-1009 among others.
+  await expect(table).toContainText(/\$[1-9][\d,]*\.\d{2}/);
+  await expect(answers.nth(3)).toContainText(/From .*PC-1009/);
+  await expect(
+    copilot.getByText("3 model calls, $0.0021").first(),
+  ).toBeVisible();
+  // No card asks the reviewer to confirm anything: the Copilot never decides.
+  await expect(copilot.getByRole("button", { name: /confirm/i })).toHaveCount(
+    0,
+  );
+  await expect(copilot.locator(".card")).toHaveCount(3);
+
+  await answers.nth(1).getByRole("link", { name: "PC-0311" }).click();
   await expect(page).toHaveURL("/cases/PC-0311");
+  const notice = page.getByRole("region", { name: "Send-back notice" });
+  await expect(
+    notice.getByText(/^Drafted by PayrollCheck Copilot for Dana Whitfield/),
+  ).toBeVisible();
+  await expect(
+    notice.getByLabel("The notice to the subcontractor"),
+  ).toHaveValue(/^Certified payroll PC-0311, Municipal building/);
+  await expect(
+    notice.getByRole("button", { name: "Send again" }),
+  ).toBeVisible();
+});
+
+test("the greeting offers the reviewers' questions", async ({ page }) => {
+  await page.goto("/");
+  const questions = sidebar(page).getByRole("list", {
+    name: "Questions to ask",
+  });
+  await expect(questions.getByRole("button")).toHaveText([
+    "What needs me today?",
+    "Which subs on my projects have open exceptions?",
+    "How much underpayment have we flagged this month?",
+    "Which payrolls are late or missing for last week?",
+  ]);
 });
 
 test("the earlier conversations hold each by its first question, and open it", async ({

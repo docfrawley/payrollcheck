@@ -36,7 +36,11 @@ export function SentNotices({ caseRecord }: Readonly<{ caseRecord: Case }>) {
           <p className="notice">{sent.body}</p>
           {sent.draft && sent.draft !== sent.body && (
             <details>
-              <summary>The agent's draft</summary>
+              <summary>
+                {sent.drafted_by
+                  ? `Drafted by ${sent.drafted_by}`
+                  : "The draft"}
+              </summary>
               <p className="notice">{sent.draft}</p>
             </details>
           )}

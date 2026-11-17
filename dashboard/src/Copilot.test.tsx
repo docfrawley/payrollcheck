@@ -56,6 +56,8 @@ it("collapses on Escape where it sits over the page, on a narrow window, and not
   const narrow = vi.fn((query: string) => ({ matches: query === OVERLAY }));
   vi.stubGlobal("matchMedia", narrow);
   renderAt("/settings");
+  // The page's own frame, once the reviewer has loaded, not the loading one.
+  await screen.findByLabelText("Signed in");
   const escape = async () => {
     fireEvent.keyDown(
       (await openSidebar()).getByRole("button", { name: "New conversation" }),
@@ -91,9 +93,9 @@ it("greets the reviewer by first name with questions to click", async () => {
   );
   expect(questions.getAllByRole("button").map((b) => b.textContent)).toEqual([
     "What needs me today?",
-    "How did the latest dispatch go?",
-    "Which cases have a screening flag?",
-    "What do the filing rules say about late payrolls?",
+    "Which subs on my projects have open exceptions?",
+    "How much underpayment have we flagged this month?",
+    "Which payrolls are late or missing for last week?",
   ]);
   fireEvent.click(
     questions.getByRole("button", { name: "What needs me today?" }),

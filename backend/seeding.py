@@ -319,9 +319,13 @@ def seed_labelled_set(
 def seed_settings(connection: Connection, business_date: str) -> None:
     """The first settings, from data/improvement.json, checked as the settings page
     checks a change, with the business date the development world names."""
-    values = SettingsValues(**load("improvement.json"), business_date=business_date)
+    values = SettingsValues.model_validate(
+        load("improvement.json") | {"business_date": business_date}
+    )
     connection.execute(
-        insert(settings).values(number=1, **values.model_dump(), changed_at=now())
+        insert(settings).values(
+            number=1, **values.model_dump(mode="json"), changed_at=now()
+        )
     )
 
 

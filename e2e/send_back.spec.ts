@@ -76,3 +76,23 @@ test("Marcus edits the notice and sends the case back with it", async ({
     page.getByRole("row", { name: /PC-1215/ }).getByText("Returned to sub"),
   ).toBeVisible();
 });
+
+test("Marcus edits a returned case's notice and sends it again, and it stays returned", async ({
+  page,
+}) => {
+  const AGAIN = "Line 2 is still $0.72 an hour short of the base rate.";
+  await page.goto("/cases/PC-0601");
+  const heading = page.locator(".page-header");
+  await expect(heading.getByText("Returned to sub")).toBeVisible();
+  const notice = page.getByRole("region", { name: "Send-back notice" });
+  await expect(notice.getByRole("button", { name: "Send back" })).toHaveCount(
+    0,
+  );
+  await notice.getByLabel("The notice to the subcontractor").fill(AGAIN);
+  await notice.getByRole("button", { name: "Send again" }).click();
+
+  const email = page.getByRole("region", { name: "Sent to the subcontractor" });
+  await expect(email.getByText(AGAIN)).toBeVisible();
+  await expect(email.getByText(/^Certified payroll PC-0601, /)).toBeVisible();
+  await expect(heading.getByText("Returned to sub")).toBeVisible();
+});
