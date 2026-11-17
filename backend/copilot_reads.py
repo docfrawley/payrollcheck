@@ -1,7 +1,8 @@
 """The Copilot's reads, and its one write, under /api/copilot/, for a signed-in
 reviewer in their scope: the queue's cases found by filters, a case in full and
 its open exceptions, exposure, filings, classification changes and projects found
-by name, and the send-back notice it drafts and saves for the reviewer. The case
+by name, the success criteria, and the send-back notice it drafts and saves for
+the reviewer. The case
 page's reads are the dashboard's; the Copilot's are these, which pass every
 answer that can hold what a flagged case's subcontractor wrote through
 withheld.py. The rest hold none: their names and ids come from our records."""
@@ -12,6 +13,7 @@ from sqlalchemy import Connection, select
 from backend import notice_drafts, notices, withheld
 from backend.case_search import find_cases as search
 from backend.classification_changes import classification_changes as changes_in
+from backend.criteria_report import success_criteria
 from backend.database import projects
 from backend.dependencies import Database, SignedIn
 from backend.exposure import exposure
@@ -30,6 +32,7 @@ from backend.models import (
     FoundCases,
     NoticeDrafted,
     ProjectMatch,
+    SuccessCriteria,
 )
 from backend.names import Name, holding_every_word
 from backend.open_exceptions import case_exceptions
@@ -127,3 +130,9 @@ def draft_notice(
     return NoticeDrafted(
         case_id=case_id, drafted_by=drafted_by, draft=shown, send_from=SEND_FROM
     )
+
+
+@router.get("/success-criteria", operation_id="check_success_criteria")
+def check_success_criteria(db: Database, scope: Scoped) -> SuccessCriteria:
+    """Check the business's seven success criteria, each figure worked out in code."""
+    return success_criteria(db, scope)

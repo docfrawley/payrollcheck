@@ -285,26 +285,26 @@ The tools of decision 15 on `app_api.py`'s new functions, the removed tools with
 
 `criteria_report.py` and `check_success_criteria`, the `projects` card kind, the greeting's questions, and `e2e/copilot.spec.ts` and `e2e/copilot_stand_in.ts` rewritten.
 
-- [ ] `backend/tests/test_criteria_report.py`:
+- [x] `backend/tests/test_criteria_report.py`:
   - with a finished whole development-set evaluation on the current version, criteria 1 to 4 have the figures and verdicts its page shows
   - with none, they say which evaluation they need
   - criterion 5 counts the Accepted cases with no sign-off: none after seeding, and one when a test makes such a row
   - criteria 6 and 7 say they're outside what the Copilot can check
   - every figure is in the answer, so the model writes none
-- [ ] `agent/tests/test_copilot.py`: `check_success_criteria` returns the table as the route gives it.
-- [ ] **The e2e stand-in**, rewritten, plays four scripted turns through the test backend with the reviewer's sign-in:
+- [x] `agent/tests/test_copilot.py`: `check_success_criteria` returns the table as the route gives it.
+- [x] **The e2e stand-in**, rewritten, plays four scripted turns through the test backend with the reviewer's sign-in:
   - a lookup (`find_cases` on PRJ-01, with a `cases` card and an answer naming its case ids)
   - a draft notice for PC-0311
   - a refusal to sign off, pointing to the case page
   - a formatted answer with a table and a dollar total
-- [ ] **`e2e/copilot.spec.ts`**, rewritten:
+- [x] **`e2e/copilot.spec.ts`**, rewritten:
   - each turn's cards and answer show in the sidebar, with the case ids linked
   - the draft then shows on PC-0311's page, editable with Send again
   - no confirmation card appears anywhere
   - the greeting offers decision 19's questions
   - the sidebar's layout tests stay
-- [ ] vitest: a `projects` card shows with its icon, and the greeting's four questions.
-- [ ] `npm run check` green.
+- [x] vitest: a `projects` card shows with its icon, and the greeting's four questions.
+- [x] `npm run check` green.
 
 ### Phase 6: the documents, the live checks and the guardrails
 

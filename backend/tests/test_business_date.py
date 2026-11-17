@@ -1,8 +1,10 @@
 """The business date: the app's today, which every signed-in reviewer reads and
 only the compliance manager changes or resets to the real date."""
 
-from datetime import date
+from datetime import UTC, datetime
 
+from backend import business_date as business_dates
+from backend.business_date import NEW_JERSEY
 from backend.tests.dashboard_reads import settings_page
 from backend.tests.settings_requests import change_settings
 from backend.tests.sign_in import DANA, MARCUS, PRIYA, signed_in
@@ -36,7 +38,7 @@ def test_the_compliance_manager_changes_it_and_the_history_says_who(dashboard):
 def test_reset_to_the_real_date(dashboard):
     assert change_settings(dashboard, business_date=None).status_code == 200
     assert business_date(dashboard).json() == {
-        "business_date": date.today().isoformat(),
+        "business_date": datetime.now(NEW_JERSEY).date().isoformat(),
         "real_date": True,
     }
     assert settings_page(dashboard)["current"]["business_date"] is None
@@ -54,3 +56,16 @@ def test_a_reviewer_is_refused_the_change(dashboard):
 def test_a_business_date_that_isnt_a_date_is_refused(dashboard):
     for bad in ("2026-13-01", "next monday"):
         assert change_settings(dashboard, business_date=bad).status_code == 422
+
+
+def test_the_real_date_is_new_jerseys_where_utc_is_already_tomorrow(monkeypatch):
+    # 11:30 pm in New Jersey on Nov 23 is 4:30 am on Nov 24 in UTC.
+    late = datetime(2026, 11, 24, 4, 30, tzinfo=UTC)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return late.astimezone(tz)
+
+    monkeypatch.setattr(business_dates, "datetime", Clock)
+    assert business_dates.real_date().isoformat() == "2026-11-23"

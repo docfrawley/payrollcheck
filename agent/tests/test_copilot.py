@@ -21,7 +21,7 @@ from backend.tests.copilot_reads import LAST_WEEK, THIS_MONTH
 from backend.tests.copilot_requests import latest, started
 from backend.tests.flagged import FLAGGED, flag_with_planted_text
 from backend.tests.run_requests import another_running_dispatch, fail_run, run_path
-from backend.tests.sign_in import DANA, MARCUS, OTHER_KEY, token
+from backend.tests.sign_in import DANA, MARCUS, OTHER_KEY, signed_in, token
 from backend.withheld import WITHHELD
 
 WHY = "Why does PC-1201 need me?"
@@ -268,6 +268,7 @@ def test_the_copilots_tools(copilot: Copilot):
         "classification_changes",
         "get_latest_dispatch",
         "wait_for_run",
+        "check_success_criteria",
         "draft_notice",
         "start_dispatch",
         "start_evaluation",
@@ -291,6 +292,7 @@ def test_the_copilots_tools(copilot: Copilot):
         "classification_changes": "work",
         "get_latest_dispatch": "work",
         "wait_for_run": "work",
+        "check_success_criteria": "work",
         "search_memory": "memory",
         "draft_notice": "action",
         "start_dispatch": "action",
@@ -573,3 +575,18 @@ def test_a_case_outside_the_reviewers_projects_isnt_found(copilot: Copilot):
     )
     refusal = copilot.model.prompts[1][-1]
     assert refusal.text == "Refused: Case PC-1217 not found"
+
+
+def test_the_success_criteria_come_back_as_the_app_gives_them(client, copilot: Copilot):
+    copilot.model = stub(call("check_success_criteria"), "Here they are.")
+    [turn] = copilot.ask("Are we meeting the success criteria?")["turns"]
+    [card] = turn["steps"]
+    assert (card["tool"], card["kind"], card["status"]) == (
+        "check_success_criteria",
+        "work",
+        "done",
+    )
+    given = json.loads(copilot.model.prompts[1][-1].text)
+    app = client.get("/api/copilot/success-criteria", headers=signed_in(DANA))
+    assert given == app.json()
+    assert given["needs"].startswith("Criteria 1 to 4 need a finished evaluation")

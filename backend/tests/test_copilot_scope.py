@@ -62,7 +62,7 @@ def test_the_agents_key_is_refused_every_read(client):
         if isinstance(route, APIRoute)
         for method in route.methods or ()
     ]
-    assert len(reads) == 8
+    assert len(reads) == 9
     for method, path in reads:
         filled = path.replace("{case_id}", "PC-0311")
         answer = client.request(method, filled, headers=sign_in)

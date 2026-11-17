@@ -126,6 +126,12 @@ def draft_notice(case_id: str, runtime: ToolRuntime[CopilotContext]) -> str:
 
 
 @tool
+def check_success_criteria(runtime: ToolRuntime[CopilotContext]) -> str:
+    """Check the success criteria we agreed, each figure and verdict from our app."""
+    return as_json(app_api.check_success_criteria(sign_in_of(runtime)))
+
+
+@tool
 def get_latest_dispatch(runtime: ToolRuntime[CopilotContext]) -> str:
     """Get the latest dispatch with its cases, cost, time and summary, or nothing."""
     return as_json(app_api.get_latest_dispatch(sign_in_of(runtime)))
@@ -174,6 +180,7 @@ WORK_TOOLS: list[BaseTool] = [
     classification_changes,
     get_latest_dispatch,
     wait_for_run,
+    check_success_criteria,
 ]
 ACTION_TOOLS: list[BaseTool] = [draft_notice, start_dispatch, start_evaluation]
 COPILOT_TOOLS = (

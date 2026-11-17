@@ -1563,3 +1563,32 @@ class NoticeDrafted(BaseModel):
     drafted_by: str
     draft: str
     send_from: str = Field(description="Where the reviewer edits and sends it")
+
+
+class CriterionReport(BaseModel):
+    """One of the success criteria in docs/SPEC.md as the Copilot reports it: its
+    target, its figure and whether it's met, worked out in code, and where the
+    figure came from."""
+
+    number: int
+    name: str
+    target: str | None = Field(description="Null until an evaluation names it")
+    figure: str | None
+    met: bool | None = Field(description="Null where it can't be checked here")
+    source: str
+
+
+class EvaluationMeasured(BaseModel):
+    run_id: str
+    number: int
+    version: int
+    finished_at: str
+
+
+class SuccessCriteria(BaseModel):
+    current_version: int
+    evaluation: EvaluationMeasured | None = Field(
+        description="The evaluation criteria 1 to 4 come from, or null"
+    )
+    needs: str | None = Field(description="The evaluation it needs, if any")
+    criteria: list[CriterionReport]

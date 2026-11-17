@@ -9,6 +9,7 @@ from sqlalchemy import Connection, RowMapping, func, select
 from backend.database import (
     case_view,
     cases,
+    labelled_cases,
     models_allowed,
     projects,
     rounds,
@@ -17,7 +18,13 @@ from backend.database import (
     subcontractors,
     versions,
 )
-from backend.models import ModelAllowed, Settings, Verdict
+from backend.models import (
+    LABELLED_SET,
+    EvaluationSet,
+    ModelAllowed,
+    Settings,
+    Verdict,
+)
 from backend.scope import Scope, cases_in, projects_in, subcontractors_in
 
 RUN_NOT_FOUND = "Run {run_id} not found"
@@ -121,3 +128,11 @@ def settings_number(db: Connection, number: int) -> Settings:
     """Return the settings as one change left them, such as a round's."""
     query = select(settings).where(settings.c.number == number)
     return Settings(**db.execute(query).mappings().one())
+
+
+def set_size(db: Connection, evaluation_set: EvaluationSet) -> int:
+    """How many cases a labelled set holds."""
+    query = select(func.count()).where(
+        labelled_cases.c.labelled_set == LABELLED_SET[evaluation_set]
+    )
+    return db.execute(query).scalar_one()

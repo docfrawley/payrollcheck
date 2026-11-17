@@ -156,6 +156,7 @@ REVIEWER_OPERATIONS = {
     ),
     "find_projects": ("GET", "/api/copilot/projects?name=school", None),
     "draft_notice": ("POST", "/api/copilot/cases/PC-0311/notice-draft", None),
+    "check_success_criteria": ("GET", "/api/copilot/success-criteria", None),
     "resend_notice": (
         "POST",
         "/api/cases/PC-0311/notice/resend",

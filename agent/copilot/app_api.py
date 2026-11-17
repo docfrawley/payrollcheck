@@ -118,6 +118,10 @@ def draft_notice(sign_in: str, case_id: str) -> dict[str, Any]:
     return call_as(sign_in, "POST", f"/copilot/cases/{case_id}/notice-draft")
 
 
+def check_success_criteria(sign_in: str) -> dict[str, Any]:
+    return call_as(sign_in, "GET", "/copilot/success-criteria")
+
+
 def get_latest_dispatch(sign_in: str) -> dict[str, Any] | None:
     return call_as(sign_in, "GET", "/dispatches/latest")
 

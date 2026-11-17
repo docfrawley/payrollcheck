@@ -28,7 +28,12 @@ WITH_CELLS = {
     "classification_changes",
     "draft_notice",
 }
-WITHOUT_CELLS = {"exposure_summary", "filings_status", "find_projects"}
+WITHOUT_CELLS = {
+    "exposure_summary",
+    "filings_status",
+    "find_projects",
+    "check_success_criteria",
+}
 
 
 def answers(client):
@@ -41,6 +46,7 @@ def answers(client):
         "exposure_summary": exposure(client, DANA),
         "filings_status": filings(client, LAST_WEEK, DANA),
         "find_projects": read(client, "/projects?name=renovation", DANA),
+        "check_success_criteria": read(client, "/success-criteria", DANA),
         "draft_notice": ask(client, f"/cases/{FLAGGED}/notice-draft", None, DANA),
     }
 

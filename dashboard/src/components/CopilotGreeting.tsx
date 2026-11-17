@@ -17,8 +17,9 @@ export function CopilotGreeting({
     <div className="greeting">
       <p className="greeting-hello">Hello, {first}.</p>
       <p className="greeting-lead">
-        Ask me about the queue, a case or the prevailing wage rules, or have me
-        do the work. I work as you, so I can see and do what you can.
+        Ask me about your projects, subcontractors and weeks, a case or our rate
+        table, or have me draft a notice or start the work. I work as you, so I
+        see only what you can, and you decide every case.
       </p>
       <ul className="suggestions" aria-label="Questions to ask">
         {SUGGESTED_QUESTIONS.map((question) => (
