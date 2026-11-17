@@ -182,12 +182,12 @@ The proposal waiting with its parameters before and after and its motivating cas
 
 `docs/SPEC.md`, `docs/TECH_STACK.md`, `docs/PROCESS.md`, `docs/CODE_STANDARDS.md`, `docs/STATUS.md` and `data/README.md` describe the product as it now is. Then, after one `npm run seed`, with `npm run dev` on the default model:
 
-- [ ] The documents say what this stage built: the parameters, the measures and the rule, the judge's rubric, the improver's two signals and the window, the decoys in the labels files, and the success criteria.
-- [ ] As Marcus Oyelaran: a dispatch of the week-12 wave, then one exception dismissed with a reason and one notice edited and sent back, so the round has corrections to read.
-- [ ] As Dana Whitfield, one round from the Improvement page: the first evaluations, a proposal that cites its cases, the approval, the held-out runs and the verdict. Reported: version 1's two held-out runs on each measure, how far apart they were, beside the noise and tolerance; the proposal, its cases and whether Marcus's corrections were among them; the verdict and why; and what the round spent against its $5.00.
-- [ ] The development-set scoring run on the current version, from the Scoreboard. Reported: each success criterion with its figure and whether it's met, every missed label and every false exception by case, and the run's model and judge cost.
-- [ ] If any criterion isn't met, I report what fell short and stop for you to decide. I don't change the agent outside a round to reach the target.
-- [ ] What the live runs spent, from the backend's records and the OpenRouter key's usage, matches.
+- [x] The documents say what this stage built: the parameters, the measures and the rule, the judge's rubric, the improver's two signals and the window, the decoys in the labels files, and the success criteria.
+- [x] As Marcus Oyelaran: a dispatch of the week-12 wave, then one exception dismissed with a reason and one notice edited and sent back, so the round has corrections to read.
+- [x] As Dana Whitfield, one round from the Improvement page: the first evaluations, a proposal that cites its cases, the approval, the held-out runs and the verdict. Reported: version 1's two held-out runs on each measure, how far apart they were, beside the noise and tolerance; the proposal, its cases and whether Marcus's corrections were among them; the verdict and why; and what the round spent against its $5.00.
+- [x] The development-set scoring run on the current version, from the Scoreboard. Reported: each success criterion with its figure and whether it's met, every missed label and every false exception by case, and the run's model and judge cost.
+- [x] If any criterion isn't met, I report what fell short and stop for you to decide. I don't change the agent outside a round to reach the target.
+- [x] What the live runs spent, from the backend's records and the OpenRouter key's usage, matches.
 - [ ] `npm run check` green, then the review of the whole branch against `main`.
 
 ## How the browser checks run
