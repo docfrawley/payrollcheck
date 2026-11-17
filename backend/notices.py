@@ -69,10 +69,10 @@ def save_notice(
 
 
 def save_draft(db: Connection, case: RowMapping, text: str, reviewer: Reviewer) -> str:
-    """Keep the Copilot's draft for a reviewer of the latest submission's notice in
-    place of the old, and return who it is by,
-    clearing an edit that was sent, which the outbox keeps, or raise a 409 when a
-    reviewer's edit hasn't been sent, which is never overwritten."""
+    """Keep the Copilot's draft, for a reviewer, of the latest submission's notice
+    in place of the old, clearing an edit that was sent, which the outbox keeps,
+    and return who it is by; or raise a 409 when a reviewer's edit hasn't been
+    sent, which is never overwritten."""
     row = db.execute(select(notices).where(*latest(case))).mappings().first()
     if row is not None and unsent(row):
         message = UNSENT_EDIT.format(

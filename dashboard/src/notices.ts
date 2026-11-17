@@ -8,8 +8,6 @@ export interface Notice {
   draft: string | null;
   drafted_by: string | null;
   drafted_at: string | null;
-  // The reviewer a draft of the Copilot's was written for; null for the agent's.
-  drafted_for: string | null;
   edited_text: string | null;
   edited_by: string | null;
   edited_at: string | null;

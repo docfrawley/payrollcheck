@@ -10,12 +10,14 @@ from backend.dependencies import THE_AGENTS_REQUEST
 from backend.lookups import PROJECT_NOT_FOUND
 from backend.tests.copilot_reads import (
     LAST_FOUR_WEEKS,
+    ask,
     classification_changes,
     exposure,
     filings,
     find_cases,
     read,
 )
+from backend.tests.run_requests import create_evaluation
 from backend.tests.sign_in import MARCUS, token
 
 MARCUS_PROJECTS = {"PRJ-01", "PRJ-02"}
@@ -68,3 +70,18 @@ def test_the_agents_key_is_refused_every_read(client):
         answer = client.request(method, filled, headers=sign_in)
         assert answer.status_code == 403, (method, path)
         assert answer.json()["detail"] == THE_AGENTS_REQUEST
+
+
+def test_the_copilot_never_opens_an_evaluations_copy(client, dashboard):
+    """Not even the held-out set's, which every reviewer's scope holds for the
+    Scoreboard."""
+    run = create_evaluation(client, "held_out").json()
+    copy = run["cases"][0]["case_id"]
+    assert client.get(f"/api/cases/{copy}").status_code == 200
+    for path in (f"/cases/{copy}", f"/cases/{copy}/exceptions"):
+        refused = read(dashboard, path)
+        assert (refused.status_code, refused.json()["detail"]) == (
+            404,
+            f"Case {copy} not found",
+        )
+    assert ask(dashboard, f"/cases/{copy}/notice-draft", None).status_code == 409

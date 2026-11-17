@@ -13,6 +13,9 @@ from backend.periods import answer_of, resolve
 from backend.scope import Scope, cases_in
 from backend.views import to_summary
 
+# The column each flag a search can ask for is kept in.
+FLAGS = {"screening": cases.c.screening_flag, "agent_failed": cases.c.agent_failed}
+
 
 def find_cases(db: Connection, filters: CaseFilters, scope: Scope) -> FoundCases:
     """The queue's cases in scope that match every filter given, in id order."""
@@ -30,10 +33,8 @@ def find_cases(db: Connection, filters: CaseFilters, scope: Scope) -> FoundCases
                 period.first.isoformat(), period.last.isoformat()
             )
         )
-    if filters.flag == "screening":
-        query = query.where(cases.c.screening_flag.is_(True))
-    if filters.flag == "agent_failed":
-        query = query.where(cases.c.agent_failed.is_(True))
+    if filters.flag is not None:
+        query = query.where(FLAGS[filters.flag].is_(True))
     if filters.has_open_exceptions is not None:
         has_open = func.coalesce(open_on_latest.c.open_exceptions, 0) > 0
         query = query.where(has_open == filters.has_open_exceptions)

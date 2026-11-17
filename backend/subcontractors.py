@@ -1,7 +1,6 @@
-"""The backend's operations on subcontractors, for the Copilot: finding them by
-name, and one subcontractor with its record, its projects and its cases in the
-queue, each in the reviewer's scope. A subcontractor is in a scope while it is on
-a project in it, so a held-out subcontractor is never found."""
+"""The backend's operation on subcontractors, for the Copilot: finding them by
+name in the reviewer's scope. A subcontractor is in a scope while it is on a
+project in it, so a held-out subcontractor is never found."""
 
 from fastapi import APIRouter
 from sqlalchemy import select

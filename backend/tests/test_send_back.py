@@ -199,3 +199,14 @@ def test_each_send_keeps_the_draft_it_came_from(dashboard, client, delivered):
     assert (first["body"], first["draft"]) == (NOTICE, NOTICE)
     assert (again["body"], again["draft"]) == (EDITED, NOTICE)
     assert first["drafted_by"] == again["drafted_by"]
+
+
+def test_an_edit_ending_in_a_new_line_is_sent(dashboard, client, delivered):
+    """The page saves the text, which the app keeps without its spaces at either
+    end, then sends what it shows, which a textarea often ends with a new line."""
+    awaiting_review(client, CASE, finding())
+    shown = f"{EDITED}\n"
+    assert save_notice(dashboard, CASE, shown, MARCUS).status_code == 200
+    sent = send_back(dashboard, CASE, MARCUS, shown=shown)
+    assert sent.status_code == 200
+    assert [row["body"] for row in delivered] == [EDITED]

@@ -22,13 +22,13 @@ from backend.withheld import SCREENED, WITHHELD
 
 # The reads that can give a flagged case's cells, and those that give none.
 WITH_CELLS = {
-    "find_cases",
     "read_case",
     "get_exceptions",
     "classification_changes",
     "draft_notice",
 }
 WITHOUT_CELLS = {
+    "find_cases",
     "exposure_summary",
     "filings_status",
     "find_projects",

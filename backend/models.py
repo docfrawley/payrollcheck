@@ -347,7 +347,9 @@ class NoticeRequest(BaseModel):
 
 
 class SendRequest(BaseModel):
-    text: str = Field(description="The notice as the reviewer saw it, to send")
+    text: Annotated[str, StringConstraints(strip_whitespace=True)] = Field(
+        description="The notice as the reviewer saw it, trimmed as a save trims it"
+    )
 
 
 class OutboxRecord(BaseModel):
@@ -1354,16 +1356,6 @@ class TurnFailureRequest(BaseModel):
 class SubcontractorMatch(BaseModel):
     subcontractor_id: str
     legal_name: str
-
-
-class Subcontractor(SubcontractorMatch):
-    """A subcontractor's record, its projects with their engagement windows, and
-    its cases in the queue."""
-
-    fein: str
-    registration_no: str
-    projects: list[Project]
-    cases: list[CaseSummary]
 
 
 class RunStarted(Accepted):

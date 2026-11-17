@@ -2,7 +2,7 @@
 reviewer in their scope: the queue's cases found by filters, a case in full and
 its open exceptions, exposure, filings, classification changes and projects found
 by name, the success criteria, and the send-back notice it drafts and saves for
-the reviewer. The case
+the reviewer. They reach the queue's cases, never an evaluation's copy. The case
 page's reads are the dashboard's; the Copilot's are these, which pass every
 answer that can hold what a flagged case's subcontractor wrote through
 withheld.py. The rest hold none: their names and ids come from our records."""
@@ -18,7 +18,7 @@ from backend.database import projects
 from backend.dependencies import Database, SignedIn
 from backend.exposure import exposure
 from backend.filings import filings
-from backend.lookups import find_case, project_row, subcontractor_row
+from backend.lookups import find_queue_case, project_row, subcontractor_row
 from backend.models import (
     Case,
     CaseExceptions,
@@ -66,13 +66,15 @@ def find_cases(request: CaseFilters, db: Database, scope: Scoped) -> FoundCases:
 @router.get("/cases/{case_id}", operation_id="read_case")
 def read_case(case_id: str, db: Database, scope: Scoped) -> Case:
     """Read a case in full, as the Copilot may see it."""
+    find_queue_case(db, case_id, scope)
     return withheld.case(case_in_full(db, case_id, scope))
 
 
 @router.get("/cases/{case_id}/exceptions", operation_id="get_exceptions")
 def get_exceptions(case_id: str, db: Database, scope: Scoped) -> CaseExceptions:
     """Get the exceptions open on a case's latest submission, with their citations."""
-    return withheld.exceptions(case_exceptions(db, find_case(db, case_id, scope)))
+    found = case_exceptions(db, find_queue_case(db, case_id, scope))
+    return withheld.exceptions(found)
 
 
 @router.post("/exposure", operation_id="exposure_summary")

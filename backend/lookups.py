@@ -43,6 +43,18 @@ def find_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
     return row
 
 
+def find_queue_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
+    """Return one case's row in the queue and the scope, or raise a 404: an
+    evaluation's copy, which the Copilot never reads, isn't found."""
+    query = case_view.where(
+        cases.c.case_id == case_id, cases.c.evaluation_id.is_(None), cases_in(scope)
+    )
+    row = db.execute(query).mappings().first()
+    if row is None:
+        raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))
+    return row
+
+
 def project_row(db: Connection, project_id: str, scope: Scope) -> RowMapping:
     """Return one project's row in the scope, or raise a 404."""
     query = select(projects).where(

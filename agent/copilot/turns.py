@@ -1,8 +1,7 @@
 """Working a turn of a conversation: the turn and the business date read from the
-app first, then the turn's
-model, graph and context built, any tool call a stopped turn left open closed, the
-graph run on the conversation's thread, and the app told how the turn ended:
-answered or failed."""
+app first, then the turn's model, graph and context built, any tool call a stopped
+turn left open closed, the graph run on the conversation's thread, and the app
+told how the turn ended: answered or failed."""
 
 import logging
 from collections.abc import Callable

@@ -21,7 +21,7 @@ def trimmed(text: str) -> str:
 
 
 def main_input(inputs: dict[str, Any]) -> str:
-    """A tool's main input as a card shows it: its inputs' values, such as CLM-1012
+    """A tool's main input as a card shows it: its inputs' values, such as PC-0311
     or 10."""
     return " ".join(
         value if isinstance(value, str) else as_json(value)
