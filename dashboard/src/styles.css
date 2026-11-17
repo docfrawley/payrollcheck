@@ -1297,6 +1297,14 @@ fieldset.panel legend + * {
   color: var(--ink);
 }
 
+/* The business date's box, with the button that clears it beside it. */
+.business-date-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
 .setting-input input {
   font: inherit;
   font-family: var(--mono);

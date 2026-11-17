@@ -1,9 +1,9 @@
 """The send-back notice the Copilot drafts for a reviewer, worded by the backend
 from the case's records, so no model writes it: an opening naming the case, its
 project and week, a paragraph for each exception open on the latest submission in
-its rule's own words, with the worker, the line, what was expected and paid and
-the amount owed, then the total owed and a closing that asks for a corrected
-payroll and gives no legal interpretation."""
+its rule's own words, with the worker, the line, what was expected and paid where
+it records them, and the amount owed, then the total owed and a closing that asks
+for a corrected payroll and gives no legal interpretation."""
 
 from backend.models import CaseExceptions, OpenException
 from backend.money import cents_in_dollars
@@ -18,10 +18,8 @@ OPENING = (
 ON_A_LINE = "{worker}, line {line_no}"
 ON_A_LINE_ALONE = "Line {line_no}"
 ON_THE_PAYROLL = "The payroll as a whole"
-FINDING = (
-    "{number}. {name}. {where}. We expected {expected}; the payroll shows "
-    "{actual}.{owed} {asks}"
-)
+FINDING = "{number}. {name}. {where}.{compared}{owed} {asks}"
+COMPARED = " We expected {expected}; the payroll shows {actual}."
 OWED = " Amount owed: {amount}."
 TOTAL = "In all, {amount} is owed to the workers on this payroll."
 CLOSING = (
@@ -57,11 +55,18 @@ def finding(number: int, exception: OpenException) -> str:
         number=number,
         name=rule.name,
         where=where(exception),
-        expected=exception.expected,
-        actual=exception.actual,
+        compared=compared(exception),
         owed=OWED.format(amount=cents_in_dollars(cents)) if cents else "",
         asks=rule.asks,
     )
+
+
+def compared(exception: OpenException) -> str:
+    """What was expected beside what was paid, where the exception records them;
+    an exception carried over from our history may not."""
+    if not (exception.expected.strip() and exception.actual.strip()):
+        return ""
+    return COMPARED.format(expected=exception.expected, actual=exception.actual)
 
 
 def where(exception: OpenException) -> str:

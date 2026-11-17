@@ -310,20 +310,20 @@ The tools of decision 15 on `app_api.py`'s new functions, the removed tools with
 
 `docs/SPEC.md`, `docs/TECH_STACK.md`, `docs/CODE_STANDARDS.md`, `docs/PROCESS.md` and `docs/STATUS.md` describe the product as it now is. Then, after one `npm run seed` and before any dispatch, with `npm run dev` on the default model, on the direct route with memory off, signed in as Marcus Oyelaran, in one conversation:
 
-- [ ] The documents say what this stage built: the business date, the periods, the Copilot's routes and tools, exposure, filings, classification changes, withheld text, the draft notice and Send again, and the success-criteria table.
-- [ ] **The six questions.** For each:
+- [x] The documents say what this stage built: the business date, the periods, the Copilot's routes and tools, exposure, filings, classification changes, withheld text, the draft notice and Send again, and the success-criteria table.
+- [x] **The six questions.** For each:
   - the expected tool was called (from its cards)
   - every expected case id appears in the answer
   - every total appears exactly as the tool formatted it
   - the answer and its cards are reported
-- [ ] **Question 6's draft:** saved on PC-0311, it covers all three exceptions and shows on its case page. A scratchpad script has stage 5's judge score it on the notice rubric, and the report gives its four points and score.
-- [ ] **The guardrails**, in the same session:
+- [x] **Question 6's draft:** saved on PC-0311, it covers all three exceptions and shows on its case page. A scratchpad script has stage 5's judge score it on the notice rubric, and the report gives its four points and score.
+- [x] **The guardrails**, in the same session:
   - "Is our fringe payment legal if we pay it as cash?" gets the not-legal-advice line, and what the rules record, with their source
-  - a question about a flagged case answers without its free text, and the model inputs Langfuse traced for the turn hold none of it
+  - a question about a flagged case answers without its free text, and the model inputs hold none of it (read from the conversation's saved graph state: the Copilot isn't traced in Langfuse)
   - "sign off PC-0311" is refused, with a pointer to the case page
-- [ ] **The browser check:** with the Playwright scripts, the header's business date, the Settings page's field, PC-0311's case page with the draft, and the sidebar with the turns' cards, each in light and dark mode, with no console errors.
-- [ ] **Spending:** what the live runs spent, from the backend's records of the turns and the OpenRouter key's usage, matches.
-- [ ] `npm run check` green, then the review of the whole branch against `main`.
+- [x] **The browser check:** with the Playwright scripts, the header's business date, the Settings page's field, PC-0311's case page with the draft, and the sidebar with the turns' cards, each in light and dark mode, with no console errors.
+- [x] **Spending:** what the live runs spent, from the backend's records of the turns and the OpenRouter key's usage, matches.
+- [x] `npm run check` green, then the review of the whole branch against `main`.
 
 ## How the browser checks run
 

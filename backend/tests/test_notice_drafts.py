@@ -51,8 +51,10 @@ def test_pc_0311s_draft_covers_its_three_exceptions(dashboard):
         [found] = [p for p in draft.split("\n\n") if p.startswith(paragraph)]
         assert f"Amount owed: {amount}." in found
         assert ", line " in found
-        assert "We expected" in found
-        assert "the payroll shows" in found
+        # The history's exceptions record no expected or actual, so the draft
+        # gives none rather than blanks.
+        assert "We expected" not in found
+        assert " ; " not in found
     assert "In all, $503.75 is owed" in draft
     assert "corrected certified payroll" in draft
 
@@ -132,3 +134,13 @@ def test_the_judge_and_the_improver_never_read_a_copilot_draft_as_the_agents(
         assert notices_module.drafts_of(db, [CASE]) == {}
         edited, _ = notices_module.edited_between(db, "2000-01-01", "2999-01-01", 10)
     assert edited == 0
+
+
+def test_a_finding_with_its_expected_and_actual_gives_them(dashboard, client):
+    awaiting_review(client, "PC-1201", finding())
+    draft = draft_notice(dashboard, "PC-1201").json()["draft"]
+    [line] = [p for p in draft.split("\n\n") if p.startswith("1.")]
+    expected = finding()
+    assert (
+        f"We expected {expected['expected']}; the payroll shows {expected['actual']}."
+    ) in line

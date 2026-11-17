@@ -169,15 +169,17 @@ function BusinessDateInput({
       <div className="setting-fields">
         <div className="setting">
           <label htmlFor={id}>Business date</label>
-          <span className="setting-input">
-            <input
-              id={id}
-              type="date"
-              value={value}
-              onChange={(event) => {
-                onChange(event.target.value);
-              }}
-            />
+          <span className="business-date-field">
+            <span className="setting-input">
+              <input
+                id={id}
+                type="date"
+                value={value}
+                onChange={(event) => {
+                  onChange(event.target.value);
+                }}
+              />
+            </span>
             <button
               type="button"
               className="button quiet"
