@@ -141,7 +141,8 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
 
 - **`deploy/names.py`:** every resource name the runbook makes and the `project=payrollcheck` tag, written once, with `is_ours(name, tags)`, the teardown's test.
 - **`deploy/aws.py`:** the one boto3 session, with its account, region and clients (Lambda, IAM, CloudWatch Logs, CloudWatch, `bedrock-agentcore-control`, `bedrock-agentcore`, CloudFormation and STS), and the operator's identity. Every step reaches AWS through it.
-- **`deploy/waits.py`:** Ed's waits and retries (decision 6).
+- **`deploy/waits.py`:** Ed's waits and retries (decision 6), where botocore has no waiter of its own: botocore's `function_active_v2`, `function_updated_v2`, `policy_engine_active`, `policy_active` and `memory_created` are used where they exist.
+- **`deploy/commands.py`:** the one way a step runs a command (`uv`, `npm`, `agentcore`): from the root of the repo, found on the PATH as Windows and the Mac each name it, stopping the step when it fails.
 - **`deploy/settings.py`:** reading what a step needs from the environment, saying which setting is missing by name and never its value, and writing `agentcore/.env.local`, replacing a line or adding one and never printing a value.
 - **`deploy/supabase.py`:** step 1, the Auth users through the admin API (with httpx), and printing the MCP server's command from the project's ref.
 - **`deploy/packaging.py`:** the two zips: `uv export` and `uv pip install --target` for Linux and Python 3.12, the folders without `tests/` and `__pycache__`, written with sorted entries and a fixed timestamp, and their SHA-256 as Lambda gives it.
@@ -168,7 +169,7 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
 
 ### How they depend
 
-- **The shared modules.** `names.py`, `aws.py`, `waits.py` and `settings.py` use nothing else in `deploy/`.
+- **The shared modules.** `names.py`, `aws.py`, `waits.py`, `settings.py` and `commands.py` use nothing else in `deploy/` but each other's names and settings, and `resources.py` finds what's there for every step.
 - **The steps.** Each step module uses those four and no other step's helpers. Two steps use another step's module through what it's for:
   - `runtimes.py` runs `policy.py`'s step, and runs `functions.py`'s environment update.
   - `gateway.py` and `policy.py` read the Gateway by its name through `resources.py`'s finders.
@@ -193,7 +194,7 @@ The backend, the payroll agent, the Copilot, the improver, the dashboard and the
 `npm run check` never calls AWS or Supabase, and never reads `.env`:
 - **AWS:** the steps' AWS calls are tested on real boto3 clients made with dummy credentials and botocore's `Stubber`, which checks every call's parameters and answers it with no network.
 - **Supabase Auth:** the admin API calls go through `httpx.MockTransport`.
-- **Commands:** `uv`, `npm` and `agentcore` are run through one injected runner, which the tests replace.
+- **Commands:** `uv`, `npm` and `agentcore` are run through `deploy/commands.py`'s `run`, which the tests replace.
 - **Packaging:** tested on a small folder in `tmp_path`, with the uv commands stubbed.
 
 ## Phases
@@ -216,15 +217,15 @@ The `deploy/` package with its shared modules, the checklist's frame, the operat
 
 Steps 2 and 3: the two functions and the credentials.
 
-- [ ] `deploy/tests/test_packaging.py`: the app's zip holds `backend/`, `data/` and `dashboard/dist/` without `tests/` or `__pycache__`; the context layer's holds `context/`; building one twice gives the same bytes and the same SHA-256; the uv commands asked for are the server or context group for `x86_64-manylinux2014`, Python 3.12, binaries only.
-- [ ] `deploy/tests/test_functions.py` (`Stubber`):
+- [x] `deploy/tests/test_packaging.py`: the app's zip holds `backend/`, `data/` and `dashboard/dist/` without `tests/` or `__pycache__`; the context layer's holds `context/`; building one twice gives the same bytes and the same SHA-256; the uv commands asked for are the server or context group for `x86_64-manylinux2014`, Python 3.12, binaries only.
+- [x] `deploy/tests/test_functions.py` (`Stubber`):
   - a first run creates the log group with 7 days' retention, the role with Lambda's trust and the logging policy, and the function. It retries while the new role can't be used yet, then makes the URL. The app's URL is public, with its two permissions; the context layer's is `AWS_IAM`
   - a second run with the same zip calls no `update_function_code` and no `update_function_configuration`
   - a changed zip updates the code only
   - the function's environment keeps `PAYROLLCHECK_AGENT_RUNTIME` and `PAYROLLCHECK_COPILOT_RUNTIME` when they're there, and `DATABASE_URL` is on port 6543
-- [ ] `deploy/tests/test_identity.py` (`Stubber`): the key provider is created with the tag, or updated in place; `agentcore/.env.local` gets the three `AGENTCORE_CREDENTIAL_*` values with the database on port 6543; nothing printed holds a value.
-- [ ] `deploy/RUNBOOK.md`: steps 2 and 3.
-- [ ] `npm run check` green; review, fixes, tick, `docs/STATUS.md`, commit.
+- [x] `deploy/tests/test_identity.py` (`Stubber`): the key provider is created with the tag; one there holding the same key, read from its secret in Secrets Manager and never shown, is left alone; one holding another key is given this one (**amended in review**: the step compares the key rather than sending it again on every run, so a second run changes nothing); `agentcore/.env.local` gets the three `AGENTCORE_CREDENTIAL_*` values with the database on port 6543; nothing printed holds a value.
+- [x] `deploy/RUNBOOK.md`: steps 2 and 3.
+- [x] `npm run check` green; review, fixes, tick, `docs/STATUS.md`, commit.
 
 ### Phase 3: the Gateway, its targets and the Policy
 

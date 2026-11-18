@@ -8,6 +8,9 @@ import boto3
 
 from deploy.settings import MissingSettings
 
+# The version every IAM policy document is written in.
+POLICY_VERSION = "2012-10-17"
+
 
 class Aws:
     """An AWS session, its account and region, and a client for each service."""
@@ -37,6 +40,10 @@ class Aws:
         if region is None:
             raise MissingSettings("Give the AWS CLI profile a region: aws configure")
         return region
+
+    def arn(self, service: str, resource: str) -> str:
+        """The ARN of a service's resource in the session's region and account."""
+        return f"arn:aws:{service}:{self.region}:{self.account}:{resource}"
 
     @property
     def operator(self) -> str:

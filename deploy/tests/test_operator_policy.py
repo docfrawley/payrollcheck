@@ -71,6 +71,10 @@ CALLS = [
     ("cloudformation:DescribeStacks", STACK),
     ("cloudformation:DeleteStack", STACK),
     ("cloudwatch:GetMetricStatistics", "*"),
+    (
+        "secretsmanager:GetSecretValue",
+        f"arn:aws:secretsmanager:{IN}:secret:bedrock-agentcore-identity!default/k",
+    ),
 ]
 
 

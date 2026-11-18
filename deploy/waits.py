@@ -48,7 +48,12 @@ def retry[T](
     return attempt()
 
 
+def mentions(text: str, *words: str) -> bool:
+    """Whether a message names any of these words, as Ed's retries tell a
+    permission still on its way from any other error."""
+    return any(word.lower() in text.lower() for word in words)
+
+
 def says(*words: str) -> Callable[[Exception], bool]:
-    """Whether an error's message names any of these words, as Ed's retries tell
-    a permission still on its way from any other error."""
-    return lambda error: any(word.lower() in str(error).lower() for word in words)
+    """Whether an error's message names any of these words."""
+    return lambda error: mentions(str(error), *words)

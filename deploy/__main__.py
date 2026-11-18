@@ -5,7 +5,8 @@ import argparse
 import sys
 from collections.abc import Callable
 
-from deploy import supabase
+from deploy import functions, identity, supabase
+from deploy.aws import connect
 from deploy.settings import MissingSettings
 
 Step = Callable[[argparse.Namespace], None]
@@ -15,6 +16,14 @@ def steps() -> dict[str, tuple[str, Step]]:
     """Each step by its command, with what it does."""
     return {
         "supabase": ("Step 1: the reviewers' Auth users", lambda _: supabase.run()),
+        "lambda": (
+            "Step 2: the app and the context layer on Lambda",
+            lambda _: functions.run(connect()),
+        ),
+        "identity": (
+            "Step 3: the Gateway's credential and the runtimes' credentials",
+            lambda _: identity.run(connect()),
+        ),
     }
 
 
