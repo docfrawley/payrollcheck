@@ -91,6 +91,7 @@ include = [
     "context/**/*.py",
     "data/**/*.py",
     "runtime/**/*.py",
+    "deploy/**/*.py",
     "conftest.py",
     "api_rules.py",
 ]
@@ -107,14 +108,14 @@ max-complexity = 10
 "*/tests/*" = ["S101", "PLR2004"]
 
 [tool.pytest.ini_options]
-testpaths = ["backend", "agent", "context", "data"]
+testpaths = ["backend", "agent", "context", "data", "deploy"]
 pythonpath = ["."]
 addopts = "--import-mode=importlib --cov --cov-report=term-missing"
 
 [tool.coverage.run]
 # Python's own monitoring, far quicker than a trace function for line coverage.
 core = "sysmon"
-source = ["backend", "agent", "context", "data"]
+source = ["backend", "agent", "context", "data", "deploy"]
 omit = ["*/tests/*"]
 
 [tool.coverage.report]
@@ -127,6 +128,7 @@ include = [
     "context",
     "data",
     "runtime",
+    "deploy",
     "conftest.py",
     "api_rules.py",
 ]
