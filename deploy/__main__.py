@@ -5,7 +5,17 @@ import argparse
 import sys
 from collections.abc import Callable
 
-from deploy import functions, gateway, identity, policy, supabase
+from deploy import (
+    functions,
+    gateway,
+    identity,
+    inventory,
+    memory,
+    policy,
+    runtimes,
+    smoke,
+    supabase,
+)
 from deploy.aws import connect
 from deploy.settings import MissingSettings
 
@@ -32,6 +42,20 @@ def steps() -> dict[str, tuple[str, Step]]:
             "Step 5: the Policy, an allowlist enforced on the Gateway",
             lambda _: policy.run(connect()),
         ),
+        "memory": ("Step 6: the Copilot's Memory", lambda _: memory.run(connect())),
+        "runtimes": (
+            "Step 7: the payroll agent's and the Copilot's Runtimes",
+            lambda _: runtimes.run(connect()),
+        ),
+        "show": ("What the runbook made", lambda _: inventory.show(connect())),
+        "smoke": (
+            "A part of the smoke check: copilot, policy or decisions",
+            lambda chosen: smoke.run(connect(), chosen.part),
+        ),
+        "teardown": (
+            "Delete what the runbook made, only with --yes",
+            lambda chosen: inventory.tear_down(connect(), yes=chosen.yes),
+        ),
     }
 
 
@@ -41,6 +65,10 @@ def parser() -> argparse.ArgumentParser:
     commands = command_line.add_subparsers(dest="step", required=True)
     for name, (help_text, run) in steps().items():
         commands.add_parser(name, help=help_text).set_defaults(run=run)
+    commands.choices["smoke"].add_argument("part", choices=smoke.PARTS)
+    commands.choices["teardown"].add_argument(
+        "--yes", action="store_true", help="delete them, rather than list them"
+    )
     return command_line
 
 

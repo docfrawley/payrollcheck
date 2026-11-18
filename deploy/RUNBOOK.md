@@ -88,3 +88,58 @@ Needs: step 4.
   Before step 7, the runtimes aren't there, so the step writes only the context tools' permits, for you. Step 7 runs this step again, and the permits then name both runtimes' roles. A permit that's the same is left alone; one that differs is updated.
 
 Leaves: the engine, enforced on the Gateway, and the permits. Calls signed with your own AWS identity reach the context layer's tools and are refused the app's, so on the laptop the payroll agent uses the direct route.
+
+## Step 6: the Copilot's Memory
+
+Needs: the AWS CLI profile.
+
+- [ ] **By code: `uv run --env-file .env -m deploy memory`.** It makes `payrollcheck_copilot_memory`, which takes about two and a half minutes. Its two strategies turn each conversation into notes under the reviewer's own namespace: **User Preference** on `/reviewers/{actorId}/preferences/`, how the reviewer likes to work, and **Semantic** on `/reviewers/{actorId}/facts/`, the facts they mention. Events are kept 7 days. The payroll agent keeps no memory, so it has none.
+
+Leaves: the Memory, with its id printed. It comes before the runtimes, since `agentcore deploy` reads its id.
+
+## Step 7: the two Runtimes
+
+Needs: steps 2 to 6; the AgentCore CLI, `npm install -g @aws/agentcore@1.0.0-rc.5` (with `sudo` on a Mac whose npm folder belongs to root), so that `agentcore --version` says 1.0.0-rc.5.
+
+- [ ] **By code: `uv run --env-file .env -m deploy runtimes`.** It takes about 10 minutes the first time.
+  1. It writes the app's address (`PAYROLLCHECK_API`), the Gateway's (`PAYROLLCHECK_GATEWAY_URL`) and the Memory's id (`PAYROLLCHECK_COPILOT_MEMORY_ID`) into `agentcore/.env.local`, beside step 3's credentials.
+  2. It installs the CDK project's packages (`npm ci --prefix agentcore/cdk`) and runs `agentcore deploy`. The first deploy in an account makes the CDK bootstrap, `CDKToolkit` (an S3 bucket, a KMS key at about $1 a month and five roles), and the deploy's `default` target, from the AWS CLI profile's account and region. Then it makes the three credentials in AgentCore Identity and the stack `AgentCore-payrollcheck-default`, with the runtimes `payrollcheck_default_agent` and `payrollcheck_default_copilot` on platform version V2 and their roles, which may call the Gateway (`runtime/policy.json`) and, for the Copilot, use its Memory (`runtime/copilot_policy.json`).
+  3. It lets the app's role invoke both runtimes, and nothing else on Runtime, and sets `PAYROLLCHECK_AGENT_RUNTIME` and `PAYROLLCHECK_COPILOT_RUNTIME` on the app's function, so it sends the agent's work and the Copilot's turns there.
+  4. It runs step 5 again, so the permits name both runtimes' roles: the agent's may call all twelve tools, the Copilot's the five context tools.
+  5. It sends each runtime a health check in a new session, which gets ready (fetching its credentials and opening its pool) before it answers `{'healthy': True}`.
+
+Leaves: both runtimes, the app pointed at them, and the Policy naming their roles.
+
+## What the runbook made
+
+- [ ] **By code: `uv run --env-file .env -m deploy show`.** It lists everything named for PayrollCheck: the stack and the runtimes with their ARNs, the Gateway with its URL and targets, the policy engine and its permits, the credential provider, the Memory's id, the functions with their URLs and log groups, and the roles.
+
+## A second run changes nothing
+
+- [ ] **By code:** run steps 2 to 7 again, in order. Every resource says `unchanged`, the app's function keeps its `CodeSha256` and `LastModified`, each runtime keeps its `agentRuntimeVersion`, and `show` prints the same.
+
+## The smoke check
+
+Needs: steps 1 to 7.
+
+- [ ] **By hand: OpenRouter's reading.** Note the key's usage on openrouter.ai, under Settings, Keys, to report what the check spent.
+- [ ] **By code: `npm run seed`.** The week-12 wave is back in the queue as Received, PC-1214 and PC-1223 are missing for an upload, the business date is Nov 23, 2026, and the Copilot has no conversations, as `data/copilot_expected.json` describes.
+- [ ] **By hand: sign in.** Open the app's URL, from step 2 or `show`, and sign in as Marcus Oyelaran (`marcus.oyelaran@payrollcheck.example`, `REVIEWER_PASSWORD`). The header shows the business date, Nov 23, 2026.
+- [ ] **By hand: the Copilot, before any dispatch.** In the sidebar, ask: "How much underpayment have we flagged for Garden State Electric this month?" and wait for the answer. It comes from the Copilot's Runtime, with its Memory on.
+- [ ] **By code: `uv run --env-file .env -m deploy smoke copilot`.** It reads Marcus's latest answer from the app's records and checks it names PC-1009 and $198.75, question 2's case id and total, and that the Copilot's Memory holds the conversation's events.
+- [ ] **By hand: the two missing payrolls.** As Marcus, on the municipal building's project page, upload `data/development/arrivals/PC-1214-1.csv` for Delaware Valley Masonry. Then sign in as Dana Whitfield and, on the road resurfacing's page, which isn't Marcus's, upload `data/development/arrivals/PC-1223-1.csv` for Meadowlands Site Services. The queue holds the 24 cases of the week-12 wave as Received.
+- [ ] **By hand: the dispatch.** As Marcus, on the queue page, start a dispatch with 5 payroll agents at once. It works on the payroll agent's Runtime, through the Gateway. When it finishes, all 24 cases are Awaiting review; the panel shows Marcus his cases with their cost and time, and the count of the others; a case's steps name its tools as the Gateway does, such as `payrollcheck-app___get_case` and `payrollcheck-context___get_wage_rate`.
+- [ ] **By code, with the dashboard closed: `uv run --env-file .env -m deploy smoke policy`.** Signed with your AWS identity, through the Gateway, `payrollcheck-context___get_filing_rules` answers and the context layer's logs show it, and `payrollcheck-app___get_case`, which isn't on your allowlist, is refused by the Policy's default deny, which the Gateway words as not allowed due to policy enforcement, and the app's logs show no invocation over the probe. It waits a minute for Lambda to deliver the logs.
+- [ ] **By code, a few minutes later: `uv run --env-file .env -m deploy smoke decisions`.** The policy engine's counts in CloudWatch: `AllowDecisions` for the dispatch's calls and the allowed probe, and `DenyDecisions` for the refused one.
+- [ ] **By hand: what it spent.** The dispatch's cost on its panel and the Copilot's turn from the app's records, the OpenRouter key's usage against the reading before, and AWS's figures in Billing and Cost Management a day later.
+
+## The teardown
+
+Only when you want PayrollCheck off AWS.
+
+- [ ] **By code: `uv run --env-file .env -m deploy teardown`.** It lists what it would delete: everything named and tagged for PayrollCheck, and anything named for it without the tag, which it leaves.
+- [ ] **By code: `uv run --env-file .env -m deploy teardown --yes`.** It deletes them in the order AWS needs: the stack with both runtimes and the three credentials `agentcore deploy` made, as Ed's teardown did, with `agentcore remove all --yes` and then `agentcore deploy --yes`, putting `agentcore/agentcore.json` back from git afterwards; the Gateway after its targets, the policy engine after its permits, the credential provider, the Memory, the two functions with their log groups, and the three roles. It leaves, and says how to remove by hand:
+  - the runtimes' own log groups under `/aws/bedrock-agentcore/runtimes/`, which Runtime made
+  - the CDK bootstrap, `CDKToolkit` and its `cdk-*` bucket, which every AgentCore project in the account shares
+  - `agentcore/.env.local`, and the CLI's own state in `agentcore/.cli/` and `agentcore/aws-targets.json`
+  - the Supabase project

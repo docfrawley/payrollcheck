@@ -351,3 +351,28 @@ def test_each_function_is_packaged_with_its_group(aws, monkeypatch, zip_path):
             | {"Role": ROLE_ARN, "Environment": {"Variables": {}}},
         ),
     ]
+
+
+def test_the_app_is_pointed_at_the_runtimes_once(aws, stub, capsys):
+    lambda_ = stub("lambda")
+    runtimes = {"PAYROLLCHECK_AGENT_RUNTIME": "arn:agent"}
+    lambda_.add_response("get_function", {"Configuration": configuration("x")})
+    lambda_.add_response(
+        "update_function_configuration",
+        {},
+        {
+            "FunctionName": names.APP_FUNCTION,
+            "Environment": {"Variables": ENVIRONMENT | runtimes},
+        },
+    )
+    lambda_.add_response("get_function", {"Configuration": configuration("x")})
+    lambda_.add_response(
+        "get_function",
+        {"Configuration": configuration("x", variables=ENVIRONMENT | runtimes)},
+    )
+    functions.point_the_app_at(aws, runtimes)
+    functions.point_the_app_at(aws, runtimes)
+    assert capsys.readouterr().out.splitlines() == [
+        f"Function {names.APP_FUNCTION}'s runtimes: updated",
+        f"Function {names.APP_FUNCTION}'s runtimes: unchanged",
+    ]

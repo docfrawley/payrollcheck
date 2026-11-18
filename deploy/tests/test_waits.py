@@ -39,6 +39,14 @@ def test_a_retry_raises_an_error_it_doesnt_expect(no_pauses):
     assert no_pauses == []
 
 
+def test_waiting_for_a_listing_to_empty(no_pauses):
+    listings = iter([["one"], ["one"], []])
+    waits.until_gone(lambda: next(listings), "targets")
+    assert no_pauses == [3, 3]
+    with pytest.raises(RuntimeError, match="targets didn't go"):
+        waits.until_gone(lambda: ["one"], "targets", tries=3)
+
+
 def test_a_retry_gives_up_after_its_tries(no_pauses):
     def attempt():
         raise ValueError("role")

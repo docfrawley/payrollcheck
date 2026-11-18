@@ -117,14 +117,14 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
    - the two functions with their log groups and roles
    - the Gateway's role
 
-   It leaves the CDK bootstrap, which isn't tagged for PayrollCheck, and the Supabase project, and prints how to remove each by hand. Ed's `delete_bootstrap` is ported only as those printed instructions. **Amended in phase 1:** the runtimes' own log groups under `/aws/bedrock-agentcore/`, which Runtime makes and the runbook doesn't tag, are left too, and listed.
+   **Amended in phase 4's review:** the stack goes as Ed's did, through the CLI (`agentcore remove all --yes`, then `agentcore deploy --yes`, then `agentcore/agentcore.json` put back from git), since that also deletes the three credentials `agentcore deploy` made in AgentCore Identity, with their secrets, which deleting the stack alone would leave. It leaves the CDK bootstrap, which isn't tagged for PayrollCheck, and the Supabase project, and prints how to remove each by hand. Ed's `delete_bootstrap` is ported only as those printed instructions. **Amended in phase 1:** the runtimes' own log groups under `/aws/bedrock-agentcore/`, which Runtime makes and the runbook doesn't tag, are left too, and listed.
 10. **The smoke check asks the Copilot before the dispatch.** `docs/PROCESS.md` says the Copilot's live checks come after one `npm run seed` and before any dispatch, since `data/copilot_expected.json` describes that state. So the order is: seed, the Copilot's question, the two uploads, the dispatch, then the Policy.
     - **The question:** question 2, "How much underpayment have we flagged for Garden State Electric this month?", which has both case ids and a total to check.
     - **Why there are uploads:** the brief's "all 24 cases" needs PC-1214 and PC-1223 uploaded first, since seeding leaves them missing.
     - **Who uploads them:** PC-1214 is on the municipal building, so Marcus uploads it. PC-1223 is on the road resurfacing, outside his scope, so Dana uploads it.
 11. **How the smoke check shows the Policy refused the call** (item 5). Signed as the operator, through the Gateway, with `agent/gateway.py`'s `Gateway`, the one way to call it:
     - **The allowed call:** `payrollcheck-context___get_filing_rules`. It answers, and the context function's log group shows an invocation in the window.
-    - **The refused call:** `payrollcheck-app___get_case` for PC-1201. It's a read, so it does no harm even if something were wrong. It is refused with the Policy's default-deny reason, and the app function's log group shows **no** invocation in the same window. The probe runs with no dashboard open, so nothing else calls the app.
+    - **The refused call:** `payrollcheck-app___get_case` for PC-1201. It's a read, so it does no harm even if something were wrong. It is refused with the Policy's default-deny reason, which the check requires the refusal's text to name ("not allowed due to policy enforcement", the wording phase 5 confirms on the real Gateway), and the app function's log group shows **no** invocation in the same window. The probe runs with no dashboard open, so nothing else calls the app.
     - **The engine's count:** a minute or two later, the policy engine's `DenyDecisions` metric in CloudWatch has gone up, as in Ed's `week3day2_lab2`.
 12. **The Policy's tool names come from the code that names them:**
     - **The targets** from `agent/routes.py`'s `Target`.
@@ -133,7 +133,7 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
     - **The Gateway's separator** `___` from `agent/gateway.py`.
 
     A test checks that the app's names match `backend/agent_api.py`'s `OPERATIONS` and the context names match the tools the context server lists, so a new tool can't be left off the allowlist without a failing test. Each permit has the form `permit(principal is AgentCore::IamEntity, action == AgentCore::Action::"<target>___<tool>", resource == AgentCore::Gateway::"<gateway ARN>") when { [<callers>].contains(principal.id) };`. That is one permit per tool, as the brief asks, naming its callers by `principal.id`, the caller's ARN, which AWS's documentation for gateways with `AWS_IAM` auth describes ([Policy scope](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-understanding-cedar.html), [Principal-scoped policies](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/example-policies-principal.html)). A role is named as `arn:aws:sts::<account>:assumed-role/<role name>`, without a session. The policy engine validates each statement when it's created, and the step prints any failure's reasons.
-13. **The CLI and the deploy target.** **Found in phase 3:** `agentcore deploy` makes its `default` target from the AWS account and region on its first deploy, so it needs no prompts, and `--yes` only confirms removing a stack; the step runs it. The global install of `@aws/agentcore@1.0.0-rc.5` was refused here, since npm's global folder belongs to root, so the help was read through `npx` and the user installs the CLI before step 7. Phase 4 reads `agentcore deploy --help` and `agentcore --version`, which make no AWS calls, to confirm two things. The first is how the CLI records its target account and region (in `agentcore/aws-targets.json`, which git ignores) and whether it takes `--yes`. The second is that the pinned CLI matches `@aws/agentcore-cdk` in `agentcore/cdk`. Installing the CLI on this laptop changes the machine, so I ask first. If the CLI can't deploy without prompts, the step prints the command for the user to run instead.
+13. **The CLI and the deploy target.** **Found in phase 3:** `agentcore deploy` makes its `default` target from the AWS account and region on its first deploy, so it needs no prompts, and `--yes` only confirms removing a stack; the step runs it. The global install of `@aws/agentcore@1.0.0-rc.5` was refused here, since npm's global folder belongs to root, so the help was read through `npx` and the user installs the CLI before step 7. Phase 4 reads `agentcore deploy --help` and `agentcore --version`, which make no AWS calls, to confirm two things. The first is how the CLI records its target account and region (in `agentcore/aws-targets.json`, which git ignores) and whether it takes `--yes`. The second is that the pinned CLI matches `@aws/agentcore-cdk` in `agentcore/cdk`. Installing the CLI on this laptop changes the machine, so I ask first. If the CLI can't deploy without prompts, the step prints the command for the user to run instead. **Found in phase 4:** the user agreed to a global install, which npm refused, since its global folder belongs to root, so the CLI was read through `npx`. Its help settled the target and the prompts. The CLI is `1.0.0-rc.5`, Ed's pin, and `agentcore/cdk` pins `@aws/agentcore-cdk` at `1.0.0-rc.3`, as Ed's project did; whether they deploy together is first shown by the real run in phase 5. The runbook tells the user to install the CLI globally, with `sudo` where npm needs it.
 
 ## Design
 
@@ -158,9 +158,10 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
   - **Before the deploy:** the settings in `agentcore/.env.local`, `npm ci --prefix agentcore/cdk`, then `agentcore deploy`.
   - **After it:** finding the two runtimes and their roles, the app's permission to invoke them, and the function's environment.
   - **To finish:** step 5 again with both roles, and a health check of each runtime in a new session.
-- **`deploy/resources.py`:** what the runbook made, found by name and tag, printed with every value the next step or `.env` needs (Ed's `show_resources`), and the teardown (decision 9).
+- **`deploy/resources.py`:** finding what the runbook made, by name, for every step.
+- **`deploy/inventory.py`:** what the runbook made, with its tags, printed with every value the next step or `.env` needs (Ed's `show_resources`), and the teardown (decision 9). **Amended in phase 4:** apart from `resources.py`, since finding a resource and tearing everything down are two jobs.
 - **`deploy/smoke.py`:** the parts of the smoke check that are code:
-  - **The Policy probe** (decision 11): the two calls, and the two log groups read over the probe's window.
+  - **The Policy probe** (decision 11): the two calls, and the two log groups read over the probe's window. **Amended in phase 4:** the probe calls each tool by its name in an MCP session of its own, signed with `agent/gateway.py`'s `SigV4Auth`, rather than through `agent/gateway.py`'s `Gateway`, which calls only the tools the Gateway lists, and the Gateway lists the operator none of the app's.
   - **The Copilot's Memory:** that events for Marcus's conversation are there.
   - **The answer:** checking the Copilot's answer against `data/copilot_expected.json`.
 - **`deploy/__main__.py`:** the command line: one subcommand per step, `show`, `smoke` and `teardown`.
@@ -262,9 +263,9 @@ Steps 4 and 5, with the allowlist.
 
 Steps 6 and 7, `show` and `teardown`.
 
-- [ ] With the user's okay to install it: `agentcore --version` gives the pinned version, and `agentcore deploy --help` says how it takes its target and whether it takes `--yes` (decision 13). The plan records what it found.
-- [ ] `deploy/tests/test_memory.py` (`Stubber`): the Memory is created with its two strategies on `/reviewers/{actorId}/preferences/` and `/reviewers/{actorId}/facts/`, 7-day events and the tag, then waited on while `CREATING`; one that's there, and not `DELETING`, is used as it is.
-- [ ] `deploy/tests/test_runtimes.py` (`Stubber`, the runner stubbed):
+- [x] With the user's okay to install it: `agentcore --version` gives the pinned version, and `agentcore deploy --help` says how it takes its target and whether it takes `--yes` (decision 13). The plan records what it found. (Read through `npx`, since the global install was refused: decision 13.)
+- [x] `deploy/tests/test_memory.py` (`Stubber`): the Memory is created with its two strategies on `/reviewers/{actorId}/preferences/` and `/reviewers/{actorId}/facts/`, 7-day events and the tag, then waited on while `CREATING`; one that's there, and not `DELETING`, is used as it is.
+- [x] `deploy/tests/test_runtimes.py` (`Stubber`, the runner stubbed):
   - `agentcore/.env.local` gets `PAYROLLCHECK_API`, `PAYROLLCHECK_GATEWAY_URL` and `PAYROLLCHECK_COPILOT_MEMORY_ID` beside the three credentials
   - the runner is asked for `npm ci --prefix agentcore/cdk`, then `agentcore deploy`
   - the two runtimes are found by name, and their roles' ARNs read
@@ -272,13 +273,14 @@ Steps 6 and 7, `show` and `teardown`.
   - the function's environment gains both ARNs and keeps the rest
   - the permits are put again naming both roles
   - each runtime answers the health check in a new session
-- [ ] `deploy/tests/test_resources.py` (`Stubber`):
+- [x] `deploy/tests/test_resources.py` (`Stubber`):
   - **`show`** lists what's there by kind, with the values `.env` and the next steps need, and no secret.
   - **The teardown without `--yes`** deletes nothing and lists what it would delete.
   - **With `--yes`** it deletes only what is named `payrollcheck…` and tagged for the project. A same-named resource without the tag is left and reported. It waits for targets and policies to go before their Gateway and engine. It leaves `CDKToolkit` and prints how to remove it and the Supabase project by hand.
-- [ ] `deploy/RUNBOOK.md`: steps 6 and 7, `show`, the smoke check's lines (phase 5) and the teardown.
-- [ ] `npm run check` with `.env` moved aside: green, including `npm run check:runtime`, which still imports `runtime.main` and `runtime.copilot` with the `runtime` group alone.
-- [ ] Review, fixes, tick, `docs/STATUS.md`, commit.
+- [x] `deploy/RUNBOOK.md`: steps 6 and 7, `show`, the smoke check's lines (phase 5) and the teardown.
+- [x] `deploy/tests/test_smoke.py` (**added**: the smoke check's code is built here, so phase 5 only runs it): through the agent tests' stand-in Gateway, a context tool answers signed as the operator and an app tool its Policy refuses is refused by name; the probe passes only on the Policy's own refusal with no invocation of the app; the Copilot's latest answer must be to question 2 and name PC-1009 and $198.75, with the Memory holding the conversation's events; the engine's decisions are read for `ENFORCE`.
+- [x] `npm run check` with `.env` moved aside: green, including `npm run check:runtime`, which still imports `runtime.main` and `runtime.copilot` with the `runtime` group alone.
+- [x] Review, fixes, tick, `docs/STATUS.md`, commit.
 
 ### Phase 5: the runbook run, and the smoke check
 

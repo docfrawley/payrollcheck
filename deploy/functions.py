@@ -210,6 +210,21 @@ def app_environment(aws: Aws) -> dict[str, str]:
     }
 
 
+def point_the_app_at(aws: Aws, runtimes: dict[str, str]) -> None:
+    """Add the runtimes' ARNs to the app's environment, unless it has them."""
+    functions = aws.client("lambda")
+    current = functions.get_function(FunctionName=names.APP_FUNCTION)["Configuration"]
+    variables = variables_of(current) | runtimes
+    if variables == variables_of(current):
+        print(f"Function {names.APP_FUNCTION}'s runtimes: unchanged")
+        return
+    functions.update_function_configuration(
+        FunctionName=names.APP_FUNCTION, Environment={"Variables": variables}
+    )
+    functions.get_waiter(UPDATED).wait(FunctionName=names.APP_FUNCTION)
+    print(f"Function {names.APP_FUNCTION}'s runtimes: updated")
+
+
 def deploy_app(aws: Aws, environment: dict[str, str]) -> str:
     """The app, with the dashboard npm run build made, on Lambda behind its public
     Function URL. Returns the URL."""

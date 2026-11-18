@@ -48,6 +48,16 @@ def retry[T](
     return attempt()
 
 
+def until_gone(listing: Callable[[], list[Any]], label: str, tries: int = 100) -> None:
+    """Wait until a listing is empty, as Ed's teardown waited for a Gateway's
+    targets and an engine's policies to go, giving up after the tries."""
+    for _ in range(tries):
+        if not listing():
+            return
+        pause(LOOK_EVERY)
+    raise RuntimeError(f"The {label} didn't go")
+
+
 def mentions(text: str, *words: str) -> bool:
     """Whether a message names any of these words, as Ed's retries tell a
     permission still on its way from any other error."""
