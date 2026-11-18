@@ -1,6 +1,6 @@
 """The screening for instructions hidden in a payroll: a second model reads every
 text cell of the case's latest submission before the payroll agent does, as in
-labs/week3day2_lab1.ipynb."""
+Ed's ecca35dd:labs/week3day2_lab1.ipynb."""
 
 from typing import Any, cast
 

@@ -130,7 +130,7 @@ On the development set:
 ## Rules
 
 - Our reviewers sign in with their email and password, and the system checks the reviewer and their projects on every action. Asking for a case on someone else's project gets "not found".
-- The agent identifies itself with an API key on every request. The key can work any case but can never take a person's action: sign off, send back or override. On AWS our AgentCore Gateway's policy is an explicit allowlist of the tools the agent's work needs (its lookups, check tools and its own writes, such as saving its exception report and draft notice), denying everything else; the people's actions need a reviewer's sign-in and can't be reached through it at all.
+- The agent identifies itself with an API key on every request. The key can work any case but can never take a person's action: sign off, send back or override. On AWS our AgentCore Gateway's policy is an explicit allowlist of the tools the agent's work needs (its lookups, check tools and its own writes, such as saving its exception report and draft notice), naming who may call each: the payroll agent every one, and the Copilot and the people who run the deployment only the reference data's. It denies everything else; the people's actions need a reviewer's sign-in and can't be reached through it at all.
 - Amounts are US dollars, stored in whole cents.
 - Every exception cites its rate record or rule. A clean report says which checks ran.
 - The labels in `data/evals/` are for scoring. The payroll agent never sees them, and nothing but the scoring reads the held-out set's.

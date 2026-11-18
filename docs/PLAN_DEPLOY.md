@@ -1,6 +1,6 @@
 # Plan: stage 7, PayrollCheck on AWS AgentCore
 
-From `docs/stages/07_DEPLOY.md`. After stage 6, PayrollCheck works end to end on the laptop on the direct route, and the code already runs on Lambda and AgentCore Runtime when each piece's setting is there. Nothing exists on AWS for PayrollCheck, and there's no PayrollCheck project in our Supabase account. Ed's code assumes resources his lab notebooks made by hand, one notebook at a time. This stage ports those steps into one scripted, re-runnable runbook that stands PayrollCheck up from nothing. It replaces UnderCover's $1,000 payment cap with an allowlist Policy, runs a smoke check on the deployed product, and then deletes `labs/`.
+From `docs/stages/07_DEPLOY.md`. After stage 6, PayrollCheck works end to end on the laptop on the direct route, and the code already runs on Lambda and AgentCore Runtime when each piece's setting is there. Nothing exists on AWS for PayrollCheck, and there's no PayrollCheck project in our Supabase account. Ed's code assumes resources his lab notebooks made by hand, one notebook at a time. This stage ports those steps into one scripted, re-runnable runbook that stands PayrollCheck up from nothing. It replaces UnderCover's $1,000 payment cap with an allowlist Policy, runs a smoke check on the deployed product, and then deletes `labs/`, Ed's notebooks, which his import commit `ecca35dd` keeps.
 
 Writing the runbook creates nothing. Only running it does, and only when the user says so (`AGENTS.md`).
 
@@ -14,14 +14,14 @@ Every phase ends with `npm run check` green and coverage of at least 80%. No fil
 
 ## What Ed's code relies on
 
-I read the notebooks the brief names without running them: Part 1 of `week2day3`, Parts 1 to 4 of `week3day2_lab2`, Parts 1 to 6 of `week3day3`, Parts 1 to 6 of `week3day4_lab2` and Parts 1 to 5 of `week3day5_lab1`. I also read `labs/week3day4_aws.py`, and `labs/week3day4_lab1.ipynb` for the AgentCore CLI and the CDK bootstrap, which the later labs take for granted. This is everything they make or read, by its PayrollCheck name.
+I read the notebooks the brief names without running them: Part 1 of `week2day3`, Parts 1 to 4 of `week3day2_lab2`, Parts 1 to 6 of `week3day3`, Parts 1 to 6 of `week3day4_lab2` and Parts 1 to 5 of `week3day5_lab1`. I also read `ecca35dd:labs/week3day4_aws.py`, and `ecca35dd:labs/week3day4_lab1.ipynb` for the AgentCore CLI and the CDK bootstrap, which the later labs take for granted. This is everything they make or read, by its PayrollCheck name.
 
 ### Before the runbook
 
 | What | Ed's | PayrollCheck's | Made by |
 |---|---|---|---|
 | An AWS account, with a budget alert | Day 1 | the same | the user, by hand |
-| An IAM user for the work, and its access key in the AWS CLI profile | `undercover`, with `labs/undercover-course-policy.json` | `payrollcheck`, with `deploy/operator_policy.json`, the course policy renamed | the user, in the AWS console, then `aws configure` (region `us-east-1`) |
+| An IAM user for the work, and its access key in the AWS CLI profile | `undercover`, with `ecca35dd:labs/undercover-course-policy.json` | `payrollcheck`, with `deploy/operator_policy.json`, the course policy renamed | the user, in the AWS console, then `aws configure` (region `us-east-1`) |
 | The AWS CLI v2, and the AgentCore CLI at a pinned version | `@aws/agentcore@1.0.0-rc.5` | the same pin, checked against `agentcore/cdk`'s `@aws/agentcore-cdk` in phase 4 | the user, `npm install -g` |
 | The CDK project's packages | `npm ci --prefix agentcore/cdk` | the same | the runtimes step |
 | The CDK bootstrap, `CDKToolkit`: an S3 bucket, a KMS key at $1 a month and five roles | the first `agentcore deploy` | the same | `agentcore deploy`, the first time |
@@ -301,20 +301,20 @@ This phase creates resources on AWS and a project on Supabase, so it starts only
 - [x] **What it spent:** the dispatch's and the Copilot turn's cost from the backend's records, the OpenRouter key's usage before and after, and AWS's figures as the console shows them a day later. The report also lists the resources the runbook made. **Amended in the run:** the backend's and OpenRouter's figures are in `docs/STATUS.md`; AWS's come a day later, for the user to read in the console.
 - [x] **Success criterion 7, deployed on AWS AgentCore,** is met, and `docs/STATUS.md`'s "Last live run" says how, with the spend.
 
-### Phase 6: `labs/` goes, and the documents
+### Phase 6: Ed's notebooks go, and the documents
 
-- [ ] `labs/` is deleted, with Ed's notebooks, `labs/week3day4_aws.py`, `labs/undercoverlab/` and the day briefs in it, and `.gitignore`'s lines for it.
-- [ ] `git grep -n "labs/"` finds no reference to the folder as something in the repo. `agent/screening.py`'s and `agent/improver.py`'s docstrings, and `docs/ROADMAP.md`, the stage briefs and the earlier plans, name Ed's import commit `ecca35dd` where they cite a notebook.
-- [ ] **The documents describe the product as it now is:**
-  - **`AGENTS.md`:** the `deploy/` folder in place of `labs/`.
+- [x] The `labs/` folder is deleted, as `ecca35dd:labs/` had it: Ed's notebooks, `ecca35dd:labs/week3day4_aws.py`, `ecca35dd:labs/undercoverlab/` and the day briefs in it, and `.gitignore`'s lines for it.
+- [x] `git grep -n "labs/"` finds no reference to the folder as something in the repo. `agent/screening.py`'s and `agent/improver.py`'s docstrings, and `docs/ROADMAP.md`, the stage briefs and the earlier plans, name Ed's import commit `ecca35dd` where they cite a notebook. **Amended in the review:** a file of Ed's is cited as `ecca35dd:labs/<file>`, git's name for it at that commit; where the history speaks of the folder as it was, such as the stage briefs' own requirement to delete it, it stays `labs/`.
+- [x] **The documents describe the product as it now is:**
+  - **`AGENTS.md`:** the `deploy/` folder in place of `labs/`, and where Ed's notebooks are now, at `ecca35dd`.
   - **`README.md`:** the deployment and its runbook. It also drops "Today these run the renamed UnderCover code" and "until stage 3", which are stale.
   - **`docs/TECH_STACK.md`:** its Deployment section renamed, with the runbook in place of the notebooks, the Memory made by step 6, and the Policy as an allowlist by caller. The payroll agent's Gateway route on the laptop now reaches only the context tools.
   - **`docs/PROCESS.md`:** how the runbook is run, and that `npm run check` tests its ordinary code without the network.
   - **`docs/CODE_STANDARDS.md`:** rule 7 gains `deploy/` with each service called one way and the names in `deploy/names.py`.
   - **`docs/SPEC.md`:** its rule on the Gateway's Policy says the allowlist names its callers.
   - **`docs/STATUS.md`:** stage 7 built, the known gap on the Copilot's route closed, `Running it` pointing at the runbook, and the stage 6 line's "on `stage-6-copilot`" corrected now that it's merged.
-- [ ] `npm run check` with `.env` moved aside: green.
-- [ ] Review, fixes, tick, `docs/STATUS.md`, commit; then the review of the whole branch against `main`, its fixes, and the report.
+- [x] `npm run check` with `.env` moved aside: green.
+- [x] Review, fixes, tick, `docs/STATUS.md`, commit; then the review of the whole branch against `main`, its fixes, and the report.
 
 ## Not in this stage
 

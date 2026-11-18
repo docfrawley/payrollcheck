@@ -11,9 +11,13 @@
 - TypeScript: ESLint, Prettier, tsc, and vitest with 80% coverage
 - Playwright end-to-end tests
 
-The checks need no network and never read `.env`: the tests use SQLite, a stub model, the real context layer on a local port, and stand-ins for the AgentCore Gateway, AgentCore Memory, AgentCore Identity, AgentCore Runtime, Langfuse, the agent, the Copilot, Supabase Auth and the judge. The end-to-end tests sign in through the Auth stand-in with a test password. Tables and connections on Supabase can be checked through the Supabase MCP server, which is read-only.
+The checks need no network and never read `.env`: the tests use SQLite, a stub model, the real context layer on a local port, and stand-ins for the AgentCore Gateway, AgentCore Memory, AgentCore Identity, AgentCore Runtime, Langfuse, the agent, the Copilot, Supabase Auth and the judge. The end-to-end tests sign in through the Auth stand-in with a test password. Tables and connections on Supabase can be checked through the Supabase MCP server, which is read-only. The provisioning runbook's tests (`deploy/tests/`) check its ordinary code the same way: AWS through botocore's `Stubber`, Supabase's Auth admin API through `httpx.MockTransport`, and the Policy probe against the agent tests' stand-in Gateway on a local port.
 
 The pre-commit hook runs the format, lint, type and unit test checks on every commit.
+
+## The runbook
+
+The provisioning runbook in `deploy/` stands PayrollCheck up on AWS and Supabase from nothing, a step a command, as the checklist in `deploy/RUNBOOK.md` gives it. It creates and deletes real resources that cost money, so it runs only when the user runs it or asks for it to be run, a step at a time with their say-so, and never as part of `npm run check`. Each step can run again, and changes nothing the second time. Its by-hand parts, such as signing in on the deployed dashboard and uploading, are the user's; the smoke check's code parts then read what happened. `teardown --yes` deletes what it made, only when the user asks.
 
 ## Planning
 

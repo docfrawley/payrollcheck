@@ -2,9 +2,9 @@
 
 ## The product
 
-PayrollCheck checks the certified payrolls that subcontractors file on New Jersey public works jobs. It's built for Pinelands Builders, a fictional mid-size New Jersey general contractor. Its compliance reviewers work a queue of cases, one subcontractor's payroll for one project and one week, and the payroll agent checks every line of every payroll against the prevailing wage rules and writes an exception report. The agent flags; it never accepts. A reviewer signs off or sends back every case. There's also an improver that proposes better versions of the payroll agent, and the PayrollCheck Copilot, a chat for reviewers in the dashboard. It goes into production on AWS AgentCore.
+PayrollCheck checks the certified payrolls that subcontractors file on New Jersey public works jobs. It's built for Pinelands Builders, a fictional mid-size New Jersey general contractor. Its compliance reviewers work a queue of cases, one subcontractor's payroll for one project and one week, and the payroll agent checks every line of every payroll against the prevailing wage rules and writes an exception report. The agent flags; it never accepts. A reviewer signs off or sends back every case. There's also an improver that proposes better versions of the payroll agent, and the PayrollCheck Copilot, a chat for reviewers in the dashboard. It runs in production on AWS AgentCore.
 
-PayrollCheck is built from Ed Donner's UnderCover `week3day5-end` (commit `ecca35dd`), in seven stages. Stage 1 renamed the code to PayrollCheck's words (case, reviewer, subcontractor, `PAYROLLCHECK_*`); the domain itself changes over in stage 3, and until then the code still works UnderCover's travel insurance claims, as cases.
+PayrollCheck is built from Ed Donner's UnderCover `week3day5-end` (commit `ecca35dd`), in seven stages. Stage 1 renamed the code to PayrollCheck's words (case, reviewer, subcontractor, `PAYROLLCHECK_*`), stage 3 changed the domain over to payrolls, and stage 7 deployed it.
 
 The user may be on Windows, where the terminal in VS Code is PowerShell, or on a Mac. Give commands that work on both.
 
@@ -49,6 +49,8 @@ Ed's day briefs and plans for UnderCover are no longer in `docs/`. The import co
 - `context/`: the context layer, the reference data the agent reads through the context server
 - `runtime/` and `agentcore/`: the files for AgentCore Runtime
 - `data/`: the business data, all of it synthetic
-- `labs/`: Ed's notebooks, kept only as the source for the AWS and Supabase provisioning steps until stage 7 ports them into the runbook and deletes the folder. Don't run them
+- `deploy/`: the provisioning runbook, which stands PayrollCheck up on AWS and Supabase from nothing, a step a command, with its checklist in `deploy/RUNBOOK.md`. Run it only when the user says so
+
+Ed's notebooks, which the runbook was ported from, went in stage 7. Ed's import commit `ecca35dd` has them, as `ecca35dd:labs/`.
 
 Stage 1 deleted the course material that came with the code (`community_contributions/`, `guides/`, `setup/` and `assets/`). Nothing in the product depended on it.
