@@ -222,7 +222,8 @@ def context_target(aws: Aws, context_url: str) -> dict[str, Any]:
 
 def put_target(aws: Aws, gateway_id: str, wanted: dict[str, Any]) -> dict[str, Any]:
     """Create a target, or update it when it differs, and try again while the
-    Gateway's role can't be used yet."""
+    Gateway's role can't be used yet. A target that fails for another reason stops
+    the step."""
     control = resources.control(aws)
     for _ in range(20):
         targets = resources.find_targets(aws, gateway_id)
@@ -253,10 +254,10 @@ def put_target(aws: Aws, gateway_id: str, wanted: dict[str, Any]) -> dict[str, A
             f"Target {wanted['name']}",
         )
         reasons = " ".join(target.get("statusReasons", []))
-        if target["status"] == "READY" or not waits.mentions(
-            reasons, "role", "Authorization"
-        ):
+        if target["status"] == "READY":
             return target
+        if not waits.mentions(reasons, "role", "Authorization"):
+            raise RuntimeError(f"Target {wanted['name']} is {target['status']}")
         print("Waiting for the Gateway's role to reach AgentCore")
         waits.pause(10)
     raise RuntimeError("AgentCore could not use the Gateway's role")

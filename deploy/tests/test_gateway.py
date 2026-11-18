@@ -310,14 +310,15 @@ def test_a_new_target_is_tried_again_while_the_gateways_role_isnt_usable(
     )
 
 
-def test_a_target_that_fails_for_another_reason_is_given_back(aws, stub, wanted):
+def test_a_target_that_fails_for_another_reason_stops_the_step(aws, stub, wanted):
     control = stub("bedrock-agentcore-control")
     control.add_response("list_gateway_targets", target_listing())
     control.add_response("create_gateway_target", target(wanted, "CREATING"))
     control.add_response(
         "get_gateway_target", target(wanted, "FAILED", ["The endpoint isn't MCP"])
     )
-    assert gateway.put_target(aws, GATEWAY_ID, wanted)["status"] == "FAILED"
+    with pytest.raises(RuntimeError, match=f"Target {wanted['name']} is FAILED"):
+        gateway.put_target(aws, GATEWAY_ID, wanted)
 
 
 def test_the_step_puts_both_targets_on_the_gateway(aws, monkeypatch, capsys):

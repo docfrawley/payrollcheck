@@ -222,23 +222,22 @@ def test_the_gateway_goes_after_its_targets(aws, monkeypatch, no_pauses):
         def list_tags_for_resource(self, **_):
             return {"tags": OURS}
 
+    found = {
+        "gatewayId": "gw-1",
+        "gatewayArn": "arn:gw",
+        "name": names.GATEWAY,
+        "gatewayUrl": "https://gw/mcp",
+    }
+    gateways = [found, found, None]
     monkeypatch.setattr(resources, "control", lambda _: Control())
-    monkeypatch.setattr(
-        resources,
-        "find_gateway",
-        lambda _: {
-            "gatewayId": "gw-1",
-            "gatewayArn": "arn:gw",
-            "name": names.GATEWAY,
-            "gatewayUrl": "https://gw/mcp",
-        },
-    )
+    monkeypatch.setattr(resources, "find_gateway", lambda _: gateways.pop(0))
     monkeypatch.setattr(resources, "find_targets", lambda *_: targets.pop(0))
     (gateway,) = inventory.find_gateway(aws)
     assert gateway.then == ["its target payrollcheck-app"]
     gateway.delete()
     assert calls == ["target T1", "gateway gw-1"]
-    assert no_pauses == [3]
+    assert no_pauses == [3, 3]
+    assert gateways == []
 
 
 def test_the_engine_goes_after_its_policies(aws, monkeypatch, no_pauses):

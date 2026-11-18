@@ -20,11 +20,11 @@ from backend.database import conversations, copilot_turns, engine, reviewers
 from backend.models import TurnStatus
 from backend.money import cents_in_dollars
 from data.payroll_world.expected_answers import QUESTIONS, answer_to, read_expected
+from data.payroll_world.worlds import MARCUS
 from deploy import names, resources, waits
 from deploy.aws import Aws
 from deploy.settings import REPO
 
-MARCUS = "marcus.oyelaran@payrollcheck.example"
 QUESTION = 2
 ALLOWED = (Target.CONTEXT, context_tools.GET_FILING_RULES, {})
 REFUSED = (Target.APP, app_operations.GET_CASE, {"case_id": "PC-1201"})
@@ -163,6 +163,7 @@ def decisions(aws: Aws) -> None:
     if engine_found is None:
         raise RuntimeError("There's no policy engine: run step 5")
     now = datetime.now(UTC)
+    totals: dict[str, int] = {}
     for metric in ("AllowDecisions", "DenyDecisions"):
         stats = aws.client("cloudwatch").get_metric_statistics(
             Namespace="AWS/Bedrock-AgentCore",
@@ -177,8 +178,13 @@ def decisions(aws: Aws) -> None:
             Period=3600,
             Statistics=["Sum"],
         )
-        total = int(sum(point["Sum"] for point in stats["Datapoints"]))
-        print(f"{metric}: {total}")
+        totals[metric] = int(sum(point["Sum"] for point in stats["Datapoints"]))
+        print(f"{metric}: {totals[metric]}")
+    if not totals["DenyDecisions"]:
+        raise RuntimeError(
+            "The engine has counted no refusal yet: run the Policy probe, or wait a"
+            " few minutes and read again"
+        )
 
 
 PARTS = {"copilot": copilot, "policy": probe, "decisions": decisions}

@@ -93,6 +93,10 @@ def find_gateway(aws: Aws) -> list[Found]:
             )
         waits.until_gone(lambda: resources.find_targets(aws, gateway_id), "targets")
         control.delete_gateway(gatewayIdentifier=gateway_id)
+        # Its policy engine can't go while the Gateway, still deleting, holds it.
+        waits.until_gone(
+            lambda: list(filter(None, [resources.find_gateway(aws)])), "Gateway"
+        )
 
     return [
         Found(

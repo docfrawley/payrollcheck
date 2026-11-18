@@ -278,6 +278,19 @@ def test_the_engines_decisions_are_counted(aws, stub, monkeypatch, capsys):
     assert capsys.readouterr().out == "AllowDecisions: 40\nDenyDecisions: 1\n"
 
 
+def test_no_refusal_counted_fails_the_decisions(aws, stub, monkeypatch):
+    monkeypatch.setattr(
+        resources, "find_policy_engine", lambda _: {"policyEngineId": "engine-1"}
+    )
+    cloudwatch = stub("cloudwatch")
+    for total in (40.0, 0.0):
+        cloudwatch.add_response(
+            "get_metric_statistics", {"Label": "x", "Datapoints": [{"Sum": total}]}
+        )
+    with pytest.raises(RuntimeError, match="no refusal"):
+        smoke.decisions(aws)
+
+
 def test_the_smoke_check_needs_what_it_checks(aws, monkeypatch):
     monkeypatch.setattr(resources, "find_gateway", lambda _: None)
     monkeypatch.setattr(resources, "find_policy_engine", lambda _: None)

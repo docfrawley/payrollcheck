@@ -1,5 +1,5 @@
 """The improver: a LangChain agent that follows a recipe to improve the payroll agent's
-configuration, as in Ed's ecca35dd:labs/week2day5.ipynb. A reviewer approves each
+configuration, as in Ed's 77cd362:labs/week2day5.ipynb. A reviewer approves each
 change and each new recipe before it takes effect, and the backend keeps or rolls
 back each version by the business's rule."""
 
