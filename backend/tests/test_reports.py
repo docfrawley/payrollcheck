@@ -234,6 +234,50 @@ def test_a_rule_that_carries_money_cant_be_added_without_a_check(
     assert refused.json()["detail"].startswith(f"A {rule} exception for W-009")
 
 
+@pytest.mark.parametrize(
+    ("rule", "check"),
+    [("sequence.gap", "check_timeliness"), ("timeliness.late", "check_timeliness")],
+)
+def test_a_rule_its_check_alone_decides_cant_be_added(client, candidates, rule, check):
+    before = everything_recorded()
+    ids = [c["candidate_id"] for c in candidates]
+    own = added(rule=rule, worker_id=None, line_no=None)
+    own["shortfall_cents"] = None
+    refused = report(client, CASE, raised=ids, added=[own], notice=NOTICE)
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == (
+        f"{rule} is decided by {check} alone: raise its finding by its candidate "
+        "id, or add none when it found nothing"
+    )
+    assert everything_recorded() == before
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        (
+            {"rule": "form.project_mismatch"},
+            "form.project_mismatch is about the whole payroll: give no worker or line",
+        ),
+        (
+            {"worker_id": None, "line_no": None},
+            "classification.changed is found on a worker's line: give the worker "
+            "and the line",
+        ),
+        ({"line_no": 99}, "Line 99 of the latest submission isn't W-001's"),
+    ],
+    ids=["a worker on a payroll's rule", "no worker", "not their line"],
+)
+def test_the_agents_own_exception_must_fit_its_rule(
+    client, candidates, changes, message
+):
+    ids = [c["candidate_id"] for c in candidates]
+    own = added(rule="classification.changed") | changes
+    own["shortfall_cents"] = None
+    refused = report(client, CASE, raised=ids, added=[own], notice=NOTICE)
+    assert (refused.status_code, refused.json()["detail"]) == (422, message)
+
+
 def test_the_reports_codes_and_checks_are_the_catalogues():
     assert set(get_args(RuleCode)) == set(RULES)
     assert get_args(CheckName) == CHECKS

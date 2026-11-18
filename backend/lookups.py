@@ -1,7 +1,8 @@
-"""Finding a case, a project, a subcontractor, a run, a version, the settings and
-the models allowed, and the messages for what isn't found, which more than one of
-the backend's modules need. A case, a project or a subcontractor outside the
-caller's scope isn't found, with the same message as one that doesn't exist."""
+"""Finding a case, the workers on its latest submission's lines, a project, a
+subcontractor, a run, a version, the settings and the models allowed, and the
+messages for what isn't found, which more than one of the backend's modules need.
+A case, a project or a subcontractor outside the caller's scope isn't found, with
+the same message as one that doesn't exist."""
 
 from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, func, select
@@ -16,6 +17,7 @@ from backend.database import (
     runs,
     settings,
     subcontractors,
+    submissions,
     versions,
 )
 from backend.models import (
@@ -53,6 +55,17 @@ def find_queue_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
     if row is None:
         raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))
     return row
+
+
+def workers_by_line(db: Connection, case: RowMapping) -> list[str]:
+    """The worker id on each line of a case's latest submission, in line order."""
+    lines = db.execute(
+        select(submissions.c.lines).where(
+            submissions.c.case_id == case["case_id"],
+            submissions.c.submission_no == case["latest_submission_no"],
+        )
+    ).scalar_one()
+    return [line["worker_id"] for line in lines]
 
 
 def project_row(db: Connection, project_id: str, scope: Scope) -> RowMapping:

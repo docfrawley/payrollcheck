@@ -538,7 +538,8 @@ class Dismissal(BaseModel):
 
 class AddedException(BaseModel):
     """An exception no check found, which may carry no money unless a check's
-    finding has the same rule, worker, line and shortfall."""
+    finding has the same rule, worker, line and shortfall, and is never under a
+    rule its check alone decides; its worker and line fit its rule."""
 
     rule: RuleCode
     worker_id: str | None

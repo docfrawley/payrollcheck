@@ -39,6 +39,8 @@ RULES = (
     CHANGED,
     MISMATCH,
 )
+# The rules a check alone decides: the agent raises them only from its findings.
+CHECK_DECIDES = (LATE, GAP)
 
 
 @dataclass(frozen=True)

@@ -1,38 +1,32 @@
 """An exception report checked against the attempt's candidates and recorded with
 its notice: the guarantee that no exception carries a shortfall no check tool
-found. Each refusal is a 422 that says what's wrong, so the agent can put it
-right."""
+found, and that the payroll agent adds none of its own that the rule catalogue
+refuses it, such as one under a rule its check alone decides. Each refusal is a
+422 that says what's wrong, so the agent can put it right."""
 
 from fastapi import HTTPException
 from sqlalchemy import Connection, RowMapping, insert, update
 
 from backend.candidates import attempts_candidates, checks_run_on
 from backend.database import candidates, exceptions, notices, now
+from backend.lookups import workers_by_line
 from backend.models import (
     AddedException,
     ExceptionReport,
     ExceptionSource,
     ExceptionStatus,
 )
-from backend.rule_codes import CHECKS, RULES
+from backend.rule_codes import CHECKS, RULES, agents_refusal, where
 
 NO_CANDIDATE = (
     "No check found {rule}{where} with a shortfall of {cents} cents: an exception "
     "with a shortfall must be one a check tool found"
 )
 UNKNOWN_CANDIDATE = "Candidate {candidate_id} isn't one of this attempt's findings"
-MONEY_RULE = (
-    "A {rule} exception{where} carries money: it must be one a check tool found, "
-    "raised by its candidate id"
-)
 TWICE = "Candidate {candidate_id} is both raised and dismissed, or listed twice"
 NOT_JUDGED = "Raise or dismiss every finding: candidates {ids} are neither"
 BLANK_NOTICE = "A report with exceptions needs a draft send-back notice"
 CHECKS_NOT_RUN = "Run every check before reporting: {checks} hasn't run on this attempt"
-
-
-def where(found: AddedException) -> str:
-    return f" for {found.worker_id} on line {found.line_no}" if found.worker_id else ""
 
 
 def matching(found: AddedException, attempt: dict[int, RowMapping]) -> int | None:
@@ -50,19 +44,21 @@ def matching(found: AddedException, attempt: dict[int, RowMapping]) -> int | Non
 
 
 def judged_candidates(
-    report: ExceptionReport, attempt: dict[int, RowMapping]
+    report: ExceptionReport,
+    attempt: dict[int, RowMapping],
+    workers_on_lines: list[str],
 ) -> tuple[list[int], list[AddedException]]:
     """The candidates the report raises, an added exception with a shortfall
     counted as the candidate it matches, and the exceptions it adds of its own.
-    Raise a 422 for a shortfall no candidate has, a rule that carries money added
-    with none, an unknown or repeated candidate, or a candidate neither raised nor
-    dismissed."""
+    Raise a 422 for a shortfall no candidate has, an exception of its own the
+    catalogue refuses, an unknown or repeated candidate, or a candidate neither
+    raised nor dismissed."""
     raised, added = list(report.raised), []
     for found in report.added:
-        if found.shortfall_cents is None and RULES[found.rule].money:
-            message = MONEY_RULE.format(rule=found.rule, where=where(found))
-            raise HTTPException(422, message)
         if found.shortfall_cents is None:
+            refused = agents_refusal(found, workers_on_lines)
+            if refused:
+                raise HTTPException(422, refused)
             added.append(found)
             continue
         candidate_id = matching(found, attempt)
@@ -95,7 +91,7 @@ def record_report(db: Connection, case: RowMapping, report: ExceptionReport) -> 
     if not_run:
         raise HTTPException(422, CHECKS_NOT_RUN.format(checks=", ".join(not_run)))
     attempt = attempts_candidates(db, case)
-    raised, added = judged_candidates(report, attempt)
+    raised, added = judged_candidates(report, attempt, workers_by_line(db, case))
     if (raised or added) and not report.notice.strip():
         raise HTTPException(422, BLANK_NOTICE)
     case_id, submission_no = case["case_id"], case["latest_submission_no"]
