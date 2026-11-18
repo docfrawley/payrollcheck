@@ -206,7 +206,7 @@ def get_payroll_history(
 
 
 @app.get(
-    "/api/agent/openapi.json",
+    agent_api.PATH,
     operation_id="get_agent_api",
     dependencies=[ReviewerOrAgent],
 )

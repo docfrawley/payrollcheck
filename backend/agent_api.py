@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute, iter_route_contexts
 
+# Where the app serves the document, for the Gateway's target to be made from.
+PATH = "/api/agent/openapi.json"
 OPERATIONS = {
     "get_case",
     "get_project",

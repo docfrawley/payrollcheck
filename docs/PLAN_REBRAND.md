@@ -81,7 +81,7 @@ The data dictionary in `context/` still describes the records' fields under thei
 **Context content the code quotes.** These come from data governance's files or the labs, so they keep their words:
 - The data dictionary's record names, `"claim"` and `"previous_claim"`, which `describe_fields` takes (`RecordName` in `context/files.py` and `agent/context_tools.py`), so its lookup still reads "Fields of a previous claim"
 - "Repeat claims", the manual's rule, also where the agent's instructions name it; section titles such as "Repeat claims", the system "Claims operations", the rule `repeat_claims` and the search "REPEAT CLAIMS", quoted in tests
-- The screening prompt, its answer's field descriptions and its docstring, which the model reads as the tool's description, in `agent/screening.py`. `test_screening.py` checks them word for word against `labs/week3day2_lab1.ipynb`
+- The screening prompt, its answer's field descriptions and its docstring, which the model reads as the tool's description, in `agent/screening.py`. `test_screening.py` checks them word for word against `77cd362:labs/week3day2_lab1.ipynb`
 
 **Named documents.** "The claims manual" and its "section 14" are the document's title, so copy and messages that cite them keep the title, as in "Claims manual section 14: …". The `get_claim_rules` context tool reads `claim_rules.yaml`, and as a tool it's plumbing, so it's renamed `get_case_rules`. The file keeps its name.
 
