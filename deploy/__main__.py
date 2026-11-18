@@ -5,7 +5,7 @@ import argparse
 import sys
 from collections.abc import Callable
 
-from deploy import functions, identity, supabase
+from deploy import functions, gateway, identity, policy, supabase
 from deploy.aws import connect
 from deploy.settings import MissingSettings
 
@@ -23,6 +23,14 @@ def steps() -> dict[str, tuple[str, Step]]:
         "identity": (
             "Step 3: the Gateway's credential and the runtimes' credentials",
             lambda _: identity.run(connect()),
+        ),
+        "gateway": (
+            "Step 4: the Gateway and its two targets",
+            lambda _: gateway.run(connect()),
+        ),
+        "policy": (
+            "Step 5: the Policy, an allowlist enforced on the Gateway",
+            lambda _: policy.run(connect()),
         ),
     }
 

@@ -133,7 +133,7 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
     - **The Gateway's separator** `___` from `agent/gateway.py`.
 
     A test checks that the app's names match `backend/agent_api.py`'s `OPERATIONS` and the context names match the tools the context server lists, so a new tool can't be left off the allowlist without a failing test. Each permit has the form `permit(principal is AgentCore::IamEntity, action == AgentCore::Action::"<target>___<tool>", resource == AgentCore::Gateway::"<gateway ARN>") when { [<callers>].contains(principal.id) };`. That is one permit per tool, as the brief asks, naming its callers by `principal.id`, the caller's ARN, which AWS's documentation for gateways with `AWS_IAM` auth describes ([Policy scope](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-understanding-cedar.html), [Principal-scoped policies](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/example-policies-principal.html)). A role is named as `arn:aws:sts::<account>:assumed-role/<role name>`, without a session. The policy engine validates each statement when it's created, and the step prints any failure's reasons.
-13. **The CLI and the deploy target.** Phase 4 reads `agentcore deploy --help` and `agentcore --version`, which make no AWS calls, to confirm two things. The first is how the CLI records its target account and region (in `agentcore/aws-targets.json`, which git ignores) and whether it takes `--yes`. The second is that the pinned CLI matches `@aws/agentcore-cdk` in `agentcore/cdk`. Installing the CLI on this laptop changes the machine, so I ask first. If the CLI can't deploy without prompts, the step prints the command for the user to run instead.
+13. **The CLI and the deploy target.** **Found in phase 3:** `agentcore deploy` makes its `default` target from the AWS account and region on its first deploy, so it needs no prompts, and `--yes` only confirms removing a stack; the step runs it. The global install of `@aws/agentcore@1.0.0-rc.5` was refused here, since npm's global folder belongs to root, so the help was read through `npx` and the user installs the CLI before step 7. Phase 4 reads `agentcore deploy --help` and `agentcore --version`, which make no AWS calls, to confirm two things. The first is how the CLI records its target account and region (in `agentcore/aws-targets.json`, which git ignores) and whether it takes `--yes`. The second is that the pinned CLI matches `@aws/agentcore-cdk` in `agentcore/cdk`. Installing the CLI on this laptop changes the machine, so I ask first. If the CLI can't deploy without prompts, the step prints the command for the user to run instead.
 
 ## Design
 
@@ -173,6 +173,7 @@ Ed's agent Memory (`undercover_memory`, `create_memory`) isn't ported, since age
 - **The steps.** Each step module uses those four and no other step's helpers. Two steps use another step's module through what it's for:
   - `runtimes.py` runs `policy.py`'s step, and runs `functions.py`'s environment update.
   - `gateway.py` and `policy.py` read the Gateway by its name through `resources.py`'s finders.
+  - `policy.py` uses `gateway.py`'s `gateway_settings`, the Gateway's definition, since `update_gateway` must send every setting again when it enforces the engine.
 - **The checks and the command line.** `smoke.py` uses `agent.gateway` and `agent.routes` for the probe, and `resources.py` to find the functions' log groups. `__main__.py` uses the steps.
 - **Reading the product's names.** `deploy/` reads names from the product, and the product imports nothing from `deploy/`:
   - the targets, operations and context tools (decision 12)
@@ -231,12 +232,12 @@ Steps 2 and 3: the two functions and the credentials.
 
 Steps 4 and 5, with the allowlist.
 
-- [ ] `deploy/tests/test_gateway.py` (`Stubber`, `httpx.MockTransport` for the API document):
+- [x] `deploy/tests/test_gateway.py` (`Stubber`, `httpx.MockTransport` for the API document):
   - the role is created with `bedrock-agentcore`'s trust for `gateway/payrollcheck-gateway-*` and its two policies
   - the Gateway is created with MCP and `AWS_IAM`, retrying while its role isn't usable
   - the app's target carries the agent's API document with the app's URL as its server, and the key provider as `X-API-Key` in the header; the context layer's target points at `<URL>/mcp` with the Gateway's role signing for Lambda
   - a second run, with the same document, updates no target
-- [ ] `deploy/tests/test_policy.py`:
+- [x] `deploy/tests/test_policy.py`:
   - **The allowlist**, with no network, from a Gateway ARN and the callers:
     - one permit for each of the 12 tools, named `payrollcheck_allow_<target>_<tool>`
     - each `action ==` the Gateway's name for one tool (`payrollcheck-app___get_case`, …), and each `resource ==` the Gateway's ARN
@@ -244,16 +245,18 @@ Steps 4 and 5, with the allowlist.
   - **The callers on each permit:**
     - the app's seven tools name only the agent's runtime role
     - the five context tools name the agent's role, the Copilot's role and the operator
-    - with no runtimes yet, the app's permits name no one and the context tools name the operator
+    - with no runtimes yet, the app's permits aren't written, since no one may call them, and the context tools name the operator (**amended**: a permit naming no caller would be an empty set in Cedar)
+    - the Runtimes step needs both runtimes, each with its own role
   - **What's allowlisted is what the code names:** the app's names are `backend/agent_api.py`'s `OPERATIONS`, and the context names are the tools `context/server.py`'s server lists.
   - **`caller_of`** turns `arn:aws:iam::<account>:role/<name>` and `arn:aws:sts::<account>:assumed-role/<name>/<session>` into `arn:aws:sts::<account>:assumed-role/<name>`, and leaves an IAM user's ARN as it is.
   - **On AWS**, through `Stubber`:
     - the engine is created with the tag, the role gets `GetPolicyEngine`, `AuthorizeAction` and `PartiallyAuthorizeActions`, and the Gateway is updated to `ENFORCE`, retrying while the permission travels
-    - a policy that's there with the same statement isn't touched, one with a different statement is updated, and a missing one is created
+    - a policy that's there, active, with the same statement isn't touched; one with a different statement, or one the engine refused, is updated; a missing one is created; and one of ours the allowlist no longer has is deleted (**amended in review**)
+    - a permit the engine refuses prints its reasons and stops the step
     - a second run changes nothing
-- [ ] `backend/tests/test_sign_in.py::test_every_reviewer_operation_needs_a_sign_in_and_the_key_wont_do` passes unchanged.
-- [ ] `deploy/RUNBOOK.md`: steps 4 and 5, with the allowlist in a table, each tool and who may call it.
-- [ ] `npm run check` green; review, fixes, tick, `docs/STATUS.md`, commit.
+- [x] `backend/tests/test_sign_in.py::test_every_reviewer_operation_needs_a_sign_in_and_the_key_wont_do` passes unchanged.
+- [x] `deploy/RUNBOOK.md`: steps 4 and 5, with the allowlist in a table, each tool and who may call it.
+- [x] `npm run check` green; review, fixes, tick, `docs/STATUS.md`, commit.
 
 ### Phase 4: the Memory, the Runtimes, what's there and the teardown
 

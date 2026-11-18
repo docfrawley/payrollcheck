@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from agent import identity as agent_identity
-from deploy import names, settings
+from deploy import names, resources, settings
 from deploy.aws import Aws
 
 AGENTCORE_PROJECT = settings.REPO / "agentcore" / "agentcore.json"
@@ -24,11 +24,12 @@ def stored_key(aws: Aws, provider: dict[str, Any]) -> str:
 def put_key_provider(aws: Aws, api_key: str) -> dict[str, Any]:
     """The app's API key in AgentCore Identity, for the Gateway to send: created,
     given the key when it holds another, or left alone. Returns the provider."""
-    control = aws.client("bedrock-agentcore-control")
-    pages = control.get_paginator("list_api_key_credential_providers").paginate()
-    there = {p["name"] for page in pages for p in page["credentialProviders"]}
-    if names.KEY_PROVIDER in there:
-        provider = control.get_api_key_credential_provider(name=names.KEY_PROVIDER)
+    control = resources.control(aws)
+    providers = resources.listed(
+        aws, "list_api_key_credential_providers", "credentialProviders"
+    )
+    if names.KEY_PROVIDER in {p["name"] for p in providers}:
+        provider = resources.key_provider(aws)
         if stored_key(aws, provider) == api_key:
             print(f"Credential provider {names.KEY_PROVIDER}: unchanged")
             return provider
@@ -41,7 +42,7 @@ def put_key_provider(aws: Aws, api_key: str) -> dict[str, Any]:
             name=names.KEY_PROVIDER, apiKey=api_key, tags=names.TAGS
         )
         print(f"Credential provider {names.KEY_PROVIDER}: created")
-    return control.get_api_key_credential_provider(name=names.KEY_PROVIDER)
+    return resources.key_provider(aws)
 
 
 def runtime_credentials() -> dict[str, str]:

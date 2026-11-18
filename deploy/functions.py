@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from backend import agent_service, copilot_service
-from deploy import commands, names, packaging, settings, waits
+from deploy import commands, names, packaging, resources, settings, waits
 from deploy.aws import POLICY_VERSION, Aws
 
 LAMBDA_TRUST = {
@@ -168,14 +168,14 @@ def function_url(aws: Aws, name: str, auth_type: str) -> str:
     """The function's URL, made the first time, without its closing slash."""
     functions = aws.client("lambda")
     try:
-        url = functions.get_function_url_config(FunctionName=name)["FunctionUrl"]
+        url = resources.function_url(aws, name)
         print(f"Function URL of {name}: unchanged")
     except functions.exceptions.ResourceNotFoundException:
         url = functions.create_function_url_config(
             FunctionName=name, AuthType=auth_type
-        )["FunctionUrl"]
+        )["FunctionUrl"].rstrip("/")
         print(f"Function URL of {name}: created")
-    return url.rstrip("/")
+    return url
 
 
 def allow_the_public(aws: Aws) -> None:

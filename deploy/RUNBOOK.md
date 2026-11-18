@@ -56,3 +56,35 @@ Needs: `OPENROUTER_API_KEY`, `PAYROLLCHECK_API_KEY` and `DATABASE_URL` in `.env`
   - the values of the runtimes' three credentials, the ones `agentcore/agentcore.json` declares (`OPENROUTER_API_KEY`, `PAYROLLCHECK_API_KEY` and `DATABASE_URL` on the transaction pooler), in `agentcore/.env.local` as `AGENTCORE_CREDENTIAL_<NAME>`. Git ignores the file, and only you can read it. `agentcore deploy` makes the three credentials from it in step 7.
 
 Leaves: the key provider; the credentials' values in `agentcore/.env.local`.
+
+## Step 4: the Gateway
+
+Needs: steps 2 and 3; `PAYROLLCHECK_API_KEY` in `.env`.
+
+- [ ] **By code: `uv run --env-file .env -m deploy gateway`.** It makes:
+  - the Gateway's role, `payrollcheck-gateway-role`, which only AgentCore may run as, for our Gateway alone. It may fetch the agent's key from AgentCore Identity and invoke the context layer, and nothing else.
+  - the Gateway, `payrollcheck-gateway`: MCP, with `AWS_IAM` auth, so every caller signs its requests. A new role can take a minute to reach AgentCore, and the step waits.
+  - its two targets, named as `agent/routes.py` names them:
+    - `payrollcheck-app`: the payroll agent's own API document, read from the deployed app's `/api/agent/openapi.json` with the app's URL as its server. The Gateway sends the agent's key with every call as `X-API-Key`.
+    - `payrollcheck-context`: the context layer's MCP endpoint, `<its URL>/mcp`, which the Gateway's role signs for Lambda.
+
+  A target that's the same is left alone; one that differs is updated.
+
+Leaves: the Gateway, with its URL printed, and its two targets. Each tool on it is named `<target>___<tool>`, such as `payrollcheck-app___get_case`.
+
+## Step 5: the Policy
+
+Needs: step 4.
+
+- [ ] **By code: `uv run --env-file .env -m deploy policy`.** It makes the policy engine `payrollcheck_policy_engine`, lets the Gateway's role ask it about every call, and enforces it on the Gateway (`ENFORCE`). Then it puts the allowlist: one permit for each tool the payroll agent's work needs, naming who may call it. Nothing is forbidden, and anything without a permit is denied by default. There's no payment cap, since PayrollCheck has no payments.
+
+  | Tool | Who may call it |
+  |---|---|
+  | `payrollcheck-app___get_case`, `___get_project`, `___list_subcontractors`, `___get_payroll_history`, `___record_check_findings`, `___record_screening_flag`, `___record_exception_report` | the payroll agent's runtime role |
+  | `payrollcheck-context___get_wage_rate`, `___check_registration`, `___check_apprentice`, `___get_filing_rules`, `___lookup_payroll_term` | the payroll agent's runtime role, the Copilot's runtime role, and you, the operator |
+
+  The people's actions, sign off, send back and override, aren't in the agent's API document, so they aren't on the Gateway at all. The backend refuses them to the agent's key whatever reaches it.
+
+  Before step 7, the runtimes aren't there, so the step writes only the context tools' permits, for you. Step 7 runs this step again, and the permits then name both runtimes' roles. A permit that's the same is left alone; one that differs is updated.
+
+Leaves: the engine, enforced on the Gateway, and the permits. Calls signed with your own AWS identity reach the context layer's tools and are refused the app's, so on the laptop the payroll agent uses the direct route.
