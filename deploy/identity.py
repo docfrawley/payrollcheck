@@ -10,6 +10,9 @@ from deploy import names, resources, settings
 from deploy.aws import Aws
 
 AGENTCORE_PROJECT = settings.REPO / "agentcore" / "agentcore.json"
+# Where a secret AgentCore Identity manages holds its key, as JSON, when the provider
+# names no JSON key of its own.
+MANAGED_KEY = "api_key_value"
 
 
 def stored_key(aws: Aws, provider: dict[str, Any]) -> str:
@@ -17,8 +20,7 @@ def stored_key(aws: Aws, provider: dict[str, Any]) -> str:
     secret = aws.client("secretsmanager").get_secret_value(
         SecretId=provider["apiKeySecretArn"]["secretArn"]
     )["SecretString"]
-    json_key = provider.get("apiKeySecretJsonKey")
-    return json.loads(secret)[json_key] if json_key else secret
+    return json.loads(secret)[provider.get("apiKeySecretJsonKey", MANAGED_KEY)]
 
 
 def put_key_provider(aws: Aws, api_key: str) -> dict[str, Any]:

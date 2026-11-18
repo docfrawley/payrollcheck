@@ -286,20 +286,20 @@ Steps 6 and 7, `show` and `teardown`.
 
 This phase creates resources on AWS and a project on Supabase, so it starts only when the user runs the runbook or asks me to run it. Before it, I take the OpenRouter key's usage, for the spending report.
 
-- [ ] **The first run**, from nothing, step by step as `deploy/RUNBOOK.md` says. Each step ends `created` or `unchanged` for each of its resources, and `uv run -m deploy show` lists every resource in the table above.
-- [ ] **The second run** of steps 2 to 7: every resource says `unchanged`. The function's `CodeSha256` and `LastModified` are the same before and after, and `show` prints the same.
-- [ ] **The deployed dashboard:** the app's Function URL serves the dashboard. The user signs Marcus Oyelaran and Dana Whitfield in, in a Playwright window opened after asking, typing the passwords themselves. The header shows the business date Nov 23, 2026 after `npm run seed`.
-- [ ] **The Copilot, before any dispatch:** asked question 2 as Marcus, it answers on the Copilot's Runtime with the case ids and the total in `data/copilot_expected.json`, checked by `deploy/smoke.py`. With its Memory on, the Memory holds events for Marcus's conversation.
-- [ ] **The dispatch:**
+- [x] **The first run**, from nothing, step by step as `deploy/RUNBOOK.md` says. Each step ends `created` or `unchanged` for each of its resources, and `uv run --env-file .env -m deploy show` lists every resource in the table above.
+- [x] **The second run** of steps 2 to 7: every resource says `unchanged`. The function's `CodeSha256` and `LastModified` are the same before and after, and `show` prints the same.
+- [x] **The deployed dashboard:** the app's Function URL serves the dashboard. The user signs Marcus Oyelaran and Dana Whitfield in, in a Playwright window opened after asking, typing the passwords themselves. The header shows the business date Nov 23, 2026 after `npm run seed`. **Amended in the run:** the app's URL is public, so the user signed in in their own browser and sent screenshots, and scripts checked the records.
+- [x] **The Copilot, before any dispatch:** asked question 2 as Marcus, it answers on the Copilot's Runtime with the case ids and the total in `data/copilot_expected.json`, checked by `deploy/smoke.py`. With its Memory on, the Memory holds events for Marcus's conversation.
+- [x] **The dispatch:**
   - Marcus uploads PC-1214 and Dana uploads PC-1223.
   - Marcus starts a dispatch of the week-12 wave, which works all 24 cases on the payroll agent's Runtime, through the Gateway. Each case's steps name its tools as the Gateway names them (`payrollcheck-app___…`, `payrollcheck-context___…`), and every case ends Awaiting review.
   - The panel shows Marcus his cases and the count of the others.
-- [ ] **The Policy**, with `uv run --env-file .env -m deploy smoke` and no dashboard open:
+- [x] **The Policy**, with `uv run --env-file .env -m deploy smoke` and no dashboard open:
   - the context tool answers and its function's log group shows the call
   - `payrollcheck-app___get_case`, signed as the operator, is refused with the Policy's default deny, and the app's log group shows no invocation in the window
   - a few minutes later, the engine's `DenyDecisions` metric shows the refusal and `AllowDecisions` the dispatch's calls
-- [ ] **What it spent:** the dispatch's and the Copilot turn's cost from the backend's records, the OpenRouter key's usage before and after, and AWS's figures as the console shows them a day later. The report also lists the resources the runbook made.
-- [ ] **Success criterion 7, deployed on AWS AgentCore,** is met, and `docs/STATUS.md`'s "Last live run" says how, with the spend.
+- [x] **What it spent:** the dispatch's and the Copilot turn's cost from the backend's records, the OpenRouter key's usage before and after, and AWS's figures as the console shows them a day later. The report also lists the resources the runbook made. **Amended in the run:** the backend's and OpenRouter's figures are in `docs/STATUS.md`; AWS's come a day later, for the user to read in the console.
+- [x] **Success criterion 7, deployed on AWS AgentCore,** is met, and `docs/STATUS.md`'s "Last live run" says how, with the spend.
 
 ### Phase 6: `labs/` goes, and the documents
 

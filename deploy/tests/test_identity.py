@@ -29,13 +29,27 @@ def listed(*provider_names):
     }
 
 
-def provider_with(key):
-    """The provider, holding a key in its secret under its JSON key."""
-    return PROVIDER | {"apiKeySecretJsonKey": "api_key_value"}, {
+def provider_with(key, json_key=None):
+    """The provider, holding a key in its secret: under the JSON key it names, or
+    under the one AgentCore Identity uses when it names none."""
+    provider = PROVIDER | ({"apiKeySecretJsonKey": json_key} if json_key else {})
+    return provider, {
         "ARN": PROVIDER["apiKeySecretArn"]["secretArn"],
         "Name": "bedrock-agentcore-identity!default/apikey/payrollcheck-app-key",
-        "SecretString": json.dumps({"api_key_value": key}),
+        "SecretString": json.dumps({json_key or identity.MANAGED_KEY: key}),
     }
+
+
+def test_the_key_is_read_under_the_json_key_its_provider_names(aws, stub):
+    assert identity.MANAGED_KEY == "api_key_value"
+    secrets = stub("secretsmanager")
+    providers = [provider_with(KEY, json_key) for json_key in (None, "token")]
+    for _, secret in providers:
+        secrets.add_response("get_secret_value", secret, {"SecretId": secret["ARN"]})
+    assert [identity.stored_key(aws, provider) for provider, _ in providers] == [
+        KEY,
+        KEY,
+    ]
 
 
 def test_the_gateways_credential_is_made_tagged(aws, stub, capsys):
