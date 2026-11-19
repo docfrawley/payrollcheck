@@ -7,6 +7,7 @@ from typing import Any
 
 from langchain_core.messages import ToolMessage
 
+from agent.checks.findings import CHECK_DECIDES
 from agent.tests.stubs import (
     NOTICE,
     StubModel,
@@ -26,15 +27,21 @@ LUNA = {"model": "openai/gpt-6-luna", "reasoning_effort": "low"}
 
 
 class RuleFollowingModel(StubModel):
-    """A stub payroll agent that dismisses every finding of the check tools, or once
-    its instructions hold the rule, raises them all."""
+    """A stub payroll agent that raises only the findings it must, those under a
+    rule its check alone decides, and dismisses the rest, until its instructions
+    hold the rule; then it raises them all."""
 
     def next_reply(self, messages):
-        ids = [c["candidate_id"] for c in candidates_in(messages)]
+        found = candidates_in(messages)
+        ids = [c["candidate_id"] for c in found]
         if RULE.strip() in messages[0].content:
             return report(raised=ids, notice=NOTICE if ids else "")
         reason = "It doesn't look like a breach."
-        return report(dismissed=[{"candidate_id": i, "reason": reason} for i in ids])
+        kept = [c["candidate_id"] for c in found if c["rule"] in CHECK_DECIDES]
+        dismissed = [
+            {"candidate_id": i, "reason": reason} for i in ids if i not in kept
+        ]
+        return report(raised=kept, dismissed=dismissed, notice=NOTICE if kept else "")
 
 
 def payroll_agents_model():

@@ -115,7 +115,9 @@ class AddedException(BaseModel):
 def record_exception_report(
     raised: Annotated[list[int], "The candidates you raise as exceptions, by id"],
     dismissed: Annotated[
-        list[Dismissal], "The candidates you dismiss, each with its reason"
+        list[Dismissal],
+        "The candidates you dismiss, each with its reason; never one under "
+        f"{' or '.join(CHECK_DECIDES)}, which its check alone decides",
     ],
     added: Annotated[list[AddedException], "Breaches no check found, with no money"],
     notice: Annotated[

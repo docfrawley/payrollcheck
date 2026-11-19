@@ -3,7 +3,8 @@ that finds it, its severity, whether it carries money, whether it is a worker's
 line's or the whole payroll's, whether its check alone decides it, and what an
 exception seeded from the history or added by a reviewer cites, with what a
 send-back notice calls it and asks the subcontractor to correct. It also says why
-an exception added without a check's finding can't be raised."""
+an exception added without a check's finding can't be raised, and why the payroll
+agent can't dismiss a finding under a rule its check alone decides."""
 
 from collections.abc import Sequence
 from enum import StrEnum
@@ -29,7 +30,8 @@ class Rule(NamedTuple):
     name: str
     asks: str
     # Decided by its check alone: the payroll agent raises it only from the
-    # check's finding, never of its own.
+    # check's finding, never of its own, and raises every such finding, never
+    # dismissing one; a reviewer may still add or dismiss it.
     check_decides: bool = False
 
 
@@ -235,6 +237,10 @@ DECIDED_BY_CHECK = (
     "{rule} is decided by {check} alone: raise its finding by its candidate id, "
     "or add none when it found nothing"
 )
+NOT_YOURS_TO_DISMISS = (
+    "Candidate {candidate_id}, {rule}, is decided by {check} alone: raise it, and "
+    "a reviewer may dismiss it"
+)
 
 
 class Addition(Protocol):
@@ -265,6 +271,18 @@ def agents_refusal(added: Addition, workers_by_line: Sequence[str]) -> str | Non
     carries money, and with a worker and line that fit the rule and the latest
     submission, whose worker ids by line are given."""
     return not_the_agents(added) or out_of_place(added, workers_by_line)
+
+
+def agents_dismissal_refusal(candidate_id: int, rule: str) -> str | None:
+    """Why the payroll agent can't dismiss a check's finding under this rule, or
+    None when it can: a rule its check alone decides is the check's, and a
+    reviewer's to dismiss."""
+    found = RULES[rule]
+    if found.check_decides:
+        return NOT_YOURS_TO_DISMISS.format(
+            candidate_id=candidate_id, rule=rule, check=found.check
+        )
+    return None
 
 
 def reviewers_refusal(added: Addition, workers_by_line: Sequence[str]) -> str | None:
