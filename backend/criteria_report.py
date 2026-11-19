@@ -27,7 +27,7 @@ from backend.models import (
     SuccessCriteria,
 )
 from backend.money import dollars
-from backend.scope import Scope, cases_in
+from backend.scope import Scope, queue_cases_in
 from backend.scoreboard import decoys_of, expected_labels, score
 
 # Each criterion by its number, as docs/SPEC.md lists them.
@@ -154,8 +154,7 @@ def signed_off(db: Connection, scope: Scope) -> CriterionReport:
     date; the figure is how many don't."""
     query = select(func.count()).where(
         cases.c.status == Status.ACCEPTED,
-        cases.c.evaluation_id.is_(None),
-        cases_in(scope),
+        queue_cases_in(scope),
         cases.c.reviewed_by.is_(None) | cases.c.reviewed_on.is_(None),
     )
     unsigned = db.execute(query).scalar_one()

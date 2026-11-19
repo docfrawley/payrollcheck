@@ -22,6 +22,7 @@ from backend.database import (
     submissions,
 )
 from backend.models import ExceptionStatus, Reviewer, Status, UploadRequest
+from backend.scope import EVERYTHING, queue_cases_in
 from data.payroll_world.template import Payroll, Unreadable, payroll_record, read_upload
 
 CSV = ".csv"
@@ -103,7 +104,7 @@ def existing_case(
 ) -> RowMapping | None:
     """The queue's case for a subcontractor, project and week, if it has one."""
     query = select(cases).where(
-        cases.c.evaluation_id.is_(None),
+        queue_cases_in(EVERYTHING),
         cases.c.project_id == project_id,
         cases.c.subcontractor_id == subcontractor_id,
         cases.c.week_ending == week_ending.isoformat(),

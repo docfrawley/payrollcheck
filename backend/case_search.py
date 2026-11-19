@@ -10,7 +10,7 @@ from backend.database import case_view, cases, open_on_latest
 from backend.models import CaseFilters, FoundCase, FoundCases, SubcontractorCases
 from backend.money import cents_in_dollars
 from backend.periods import answer_of, resolve
-from backend.scope import Scope, cases_in
+from backend.scope import Scope, queue_cases_in
 from backend.views import to_summary
 
 # The column each flag a search can ask for is kept in.
@@ -20,7 +20,7 @@ FLAGS = {"screening": cases.c.screening_flag, "agent_failed": cases.c.agent_fail
 def find_cases(db: Connection, filters: CaseFilters, scope: Scope) -> FoundCases:
     """The queue's cases in scope that match every filter given, in id order."""
     period = resolve(business_date(db), filters.period) if filters.period else None
-    query = case_view.where(cases.c.evaluation_id.is_(None), cases_in(scope))
+    query = case_view.where(queue_cases_in(scope))
     if filters.project_id is not None:
         query = query.where(cases.c.project_id == filters.project_id)
     if filters.subcontractor_id is not None:

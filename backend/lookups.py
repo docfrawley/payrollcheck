@@ -27,7 +27,13 @@ from backend.models import (
     Settings,
     Verdict,
 )
-from backend.scope import Scope, cases_in, projects_in, subcontractors_in
+from backend.scope import (
+    Scope,
+    cases_and_copies_in,
+    projects_in,
+    queue_cases_in,
+    subcontractors_in,
+)
 
 RUN_NOT_FOUND = "Run {run_id} not found"
 CASE_NOT_FOUND = "Case {case_id} not found"
@@ -38,7 +44,7 @@ SUBCONTRACTOR_NOT_FOUND = "Subcontractor {subcontractor_id} not found"
 
 def find_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
     """Return one case's row in the scope, or raise a 404."""
-    query = case_view.where(cases.c.case_id == case_id, cases_in(scope))
+    query = case_view.where(cases.c.case_id == case_id, cases_and_copies_in(scope))
     row = db.execute(query).mappings().first()
     if row is None:
         raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))
@@ -48,9 +54,7 @@ def find_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
 def find_queue_case(db: Connection, case_id: str, scope: Scope) -> RowMapping:
     """Return one case's row in the queue and the scope, or raise a 404: an
     evaluation's copy, which the Copilot never reads, isn't found."""
-    query = case_view.where(
-        cases.c.case_id == case_id, cases.c.evaluation_id.is_(None), cases_in(scope)
-    )
+    query = case_view.where(cases.c.case_id == case_id, queue_cases_in(scope))
     row = db.execute(query).mappings().first()
     if row is None:
         raise HTTPException(404, CASE_NOT_FOUND.format(case_id=case_id))

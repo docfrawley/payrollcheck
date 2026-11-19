@@ -78,7 +78,7 @@ from backend.reviewing import (
 from backend.round_state import round_row, why_no_case_starts
 from backend.rule_codes import RULES
 from backend.runs import router as runs
-from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
+from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, queue_cases_in
 from backend.seeding import seed
 from backend.steps import add_step
 from backend.subcontractors import router as subcontractors_router
@@ -186,7 +186,7 @@ def health() -> dict[str, str]:
 @app.get("/api/cases", operation_id="list_cases")
 def list_cases(db: Database, scope: ScopedOrAgent) -> list[CaseSummary]:
     """List the cases in the queue in scope, in id order, leaving out the copies."""
-    query = case_view.where(cases.c.evaluation_id.is_(None), cases_in(scope))
+    query = case_view.where(queue_cases_in(scope))
     rows = db.execute(query.order_by(cases.c.case_id)).mappings()
     return [to_summary(row) for row in rows]
 

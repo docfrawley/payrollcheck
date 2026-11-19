@@ -3,7 +3,10 @@ cases and projects applies. A reviewer's scope is the projects they're assigned 
 and the compliance manager's every one of our projects; a held-out project is in
 no person's. The agent's key works every case, an evaluation's copies included, so
 its scope is everything. An evaluation's copy belongs to the Scoreboard, which every
-reviewer sees, so every scope holds the copies."""
+reviewer sees, so every scope holds the copies, but only a read that asks for them
+by name gets them: the queue's reads never do. The reads of a run's own cases,
+such as the scoreboard's and grading's, go by the run, and no person's scope
+bears on them."""
 
 from dataclasses import dataclass
 from typing import Annotated
@@ -55,11 +58,23 @@ def projects_in(scope: Scope) -> ColumnElement[bool]:
     return projects.c.project_id.in_(scope.projects)
 
 
-def cases_in(scope: Scope) -> ColumnElement[bool]:
-    """Whether a case is in the scope: on a project in it, or an evaluation's copy."""
+def queue_cases_in(scope: Scope) -> ColumnElement[bool]:
+    """Whether a case is the queue's and in the scope: on a project in it, and never
+    an evaluation's copy. Every read of the queue asks this; EVERYTHING gives the
+    whole queue."""
+    in_the_queue = cases.c.evaluation_id.is_(None)
+    if scope.projects is None:
+        return in_the_queue
+    return in_the_queue & cases.c.project_id.in_(scope.projects)
+
+
+def cases_and_copies_in(scope: Scope) -> ColumnElement[bool]:
+    """Whether a case is the queue's and in the scope, or an evaluation's copy, which
+    every scope holds: for opening a case by its id and reading a run's cases,
+    which may be an evaluation's."""
     if scope.projects is None:
         return true()
-    return cases.c.evaluation_id.is_not(None) | cases.c.project_id.in_(scope.projects)
+    return cases.c.evaluation_id.is_not(None) | queue_cases_in(scope)
 
 
 def subcontractors_in(scope: Scope) -> ColumnElement[bool]:
