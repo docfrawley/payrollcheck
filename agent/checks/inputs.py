@@ -154,7 +154,9 @@ class CheckInputs:
     case_id: str
     project_id: str
     week_ending: date
-    received_on: date
+    # The payroll's filing: its first submission's wage payment and received dates.
+    paid_on: date
+    filed_on: date
     certification: Certification
     lines: tuple[LineInputs, ...]
     legal_name: str

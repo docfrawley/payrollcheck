@@ -227,14 +227,21 @@ def point_the_app_at(aws: Aws, runtimes: dict[str, str]) -> None:
     print(f"Function {names.APP_FUNCTION}'s runtimes: updated")
 
 
+# The app's package: the backend, the data it reads, the one rule of the context
+# layer's it imports, the filing dates, and the dashboard npm run build made.
+APP_PACKAGE = {
+    "backend": "backend",
+    "data": "data",
+    "context/__init__.py": "context/__init__.py",
+    "context/filing_dates.py": "context/filing_dates.py",
+    "dashboard/dist": "dashboard/dist",
+}
+
+
 def deploy_app(aws: Aws, environment: dict[str, str]) -> str:
     """The app, with the dashboard npm run build made, on Lambda behind its public
     Function URL. Returns the URL."""
-    zip_path = packaging.build(
-        "lambda",
-        "server",
-        {"backend": "backend", "data": "data", "dashboard/dist": "dashboard/dist"},
-    )
+    zip_path = packaging.build("lambda", "server", APP_PACKAGE)
     log_group = names.log_group(names.APP_FUNCTION)
     make_log_group(aws, log_group)
     role = make_role(

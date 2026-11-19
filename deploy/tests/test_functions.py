@@ -347,7 +347,13 @@ def test_each_function_is_packaged_with_its_group(aws, monkeypatch, zip_path):
         (
             "lambda",
             "server",
-            {"backend": "backend", "data": "data", "dashboard/dist": "dashboard/dist"},
+            {
+                "backend": "backend",
+                "data": "data",
+                "context/__init__.py": "context/__init__.py",
+                "context/filing_dates.py": "context/filing_dates.py",
+                "dashboard/dist": "dashboard/dist",
+            },
         ),
         ("context", "context", {"context": "context"}),
     ]

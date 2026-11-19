@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from context import filing_dates
 from context.sources import (
     FILING_RULES,
     RATE_DETERMINATIONS,
@@ -119,7 +120,7 @@ class Answers:
         for case in self.in_period(period):
             first = case.submissions[0]
             paid = first.payroll.certification.wage_payment_date
-            if (first.received_on - paid).days > DUE_DAYS:
+            if filing_dates.late(paid, first.received_on, DUE_DAYS):
                 late.append(
                     {
                         "case_id": case.case_id,

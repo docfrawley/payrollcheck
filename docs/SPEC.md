@@ -38,7 +38,7 @@ The payroll agent runs these in order, each through a check tool. Every exceptio
 | Overtime: paid as the craft's rate sheet requires (often daily, and on Saturdays) | `overtime.underpaid` |
 | Hours and arithmetic: daily hours sum to the total; hours × rate = gross | `arithmetic.hours_total`, `arithmetic.gross` |
 | Apprentices: anyone paid an apprentice rate is registered, within the craft's ratio | `apprentice.unregistered`, `apprentice.ratio` |
-| Timeliness and sequence: filed within 10 days of the wage payment date; no gap in payroll numbers | `timeliness.late`, `sequence.gap` |
+| Timeliness and sequence: filed within 10 days of the wage payment date, judged by its first submission, so a correction never makes a payroll late; no gap in payroll numbers | `timeliness.late`, `sequence.gap` |
 | Classification: no lower-paid classification than the worker's **established craft**; no change from last week without a note | `classification.mismatch`, `classification.changed` |
 
 **Which rate applies.** The rates for a project are the NJDOL rate determination in force on the date the contract was **awarded**, including every increase it already lists, from the dates it gives. A determination published later doesn't apply. So the rate for a line is the award-date determination's latest row dated on or before the work date. (This corrects our first brief, which said "the rate in force on the week-ending date".)

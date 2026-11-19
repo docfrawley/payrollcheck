@@ -319,6 +319,35 @@ def test_the_apprentice_ratio_cites_its_filing_rule():
     )
 
 
+def received(submission_no, on):
+    def edited(case):
+        case["submissions"][submission_no - 1]["received_on"] = on
+
+    return edited
+
+
+def lateness(inputs):
+    return [f for f in run("check_timeliness", inputs) if f.rule == "timeliness.late"]
+
+
+def test_a_correction_received_late_doesnt_make_the_payroll_late():
+    """PC-0212's wages were paid on Sep 14 and its first submission was received the
+    next day; its correction, received 17 days after the wages, amends that
+    filing."""
+    late_correction = received(2, "2026-10-01")
+    inputs = records(DEVELOPMENT).inputs("PC-0212", 2, edit=late_correction)
+    assert lateness(inputs) == []
+
+
+def test_a_late_payroll_stays_late_after_a_correction_received_in_time():
+    late_filing = received(1, "2026-09-30")
+    [found] = lateness(records(DEVELOPMENT).inputs("PC-0212", 2, edit=late_filing))
+    assert (found.expected, found.actual) == (
+        "First submission received within 10 days of the wages paid on 2026-09-14",
+        "First submission received 2026-09-30, 16 days after",
+    )
+
+
 def test_late_and_out_of_sequence_payrolls_cite_their_filing_rules():
     late = records(DEVELOPMENT).inputs(
         "PC-0101", edit=certified(wage_payment_date="2026-08-01")

@@ -31,9 +31,9 @@ READABLE_FILE = (stat.S_IFREG | 0o644) << 16
 LEFT_OUT = shutil.ignore_patterns("tests", "__pycache__", ".DS_Store")
 
 
-def build(name: str, group: str, folders: dict[str, str]) -> Path:
-    """A zip of the repo's folders, each at its path in the package, with a dependency
-    group's packages installed beside them for Lambda."""
+def build(name: str, group: str, paths: dict[str, str]) -> Path:
+    """A zip of the repo's folders and files, each at its path in the package, with a
+    dependency group's packages installed beside them for Lambda."""
     folder = BUILD / name
     if folder.exists():
         shutil.rmtree(folder)
@@ -56,9 +56,19 @@ def build(name: str, group: str, folders: dict[str, str]) -> Path:
         ["uv", "pip", "install", "--quiet", "--target", str(folder), *LINUX]
         + ["-r", str(requirements)]
     )
-    for source, target in folders.items():
-        shutil.copytree(REPO / source, folder / target, ignore=LEFT_OUT)
+    for source, target in paths.items():
+        copy(REPO / source, folder / target)
     return zip_folder(folder, BUILD / f"{name}.zip")
+
+
+def copy(source: Path, target: Path) -> None:
+    """Copy a folder, without its tests and caches, or one file, to its place in the
+    package."""
+    if source.is_dir():
+        shutil.copytree(source, target, ignore=LEFT_OUT)
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
 
 
 def zip_folder(folder: Path, path: Path) -> Path:

@@ -19,6 +19,9 @@ def repo(tmp_path, monkeypatch):
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "records.json").write_text("{}")
     (tmp_path / "data" / ".DS_Store").write_bytes(b"finder")
+    (tmp_path / "context").mkdir()
+    (tmp_path / "context" / "filing_dates.py").write_text("")
+    (tmp_path / "context" / "payroll_files.py").write_text("")
     monkeypatch.setattr(packaging, "REPO", tmp_path)
     monkeypatch.setattr(packaging, "BUILD", tmp_path / "build")
     asked: list[list[str]] = []
@@ -45,6 +48,20 @@ def test_a_package_holds_its_folders_and_packages_but_no_tests(repo):
         assert {entry.date_time for entry in archive.infolist()} == {
             packaging.FIXED_TIME
         }
+
+
+def test_a_package_holds_a_single_file_and_not_its_neighbours(repo):
+    wanted = {
+        "backend": "backend",
+        "context/filing_dates.py": "context/filing_dates.py",
+    }
+    path = packaging.build("lambda", "server", wanted)
+    with zipfile.ZipFile(path) as archive:
+        assert archive.namelist() == [
+            "backend/main.py",
+            "context/filing_dates.py",
+            "fastapi/x.py",
+        ]
 
 
 def test_the_packages_are_for_lambdas_linux_and_python(repo):

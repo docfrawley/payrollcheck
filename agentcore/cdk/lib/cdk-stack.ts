@@ -63,14 +63,14 @@ function useRuntimeV2(stack: Stack): void {
   }
 }
 
-// The context layer's files the agent's check tools import: the one rate logic, which uses
-// nothing else.
-const CONTEXT_FILES = ['__init__.py', 'wage_rules.py'];
+// The context layer's files the agent's check tools import: the one rate logic and the filing
+// dates, which use nothing else.
+const CONTEXT_FILES = ['__init__.py', 'wage_rules.py', 'filing_dates.py'];
 
 /**
  * Stage the runtime's code for the zip build: the entry point from runtime/, the agent from
- * agent/ without its tests, the context layer's rate logic its check tools compute with
- * (CONTEXT_FILES), and a pyproject.toml listing pyproject.toml's runtime group at
+ * agent/ without its tests, the context layer's rate logic and filing dates its check tools
+ * compute with (CONTEXT_FILES), and a pyproject.toml listing pyproject.toml's runtime group at
  * uv.lock's versions, since the build installs what a pyproject.toml lists and reads no lock.
  * The folder sits outside agentcore/.cache/<runtime>/, where the build installs the packages.
  */
