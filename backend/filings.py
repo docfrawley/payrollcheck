@@ -1,12 +1,10 @@
 """Filings: the payrolls expected in a period, worked out from each subcontractor's
 engagement window on each project in scope, never a stored list, up to the
 business date, since a week ending after it isn't due yet. A filing with no case
-is missing; a case is late when its first submission was received more than the
-due days after its wage payment date, a correction never making it late; and a
-missing filing is late too once the business date is past its earliest deadline,
-its week ending and the due days, since no wages are paid before the week ends."""
+is missing; a case is late, and a missing filing late too, as
+context.filing_dates decides."""
 
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 from sqlalchemy import Connection, Row, Select, select
@@ -16,6 +14,7 @@ from backend.database import cases, engagements, projects, subcontractors, submi
 from backend.models import Filing, Filings, FilingsRequest, MissingFiling
 from backend.periods import answer_of, resolve
 from backend.scope import Scope, projects_in, queue_cases_in
+from context import filing_dates
 from data.payroll_world.periods import WEEK
 
 # The filing rules' due days, N.J.S.A. 34:11-56.29, which the backend can't read
@@ -51,7 +50,7 @@ def filings(db: Connection, request: FilingsRequest, scope: Scope) -> Filings:
             case = filed.get((window.subcontractor_id, window.project_id, week))
             if case is None:
                 missing.append(missing_filing(window, name, week, today))
-            elif days_after_payment(case) > DUE_DAYS:
+            elif filed_late(case):
                 late.append(filing(case, name))
             else:
                 on_time.append(case.case_id)
@@ -98,9 +97,16 @@ def weeks_in(window: Row[Any], first: date, last: date, today: date) -> list[str
     return found
 
 
-def days_after_payment(case: Row[Any]) -> int:
-    paid = date.fromisoformat(case.wage_payment_date)
-    return (date.fromisoformat(case.received_on) - paid).days
+def paid_and_filed(case: Row[Any]) -> tuple[date, date]:
+    """A case's filing: its first submission's wage payment and received dates."""
+    return date.fromisoformat(case.wage_payment_date), date.fromisoformat(
+        case.received_on
+    )
+
+
+def filed_late(case: Row[Any]) -> bool:
+    paid_on, filed_on = paid_and_filed(case)
+    return filing_dates.late(paid_on, filed_on, DUE_DAYS)
 
 
 def filing(case: Row[Any], name: str) -> Filing:
@@ -112,14 +118,14 @@ def filing(case: Row[Any], name: str) -> Filing:
         week_ending=case.week_ending,
         wage_payment_date=case.wage_payment_date,
         received_on=case.received_on,
-        days_after_payment=days_after_payment(case),
+        days_after_payment=filing_dates.days_after_payment(*paid_and_filed(case)),
     )
 
 
 def missing_filing(
     window: Row[Any], name: str, week: str, today: date
 ) -> MissingFiling:
-    deadline = date.fromisoformat(week) + timedelta(days=DUE_DAYS)
+    deadline = filing_dates.deadline(date.fromisoformat(week), DUE_DAYS)
     return MissingFiling(
         subcontractor_id=window.subcontractor_id,
         subcontractor_name=name,

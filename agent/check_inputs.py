@@ -231,6 +231,11 @@ class Reader:
         return found["due_days"], rules
 
 
+def first_submission(case: dict[str, Any]) -> dict[str, Any]:
+    """The case's first submission, its filing, which a correction never changes."""
+    return min(case["submissions"], key=lambda s: s["submission_no"])
+
+
 def latest_submission(case: dict[str, Any]) -> dict[str, Any]:
     [found] = [
         s
@@ -260,11 +265,13 @@ def read_inputs(
     history: list[dict[str, Any]],
     lookup: Lookup,
 ) -> CheckInputs:
-    """What the checks read for a case's latest submission, from the app's case,
+    """What the checks read for a case's latest submission, and its first's filing
+    dates, from the app's case,
     project, the project's subcontractors and the case's payroll history, and the
     context layer's lookups."""
     submission = latest_submission(case)
     certification = read_certification(submission["certification"])
+    first = first_submission(case)
     week_ending = date.fromisoformat(case["week_ending"])
     [subcontractor] = [
         s for s in subcontractors if s["subcontractor_id"] == case["subcontractor_id"]
@@ -283,7 +290,8 @@ def read_inputs(
         case["case_id"],
         case["project_id"],
         week_ending,
-        date.fromisoformat(submission["received_on"]),
+        read_certification(first["certification"]).wage_payment_date,
+        date.fromisoformat(first["received_on"]),
         certification,
         lines,
         subcontractor["legal_name"],

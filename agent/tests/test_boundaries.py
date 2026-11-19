@@ -250,7 +250,14 @@ def imported_names(path: Path) -> set[str]:
     return names
 
 
-def test_the_check_tools_import_the_rate_logic_and_nothing_else_of_ours():
+# The context layer's modules the agent's runtime ships beside agent/, as
+# agentcore/cdk/lib/cdk-stack.ts's CONTEXT_FILES lists them.
+SHIPPED_CONTEXT = ("context.wage_rules", "context.filing_dates")
+
+
+def test_the_check_tools_import_the_rate_logic_and_filing_dates_and_nothing_else():
+    """Of our own code, the check tools import only the context layer's modules
+    the agent's runtime ships, since nothing else of it is there."""
     ours = ("agent", "context", "data", "backend")
     imported = {
         name
@@ -258,11 +265,12 @@ def test_the_check_tools_import_the_rate_logic_and_nothing_else_of_ours():
         for name in imported_names(path)
         if name.split(".")[0] in ours and not name.startswith("agent.checks")
     }
-    rate_logic = {"context", "context.wage_rules"}
-    assert {name for name in imported if name not in rate_logic} == {
-        name for name in imported if name.startswith("context.wage_rules.")
+    shipped = {"context", *SHIPPED_CONTEXT}
+    inside_them = tuple(f"{module}." for module in SHIPPED_CONTEXT)
+    assert {name for name in imported if name not in shipped} == {
+        name for name in imported if name.startswith(inside_them)
     }
-    assert "context.wage_rules" in imported
+    assert set(SHIPPED_CONTEXT) <= imported
 
 
 def copilot_paths() -> list[str]:

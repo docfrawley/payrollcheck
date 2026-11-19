@@ -40,7 +40,7 @@ A term with a PayrollCheck counterpart is renamed (above; also `UNDERCOVER_*` �
 
 **Engagement window** — The first and last week a subcontractor is on a project. Every week in it needs a filing, a "No Work Week" filing (a submission with no lines) included.
 
-**Expected filing** — A (subcontractor, project, week) inside an engagement window. Computed, never stored. **Missing** = expected with no case; **late** = filed more than 10 days after the wage payment date, or missing past that deadline.
+**Expected filing** — A (subcontractor, project, week) inside an engagement window. Computed, never stored. **Missing** = expected with no case; **late** = filed, its first submission received, more than 10 days after the wage payment date, or missing past that deadline. A correction never makes a payroll late, nor a late one on time (`context/filing_dates.py`).
 
 **Established craft** — A worker's craft in the GC's records, from their first payroll on the job or the apprentice registry. Paying them under a lower-paid classification is a misclassification.
 
