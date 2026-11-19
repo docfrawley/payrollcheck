@@ -156,6 +156,14 @@ def test_an_addition_that_doesnt_fit_its_rule_is_refused(client, changes, messag
     assert everything_recorded() == before
 
 
+@pytest.mark.parametrize("rule", ["sequence.gap", "timeliness.late"])
+def test_a_reviewer_may_add_a_rule_its_check_alone_decides(client, rule):
+    the_exception(client)
+    added = add(client, rule=rule, worker_id=None, line_no=None, shortfall_cents=None)
+    assert added.status_code == 200
+    assert rule in [e["rule"] for e in added.json()["exceptions"]]
+
+
 def test_a_blank_reason_and_a_rule_outside_the_catalogue_are_refused(client):
     exception_id = the_exception(client)
     assert dismiss(client, exception_id, reason="  ").status_code == 422

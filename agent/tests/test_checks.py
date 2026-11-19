@@ -9,6 +9,7 @@ from agent.check_inputs import LookupRefused, read_inputs
 from agent.checks import CHECKS
 from agent.checks.findings import (
     CHANGED,
+    CHECK_DECIDES,
     PROJECT_MISMATCH,
     RULES,
     Finding,
@@ -65,6 +66,10 @@ def test_the_checks_names_and_rule_codes_are_the_backends():
     # The check tools can't import the backend, so they name these themselves.
     assert tuple(name for name, _ in CHECKS) == rule_codes.CHECKS
     assert tuple(rule_codes.RULES) == RULES
+    assert (
+        tuple(code for code, rule in rule_codes.RULES.items() if rule.check_decides)
+        == CHECK_DECIDES
+    )
 
 
 @pytest.mark.parametrize("name", ["development", "held_out"])

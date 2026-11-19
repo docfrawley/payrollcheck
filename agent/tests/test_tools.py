@@ -1,8 +1,9 @@
+from agent.checks.findings import RULES
 from agent.context_tools import RateQuestion
 from agent.direct import CONTEXT_LAYER
 from agent.json_text import as_json
 from agent.mcp_tools import McpTools
-from agent.tools import APP_TOOLS, CONTEXT_TOOLS, PAYROLL_TOOLS
+from agent.tools import APP_TOOLS, CONTEXT_TOOLS, PAYROLL_TOOLS, AddedException
 
 
 def operations(client):
@@ -68,3 +69,9 @@ def test_the_agent_writes_json_with_characters_as_themselves():
     assert as_json(found) == (
         '{"citation": "N.J.S.A. 34:11-56.29 §(b)", "note": "the sub’s note"}'
     )
+
+
+def test_the_report_offers_only_the_rules_the_agent_may_add():
+    rule = AddedException.model_fields["rule"].description or ""
+    offered = rule.removeprefix("One of ").split(", ")
+    assert offered == [r for r in RULES if r not in ("timeliness.late", "sequence.gap")]

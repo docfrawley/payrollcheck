@@ -17,7 +17,8 @@ from sqlalchemy import (
     update,
 )
 
-from backend.database import exceptions, now, overrides, reviewers, submissions
+from backend.database import exceptions, now, overrides, reviewers
+from backend.lookups import workers_by_line
 from backend.models import (
     CorrectedException,
     ExceptionSource,
@@ -27,7 +28,7 @@ from backend.models import (
     OverrideKind,
     Reviewer,
 )
-from backend.rule_codes import RULES
+from backend.rule_codes import RULES, reviewers_refusal
 from backend.scope import Scope
 
 EXCEPTION_NOT_FOUND = (
@@ -35,11 +36,6 @@ EXCEPTION_NOT_FOUND = (
 )
 NOT_OPEN = "Exception {exception_id} isn't open, so it can't be dismissed"
 NOT_DISMISSED = "Exception {exception_id} isn't dismissed, so it can't be restored"
-NEEDS_A_WORKER = "{rule} is found on a worker's line: give the worker and the line"
-NOT_THEIR_LINE = "Line {line_no} of the latest submission isn't {worker_id}'s"
-NO_WORKER = "{rule} is about the whole payroll: give no worker or line"
-NEEDS_A_SHORTFALL = "{rule} carries money: give a shortfall above $0.00"
-NO_SHORTFALL = "{rule} carries no money: give no shortfall"
 
 
 class Overriding(NamedTuple):
@@ -122,52 +118,13 @@ def restore(db: Connection, by: Overriding, exception_id: int, reason: str) -> N
     move(db, by, exception_id, OverrideKind.RESTORED, reason)
 
 
-def refuse_where_it_cant_be(
-    db: Connection, case: RowMapping, request: NewException
-) -> None:
-    """A 422 for an exception whose worker and line don't fit its rule or the
-    latest submission: a worker's rule needs the worker on that line, and a rule
-    about the whole payroll takes neither."""
-    rule = request.rule
-    if not RULES[rule].worker:
-        if request.worker_id is not None or request.line_no is not None:
-            raise HTTPException(422, NO_WORKER.format(rule=rule))
-        return
-    if request.worker_id is None or request.line_no is None:
-        raise HTTPException(422, NEEDS_A_WORKER.format(rule=rule))
-    lines = db.execute(
-        select(submissions.c.lines).where(
-            submissions.c.case_id == case["case_id"],
-            submissions.c.submission_no == case["latest_submission_no"],
-        )
-    ).scalar_one()
-    if not (
-        1 <= request.line_no <= len(lines)
-        and lines[request.line_no - 1]["worker_id"] == request.worker_id
-    ):
-        message = NOT_THEIR_LINE.format(
-            line_no=request.line_no, worker_id=request.worker_id
-        )
-        raise HTTPException(422, message)
-
-
-def refuse_the_wrong_shortfall(request: NewException) -> None:
-    """A 422 for a rule that carries money without a shortfall above zero, or one
-    that carries none with a shortfall."""
-    rule = request.rule
-    shortfall = request.shortfall_cents
-    if RULES[rule].money and (shortfall is None or shortfall <= 0):
-        raise HTTPException(422, NEEDS_A_SHORTFALL.format(rule=rule))
-    if not RULES[rule].money and shortfall is not None:
-        raise HTTPException(422, NO_SHORTFALL.format(rule=rule))
-
-
 def add(db: Connection, by: Overriding, request: NewException) -> None:
     """Add an open exception to the latest submission, raised by the reviewer with
     its severity and citation from the catalogue, and log it."""
     case = by.case
-    refuse_where_it_cant_be(db, case, request)
-    refuse_the_wrong_shortfall(request)
+    refused = reviewers_refusal(request, workers_by_line(db, case))
+    if refused:
+        raise HTTPException(422, refused)
     rule = RULES[request.rule]
     added = db.execute(
         insert(exceptions)

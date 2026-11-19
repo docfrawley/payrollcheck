@@ -20,7 +20,7 @@ from agent.app_operations import (
     LIST_SUBCONTRACTORS,
     RECORD_EXCEPTION_REPORT,
 )
-from agent.checks.findings import RULES
+from agent.checks.findings import CHECK_DECIDES, RULES
 from agent.context_tools import CONTEXT_TOOLS
 from agent.json_text import as_json
 from agent.routes import Route, Target
@@ -98,7 +98,9 @@ class Dismissal(BaseModel):
 class AddedException(BaseModel):
     """A breach no check found, which carries no money."""
 
-    rule: str = Field(description=f"One of {', '.join(RULES)}")
+    rule: str = Field(
+        description=f"One of {', '.join(r for r in RULES if r not in CHECK_DECIDES)}"
+    )
     worker_id: str | None = Field(description="None for a rule about the payroll")
     line_no: int | None
     expected: str
