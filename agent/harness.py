@@ -38,7 +38,7 @@ from agent.app_operations import RECORD_CHECK_FINDINGS, RECORD_SCREENING_FLAG
 from agent.checkpoints import Pool
 from agent.checks import CHECKS
 from agent.checks.findings import Parameters
-from agent.connection import Refused
+from agent.connection import Refused, Throttled
 from agent.console import describe
 from agent.json_text import as_json
 from agent.openrouter import chat_model, usage_of
@@ -56,12 +56,13 @@ Start = Messages | None
 # Tags for a case's trace beside its run's, such as the round it works in.
 Tags = tuple[str, ...]
 
-# The model's errors that pass with time: a case that hits one is left in progress,
-# with its progress saved, to carry on later.
-TRANSIENT = (ModelRateLimitError, ModelTimeoutError)
+# The errors that pass with time, the model's and the backend's: a case that hits one
+# is left in progress, with its progress saved, to carry on later.
+TRANSIENT = (ModelRateLimitError, ModelTimeoutError, Throttled)
 
 CASE_MODEL_CALLS = 30
 NO_REPORT = "The agent finished without recording an exception report"
+ALREADY_WORKED = "it was worked before a later request was turned away"
 WORK_CASE = "Work case"
 CARRY_ON = "Carry on"
 SCREEN = "screen"
@@ -110,7 +111,8 @@ def model(named: dict[str, Any]) -> ChatOpenAI:
 
 def refusal(error: Exception) -> str:
     """Show the model why a tool was refused, by the app, the Gateway or the tool's
-    own checks, and let any other error stop the agent."""
+    own checks, and let any other error stop the agent, a throttled request among
+    them, which the dispatcher then carries the case on from."""
     if isinstance(error, Refused):
         return f"Refused with status {error}"
     if isinstance(error, GatewayRefused):
@@ -393,8 +395,9 @@ def run_payroll_graph(
     graph: PayrollGraph, start: Start, config: RunnableConfig, context: PayrollContext
 ) -> str | None:
     """Run the payroll graph on the case's thread, saving each step, and say what went
-    wrong, if anything. A rate limit or a timeout is raised again, leaving the case
-    in progress with its progress saved, to carry on later."""
+    wrong, if anything. A rate limit, a timeout or a throttled request is raised
+    again, leaving the case in progress with its progress saved, to carry on
+    later."""
     try:
         as_root_run(graph.invoke, start, config, context=context, durability="sync")
     except TRANSIENT:
@@ -472,8 +475,12 @@ def carry_on(
 def work_in_run(case_id: str, run_id: str, new_agent: NewAgent, tags: Tags = ()) -> str:
     """Work one case in a run with a payroll agent of its own, carrying it on if it
     is in progress, as one a stopped run left is, or starting it if it is Received,
-    and report how it ended, with any tags for its trace beside the run's."""
-    agent = new_agent()
-    if api.get_case(case_id)["status"] == app_terms.Status.IN_PROGRESS:
-        return carry_on(case_id, run_id, agent, tags)
-    return work_case(case_id, run_id, agent, tags)
+    and report how it ended, with any tags for its trace beside the run's. A case
+    already worked, as one is when a request after its report was throttled and
+    the try comes round again, is reported as it stands."""
+    case = api.get_case(case_id)
+    if case["status"] == app_terms.Status.IN_PROGRESS:
+        return carry_on(case_id, run_id, new_agent(), tags)
+    if case["status"] == app_terms.Status.RECEIVED:
+        return work_case(case_id, run_id, new_agent(), tags)
+    return report(case, ALREADY_WORKED)
