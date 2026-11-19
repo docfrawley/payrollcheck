@@ -15,7 +15,7 @@ from backend.business_date import business_date
 from backend.database import cases, engagements, projects, subcontractors, submissions
 from backend.models import Filing, Filings, FilingsRequest, MissingFiling
 from backend.periods import answer_of, resolve
-from backend.scope import Scope, cases_in, projects_in
+from backend.scope import Scope, projects_in, queue_cases_in
 from data.payroll_world.periods import WEEK
 
 # The filing rules' due days, N.J.S.A. 34:11-56.29, which the backend can't read
@@ -78,8 +78,7 @@ def first_submissions(first: date, last: date, scope: Scope) -> Select:
         )
         .join(submissions, submissions.c.case_id == cases.c.case_id)
         .where(
-            cases.c.evaluation_id.is_(None),
-            cases_in(scope),
+            queue_cases_in(scope),
             submissions.c.submission_no == 1,
             cases.c.week_ending.between(first.isoformat(), last.isoformat()),
         )

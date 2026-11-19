@@ -20,7 +20,7 @@ from backend.models import (
 from backend.open_exceptions import open_on_latest
 from backend.periods import answer_of, resolve
 from backend.rule_codes import CLASSIFICATION, RULES
-from backend.scope import Scope, cases_in
+from backend.scope import Scope, queue_cases_in
 from data.payroll_world.periods import WEEK
 
 CLASSIFICATION_RULES = [
@@ -102,8 +102,7 @@ def latest_payrolls(
             subcontractors.c.subcontractor_id == cases.c.subcontractor_id,
         )
         .where(
-            cases.c.evaluation_id.is_(None),
-            cases_in(scope),
+            queue_cases_in(scope),
             cases.c.week_ending.between(first.isoformat(), last.isoformat()),
         )
         .order_by(cases.c.case_id)

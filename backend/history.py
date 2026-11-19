@@ -8,6 +8,7 @@ from sqlalchemy import Connection, RowMapping, select
 
 from backend.database import cases, labelled_cases, runs, submissions
 from backend.models import LABELLED_SET, PayrollHistory, PayrollOfRecord
+from backend.scope import EVERYTHING, queue_cases_in
 
 
 def of_record(
@@ -31,7 +32,7 @@ def from_the_queue(db: Connection, case: RowMapping) -> list[PayrollOfRecord]:
             & (submissions.c.submission_no == cases.c.latest_submission_no),
         )
         .where(
-            cases.c.evaluation_id.is_(None),
+            queue_cases_in(EVERYTHING),
             cases.c.subcontractor_id == case["subcontractor_id"],
             cases.c.project_id == case["project_id"],
             cases.c.week_ending < case["week_ending"],

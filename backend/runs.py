@@ -62,7 +62,14 @@ from backend.round_state import (
     tried_version,
     why_no_case_starts,
 )
-from backend.scope import EVERYTHING, Scope, Scoped, ScopedOrAgent, cases_in
+from backend.scope import (
+    EVERYTHING,
+    Scope,
+    Scoped,
+    ScopedOrAgent,
+    cases_and_copies_in,
+    queue_cases_in,
+)
 from backend.scoreboard import (
     cases_of,
     expected_labels,
@@ -92,7 +99,7 @@ def find_run(db: Connection, run_id: str, scope: Scope) -> Run:
         db.execute(
             select(run_cases.c.case_id)
             .join(cases, cases.c.case_id == run_cases.c.case_id)
-            .where(run_cases.c.run_id == run_id, cases_in(scope))
+            .where(run_cases.c.run_id == run_id, cases_and_copies_in(scope))
         ).scalars()
     )
     seen = [case for case in worked if case["case_id"] in in_scope]
@@ -311,7 +318,9 @@ def record_run_cases(run_id: str, request: RunCasesRequest, db: Database) -> Run
     """Record the cases a running dispatch works, in order."""
     if running_run(db, run_id)["kind"] != RunKind.DISPATCH:
         raise HTTPException(409, f"Run {run_id} is not a dispatch")
-    known = select(cases.c.case_id).where(cases.c.case_id.in_(request.case_ids))
+    known = select(cases.c.case_id).where(
+        cases.c.case_id.in_(request.case_ids), queue_cases_in(EVERYTHING)
+    )
     missing = set(request.case_ids) - set(db.execute(known).scalars())
     if missing:
         raise HTTPException(404, CASE_NOT_FOUND.format(case_id=min(missing)))

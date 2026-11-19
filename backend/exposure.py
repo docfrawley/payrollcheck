@@ -20,7 +20,7 @@ from backend.models import (
 from backend.money import cents_in_dollars
 from backend.open_exceptions import open_on_latest
 from backend.periods import answer_of, resolve
-from backend.scope import Scope, cases_in
+from backend.scope import Scope, queue_cases_in
 
 # The statuses whose open exceptions are still outstanding.
 OUTSTANDING = (Status.AWAITING_REVIEW, Status.RETURNED_TO_SUB)
@@ -29,9 +29,7 @@ OUTSTANDING = (Status.AWAITING_REVIEW, Status.RETURNED_TO_SUB)
 def exposure(db: Connection, request: ExposureRequest, scope: Scope) -> Exposure:
     """The flagged and outstanding shortfalls for the request, in two queries."""
     period = resolve(business_date(db), request.period) if request.period else None
-    chosen = select(cases.c.case_id).where(
-        cases.c.evaluation_id.is_(None), cases_in(scope)
-    )
+    chosen = select(cases.c.case_id).where(queue_cases_in(scope))
     if request.project_id is not None:
         chosen = chosen.where(cases.c.project_id == request.project_id)
     if request.subcontractor_id is not None:

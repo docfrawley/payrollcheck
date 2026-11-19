@@ -8,16 +8,18 @@ import re
 
 import pytest
 from fastapi import FastAPI
-from sqlalchemy import insert
+from sqlalchemy import ColumnElement, insert, select
 
-from backend.database import engine, project_reviewers
+from backend.database import cases, engine, project_reviewers
+from backend.dependencies import reviewer_with
 from backend.lookups import CASE_NOT_FOUND, PROJECT_NOT_FOUND, SUBCONTRACTOR_NOT_FOUND
 from backend.main import app
+from backend.scope import EVERYTHING, cases_and_copies_in, queue_cases_in, scope_of
 from backend.tests.case_requests import awaiting_review
 from backend.tests.copilot_reads import find_cases
 from backend.tests.gates import AGENT_OPERATIONS, REVIEWER_OPERATIONS
-from backend.tests.run_requests import fail_run
-from backend.tests.sign_in import DANA, MARCUS, PRIYA, signed_in
+from backend.tests.run_requests import create_dispatch, fail_run, record_cases
+from backend.tests.sign_in import DANA, MARCUS, PRIYA, signed_in, token
 
 # The ids scope covers, each with one outside Priya's scope (on Marcus's Lincoln
 # School renovation, or held out) and the not-found message of an id that doesn't
@@ -172,6 +174,37 @@ def test_every_reviewer_opens_an_evaluations_copies_kept_out_of_the_queue(
         c["case_id"] for c in client.get("/api/cases", headers=signed_in(PRIYA)).json()
     }
     assert queue.isdisjoint(copies)
+
+
+def selected(where: ColumnElement[bool]) -> set[str]:
+    with engine().connect() as db:
+        return set(db.execute(select(cases.c.case_id).where(where)).scalars())
+
+
+def test_the_queue_never_holds_a_copy_and_cases_and_copies_hold_every_one(
+    client, agent_calls
+):
+    """Every scope's queue, the agent's included, leaves the copies out; reading
+    cases and copies holds every copy in every scope."""
+    copies = {case["case_id"] for case in copies_of(client, "tiny")}
+    with engine().connect() as db:
+        scopes = [EVERYTHING] + [
+            scope_of(db, reviewer_with(token(email), db))
+            for email in (PRIYA, MARCUS, DANA)
+        ]
+    for scope in scopes:
+        queue = selected(queue_cases_in(scope))
+        assert queue
+        assert queue.isdisjoint(copies)
+        assert selected(cases_and_copies_in(scope)) == queue | copies
+
+
+def test_a_dispatch_cant_record_an_evaluations_copy(client, agent_calls):
+    copy_id = copies_of(client, "tiny")[0]["case_id"]
+    run_id = create_dispatch(client).json()["run_id"]
+    refused = record_cases(client, run_id, "PC-1201", copy_id)
+    assert refused.status_code == 404
+    assert refused.json()["detail"] == CASE_NOT_FOUND.format(case_id=copy_id)
 
 
 def test_the_agents_key_reads_any_project_held_out_ones_too(client):
