@@ -38,11 +38,11 @@ Leaves: the project with its schema, the seed and three Auth users; four setting
 
 ## Step 2: Lambda
 
-Needs: step 1's settings in `.env`, with `PAYROLLCHECK_API_KEY`; the AWS CLI profile.
+Needs: step 1's settings in `.env`, with `PAYROLLCHECK_API_KEY` and `OPENROUTER_API_KEY`; the AWS CLI profile.
 
 - [ ] **By code: `uv run --env-file .env -m deploy lambda`.** It builds the dashboard with `npm run build`, packages the app (`backend/`, `data/` and `dashboard/dist/`, with the `server` group's packages for Lambda's Linux and Python 3.12) and the context layer (`context/`, with the `context` group's), and deploys each:
   - It needs `VITE_SUPABASE_PUBLISHABLE_KEY` as well, which the build bakes into the dashboard.
-  - `payrollcheck-app`: the backend and the dashboard, `backend.main.handler`, 30 seconds and 1024 MB, behind a **public** Function URL. Its environment is the database on Supabase's transaction pooler (port 6543), `VITE_SUPABASE_URL` and `PAYROLLCHECK_API_KEY`, and from step 7 the two runtimes' ARNs, which a later run of this step keeps.
+  - `payrollcheck-app`: the backend and the dashboard, `backend.main.handler`, 30 seconds and 1024 MB, behind a **public** Function URL. Its environment is the database on Supabase's transaction pooler (port 6543), `VITE_SUPABASE_URL`, `PAYROLLCHECK_API_KEY` and `OPENROUTER_API_KEY`, which the judge grades an evaluation's notices with, and from step 7 the two runtimes' ARNs, which a later run of this step keeps.
   - `payrollcheck-context`: the context layer, `context.server.handler`, 30 seconds and 512 MB, behind a Function URL with **`AWS_IAM`** auth, so only callers allowed to invoke it, the Gateway among them, can reach it.
   - Each has its log group, `/aws/lambda/<function>`, kept for 7 days, and its role, `<function>-role`, which may write to that log group and do nothing else.
 

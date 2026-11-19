@@ -190,14 +190,16 @@ def allow_the_public(aws: Aws) -> None:
 
 def app_environment(aws: Aws) -> dict[str, str]:
     """The app's environment: the database on the transaction pooler, Supabase's
-    address and the agent's key, and the runtimes' ARNs when it already has them."""
+    address, the agent's key and OpenRouter's, which the judge grades notices with,
+    and the runtimes' ARNs when it already has them."""
     found = settings.required(
-        settings.DATABASE_URL, settings.SUPABASE_URL, settings.API_KEY
+        settings.DATABASE_URL,
+        settings.SUPABASE_URL,
+        settings.API_KEY,
+        settings.OPENROUTER_API_KEY,
     )
-    environment = {
+    environment = found | {
         settings.DATABASE_URL: settings.pooled(found[settings.DATABASE_URL]),
-        settings.SUPABASE_URL: found[settings.SUPABASE_URL],
-        settings.API_KEY: found[settings.API_KEY],
     }
     functions = aws.client("lambda")
     try:

@@ -5,6 +5,7 @@ import time
 from datetime import timedelta
 from typing import Annotated, Any, TypedDict, cast
 
+import httpx
 import pytest
 from langchain_core.exceptions import ModelRateLimitError, ModelTimeoutError
 from langgraph.checkpoint.memory import InMemorySaver
@@ -12,7 +13,7 @@ from langgraph.errors import NodeError
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, Send
 
-from agent import api, dispatcher, harness
+from agent import api, connection, dispatcher, harness
 from agent.tests.dispatching import dispatch
 from agent.tests.failures import fail_once
 from agent.tests.queue_setup import leave_received
@@ -106,9 +107,64 @@ def test_a_rate_limit_waits_and_carries_the_case_on(client):
     assert [w["run_id"] for w in work_times_of("PC-1205")] == [run_id, run_id]
 
 
+# Lambda's answer when the account has as many functions running as it allows.
+LAMBDA_THROTTLE = httpx.Response(429, json={"Message": "Rate Exceeded."})
+
+
+def throttle_once(monkeypatch, wanted):
+    """Have Lambda turn away the first request wanted picks out, by its path and
+    the paths sent before it, and return the paths it turned away."""
+    send = connection.backend.request
+    sent: list[str] = []
+    turned_away: list[str] = []
+
+    def throttling(method, path, **request):
+        if not turned_away and wanted(path, sent):
+            turned_away.append(path)
+            return LAMBDA_THROTTLE
+        sent.append(path)
+        return send(method, path, **request)
+
+    monkeypatch.setattr(connection.backend, "request", throttling)
+    return turned_away
+
+
+def test_a_throttled_request_waits_and_carries_the_case_on(client, monkeypatch):
+    """A request Lambda turns away, here the screening's step, passes with time,
+    as a rate limit does, rather than leaving the case in progress."""
+    leave_received("PC-1205")
+    turned_away = throttle_once(monkeypatch, lambda path, _: path.endswith("/steps"))
+    assert dispatch(stub(*work())) == ["PC-1205  clean, awaiting review"]
+    assert turned_away == ["/cases/PC-1205/steps"]
+    case = case_of(client, "PC-1205")
+    assert (case["status"], case["attempts"]) == ("awaiting_review", 1)
+
+
+def test_a_case_throttled_after_its_report_is_reported_as_it_stands(
+    client, monkeypatch
+):
+    """The step after the report is turned away once the case is awaiting review:
+    the try that comes round again reports the case, and starts nothing."""
+    leave_received("PC-1205")
+    reported = "/cases/PC-1205/report"
+
+    def after_the_report(path, sent):
+        return path.endswith("/steps") and reported in sent
+
+    turned_away = throttle_once(monkeypatch, after_the_report)
+    assert dispatch(stub(*work())) == ["PC-1205  clean, awaiting review"]
+    assert turned_away == ["/cases/PC-1205/steps"]
+    case = case_of(client, "PC-1205")
+    assert (case["status"], case["attempts"]) == ("awaiting_review", 1)
+
+
 @pytest.mark.parametrize(
     "error",
-    [ModelRateLimitError("429 Too Many Requests"), ModelTimeoutError("Timed out")],
+    [
+        ModelRateLimitError("429 Too Many Requests"),
+        ModelTimeoutError("Timed out"),
+        connection.Throttled('{"Message":"Rate Exceeded."}'),
+    ],
 )
 def test_a_case_still_failing_after_its_tries_is_left_in_progress(client, error):
     leave_received("PC-1205", "PC-1206")

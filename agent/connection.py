@@ -1,7 +1,7 @@
 """The connection to the PayrollCheck backend: its address, the one HTTP client, the
-agent's API key, and how a request is sent and refused. The payroll agent's API and the
-improver's API send their requests through it with the agent's key, and the
-Copilot's with a reviewer's sign-in."""
+agent's API key, and how a request is sent, refused, or turned away for now. The
+payroll agent's API and the improver's API send their requests through it with the
+agent's key, and the Copilot's with a reviewer's sign-in."""
 
 import os
 from typing import Any
@@ -20,6 +20,11 @@ backend = httpx.Client(
     timeout=30,
     transport=httpx.HTTPTransport(retries=5),
 )
+
+
+class Throttled(Exception):
+    """The backend turned a request away for now, as Lambda does when the account
+    has as many functions running as it allows. It passes with time."""
 
 
 class Refused(Exception):
@@ -45,11 +50,23 @@ def api_key() -> str:
 
 
 def send(method: str, path: str, headers: dict[str, str], **request: Any) -> Any:
-    """Send one request to the backend and return its JSON, or raise Refused."""
+    """Send one request to the backend and return its JSON, or raise Throttled or
+    Refused."""
     response = backend.request(method, path, headers=headers, **request)
+    if response.status_code == httpx.codes.TOO_MANY_REQUESTS:
+        raise Throttled(response.text)
     if response.is_error:
-        raise Refused(response.status_code, response.json()["detail"])
+        raise Refused(response.status_code, reason(response))
     return response.json()
+
+
+def reason(response: httpx.Response) -> str:
+    """Why the backend refused a request: its detail, or, from Lambda or anything
+    else in front of the backend, the body as it came."""
+    try:
+        return response.json()["detail"]
+    except (ValueError, KeyError, TypeError):
+        return response.text
 
 
 def call(method: str, path: str, **request: Any) -> Any:

@@ -24,8 +24,9 @@ WORK_CASE = "work_case"
 FINISH_RUN = "finish_run"
 TO_WORK = (app_terms.Status.RECEIVED, app_terms.Status.IN_PROGRESS)
 
-# A rate limit or a timeout waits about 10 seconds, then about 20, on top of the
-# model client's own retries, and carries the case on from its last saved step.
+# A rate limit, a timeout or a throttled request waits about 10 seconds, then about
+# 20, on top of the model client's own retries, and carries the case on from its last
+# saved step.
 RETRY = RetryPolicy(max_attempts=3, initial_interval=10, retry_on=harness.TRANSIENT)
 
 
@@ -95,9 +96,9 @@ def hand_over(case_id: str, context: DispatchContext) -> str:
 
 
 def work_case(state: CaseToWork, runtime: Runtime[DispatchContext]) -> dict[str, Any]:
-    """Work one case. A rate limit or a timeout goes to the RetryPolicy, which waits
-    and carries the case on, until the last try leaves it in progress. No error
-    stops the dispatch."""
+    """Work one case. A rate limit, a timeout or a throttled request goes to the
+    RetryPolicy, which waits and carries the case on, until the last try leaves it
+    in progress. No error stops the dispatch."""
     case_id = state["case_id"]
     try:
         report = hand_over(case_id, runtime.context)

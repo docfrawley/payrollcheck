@@ -3,7 +3,7 @@ import json
 import pytest
 from botocore.stub import ANY
 
-from deploy import commands, functions, names, packaging
+from deploy import commands, functions, names, packaging, settings
 from deploy.tests.conftest import ACCOUNT
 
 ROLE_ARN = f"arn:aws:iam::{ACCOUNT}:role/{names.APP_ROLE}"
@@ -267,6 +267,7 @@ def app_settings(monkeypatch):
     )
     monkeypatch.setenv("VITE_SUPABASE_URL", "https://ref.supabase.co")
     monkeypatch.setenv("PAYROLLCHECK_API_KEY", "the-key")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "the-judges-key")
 
 
 def test_the_apps_environment_is_on_the_transaction_pooler(aws, stub, app_settings):
@@ -277,7 +278,14 @@ def test_the_apps_environment_is_on_the_transaction_pooler(aws, stub, app_settin
         "DATABASE_URL": "postgresql://postgres.ref:pw@pooler.supabase.com:6543/postgres",
         "VITE_SUPABASE_URL": "https://ref.supabase.co",
         "PAYROLLCHECK_API_KEY": "the-key",
+        "OPENROUTER_API_KEY": "the-judges-key",
     }
+
+
+def test_the_app_needs_openrouters_key_for_the_judge(aws, app_settings, monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY")
+    with pytest.raises(settings.MissingSettings, match="OPENROUTER_API_KEY"):
+        functions.app_environment(aws)
 
 
 def test_the_apps_environment_keeps_the_runtimes(aws, stub, app_settings):
