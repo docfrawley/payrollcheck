@@ -10,7 +10,7 @@ PayrollCheck reviews the certified payrolls that subcontractors file on New Jers
 
 ## Status
 
-PayrollCheck was built in seven stages, listed in [docs/ROADMAP.md](docs/ROADMAP.md), from Ed Donner's UnderCover, a claims platform for a fictional travel insurer. [docs/STATUS.md](docs/STATUS.md) says what each built. It runs on the laptop, and in production on AWS AgentCore: the backend and dashboard, and the context layer, on Lambda, the payroll agent and the Copilot on AgentCore Runtime, their tools through an AgentCore Gateway whose Policy allows each caller only its own tools, and the Copilot's memory in AgentCore Memory.
+PayrollCheck was built in seven stages, listed in [docs/ROADMAP.md](docs/ROADMAP.md), from Ed Donner's UnderCover, a claims platform for a fictional travel insurer. [docs/STATUS.md](docs/STATUS.md) says what each built. It runs on the laptop, and the runbook in `deploy/` deploys it to AWS AgentCore, where it ran until it was torn down on 2026-11-20: the backend and dashboard, and the context layer, on Lambda, the payroll agent and the Copilot on AgentCore Runtime, their tools through an AgentCore Gateway whose Policy allows each caller only its own tools, and the Copilot's memory in AgentCore Memory.
 
 ## Running it
 

@@ -140,7 +140,7 @@ Needs: steps 1 to 7.
 
 Only when you want PayrollCheck off AWS.
 
-- [ ] **By code: `uv run --env-file .env -m deploy teardown`.** It lists what it would delete: everything named and tagged for PayrollCheck, and anything named for it without the tag, which it leaves.
+- [ ] **By code: `uv run --env-file .env -m deploy teardown`.** It lists what it would delete: everything named and tagged for PayrollCheck (the runtimes' stack by the AgentCore CLI's tag, `agentcore:project-name`), and anything named for it without the tag, which it leaves.
 - [ ] **By code: `uv run --env-file .env -m deploy teardown --yes`.** It deletes them in the order AWS needs: the stack with both runtimes and the three credentials `agentcore deploy` made, as Ed's teardown did, with `agentcore remove all --yes` and then `agentcore deploy --yes`, putting `agentcore/agentcore.json` back from git afterwards, which discards any edit to it you haven't committed; the Gateway after its targets, the policy engine after its permits, the credential provider, the Memory, the two functions with their log groups, and the three roles. It leaves, and says how to remove by hand:
   - the runtimes' own log groups under `/aws/bedrock-agentcore/runtimes/`, which Runtime made
   - the CDK bootstrap, `CDKToolkit` and its `cdk-*` bucket, which every AgentCore project in the account shares
