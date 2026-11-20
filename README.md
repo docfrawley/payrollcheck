@@ -4,6 +4,10 @@ PayrollCheck reviews the certified payrolls that subcontractors file on New Jers
 
 `docs/SPEC.md` has the whole product, and `CONTEXT.md` the words it uses.
 
+![A case the payroll agent checked: a worker paid as a Laborer whose established craft is Ironworker, $916.00 short, with the rate determination it cites](docs/images/case.png)
+
+![The case queue, with the latest dispatch of payroll agents and the PayrollCheck Copilot](docs/images/queue.png)
+
 ## Status
 
 PayrollCheck was built in seven stages, listed in [docs/ROADMAP.md](docs/ROADMAP.md), from Ed Donner's UnderCover, a claims platform for a fictional travel insurer. [docs/STATUS.md](docs/STATUS.md) says what each built. It runs on the laptop, and in production on AWS AgentCore: the backend and dashboard, and the context layer, on Lambda, the payroll agent and the Copilot on AgentCore Runtime, their tools through an AgentCore Gateway whose Policy allows each caller only its own tools, and the Copilot's memory in AgentCore Memory.
