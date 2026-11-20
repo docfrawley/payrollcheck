@@ -54,7 +54,7 @@ Statuses: **Received** → **In progress** → **Awaiting review** → **Accepte
 
 **Shortfall** — The dollars underpaid on an exception, in integer cents, always computed by a check tool, never by the model.
 
-**Check tool** — Deterministic code for one check (e.g. `check_rates`, `check_overtime`), returning **candidate findings** with expected, actual, shortfall and citation filled in. The payroll agent runs them in order, judges fuzzy cases, may dismiss a candidate with a reason, may add non-money exceptions, and writes the notice — but can never create an exception with a shortfall that no tool found, nor add one under a rule its check alone decides (`timeliness.late`, `sequence.gap`): those come only from the check's finding. A reviewer may still add either as an override. Tools read tunable config parameters (e.g. a rounding tolerance) that the improver may propose changing.
+**Check tool** — Deterministic code for one check (e.g. `check_rates`, `check_overtime`), returning **candidate findings** with expected, actual, shortfall and citation filled in. The payroll agent runs them in order, judges fuzzy cases, may dismiss a candidate with a reason, may add non-money exceptions, and writes the notice — but can never create an exception with a shortfall that no tool found, nor add one under a rule its check alone decides (`timeliness.late`, `sequence.gap`): those come only from the check's finding, and the agent raises every one the check finds, never dismissing it. A reviewer may still add or dismiss either as an override. Tools read tunable config parameters (e.g. a rounding tolerance) that the improver may propose changing.
 
 ## Synthetic data and scoring
 

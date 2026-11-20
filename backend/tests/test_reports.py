@@ -252,6 +252,26 @@ def test_a_rule_its_check_alone_decides_cant_be_added(client, candidates, rule, 
     assert everything_recorded() == before
 
 
+@pytest.mark.parametrize("rule", ["sequence.gap", "timeliness.late"])
+def test_a_finding_its_check_alone_decides_cant_be_dismissed(client, rule):
+    start(client, CASE)
+    whole_payroll = {"worker_id": None, "line_no": None, "shortfall_cents": None}
+    found = finding(rule) | whole_payroll
+    [gap] = record_findings(client, CASE, "check_timeliness", [found]).json()
+    run_the_other_checks(client, CASE)
+    before = everything_recorded()
+    dismissal = {"candidate_id": gap["candidate_id"], "reason": "It looks fine"}
+    refused = report(client, CASE, dismissed=[dismissal])
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == (
+        f"Candidate {gap['candidate_id']}, {rule}, is decided by check_timeliness "
+        "alone: raise it, and a reviewer may dismiss it"
+    )
+    assert everything_recorded() == before
+    raised = report(client, CASE, raised=[gap["candidate_id"]], notice=NOTICE)
+    assert raised.status_code == 200
+
+
 @pytest.mark.parametrize(
     ("changes", "message"),
     [

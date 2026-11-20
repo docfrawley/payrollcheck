@@ -1,7 +1,8 @@
 """An exception report checked against the attempt's candidates and recorded with
 its notice: the guarantee that no exception carries a shortfall no check tool
 found, and that the payroll agent adds none of its own that the rule catalogue
-refuses it, such as one under a rule its check alone decides. Each refusal is a
+refuses it, such as one under a rule its check alone decides, nor dismisses a
+finding under such a rule. Each refusal is a
 422 that says what's wrong, so the agent can put it right."""
 
 from fastapi import HTTPException
@@ -16,7 +17,13 @@ from backend.models import (
     ExceptionSource,
     ExceptionStatus,
 )
-from backend.rule_codes import CHECKS, RULES, agents_refusal, where
+from backend.rule_codes import (
+    CHECKS,
+    RULES,
+    agents_dismissal_refusal,
+    agents_refusal,
+    where,
+)
 
 NO_CANDIDATE = (
     "No check found {rule}{where} with a shortfall of {cents} cents: an exception "
@@ -50,9 +57,8 @@ def judged_candidates(
 ) -> tuple[list[int], list[AddedException]]:
     """The candidates the report raises, an added exception with a shortfall
     counted as the candidate it matches, and the exceptions it adds of its own.
-    Raise a 422 for a shortfall no candidate has, an exception of its own the
-    catalogue refuses, an unknown or repeated candidate, or a candidate neither
-    raised nor dismissed."""
+    Raise a 422 for a shortfall no candidate has or an exception of its own the
+    catalogue refuses, and those refuse_bad_judgments raises."""
     raised, added = list(report.raised), []
     for found in report.added:
         if found.shortfall_cents is None:
@@ -68,6 +74,16 @@ def judged_candidates(
             )
             raise HTTPException(422, message)
         raised.append(candidate_id)
+    refuse_bad_judgments(report, attempt, raised)
+    return raised, added
+
+
+def refuse_bad_judgments(
+    report: ExceptionReport, attempt: dict[int, RowMapping], raised: list[int]
+) -> None:
+    """Raise a 422 for an unknown or repeated candidate, a dismissal of a finding
+    under a rule its check alone decides, or a candidate neither raised nor
+    dismissed."""
     judged = raised + [d.candidate_id for d in report.dismissed]
     for candidate_id in judged:
         if candidate_id not in attempt:
@@ -76,10 +92,14 @@ def judged_candidates(
             )
         if judged.count(candidate_id) > 1:
             raise HTTPException(422, TWICE.format(candidate_id=candidate_id))
+    for dismissal in report.dismissed:
+        rule = attempt[dismissal.candidate_id]["rule"]
+        refused = agents_dismissal_refusal(dismissal.candidate_id, rule)
+        if refused:
+            raise HTTPException(422, refused)
     left = sorted(set(attempt) - set(judged))
     if left:
         raise HTTPException(422, NOT_JUDGED.format(ids=", ".join(map(str, left))))
-    return raised, added
 
 
 def record_report(db: Connection, case: RowMapping, report: ExceptionReport) -> None:
