@@ -6,6 +6,9 @@ from collections.abc import Mapping
 PROJECT = "payrollcheck"
 TAG_KEY = "project"
 TAGS = {TAG_KEY: PROJECT}
+# The CLI tags the stack agentcore deploy makes with its own keys, not ours, which
+# it puts on the runtimes inside it from agentcore/agentcore.json.
+CLI_PROJECT_TAG = "agentcore:project-name"
 
 APP_FUNCTION = "payrollcheck-app"
 APP_ROLE = "payrollcheck-app-role"
@@ -34,9 +37,11 @@ def tag_list(tags: Mapping[str, str] = TAGS) -> list[dict[str, str]]:
 
 
 def is_ours(name: str, tags: Mapping[str, str]) -> bool:
-    """Whether the runbook made a resource: named and tagged for PayrollCheck."""
+    """Whether the runbook made a resource: named and tagged for PayrollCheck, the
+    stack by the CLI's tag of the project."""
+    if name == STACK:
+        return tags.get(CLI_PROJECT_TAG) == PROJECT
     named = name.startswith(PROJECT) or name in {
-        STACK,
         log_group(APP_FUNCTION),
         log_group(CONTEXT_FUNCTION),
     }

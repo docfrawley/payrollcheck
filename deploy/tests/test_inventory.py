@@ -152,14 +152,21 @@ def test_the_stack_goes_as_eds_did_through_the_cli_with_its_credentials(
         "StackName": names.STACK,
         "CreationTime": "2026-11-18T00:00:00Z",
         "StackStatus": "CREATE_COMPLETE",
-        "Tags": names.tag_list(),
+        # The CLI tags the stack with its own keys alone, as on AWS.
+        "Tags": names.tag_list(
+            {
+                "agentcore:project-name": "payrollcheck",
+                "agentcore:target-name": "default",
+            }
+        ),
     }
     bootstrap = stack | {"StackName": "CDKToolkit", "Tags": []}
     stub("cloudformation").add_response(
         "describe_stacks", {"Stacks": [stack, bootstrap, stack | {"StackName": "x"}]}
     )
     found_stack, found_bootstrap = inventory.find_stack(aws)
-    assert (found_stack.kind, found_stack.tags) == ("Stack", OURS)
+    assert found_stack.kind == "Stack"
+    assert names.is_ours(found_stack.name, found_stack.tags)
     assert (found_bootstrap.kind, found_bootstrap.name) == (
         "CDK bootstrap",
         "CDKToolkit",
@@ -170,6 +177,18 @@ def test_the_stack_goes_as_eds_did_through_the_cli_with_its_credentials(
         ["agentcore", "deploy", "--yes"],
         ["git", "checkout", "--", "agentcore/agentcore.json"],
     ]
+
+
+def test_a_stack_the_cli_tagged_for_another_project_isnt_ours(aws, stub):
+    stack = {
+        "StackName": names.STACK,
+        "CreationTime": "2026-11-18T00:00:00Z",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": names.tag_list({"agentcore:project-name": "undercover"}),
+    }
+    stub("cloudformation").add_response("describe_stacks", {"Stacks": [stack]})
+    (found_stack,) = inventory.find_stack(aws)
+    assert not names.is_ours(found_stack.name, found_stack.tags)
 
 
 def test_everything_is_found_in_the_order_aws_can_delete_it(aws, monkeypatch):
