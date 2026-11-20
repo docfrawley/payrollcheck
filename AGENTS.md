@@ -2,7 +2,7 @@
 
 ## The product
 
-PayrollCheck checks the certified payrolls that subcontractors file on New Jersey public works jobs. It's built for Pinelands Builders, a fictional mid-size New Jersey general contractor. Its compliance reviewers work a queue of cases, one subcontractor's payroll for one project and one week, and the payroll agent checks every line of every payroll against the prevailing wage rules and writes an exception report. The agent flags; it never accepts. A reviewer signs off or sends back every case. There's also an improver that proposes better versions of the payroll agent, and the PayrollCheck Copilot, a chat for reviewers in the dashboard. It runs in production on AWS AgentCore.
+PayrollCheck checks the certified payrolls that subcontractors file on New Jersey public works jobs. It's built for Pinelands Builders, a fictional mid-size New Jersey general contractor. Its compliance reviewers work a queue of cases, one subcontractor's payroll for one project and one week, and the payroll agent checks every line of every payroll against the prevailing wage rules and writes an exception report. The agent flags; it never accepts. A reviewer signs off or sends back every case. There's also an improver that proposes better versions of the payroll agent, and the PayrollCheck Copilot, a chat for reviewers in the dashboard. It deploys to AWS AgentCore with the runbook in `deploy/`; it was torn down on 2026-11-20.
 
 PayrollCheck is built from Ed Donner's UnderCover `week3day5-end` (commit `ecca35dd`), in seven stages. Stage 1 renamed the code to PayrollCheck's words (case, reviewer, subcontractor, `PAYROLLCHECK_*`), stage 3 changed the domain over to payrolls, and stage 7 deployed it.
 
